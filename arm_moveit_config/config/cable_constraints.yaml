@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA Cable Constraints Configuration
+# Models servo cables as virtual collision zones for cable-aware planning.
+#
+# Physical reference:
+#   Cables run from shoulder servo → along upper arm back
+#   → through elbow → along forearm back → through wrist
+#   Each cable zone is a box attached to its parent link,
+#   offset behind the arm (negative Y in link frame).
+# ═══════════════════════════════════════════════════════════════
+
+cable_obstacle_name: "servo_cables"
+
+# Safety clearance: planner maintains this distance from cable zones
+safety_clearance_m: 0.005
+
+cable_zones:
+  # Upper arm cable routing (shoulder → elbow)
+  # 3 × MG995 servo cables run along back of upper arm
+  - name: "upper_arm_cable"
+    parent_link: upper_arm_link
+    dimensions: [0.145, 0.012, 0.012]    # length × width × height (meters)
+    offset: [0.0725, -0.015, 0.0]        # centered along link, behind arm
+    color: [0.1, 0.1, 0.1, 0.5]          # dark, semi-transparent
+
+  # Forearm cable routing (elbow → wrist)
+  # 2 × SG90 servo cables
+  - name: "forearm_cable"
+    parent_link: forearm_link
+    dimensions: [0.115, 0.010, 0.010]
+    offset: [0.0575, -0.013, 0.0]
+    color: [0.1, 0.1, 0.1, 0.5]
+
+  # Wrist cable routing (wrist → gripper servo)
+  # 1 × SG90 cable
+  - name: "wrist_cable"
+    parent_link: wrist_link
+    dimensions: [0.055, 0.008, 0.008]
+    offset: [0.0275, -0.010, 0.0]
+    color: [0.1, 0.1, 0.1, 0.5]
+
+# Update rate for cable obstacle positions in planning scene
+update_rate_hz: 10

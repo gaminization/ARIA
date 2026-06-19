@@ -1,0 +1,26 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA MoveIt2 Kinematics Configuration
+# Primary: Analytical IK (custom)
+# Fallback: KDL (built-in)
+# ═══════════════════════════════════════════════════════════════
+
+aria_arm:
+  # Primary: our custom analytical IK solver
+  # Fastest (<0.1ms) and most accurate for this arm geometry
+  kinematics_solver: kdl_kinematics_plugin/KDLKinematicsPlugin
+  # NOTE: Replace with custom plugin when MoveIt plugin is built:
+  # kinematics_solver: aria_analytical_ik/AriaAnalyticalIKPlugin
+
+  kinematics_solver_search_resolution: 0.005
+  kinematics_solver_timeout: 0.05
+  kinematics_solver_attempts: 3
+
+  # Position IK only (5-DoF cannot achieve full 6-DoF pose)
+  # This tells MoveIt to relax orientation constraints
+  position_only_ik: false
+
+gripper:
+  kinematics_solver: kdl_kinematics_plugin/KDLKinematicsPlugin
+  kinematics_solver_search_resolution: 0.005
+  kinematics_solver_timeout: 0.005
+  kinematics_solver_attempts: 1

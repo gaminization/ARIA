@@ -1,0 +1,50 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA OMPL Motion Planning Configuration
+# RRTConnect as default (fast for single queries)
+# RRT and PRM as alternatives
+# ═══════════════════════════════════════════════════════════════
+
+planner_configs:
+  RRTConnect:
+    type: geometric::RRTConnect
+    range: 0.0                    # Auto-determine
+  RRT:
+    type: geometric::RRT
+    range: 0.0
+    goal_bias: 0.05
+  RRTstar:
+    type: geometric::RRTstar
+    range: 0.0
+    goal_bias: 0.05
+  PRM:
+    type: geometric::PRM
+    max_nearest_neighbors: 10
+  PRMstar:
+    type: geometric::PRMstar
+  BiTRRT:
+    type: geometric::BiTRRT
+    range: 0.0
+    cost_threshold: 1e300
+    frountier_threshold: 0.0
+    init_temperature: 100
+    frountier_node_ratio: 0.1
+
+aria_arm:
+  # Default planner — RRTConnect is best for single-query planning
+  # (no roadmap overhead, fast for small workspaces like ours)
+  default_planner_config: RRTConnect
+  planner_configs:
+    - RRTConnect
+    - RRT
+    - RRTstar
+    - PRM
+    - BiTRRT
+
+  # Planning time limits
+  projection_evaluator: joints(waist_joint, shoulder_joint, elbow_joint)
+  longest_valid_segment_fraction: 0.01
+
+gripper:
+  default_planner_config: RRTConnect
+  planner_configs:
+    - RRTConnect
