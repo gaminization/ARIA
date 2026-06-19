@@ -15,6 +15,7 @@ from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2DArray
 from arm_planner.msg import VisionState, ObjectDetection
 from arm_planner.state_bus import StateBus
+from arm_vision.arm_vision.coordinate_transformer import create_top_camera_transformer
 
 ACTIVE_PERCEPTION_CONFIDENCE_THRESHOLD = 0.6
 
@@ -30,6 +31,7 @@ class VisionAgent(LifecycleNode):
     def __init__(self):
         super().__init__('vision_agent')
         self.bus = StateBus(self)
+        self.transformer = create_top_camera_transformer()
         self.detections: list = []
         self.tracked_ids: list = []
         self.active_perception = False
@@ -111,6 +113,16 @@ class VisionAgent(LifecycleNode):
             obj.bbox_y = float(det.bbox.center.position.y)
             obj.bbox_w = float(det.bbox.size_x)
             obj.bbox_h = float(det.bbox.size_y)
+
+            # 3D Coordinates
+            coord = self.transformer.pixel_to_world(int(obj.bbox_x), int(obj.bbox_y))
+            if coord.confidence > 0:
+                obj.pose_3d.header = msg.header
+                obj.pose_3d.header.frame_id = 'world'
+                obj.pose_3d.pose.position.x = coord.x
+                obj.pose_3d.pose.position.y = coord.y
+                obj.pose_3d.pose.position.z = coord.z
+
 
             # Lifecycle state
             obj.lifecycle_state = 'Detected'

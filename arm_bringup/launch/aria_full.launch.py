@@ -70,8 +70,6 @@ def generate_launch_description():
         period=2.0,
         actions=[Node(
             package='arm_vision',
-            executable='coord_transform_node',
-            name='coord_transform_node',
             output='screen',
         )],
     )
@@ -80,8 +78,8 @@ def generate_launch_description():
         period=2.0,
         actions=[Node(
             package='arm_ik',
-            executable='ik_service_node',
-            name='ik_service_node',
+            executable='ik_node',
+            name='ik_node',
             output='screen',
         )],
     )
