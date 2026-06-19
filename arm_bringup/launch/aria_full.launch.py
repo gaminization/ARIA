@@ -66,13 +66,6 @@ def generate_launch_description():
         )],
     )
 
-    coord_transform = TimerAction(
-        period=2.0,
-        actions=[Node(
-            package='arm_vision',
-            output='screen',
-        )],
-    )
 
     ik_node = TimerAction(
         period=2.0,
@@ -204,7 +197,6 @@ def generate_launch_description():
         # Stage 2
         yolo_detection,
         depth_node,
-        coord_transform,
         ik_node,
 
         # Stage 3 — 15 agents
