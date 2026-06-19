@@ -25,6 +25,10 @@ install(DIRECTORY
 install(PROGRAMS
   scripts/validate_stage1.py
   scripts/validate_stage2.py
+  scripts/validate_stage3.py
+  scripts/validate_stage4.py
+  scripts/hardware_bringup_wizard.py
+  scripts/aria_cli.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

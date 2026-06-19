@@ -64,8 +64,17 @@ install(PROGRAMS
   scripts/visual_servo_node.py
   scripts/force_estimator_node.py
   scripts/kinematic_calibration_node.py
+  scripts/servo_sync_node.py
+  scripts/teach_mode_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Rename executables to remove .py extension
+install(CODE "
+  execute_process(COMMAND mv \${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/manual_control_node.py \${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/manual_control_node)
+  execute_process(COMMAND mv \${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/servo_sync_node.py \${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/servo_sync_node)
+  execute_process(COMMAND mv \${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/teach_mode_node.py \${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/teach_mode_node)
+")
 
 ament_export_include_directories(include)
 ament_export_libraries(aria_hardware_interface)
