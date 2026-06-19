@@ -1,0 +1,6 @@
+# FK (forward kinematics) service
+float64[] joint_angles    # Joint angles [5] in radians
+---
+geometry_msgs/PoseStamped end_effector_pose  # Computed end-effector pose
+bool success
+string message

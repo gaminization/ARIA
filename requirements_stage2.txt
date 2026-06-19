@@ -1,0 +1,38 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA Stage 2 — Python Dependencies
+# Install: pip install -r requirements_stage2.txt
+# ═══════════════════════════════════════════════════════════════
+
+# ── IK Solvers ─────────────────────────────────────────────
+numpy>=1.24
+scipy>=1.10
+ikpy>=3.3
+roboticstoolbox-python>=1.1
+spatialmath-python>=1.1
+
+# ── Neural IK + Depth Models ──────────────────────────────
+torch>=2.0
+torchvision>=0.15
+
+# ── Object Detection ──────────────────────────────────────
+ultralytics>=8.0       # YOLOv8
+opencv-python>=4.8
+
+# ── Depth Estimation ──────────────────────────────────────
+# Depth-Anything v2: loaded via torch.hub
+# MiDaS v3: loaded via torch.hub
+# No separate pip install needed — models downloaded on first run
+
+# ── Visualization ─────────────────────────────────────────
+matplotlib>=3.7        # For benchmark plots
+pyyaml>=6.0
+
+# ── ROS2 Python (installed via apt, listed for reference) ──
+# rclpy
+# cv_bridge
+# tf2_ros
+# sensor_msgs
+# geometry_msgs
+# vision_msgs
+# trajectory_msgs
+# moveit_msgs

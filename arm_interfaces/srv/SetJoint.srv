@@ -1,0 +1,9 @@
+# Request: command a single joint to a target angle
+string joint_name           # One of: waist, shoulder, elbow, wrist_pitch, wrist_roll, gripper
+float64 angle_deg           # Target angle in degrees
+float64 speed_deg_per_s     # Max speed in degrees/second (capped at 90)
+---
+# Response
+bool success                # True if command was accepted
+string message              # Status message or error description
+float64 actual_angle_deg    # Actual commanded angle (may differ due to limits)

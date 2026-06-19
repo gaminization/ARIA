@@ -1,0 +1,6 @@
+# Send a natural language command
+string command
+---
+bool accepted
+string task_id
+string message

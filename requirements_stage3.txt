@@ -1,0 +1,40 @@
+# ═══════════════════════════════════════════════════════════
+# ARIA Stage 3 — Python Requirements
+# ═══════════════════════════════════════════════════════════
+
+# --- Core (from Stage 1 & 2) ---
+numpy>=1.24.0
+scipy>=1.10.0
+pyyaml>=6.0
+opencv-python>=4.8.0
+matplotlib>=3.7.0
+
+# --- Vision / Perception ---
+ultralytics>=8.0.0         # YOLOv8
+torch>=2.0.0               # PyTorch (YOLO + VLA)
+torchvision>=0.15.0
+
+# --- Depth Estimation ---
+# (MiDaS / Depth Anything via torch hub, no separate package)
+
+# --- World Model ---
+# sqlite3 (built-in)
+
+# --- Dashboard ---
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+websockets>=12.0
+pydantic>=2.0
+
+# --- VLA (Optional — install for VLA benchmarks) ---
+# lerobot>=0.1.0           # pip install lerobot
+# transformers>=4.40.0     # pip install transformers (for OpenVLA)
+
+# --- Learning / Data ---
+h5py>=3.10.0               # HDF5 for LeRobot datasets
+
+# --- Calibration ---
+# (scipy already covers optimization)
+
+# --- Utilities ---
+requests>=2.31.0

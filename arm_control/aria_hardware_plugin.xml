@@ -1,0 +1,11 @@
+<library path="aria_hardware_interface">
+  <class name="arm_control/AriaHardwareInterface"
+         type="arm_control::AriaHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ARIA Hardware Interface: Sim/Hardware switchable system interface for the ARIA 5-DoF arm.
+      In sim mode, acts as passthrough (Gazebo handles physics).
+      In hardware mode, communicates with ESP32 via serial JSON protocol.
+    </description>
+  </class>
+</library>

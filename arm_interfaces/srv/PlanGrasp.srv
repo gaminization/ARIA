@@ -1,0 +1,10 @@
+# Grasp plan request
+int32 object_id                           # Tracked object ID from detection
+string method                             # "auto", "top_down", "side", or "geometric"
+---
+# Grasp plan response
+bool success
+geometry_msgs/PoseStamped grasp_pose      # Pose to grasp the object
+geometry_msgs/PoseStamped approach_pose   # Pre-grasp approach pose (10cm above)
+float64 confidence                        # Grasp confidence 0-1
+string method_used                        # Actual method selected

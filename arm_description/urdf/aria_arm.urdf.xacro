@@ -1,0 +1,637 @@
+<?xml version="1.0"?>
+<!-- ═══════════════════════════════════════════════════════════════
+     ARIA 5-DoF Robotic Arm — URDF/Xacro Description
+     Techno-Tirupati kit with NEW gear-driven gripper
+     Derived from assembly manual + photo measurements
+     ═══════════════════════════════════════════════════════════════ -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="aria_arm">
+
+  <!-- ═══ Include Gazebo-specific plugins ═══ -->
+  <xacro:include filename="$(find arm_description)/urdf/aria_arm.gazebo.xacro"/>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       DIMENSIONAL PARAMETERS — all from assembly manual
+       Units: meters, kilograms
+       ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Base: white PLA cylinder (bottom housing) -->
+  <xacro:property name="base_radius"        value="0.040"/>  <!-- 80mm diameter -->
+  <xacro:property name="base_height"        value="0.070"/>  <!-- 70mm tall -->
+
+  <!-- Waist bracket: orange curved bracket on top of base -->
+  <xacro:property name="waist_width"        value="0.080"/>  <!-- 80mm wide -->
+  <xacro:property name="waist_depth"        value="0.040"/>  <!-- 40mm deep -->
+  <xacro:property name="waist_height"       value="0.035"/>  <!-- 35mm tall -->
+
+  <!-- Upper arm (Arm1): orange tube, slight curve, approximated as box -->
+  <xacro:property name="upper_arm_length"   value="0.145"/>  <!-- 145mm long -->
+  <xacro:property name="upper_arm_width"    value="0.025"/>  <!-- 25mm cross section -->
+  <xacro:property name="upper_arm_depth"    value="0.020"/>  <!-- 20mm cross section -->
+
+  <!-- Forearm (Arm2): orange rectangular housing -->
+  <xacro:property name="forearm_length"     value="0.115"/>  <!-- 115mm long -->
+  <xacro:property name="forearm_width"      value="0.030"/>  <!-- 30mm cross section -->
+  <xacro:property name="forearm_depth"      value="0.025"/>  <!-- 25mm cross section -->
+
+  <!-- Wrist (Arm3): small orange housing -->
+  <xacro:property name="wrist_length"       value="0.055"/>  <!-- 55mm long -->
+  <xacro:property name="wrist_width"        value="0.020"/>  <!-- 20mm cross section -->
+  <xacro:property name="wrist_depth"        value="0.018"/>  <!-- 18mm cross section -->
+
+  <!-- Gripper holder: white rectangular mount -->
+  <xacro:property name="gripper_holder_length" value="0.040"/>  <!-- 40mm long -->
+  <xacro:property name="gripper_holder_width"  value="0.025"/>  <!-- 25mm -->
+  <xacro:property name="gripper_holder_depth"  value="0.020"/>  <!-- 20mm -->
+
+  <!-- Gear housing: circular white gear mechanism -->
+  <xacro:property name="gear_radius"        value="0.015"/>  <!-- 30mm diameter -->
+  <xacro:property name="gear_height"        value="0.015"/>  <!-- 15mm tall -->
+
+  <!-- Fingers: curved blue plastic (each link = pair of 2 fingers) -->
+  <xacro:property name="finger_length"      value="0.080"/>  <!-- 80mm long -->
+  <xacro:property name="finger_width"       value="0.015"/>  <!-- 15mm wide -->
+  <xacro:property name="finger_depth"       value="0.005"/>  <!-- 5mm thick -->
+
+  <!-- Camera / sensor dimensions (small visual boxes) -->
+  <xacro:property name="camera_size"        value="0.025"/>  <!-- 25mm cube for camera visual -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MASS PARAMETERS
+       PLA density = 1240 kg/m³
+       Includes servo mass at each joint location:
+         MG995 = 55g (waist, shoulder, elbow)
+         SG90  = 9g  (wrist_pitch, wrist_roll, gripper)
+       ═══════════════════════════════════════════════════════════ -->
+
+  <!-- base_link: PLA cylinder shell (~20g) + MG995 waist servo (55g) + hardware (75g) -->
+  <xacro:property name="base_mass"          value="0.150"/>
+  <!-- waist_link: PLA bracket (~45g) + MG995 shoulder servo (55g) -->
+  <xacro:property name="waist_mass"         value="0.100"/>
+  <!-- upper_arm_link: PLA tube (~65g) + MG995 elbow servo (55g) -->
+  <xacro:property name="upper_arm_mass"     value="0.120"/>
+  <!-- forearm_link: PLA housing (~55g) + SG90 wrist pitch servo (9g) + hardware (36g) -->
+  <xacro:property name="forearm_mass"       value="0.100"/>
+  <!-- wrist_link: PLA housing (~25g) + SG90 wrist roll servo (9g) -->
+  <xacro:property name="wrist_mass"         value="0.040"/>
+  <!-- gripper_holder_link: PLA mount (~15g) + SG90 gripper servo (9g) -->
+  <xacro:property name="gripper_holder_mass" value="0.025"/>
+  <!-- gear_housing_link: PLA gear housing (~20g) -->
+  <xacro:property name="gear_housing_mass"  value="0.020"/>
+  <!-- finger pair: PLA curved fingers (~10g per pair) -->
+  <xacro:property name="finger_mass"        value="0.010"/>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       JOINT LIMITS (radians)
+       ═══════════════════════════════════════════════════════════ -->
+  <xacro:property name="waist_lower"        value="-1.5708"/>  <!-- -90° -->
+  <xacro:property name="waist_upper"        value="1.5708"/>   <!--  90° -->
+  <xacro:property name="shoulder_lower"     value="0.0"/>      <!--   0° -->
+  <xacro:property name="shoulder_upper"     value="3.1416"/>   <!-- 180° -->
+  <xacro:property name="elbow_lower"        value="0.0"/>      <!--   0° -->
+  <xacro:property name="elbow_upper"        value="2.6180"/>   <!-- 150° -->
+  <xacro:property name="wrist_pitch_lower"  value="-1.5708"/>  <!-- -90° -->
+  <xacro:property name="wrist_pitch_upper"  value="1.5708"/>   <!--  90° -->
+  <xacro:property name="wrist_roll_lower"   value="-1.5708"/>  <!-- -90° -->
+  <xacro:property name="wrist_roll_upper"   value="1.5708"/>   <!--  90° -->
+  <xacro:property name="gripper_lower"      value="0.0"/>      <!--   0° (closed) -->
+  <xacro:property name="gripper_upper"      value="0.7854"/>   <!--  45° (open)   -->
+
+  <!-- Joint velocity/effort limits -->
+  <xacro:property name="mg995_effort"       value="1.0"/>      <!-- ~1.0 Nm for MG995 -->
+  <xacro:property name="mg995_velocity"     value="5.24"/>     <!-- ~300°/s max for MG995 -->
+  <xacro:property name="sg90_effort"        value="0.18"/>     <!-- ~0.18 Nm for SG90 -->
+  <xacro:property name="sg90_velocity"      value="10.47"/>    <!-- ~600°/s max for SG90 -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MATERIAL DEFINITIONS (for RViz)
+       ═══════════════════════════════════════════════════════════ -->
+  <material name="white">
+    <color rgba="0.95 0.95 0.95 1.0"/>
+  </material>
+  <material name="orange">
+    <color rgba="0.95 0.55 0.10 1.0"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.20 0.40 0.85 1.0"/>
+  </material>
+  <material name="dark_gray">
+    <color rgba="0.25 0.25 0.25 1.0"/>
+  </material>
+  <material name="light_gray">
+    <color rgba="0.75 0.75 0.75 1.0"/>
+  </material>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       INERTIA MACROS — compute from box/cylinder formulas
+       ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Solid box inertia: I = m/12 * (dim² sums)
+       x,y,z are full dimensions (not half) -->
+  <xacro:macro name="box_inertia" params="m x y z">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia
+        ixx="${(1.0/12.0)*m*(y*y + z*z)}" ixy="0.0" ixz="0.0"
+        iyy="${(1.0/12.0)*m*(x*x + z*z)}" iyz="0.0"
+        izz="${(1.0/12.0)*m*(x*x + y*y)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Solid cylinder inertia (axis along Z):
+       I_xx = I_yy = m/12*(3r² + h²), I_zz = m/2*r² -->
+  <xacro:macro name="cylinder_inertia" params="m r h">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia
+        ixx="${(1.0/12.0)*m*(3.0*r*r + h*h)}" ixy="0.0" ixz="0.0"
+        iyy="${(1.0/12.0)*m*(3.0*r*r + h*h)}" iyz="0.0"
+        izz="${0.5*m*r*r}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       WORLD FRAME — anchor point
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="world"/>
+
+  <!-- Fix base to table position: left-center of table, on surface -->
+  <joint name="fixed_base" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="-0.15 0.0 0.76" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LINK 1: BASE — white PLA cylinder (bottom housing)
+       Contains MG995 servo for waist rotation
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_height}"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_height}"/>
+      </geometry>
+    </collision>
+    <!-- base_link: cylinder 80mm×70mm, mass≈150g (PLA shell + MG995 waist servo) -->
+    <xacro:cylinder_inertia m="${base_mass}" r="${base_radius}" h="${base_height}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       JOINT 1: WAIST — Z-axis rotation, MG995
+       At top of base cylinder
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="waist_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="waist_link"/>
+    <origin xyz="0 0 ${base_height}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="${waist_lower}" upper="${waist_upper}"
+           effort="${mg995_effort}" velocity="${mg995_velocity}"/>
+    <dynamics damping="0.1" friction="0.05"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LINK 2: WAIST BRACKET — orange curved bracket
+       Houses MG995 servo for shoulder rotation
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="waist_link">
+    <visual>
+      <origin xyz="0 0 ${waist_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${waist_width} ${waist_depth} ${waist_height}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${waist_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${waist_width} ${waist_depth} ${waist_height}"/>
+      </geometry>
+    </collision>
+    <!-- waist_link: box 80×40×35mm, mass≈100g (PLA bracket + MG995 shoulder servo) -->
+    <xacro:box_inertia m="${waist_mass}" x="${waist_width}" y="${waist_depth}" z="${waist_height}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       JOINT 2: SHOULDER — Y-axis rotation, MG995
+       At top of waist bracket
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="shoulder_joint" type="revolute">
+    <parent link="waist_link"/>
+    <child link="upper_arm_link"/>
+    <origin xyz="0 0 ${waist_height}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="${shoulder_lower}" upper="${shoulder_upper}"
+           effort="${mg995_effort}" velocity="${mg995_velocity}"/>
+    <dynamics damping="0.1" friction="0.05"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LINK 3: UPPER ARM (Arm1) — orange tube, 145mm
+       Slight curve, approximated as box for collision
+       Houses MG995 servo for elbow
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="upper_arm_link">
+    <visual>
+      <origin xyz="0 0 ${upper_arm_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${upper_arm_width} ${upper_arm_depth} ${upper_arm_length}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${upper_arm_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${upper_arm_width} ${upper_arm_depth} ${upper_arm_length}"/>
+      </geometry>
+    </collision>
+    <!-- upper_arm_link: box 25×20×145mm, mass≈120g (PLA tube + MG995 elbow servo) -->
+    <xacro:box_inertia m="${upper_arm_mass}" x="${upper_arm_width}" y="${upper_arm_depth}" z="${upper_arm_length}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       JOINT 3: ELBOW — Y-axis rotation, MG995
+       At junction of Arm1 and Arm2
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="elbow_joint" type="revolute">
+    <parent link="upper_arm_link"/>
+    <child link="forearm_link"/>
+    <origin xyz="0 0 ${upper_arm_length}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="${elbow_lower}" upper="${elbow_upper}"
+           effort="${mg995_effort}" velocity="${mg995_velocity}"/>
+    <dynamics damping="0.1" friction="0.05"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LINK 4: FOREARM (Arm2) — orange rectangular housing, 115mm
+       Houses SG90 servo for wrist pitch
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="forearm_link">
+    <visual>
+      <origin xyz="0 0 ${forearm_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${forearm_width} ${forearm_depth} ${forearm_length}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${forearm_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${forearm_width} ${forearm_depth} ${forearm_length}"/>
+      </geometry>
+    </collision>
+    <!-- forearm_link: box 30×25×115mm, mass≈100g (PLA housing + SG90 wrist pitch servo) -->
+    <xacro:box_inertia m="${forearm_mass}" x="${forearm_width}" y="${forearm_depth}" z="${forearm_length}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       JOINT 4: WRIST PITCH — Y-axis rotation, SG90
+       At junction of Arm2 and Arm3
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="wrist_pitch_joint" type="revolute">
+    <parent link="forearm_link"/>
+    <child link="wrist_link"/>
+    <origin xyz="0 0 ${forearm_length}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="${wrist_pitch_lower}" upper="${wrist_pitch_upper}"
+           effort="${sg90_effort}" velocity="${sg90_velocity}"/>
+    <dynamics damping="0.05" friction="0.02"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LINK 5: WRIST (Arm3) — small orange housing, 55mm
+       Houses SG90 servo for wrist roll
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="wrist_link">
+    <visual>
+      <origin xyz="0 0 ${wrist_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${wrist_width} ${wrist_depth} ${wrist_length}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${wrist_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${wrist_width} ${wrist_depth} ${wrist_length}"/>
+      </geometry>
+    </collision>
+    <!-- wrist_link: box 20×18×55mm, mass≈40g (PLA housing + SG90 wrist roll servo) -->
+    <xacro:box_inertia m="${wrist_mass}" x="${wrist_width}" y="${wrist_depth}" z="${wrist_length}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       IMU — fixed to wrist_link (MPU6050)
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="imu_joint" type="fixed">
+    <parent link="wrist_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.010 0.010 0.003"/>
+      </geometry>
+      <material name="dark_gray"/>
+    </visual>
+    <!-- Negligible mass for IMU chip -->
+    <inertial>
+      <mass value="0.002"/>
+      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="1e-8"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       JOINT 5: WRIST ROLL — X-axis rotation, SG90
+       On gripper holder
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="wrist_roll_joint" type="revolute">
+    <parent link="wrist_link"/>
+    <child link="gripper_holder_link"/>
+    <origin xyz="0 0 ${wrist_length}" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="${wrist_roll_lower}" upper="${wrist_roll_upper}"
+           effort="${sg90_effort}" velocity="${sg90_velocity}"/>
+    <dynamics damping="0.02" friction="0.01"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LINK 6: GRIPPER HOLDER — white rectangular mount, 40mm
+       Houses SG90 gripper servo, mounts gear mechanism
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="gripper_holder_link">
+    <visual>
+      <origin xyz="0 0 ${gripper_holder_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${gripper_holder_width} ${gripper_holder_depth} ${gripper_holder_length}"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${gripper_holder_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${gripper_holder_width} ${gripper_holder_depth} ${gripper_holder_length}"/>
+      </geometry>
+    </collision>
+    <!-- gripper_holder_link: box 25×20×40mm, mass≈25g (PLA mount + SG90 gripper servo) -->
+    <xacro:box_inertia m="${gripper_holder_mass}" x="${gripper_holder_width}" y="${gripper_holder_depth}" z="${gripper_holder_length}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       WRIST CAMERA — ESP32-CAM, fixed to gripper holder
+       Front face of gripper holder
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="wrist_camera_joint" type="fixed">
+    <parent link="gripper_holder_link"/>
+    <child link="wrist_camera_link"/>
+    <origin xyz="0.02 0.0 0.01" rpy="0 0 0"/>
+  </joint>
+
+  <link name="wrist_camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.020 0.010"/>
+      </geometry>
+      <material name="dark_gray"/>
+    </visual>
+    <inertial>
+      <mass value="0.010"/>
+      <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       GEAR HOUSING — circular white gear mechanism
+       Fixed to gripper holder, parent for finger joints
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="gear_housing_joint" type="fixed">
+    <parent link="gripper_holder_link"/>
+    <child link="gear_housing_link"/>
+    <origin xyz="0 0 ${gripper_holder_length}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="gear_housing_link">
+    <visual>
+      <origin xyz="0 0 ${gear_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${gear_radius}" length="${gear_height}"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${gear_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${gear_radius}" length="${gear_height}"/>
+      </geometry>
+    </collision>
+    <!-- gear_housing_link: cylinder 30mm×15mm, mass≈20g -->
+    <xacro:cylinder_inertia m="${gear_housing_mass}" r="${gear_radius}" h="${gear_height}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       JOINT 6: GRIPPER — Z-axis rotation (gear opening), SG90
+       Drives left finger pair; right finger mimics with -1 multiplier
+       0 rad = closed, 0.7854 rad (45°) = fully open
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="gripper_joint" type="revolute">
+    <parent link="gear_housing_link"/>
+    <child link="finger_left_1_link"/>
+    <origin xyz="0 ${gear_radius * 0.6} ${gear_height}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="${gripper_lower}" upper="${gripper_upper}"
+           effort="${sg90_effort}" velocity="${sg90_velocity}"/>
+    <dynamics damping="0.02" friction="0.01"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LEFT FINGER PAIR — 2 curved blue plastic fingers
+       Driven directly by gripper_joint
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="finger_left_1_link">
+    <visual>
+      <origin xyz="0 0 ${finger_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${finger_width} ${finger_depth} ${finger_length}"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${finger_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${finger_width} ${finger_depth} ${finger_length}"/>
+      </geometry>
+    </collision>
+    <!-- finger_left_1_link: box 15×5×80mm, mass≈10g (pair of blue curved PLA fingers) -->
+    <xacro:box_inertia m="${finger_mass}" x="${finger_width}" y="${finger_depth}" z="${finger_length}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       FINGER MIMIC JOINT — Right finger pair
+       Gears mesh: opposite direction (multiplier = -1)
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="finger_mimic_joint" type="revolute">
+    <parent link="gear_housing_link"/>
+    <child link="finger_right_1_link"/>
+    <origin xyz="0 ${-gear_radius * 0.6} ${gear_height}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="${-gripper_upper}" upper="${-gripper_lower}"
+           effort="${sg90_effort}" velocity="${sg90_velocity}"/>
+    <mimic joint="gripper_joint" multiplier="-1" offset="0"/>
+    <dynamics damping="0.02" friction="0.01"/>
+  </joint>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       RIGHT FINGER PAIR — 2 curved blue plastic fingers (mirrored)
+       ═══════════════════════════════════════════════════════════ -->
+  <link name="finger_right_1_link">
+    <visual>
+      <origin xyz="0 0 ${finger_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${finger_width} ${finger_depth} ${finger_length}"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${finger_length/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${finger_width} ${finger_depth} ${finger_length}"/>
+      </geometry>
+    </collision>
+    <!-- finger_right_1_link: box 15×5×80mm, mass≈10g (pair of blue curved PLA fingers) -->
+    <xacro:box_inertia m="${finger_mass}" x="${finger_width}" y="${finger_depth}" z="${finger_length}"/>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       END-EFFECTOR FRAME — virtual frame at fingertip center
+       For IK target in Stage 2
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="tool_joint" type="fixed">
+    <parent link="gear_housing_link"/>
+    <child link="tool_frame"/>
+    <origin xyz="0 0 ${gear_height + finger_length}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="tool_frame">
+    <!-- Virtual frame — no visual/collision, negligible inertia -->
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TOP CAMERA — Logitech C270, fixed to world via stand
+       Position: 80cm above table, 40cm in front
+       Angle: 45° downward toward workspace
+       ═══════════════════════════════════════════════════════════ -->
+  <joint name="top_camera_joint" type="fixed">
+    <parent link="world"/>
+    <child link="top_camera_link"/>
+    <!-- 40cm in front of origin, 80cm above table (table surface at 0.76m) -->
+    <origin xyz="0.40 0.0 0.80" rpy="0 0.7854 0"/>
+  </joint>
+
+  <link name="top_camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${camera_size} 0.070 ${camera_size}"/>
+      </geometry>
+      <material name="dark_gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${camera_size} 0.070 ${camera_size}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.075"/>  <!-- Logitech C270 ~75g -->
+      <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ROS2_CONTROL — Hardware Interface Configuration
+       In sim mode: gz_ros2_control/GazeboSimSystem (Gazebo handles physics)
+       In hardware mode: swap to arm_control/AriaHardwareInterface
+       ═══════════════════════════════════════════════════════════ -->
+  <ros2_control name="aria_arm_control" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+
+    <!-- Joint 1: Waist — MG995, Z-axis, -90° to +90° -->
+    <joint name="waist_joint">
+      <command_interface name="position">
+        <param name="min">${waist_lower}</param>
+        <param name="max">${waist_upper}</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Joint 2: Shoulder — MG995, Y-axis, 0° to 180° -->
+    <joint name="shoulder_joint">
+      <command_interface name="position">
+        <param name="min">${shoulder_lower}</param>
+        <param name="max">${shoulder_upper}</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Joint 3: Elbow — MG995, Y-axis, 0° to 150° -->
+    <joint name="elbow_joint">
+      <command_interface name="position">
+        <param name="min">${elbow_lower}</param>
+        <param name="max">${elbow_upper}</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Joint 4: Wrist Pitch — SG90, Y-axis, -90° to +90° -->
+    <joint name="wrist_pitch_joint">
+      <command_interface name="position">
+        <param name="min">${wrist_pitch_lower}</param>
+        <param name="max">${wrist_pitch_upper}</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Joint 5: Wrist Roll — SG90, X-axis, -90° to +90° -->
+    <joint name="wrist_roll_joint">
+      <command_interface name="position">
+        <param name="min">${wrist_roll_lower}</param>
+        <param name="max">${wrist_roll_upper}</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Joint 6: Gripper — SG90, Z-axis, 0° to 45° (gear opening) -->
+    <joint name="gripper_joint">
+      <command_interface name="position">
+        <param name="min">${gripper_lower}</param>
+        <param name="max">${gripper_upper}</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+</robot>

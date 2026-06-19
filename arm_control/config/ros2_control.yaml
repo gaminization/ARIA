@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════════════════════════
+# ros2_control Hardware Parameters
+# Referenced by the URDF <ros2_control> tag hardware params
+# and by the launch file for hardware mode (Stage 4)
+# ═══════════════════════════════════════════════════════════════
+
+aria_hardware:
+  ros__parameters:
+    # Mode selection
+    use_sim: true            # true = Gazebo sim, false = ESP32 hardware
+
+    # Hardware serial settings (only used when use_sim = false)
+    serial_port: "/dev/ttyUSB0"
+    baud_rate: 115200
+
+    # Joint names in kinematic chain order
+    joint_names:
+      - waist_joint
+      - shoulder_joint
+      - elbow_joint
+      - wrist_pitch_joint
+      - wrist_roll_joint
+      - gripper_joint
+
+    # Home position in radians (all at midrange)
+    home_position:
+      - 0.0       # waist:       0° (center of -90..+90)
+      - 1.5708    # shoulder:   90° (center of 0..180)
+      - 1.3090    # elbow:      75° (center of 0..150)
+      - 0.0       # wrist_pitch: 0° (center of -90..+90)
+      - 0.0       # wrist_roll:  0° (center of -90..+90)
+      - 0.3491    # gripper:    20° (slightly open)

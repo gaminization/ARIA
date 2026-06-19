@@ -1,0 +1,7 @@
+# Check if a target pose is reachable
+geometry_msgs/PoseStamped target_pose
+---
+bool reachable
+string reason
+geometry_msgs/PoseStamped alternative_pose
+float32 distance_to_boundary_m
