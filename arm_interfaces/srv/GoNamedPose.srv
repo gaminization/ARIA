@@ -1,0 +1,7 @@
+# Request: move to a named pose
+# Valid names: "home", "ready", "folded", "inspect"
+string pose_name
+---
+# Response
+bool success
+string message

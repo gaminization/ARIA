@@ -1,0 +1,10 @@
+# Goal: execute a full grasp sequence on a detected object
+int32 object_id
+---
+# Result
+bool success
+string failure_reason
+---
+# Feedback
+string current_step
+float64 progress_pct

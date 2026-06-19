@@ -1,0 +1,12 @@
+# IK solve request
+geometry_msgs/PoseStamped target_pose    # Target end-effector pose in base_link frame
+float64[] current_joints                 # Current joint angles [5] in radians
+bool allow_fallback                      # Try fallback solver if primary fails
+---
+# IK solve response
+bool success
+float64[] joint_angles                   # Solution joint angles [5] in radians
+string solver_used                       # Name of solver that produced the solution
+float64 solve_time_ms                    # Time to solve in milliseconds
+float64 position_error_mm                # Position error of solution in mm
+string message                           # Status message or error description

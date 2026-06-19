@@ -1,0 +1,8 @@
+# Request: command all 6 joints simultaneously
+# Order: [waist, shoulder, elbow, wrist_pitch, wrist_roll, gripper]
+float64[] angles_deg        # Target angles in degrees (length 6)
+float64 speed_deg_per_s     # Max speed in degrees/second (capped at 90)
+---
+# Response
+bool success                # True if command was accepted
+float64 expected_duration_s # Estimated time to reach target

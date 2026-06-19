@@ -1,0 +1,10 @@
+# Get affordance-based grasp for an object class
+string object_class
+geometry_msgs/PoseStamped object_pose
+---
+bool success
+geometry_msgs/PoseStamped grasp_pose
+float32 confidence
+string grasp_region
+string approach_direction
+string reasoning
