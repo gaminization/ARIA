@@ -1,0 +1,177 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 0
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /RobotModel1
+        - /TF1
+      Splitter Ratio: 0.5
+    Tree Height: 400
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+
+Visualization Manager:
+  Class: ""
+  Displays:
+    # ── Robot Model ─────────────────────────────────────────
+    - Alpha: 1.0
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /robot_description
+      Enabled: true
+      Name: RobotModel
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+
+    # ── TF Frames ───────────────────────────────────────────
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+      Marker Scale: 0.1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Update Interval: 0
+      Value: true
+
+    # ── Grid (table surface reference) ──────────────────────
+    - Alpha: 0.3
+      Cell Size: 0.05
+      Class: rviz_default_plugins/Grid
+      Color: 150; 150; 150
+      Enabled: true
+      Line Style:
+        Line Width: 0.01
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0.75
+      Plane: XY
+      Plane Cell Count: 20
+      Reference Frame: world
+      Value: true
+
+    # ── Top Camera Image ────────────────────────────────────
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: TopCamera
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /top_camera/image_raw
+      Value: true
+
+    # ── Wrist Camera Image ──────────────────────────────────
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: WristCamera
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /wrist_camera/image_raw
+      Value: true
+
+    # ── End-Effector Axes ───────────────────────────────────
+    - Class: rviz_default_plugins/Axes
+      Enabled: true
+      Length: 0.05
+      Name: ToolFrame
+      Radius: 0.005
+      Reference Frame: tool_frame
+      Value: true
+
+    # ── Joint States (marker array) ─────────────────────────
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: false
+      Name: JointMarkers
+      Topic:
+        Value: /aria/joint_markers
+      Value: false
+
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: world
+    Frame Rate: 30
+
+  Name: root
+
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/FocusCamera
+
+  Value: true
+
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 1.2
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0.85
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 0.5
+      Target Frame: world
+      Value: Orbit (rviz_default_plugins)
+      Yaw: 0.8
+    Saved: ~
+
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 900
+  Hide Left Dock: false
+  Hide Right Dock: true
+  QMainWindow State: "000000ff"
+  TopCamera:
+    collapsed: false
+  Views:
+    collapsed: true
+  WristCamera:
+    collapsed: false
+  Width: 1400
+  X: 100
+  Y: 100
