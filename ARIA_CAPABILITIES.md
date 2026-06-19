@@ -32,11 +32,17 @@ This document provides a comprehensive overview of the Adaptive Robotic Intellig
 * **VLA Integration**: Abstraction layer for Vision-Language-Action models (LeRobot ACT, OpenVLA) with a built-in 10-task benchmark suite.
 * **Real-time Dashboard**: FastAPI backend and React frontend providing a 10Hz state websocket stream, 30fps MJPEG camera feeds, and a dark glassmorphism GUI.
 
+### Stage 4: Hardware Integration & Unified CLI
+* **ESP32 Firmware**: micro-ROS based firmware integrating 6 servos via PCA9685, reading physical ADC feedback for synchronization.
+* **Servo Synchronization**: Ensures the physical arm safely mirrors the simulation state (Sim → Real) without violent snapping upon connection.
+* **Teach-by-Demonstration**: Relaxed servo mode allowing human manipulation of the physical arm while reading ADC feedback to log and replay trajectories (Real → Sim).
+* **ARIA CLI (`aria_cli.py`)**: A unified, high-level command-line tool replacing disparate `ros2 launch` and `ros2 run` commands. Supports starting simulation, hardware, teach modes, executing NL commands, and system status checks.
+
 ---
 
 ## 2. Command Reference
 
-### Base Launch Commands
+### Base Launch Commands (Legacy)
 Launch the core systems. These must be running before you execute other commands.
 
 | Command | Description | Stage |
@@ -46,6 +52,19 @@ Launch the core systems. These must be running before you execute other commands
 | `ros2 launch arm_bringup manual_control.launch.py` | Launches the GUI sliders for manual control | 1 |
 | `ros2 launch arm_bringup full_stage2.launch.py` | Launches Sim + Perception + IK | 2 |
 | `ros2 launch arm_bringup aria_full.launch.py` | Staged launch of the entire ARIA 3b system (25+ nodes) | 3 |
+| `ros2 launch arm_bringup hardware.launch.py` | Launches the hardware interface, syncing physical servos | 4 |
+
+### Unified ARIA CLI (Recommended)
+Starting in Stage 4, the unified `aria` command orchestrates the ROS2 launches automatically.
+
+| Command | Description |
+|---------|-------------|
+| `aria sim start` | Launches full Gazebo simulation + ARIA agents |
+| `aria hardware start` | Connects ESP32 and runs hardware sync |
+| `aria teach start` | Puts arm in teach mode for demonstration |
+| `aria command "Pick up the cube"` | Send a natural language goal |
+| `aria estop` / `aria status` | Emergency stop / system health check |
+
 
 ### Teleoperation & Utilities
 | Command | Description | Stage |
@@ -126,7 +145,23 @@ Stage 3 brings up the entire intelligence architecture.
    ```
    **Expected**: Verifies that all 15 agents are in the `ACTIVE` lifecycle state, tests the NLP pipeline, verifies SQLite World Model CRUD operations, tests the SkillManager rollback system, and pings the Dashboard API.
 
+### Testing Stage 4 (Hardware)
+Stage 4 bridges the system to the physical ESP32-controlled arm.
+
+1. **Terminal 1**: Flash firmware and setup environment.
+   ```bash
+   source install/setup.bash
+   python3 arm_bringup/scripts/hardware_bringup_wizard.py
+   ```
+2. **Terminal 2**: Validate hardware telemetry.
+   ```bash
+   source install/setup.bash
+   python3 arm_bringup/scripts/validate_stage4.py
+   ```
+   **Expected**: Simulates ESP32 connection if physical hardware is missing via loopback, validates micro-ROS node bridging, and verifies servo synchronization bounds logic.
+
 ### Troubleshooting
 * **"ModuleNotFoundError"**: Ensure you have run `source install/setup.bash` in *every* new terminal you open.
 * **"Failed to create target... already exists"**: Clean your build directory (`rm -rf build/ install/ log/`) and rebuild.
 * **Missing Vision Msgs**: Run `sudo apt install ros-humble-vision-msgs` if Stage 2 fails to import detection arrays.
+* **Hardware Connection Refused**: Verify the ESP32 is plugged in (`ls /dev/ttyUSB*`) and that the Micro-ROS agent is active.
