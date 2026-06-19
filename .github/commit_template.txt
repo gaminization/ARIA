@@ -1,0 +1,56 @@
+# Conventional Commit format: <type>(<scope>): <subject>
+#
+# Type (REQUIRED):
+#   feat      New feature for the user
+#   fix       Bug fix
+#   docs      Documentation changes only
+#   style     Formatting, no logic change (black, isort, clang-format)
+#   refactor  Code change that is neither fix nor feat
+#   perf      Performance improvement
+#   test      Adding or fixing tests
+#   chore     Build process, package.xml, CMakeLists changes
+#   ci        GitHub Actions, pre-commit changes
+#   release   Version bump, tag, changelog
+#   hotfix    Critical production fix
+#
+# Scope (OPTIONAL, use package name):
+#   arm_description, arm_control, arm_vision, arm_ik,
+#   arm_planner, arm_agents, arm_vla, arm_learning,
+#   arm_dashboard, arm_moveit_config, arm_bringup,
+#   esp32, docker, ci
+#
+# Subject: imperative mood, no period, max 72 chars
+#   GOOD: "add quintic spline trajectory generation"
+#   BAD:  "Added quintic spline." / "Adds quintic spline"
+#
+# Body (OPTIONAL, wrap at 100 chars):
+#   Explain WHY the change was made, not what.
+#   What problem does it solve? What was wrong before?
+#
+# Footer (OPTIONAL):
+#   BREAKING CHANGE: <description>  ← triggers major version bump
+#   Closes #<issue_number>
+#   Refs #<issue_number>
+#
+# ─────────────────────────────────────────────────────────
+# EXAMPLES:
+#
+# feat(arm_ik): add analytical closed-form IK solver for 5-DoF arm
+#
+# Implements geometric decomposition:
+# - θ1 from atan2(y, x) of target position
+# - θ2, θ3 from law of cosines with a2=0.145m, a3=0.115m
+# - θ4, θ5 from target orientation residual
+#
+# Benchmarked at 0.05ms avg, 0.3mm position error.
+# Closes #12
+#
+# ─────────────────────────────────────────────────────────
+# fix(arm_control): clamp joint commands to soft limits before send
+#
+# Waist joint was occasionally reaching hardware stop due to
+# floating-point accumulation error in trajectory interpolation.
+# Now clips all commands to JOINT_LIMITS ± SOFT_LIMIT_MARGIN.
+#
+# Fixes #31
+# ─────────────────────────────────────────────────────────

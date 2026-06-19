@@ -1,0 +1,112 @@
+# ── ROS2 build artifacts ─────────────────────────────────────────
+build/
+install/
+log/
+*.pyc
+__pycache__/
+*.egg-info/
+.eggs/
+
+# ── ROS2 bags (tracked by Git LFS, excluded from regular git) ────
+*.db3
+*.bag
+*.bag.active
+*.mcap
+
+# ── Model weights (tracked by Git LFS) ──────────────────────────
+*.pt
+*.pth
+*.onnx
+*.engine          # TensorRT
+*.plan            # TensorRT
+*.trt
+
+# ── Datasets (tracked by Git LFS, or too large for git at all) ──
+*.hdf5
+*.h5
+arm_learning/datasets/
+arm_planner/data/*.db   # SQLite, regenerated from scratch
+
+# ── Calibration data (COMMIT THESE — they are small and important)
+# arm_ik/config/calibration_offsets.yaml       ← COMMIT
+# arm_control/config/servo_calibration.yaml    ← COMMIT
+# arm_vision/config/sim_camera_calibration.yaml← COMMIT
+# arm_ik/config/selected_solver.yaml           ← COMMIT
+
+# ── Logs (too large, regenerated) ───────────────────────────────
+arm_planner/logs/
+arm_planner/data/bag_index.db
+
+# ── ML experiment outputs ────────────────────────────────────────
+mlflow/
+wandb/
+runs/
+outputs/
+checkpoints/
+lightning_logs/
+
+# ── Python environment ───────────────────────────────────────────
+.venv/
+venv/
+env/
+*.env
+.python-version
+
+# ── Conda ────────────────────────────────────────────────────────
+.conda/
+
+# ── C++ build ────────────────────────────────────────────────────
+*.o
+*.so
+*.a
+*.d
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# ── PlatformIO (ESP32) ───────────────────────────────────────────
+esp32_firmware/.pio/
+esp32_firmware/.pioenvs/
+esp32_firmware/lib/
+
+# ── IDE ──────────────────────────────────────────────────────────
+.vscode/settings.json      # personal settings, NOT launch.json/tasks.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Sensitive files ──────────────────────────────────────────────
+*.env.local
+.secrets
+secrets.yaml
+*_secret*
+*_private*
+api_keys.yaml
+wifi_credentials.h         # ESP32 WiFi password — never commit this
+
+# ── Reference images for FoundationPose (too large, store in LFS)
+arm_vision/config/object_references/*/images/
+# arm_vision/config/object_references/*/reference_manifest.yaml  ← COMMIT
+
+# ── Temporary ────────────────────────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+
+# ── Dashboard build artifacts ────────────────────────────────────
+arm_dashboard/frontend/node_modules/
+arm_dashboard/frontend/build/
+arm_dashboard/frontend/dist/
+
+# ── Gazebo simulation state ──────────────────────────────────────
+*.world.backup
+
+# ── Benchmark results (commit the summary YAML, not raw CSV) ────
+benchmark_*.csv
+# benchmark_*.yaml  ← COMMIT these (small, important for tracking)
