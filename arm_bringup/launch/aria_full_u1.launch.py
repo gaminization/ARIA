@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 """
 ═══════════════════════════════════════════════════════════════
-ARIA Full System Launch — All Stages
-Gazebo + Robot + Cameras + Detection + Depth + 15 Agents +
-Task Manager + Memory Manager + Health Monitor + Dashboard
+ARIA Full System Launch — Upgrade U1 (LLM Planning)
+All Stages + LLM Planning Agent + LLM Dialogue Agent
+
+Replaces rule-based planning_agent and dialogue_agent with
+LLM-backed versions. Original agents remain in codebase
+as fallback (activated automatically if Ollama is down).
+
+Changes from aria_full.launch.py:
+  - planning_agent → llm_planning_agent
+  - dialogue_agent → llm_dialogue_agent
+  - Added /aria/planning/mode topic for monitoring
 ═══════════════════════════════════════════════════════════════
 """
 import os
@@ -26,21 +34,29 @@ def generate_launch_description():
     dashboard_port = DeclareLaunchArgument(
         'dashboard_port', default_value='8080',
         description='Dashboard server port')
+    use_rviz = DeclareLaunchArgument(
+        'use_rviz', default_value='true',
+        description='Launch RViz2 visualization')
+    use_gz_gui = DeclareLaunchArgument(
+        'use_gz_gui', default_value='true',
+        description='Launch Gazebo with GUI')
+    paused = DeclareLaunchArgument(
+        'paused', default_value='false',
+        description='Start simulation paused')
 
     # ── Package paths ──────────────────────────────────────
     bringup_dir = get_package_share_directory('arm_bringup')
 
     # ═══════════════════════════════════════════════════════
-    # STAGE 1: Gazebo + Robot + Controllers
+    # STAGE 1: Gazebo + Robot + Cameras (0s)
     # ═══════════════════════════════════════════════════════
     stage1_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(bringup_dir, 'launch', 'sim.launch.py')
-        ),
+            os.path.join(bringup_dir, 'launch', 'sim.launch.py')),
     )
 
     # ═══════════════════════════════════════════════════════
-    # STAGE 2: Vision + Depth + IK (2s delay for Gazebo startup)
+    # STAGE 2: Detection + Depth + IK (2s delay)
     # ═══════════════════════════════════════════════════════
     yolo_detection = TimerAction(
         period=2.0,
@@ -49,10 +65,6 @@ def generate_launch_description():
             executable='detection_node',
             name='detection_node',
             output='screen',
-            parameters=[{
-                'model_path': 'yolov8n.pt',
-                'confidence_threshold': 0.5,
-            }],
         )],
     )
 
@@ -65,7 +77,6 @@ def generate_launch_description():
             output='screen',
         )],
     )
-
 
     ik_node = TimerAction(
         period=2.0,
@@ -103,9 +114,10 @@ def generate_launch_description():
         name='attention_agent', output='screen')])
 
     # -- Planning agents --
-    planning_agent = TimerAction(period=4.5, actions=[Node(
-        package='arm_agents', executable='planning_agent',
-        name='planning_agent', output='screen')])
+    # ═══ U1 UPGRADE: LLM Planning Agent replaces rule-based ═══
+    llm_planning_agent = TimerAction(period=4.5, actions=[Node(
+        package='arm_agents', executable='llm_planning_agent',
+        name='llm_planning_agent', output='screen')])
 
     reachability_agent = TimerAction(period=4.5, actions=[Node(
         package='arm_agents', executable='reachability_agent',
@@ -141,9 +153,10 @@ def generate_launch_description():
         package='arm_agents', executable='evaluation_agent',
         name='evaluation_agent', output='screen')])
 
-    dialogue_agent = TimerAction(period=5.0, actions=[Node(
-        package='arm_agents', executable='dialogue_agent',
-        name='dialogue_agent', output='screen')])
+    # ═══ U1 UPGRADE: LLM Dialogue Agent replaces template-based ═══
+    llm_dialogue_agent = TimerAction(period=5.0, actions=[Node(
+        package='arm_agents', executable='llm_dialogue_agent',
+        name='llm_dialogue_agent', output='screen')])
 
     # ═══════════════════════════════════════════════════════
     # Task Manager + Memory Manager + Health Monitor (6s)
@@ -179,9 +192,12 @@ def generate_launch_description():
         period=9.0,
         actions=[LogInfo(msg='\n'
             '═══════════════════════════════════════════════════════\n'
-            '  🤖 ARIA FULL SYSTEM ONLINE\n'
+            '  🤖 ARIA FULL SYSTEM ONLINE — U1 LLM UPGRADE\n'
+            '  Planning:  LLM-backed (Ollama) with rule-based fallback\n'
+            '  Dialogue:  LLM-enhanced natural language\n'
             '  Dashboard: http://localhost:8080\n'
             '  Command:   ros2 service call /aria/command ...\n'
+            '  Mode:      ros2 topic echo /aria/planning/mode\n'
             '  E-Stop:    ros2 service call /aria/estop ...\n'
             '═══════════════════════════════════════════════════════\n'
         )],
@@ -190,6 +206,9 @@ def generate_launch_description():
     return LaunchDescription([
         use_sim,
         dashboard_port,
+        use_rviz,
+        use_gz_gui,
+        paused,
 
         # Stage 1
         stage1_sim,
@@ -199,13 +218,13 @@ def generate_launch_description():
         depth_node,
         ik_node,
 
-        # Stage 3 — 15 agents
+        # Stage 3 — 15 agents (U1 upgraded)
         vision_agent,
         depth_agent,
         tracking_agent,
         affordance_agent,
         attention_agent,
-        planning_agent,
+        llm_planning_agent,    # ← U1: replaces planning_agent
         reachability_agent,
         skill_agent,
         control_agent,
@@ -214,7 +233,7 @@ def generate_launch_description():
         world_model_agent,
         learning_agent,
         evaluation_agent,
-        dialogue_agent,
+        llm_dialogue_agent,    # ← U1: replaces dialogue_agent
 
         # Orchestration
         task_manager,
