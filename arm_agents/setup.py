@@ -33,6 +33,8 @@ setup(
             'dialogue_agent = arm_agents.dialogue_agent:main',
             'attention_agent = arm_agents.attention_agent:main',
             'reachability_agent = arm_agents.reachability_agent:main',
+            # U2 Upgrade — enhanced affordance
+            'affordance_agent_v2 = arm_agents.affordance_agent_v2:main',
         ],
     },
 )

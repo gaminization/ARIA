@@ -23,6 +23,14 @@ setup(
             'depth_node = arm_vision.depth_node:main',
             'grasp_node = arm_vision.grasp_node:main',
             'apriltag_calibration_node = arm_vision.apriltag_calibration_node:main',
+            # U2 Advanced Perception
+            'sam2_node = arm_vision.sam2_node:main',
+            'pose_6d_node = arm_vision.pose_6d_node:main',
+            'transparent_object_node = arm_vision.transparent_object_node:main',
+            'material_recognition_node = arm_vision.material_recognition_node:main',
+            'gaussian_splatting_node = arm_vision.gaussian_splatting_node:main',
+            'perception_orchestrator = arm_vision.perception_orchestrator:main',
+            'grasp_node_v2 = arm_vision.grasp_node_v2:main',
         ],
     },
 )
