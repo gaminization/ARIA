@@ -23,14 +23,21 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 # ── Python module ─────────────────────────────────────────
-# ament_python_install_package(${PROJECT_NAME})
+# Note: ament_python_install_package conflicts with rosidl_generate_interfaces,
+# so we install manually to the same dist-packages path ament uses.
 install(DIRECTORY arm_planner/
-  DESTINATION lib/python3.10/site-packages/arm_planner
+  DESTINATION local/lib/python3.10/dist-packages/arm_planner
 )
 
 # ── Data and logs directories ─────────────────────────────
 install(DIRECTORY data/
   DESTINATION share/${PROJECT_NAME}/data
+  OPTIONAL
+)
+
+# ── Scripts ───────────────────────────────────────────────
+install(DIRECTORY scripts/
+  DESTINATION share/${PROJECT_NAME}/scripts
   OPTIONAL
 )
 

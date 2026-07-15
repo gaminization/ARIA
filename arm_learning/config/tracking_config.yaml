@@ -1,0 +1,35 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA Experiment Tracking Configuration
+# ═══════════════════════════════════════════════════════════════
+
+# Backend: "mlflow" (local, default) | "wandb" (cloud) | "none"
+backend: mlflow
+
+# MLflow settings (for local tracking)
+mlflow_uri: "http://localhost:5000"
+
+# W&B settings (opt-in cloud tracking)
+wandb_api_key: ""           # Set WANDB_API_KEY env var or paste key here
+
+# Project settings
+project_name: aria
+
+# ── What to log ────────────────────────────────────────────
+# Log every skill execution (pick, place, etc.)
+log_every_skill: true
+
+# Log every IK solve call (very frequent — use for debugging only)
+log_every_ik_solve: false
+
+# Log annotated camera frames on failure
+log_images: true
+
+# Automatically log session summary on shutdown
+auto_log_session: true
+
+# ── Retention ──────────────────────────────────────────────
+# Keep experiment data for this many days (0 = forever)
+retention_days: 0
+
+# Max number of runs to keep per experiment (0 = unlimited)
+max_runs: 0

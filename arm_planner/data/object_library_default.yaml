@@ -1,0 +1,165 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA Default Object Library
+# Pre-populated definitions for standard simulation objects.
+# Import: python3 object_model_cli.py import object_library_default.yaml
+# ═══════════════════════════════════════════════════════════════
+
+version: "1.0"
+description: "ARIA default object library for simulation and testing"
+exported_at: "2026-07-01T00:00:00"
+
+objects:
+
+  # ── Containers ───────────────────────────────────────────
+  - class_name: red_bottle
+    display_name: "Red Bottle"
+    mass_kg: 0.35
+    material: rigid_plastic
+    fragile: false
+    bounding_box: [0.07, 0.07, 0.22]
+    grip_force_scale: 0.8
+    typical_colors: ["red"]
+    affordance:
+      grasp: neck
+      avoid: [cap]
+      approach: side
+      has_handle: false
+    notes: "Standard 500ml water bottle"
+
+  - class_name: blue_cup
+    display_name: "Blue Cup"
+    mass_kg: 0.25
+    material: ceramic
+    fragile: true
+    bounding_box: [0.08, 0.10, 0.09]
+    grip_force_scale: 0.5
+    typical_colors: ["blue"]
+    affordance:
+      grasp: handle
+      avoid: [rim, interior]
+      approach: horizontal
+      has_handle: true
+    notes: "Standard ceramic coffee mug"
+
+  - class_name: white_box
+    display_name: "White Box"
+    mass_kg: 0.15
+    material: cardboard
+    fragile: false
+    bounding_box: [0.10, 0.10, 0.06]
+    grip_force_scale: 0.6
+    typical_colors: ["white"]
+    affordance:
+      grasp: top
+      avoid: []
+      approach: top_down
+      has_handle: false
+    notes: "Small shipping box"
+
+  # ── Tools ────────────────────────────────────────────────
+  - class_name: screwdriver
+    display_name: "Screwdriver"
+    mass_kg: 0.12
+    material: rigid_metal
+    fragile: false
+    bounding_box: [0.03, 0.03, 0.20]
+    grip_force_scale: 1.0
+    typical_colors: ["yellow", "black"]
+    affordance:
+      grasp: shaft
+      avoid: [tip]
+      approach: horizontal
+      has_handle: true
+    notes: "Phillips head screwdriver"
+
+  - class_name: scissors
+    display_name: "Scissors"
+    mass_kg: 0.08
+    material: rigid_metal
+    fragile: false
+    bounding_box: [0.08, 0.02, 0.18]
+    grip_force_scale: 0.9
+    typical_colors: ["silver", "orange"]
+    affordance:
+      grasp: handle_holes
+      avoid: [blade]
+      approach: top_down
+      has_handle: true
+    notes: "Office scissors — grasp by handle holes only"
+
+  - class_name: paintbrush
+    display_name: "Paintbrush"
+    mass_kg: 0.03
+    material: wood
+    fragile: false
+    bounding_box: [0.02, 0.02, 0.18]
+    grip_force_scale: 0.6
+    typical_colors: ["brown", "white"]
+    affordance:
+      grasp: body
+      avoid: [bristles]
+      approach: side
+      has_handle: true
+    notes: "Small paintbrush — handle by wooden shaft"
+
+  # ── Stationery ───────────────────────────────────────────
+  - class_name: yellow_pencil
+    display_name: "Yellow Pencil"
+    mass_kg: 0.01
+    material: wood
+    fragile: false
+    bounding_box: [0.008, 0.008, 0.19]
+    grip_force_scale: 0.4
+    typical_colors: ["yellow"]
+    affordance:
+      grasp: body
+      avoid: [tip]
+      approach: side
+      has_handle: false
+    notes: "Standard #2 pencil — light, easy to drop"
+
+  # ── Geometric primitives ─────────────────────────────────
+  - class_name: red_cube
+    display_name: "Red Cube"
+    mass_kg: 0.05
+    material: rigid_plastic
+    fragile: false
+    bounding_box: [0.04, 0.04, 0.04]
+    grip_force_scale: 0.8
+    typical_colors: ["red"]
+    affordance:
+      grasp: top
+      avoid: []
+      approach: top_down
+      has_handle: false
+    notes: "40mm plastic cube"
+
+  - class_name: blue_cylinder
+    display_name: "Blue Cylinder"
+    mass_kg: 0.06
+    material: rigid_plastic
+    fragile: false
+    bounding_box: [0.04, 0.04, 0.08]
+    grip_force_scale: 0.8
+    typical_colors: ["blue"]
+    affordance:
+      grasp: side
+      avoid: []
+      approach: side
+      has_handle: false
+    notes: "40mm diameter, 80mm height plastic cylinder"
+
+  - class_name: green_sphere
+    display_name: "Green Sphere"
+    mass_kg: 0.04
+    material: rubber
+    fragile: false
+    bounding_box: [0.05, 0.05, 0.05]
+    grip_force_scale: 0.7
+    typical_colors: ["green"]
+    affordance:
+      grasp: top
+      avoid: []
+      approach: top_down
+      has_handle: false
+    notes: "50mm rubber ball — deformable"

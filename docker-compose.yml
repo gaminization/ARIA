@@ -1,0 +1,134 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA Docker Compose — Full stack orchestration
+#
+# Usage:
+#   docker compose up                    # sim + dashboard
+#   docker compose --profile tracking up # + MLflow
+#   docker compose --profile llm up      # + Ollama
+#   ARIA_MODE=hardware docker compose up # hardware mode
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  # ── ROS2 Core (sim or hardware) ──────────────────────────
+  ros2_core:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.sim
+    image: aria:sim
+    container_name: aria_ros2
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
+      - DISPLAY=${DISPLAY:-:0}
+      - ARIA_MODE=${ARIA_MODE:-sim}
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+    volumes:
+      # Live source mount for development
+      - ./:/aria_ws/src/aria:rw
+      # Persistent data
+      - aria_logs:/aria_ws/logs
+      - aria_bags:/aria_ws/bags
+      - aria_datasets:/aria_ws/datasets
+      - aria_models:/models
+      # X11 GUI passthrough
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-~/.Xauthority}:/root/.Xauthority:ro
+    network_mode: host
+    devices:
+      - /dev/dri:/dev/dri
+    ipc: host
+    privileged: false
+    stdin_open: true
+    tty: true
+    command: >
+      bash -c "
+        source /aria_ws/docker/entrypoint.sh &&
+        ros2 launch arm_bringup ${ARIA_MODE:-sim}.launch.py
+      "
+    healthcheck:
+      test: ["CMD", "bash", "-c", "ros2 topic list | grep -q /joint_states"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # ── Dashboard ────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    image: aria:dashboard
+    container_name: aria_dashboard
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    environment:
+      - ROS_BRIDGE_HOST=localhost
+      - ROS_BRIDGE_PORT=9090
+      - DASHBOARD_PORT=3000
+    depends_on:
+      ros2_core:
+        condition: service_started
+    restart: unless-stopped
+
+  # ── rosbridge (WebSocket bridge for dashboard) ───────────
+  rosbridge:
+    image: aria:sim
+    container_name: aria_rosbridge
+    network_mode: host
+    entrypoint: ["/aria_ws/docker/entrypoint.sh"]
+    command: >
+      ros2 launch rosbridge_server rosbridge_websocket_launch.xml
+        port:=9090
+    depends_on:
+      ros2_core:
+        condition: service_started
+    restart: unless-stopped
+
+  # ── MLflow Experiment Tracker (optional) ─────────────────
+  experiment_tracker:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: aria_mlflow
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    volumes:
+      - aria_mlflow:/mlflow
+    command: >
+      mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri sqlite:///mlflow/mlflow.db
+        --default-artifact-root /mlflow/artifacts
+    profiles:
+      - tracking
+    restart: unless-stopped
+
+  # ── Ollama LLM Server (optional, for U1) ─────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aria_ollama
+    runtime: nvidia
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    profiles:
+      - llm
+    restart: unless-stopped
+
+volumes:
+  aria_logs:
+    driver: local
+  aria_bags:
+    driver: local
+  aria_datasets:
+    driver: local
+  aria_models:
+    driver: local
+  aria_mlflow:
+    driver: local
+  ollama_models:
+    driver: local
