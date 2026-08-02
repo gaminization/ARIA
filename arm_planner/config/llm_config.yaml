@@ -1,0 +1,52 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA LLM Configuration — Upgrade U1
+# Controls Ollama model selection, VRAM management, and fallback.
+# ═══════════════════════════════════════════════════════════════
+
+# ── Primary model for planning / reasoning ─────────────────
+preferred_model: "llama3.1:8b-instruct-q4_K_M"
+
+# ── Fallback behavior ─────────────────────────────────────
+# If Ollama is unavailable, fall back to rule-based PlanningAgent
+fallback_to_rulebased: true
+
+# ── Generation parameters ──────────────────────────────────
+temperature: 0.1          # Low temperature for deterministic planning
+timeout_s: 30.0           # Max seconds per LLM call
+max_retries: 2            # Retries on failure (including JSON fix)
+
+# ── Vision model configuration ─────────────────────────────
+# Qwen2.5-VL for image-based scene understanding
+use_vision_for_planning: false   # Start false, enable when needed
+vision_model: "qwen2.5-vl:7b-instruct-q4_K_M"
+
+# ── VRAM management ────────────────────────────────────────
+# RTX 5060 has 8GB. LLM uses ~5GB, leaving ~3GB for YOLO+depth.
+# LLM loads for planning, unloads during execution.
+unload_after_planning: true      # Free VRAM after plan is generated
+vram_headroom_gb: 2.5            # Minimum free VRAM before loading LLM
+
+# ── Confidence thresholds ──────────────────────────────────
+llm_plan_confidence_threshold: 0.75   # Plans above this auto-execute
+require_approval_below: 0.65          # Plans below this MUST get approval
+
+# ── Tree-of-Thought settings ──────────────────────────────
+tot_enabled: true
+tot_min_steps: 5          # Only use ToT for tasks with 5+ expected steps
+tot_candidates: 3         # Number of plan candidates to generate
+tot_keep_model_loaded: true  # Keep model loaded for all ToT calls
+
+# ── Episodic memory ───────────────────────────────────────
+episodic_memory_enabled: true
+episodic_db_path: ""      # Empty = default: arm_planner/data/episodes.db
+episodic_top_k: 3         # Number of similar past tasks to inject
+embedding_model: "all-MiniLM-L6-v2"  # Sentence-transformers model (CPU)
+
+# ── Function calling / ReAct loop ──────────────────────────
+react_enabled: true
+react_max_iterations: 15
+react_timeout_s: 120.0
+
+# ── Logging ────────────────────────────────────────────────
+log_raw_llm_output: true  # Publish raw JSON to /aria/planning/llm_plan
+log_prompts: false         # Log full prompts (verbose, for debugging)

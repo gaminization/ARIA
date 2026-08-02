@@ -33,6 +33,9 @@ setup(
             'dialogue_agent = arm_agents.dialogue_agent:main',
             'attention_agent = arm_agents.attention_agent:main',
             'reachability_agent = arm_agents.reachability_agent:main',
+            # U1 Upgrade — LLM-backed agents
+            'llm_planning_agent = arm_agents.llm_planning_agent:main',
+            'llm_dialogue_agent = arm_agents.llm_dialogue_agent:main',
         ],
     },
 )
