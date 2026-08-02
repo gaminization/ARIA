@@ -16,7 +16,9 @@ export default function CameraPanel({ topFrame, wristFrame, detections }) {
             />
           ) : (
             <div className="feed-placeholder">
-              <span>⏳ Waiting for top camera...</span>
+              <div className="no-feed-icon">📹</div>
+              <span>No camera feed</span>
+              <span className="feed-hint">Launch simulation to activate</span>
             </div>
           )}
           {/* YOLO detection overlay */}
@@ -59,7 +61,7 @@ export default function CameraPanel({ topFrame, wristFrame, detections }) {
             />
           ) : (
             <div className="feed-placeholder small">
-              <span>⏳ Wrist cam...</span>
+              <span>No wrist feed</span>
             </div>
           )}
         </div>

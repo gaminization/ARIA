@@ -53,10 +53,8 @@ export default function TaskControl({ task, onCommand, onApprove, onReject }) {
             onChange={(e) => setInput(e.target.value)}
             placeholder="e.g. Pick up the red cube"
             className="command-input"
-            disabled={status === 'EXECUTING' || status === 'PLANNING'}
           />
-          <button type="submit" className="send-btn"
-            disabled={status === 'EXECUTING' || status === 'PLANNING'}>
+          <button type="submit" className="send-btn">
             Send
           </button>
         </div>

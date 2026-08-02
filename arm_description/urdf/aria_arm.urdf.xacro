@@ -565,12 +565,12 @@
 
   <!-- ═══════════════════════════════════════════════════════════
        ROS2_CONTROL — Hardware Interface Configuration
-       In sim mode: gz_ros2_control/GazeboSimSystem (Gazebo handles physics)
-       In hardware mode: swap to arm_control/AriaHardwareInterface
+       Sim mode: gazebo_ros2_control/GazeboSystem (Gazebo Classic 11)
+       Hardware mode: swap to arm_control/AriaHardwareInterface
        ═══════════════════════════════════════════════════════════ -->
-  <ros2_control name="aria_arm_control" type="system">
+  <ros2_control name="GazeboSystem" type="system">
     <hardware>
-      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
 
     <!-- Joint 1: Waist — MG995, Z-axis, -90° to +90° -->
@@ -629,6 +629,15 @@
         <param name="min">${gripper_lower}</param>
         <param name="max">${gripper_upper}</param>
       </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Mimic joint: Right finger pair mirrors gripper_joint -->
+    <joint name="finger_mimic_joint">
+      <param name="mimic">gripper_joint</param>
+      <param name="multiplier">-1</param>
+      <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>

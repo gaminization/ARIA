@@ -302,6 +302,7 @@ class TaskManager(LifecycleNode):
         )
         self.bus.publish_task(task)
         self.status = TaskStatus.IDLE
+        self.current_task_id = ""
 
     def _handle_failed(self, task: TaskState):
         """Log failure and return to IDLE."""
@@ -311,6 +312,7 @@ class TaskManager(LifecycleNode):
         )
         self.bus.publish_task(task)
         self.status = TaskStatus.IDLE
+        self.current_task_id = ""
 
     # ═══════════════════════════════════════════════════════
     # Approval / Rejection / Cancel
@@ -374,6 +376,7 @@ class TaskManager(LifecycleNode):
             self.bus.publish_task(task)
 
         self.status = TaskStatus.IDLE
+        self.current_task_id = ""
         response.success = True
         response.message = "Task cancelled"
         return response
