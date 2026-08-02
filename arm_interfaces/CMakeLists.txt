@@ -8,6 +8,8 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SetJoint.srv"
@@ -20,7 +22,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetAffordanceGrasp.srv"
   "srv/CheckReachability.srv"
   "action/ExecuteGrasp.action"
-  DEPENDENCIES geometry_msgs
+  # U2 Advanced Perception messages
+  "msg/SAM2Masks.msg"
+  "msg/MaterialPredictions.msg"
+  "msg/UnifiedScene.msg"
+  DEPENDENCIES geometry_msgs sensor_msgs std_msgs
 )
 
 ament_package()

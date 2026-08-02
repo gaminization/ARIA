@@ -36,6 +36,8 @@ setup(
             # U1 Upgrade — LLM-backed agents
             'llm_planning_agent = arm_agents.llm_planning_agent:main',
             'llm_dialogue_agent = arm_agents.llm_dialogue_agent:main',
+            # U2 Upgrade — enhanced affordance
+            'affordance_agent_v2 = arm_agents.affordance_agent_v2:main',
         ],
     },
 )
