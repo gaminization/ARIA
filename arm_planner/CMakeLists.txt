@@ -23,9 +23,27 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 # ── Python module ─────────────────────────────────────────
-# ament_python_install_package(${PROJECT_NAME})
+# Note: ament_python_install_package conflicts with rosidl_generate_interfaces,
+# so we install manually to the same dist-packages path ament uses.
 install(DIRECTORY arm_planner/
-  DESTINATION lib/python3.10/site-packages/arm_planner
+  DESTINATION local/lib/python3.10/dist-packages/arm_planner
+)
+
+# Install executable nodes
+install(PROGRAMS 
+  arm_planner/task_manager.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME task_manager
+)
+install(PROGRAMS 
+  arm_planner/memory_manager.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME memory_manager
+)
+install(PROGRAMS 
+  arm_planner/health_monitor.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME health_monitor
 )
 
 # Install nodes as executables
@@ -83,6 +101,12 @@ install(DIRECTORY data/
 install(PROGRAMS
   scripts/upgrade_u1_install.sh
   DESTINATION lib/${PROJECT_NAME}
+  OPTIONAL
+)
+install(DIRECTORY scripts/
+  DESTINATION share/${PROJECT_NAME}/scripts
+  OPTIONAL
+)
 )
 
 ament_package()

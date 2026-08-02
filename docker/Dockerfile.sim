@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA Simulation Image — Extends base with GUI support
+# For development and interactive testing with Gazebo GUI.
+#
+# Build: docker build -f docker/Dockerfile.sim -t aria:sim .
+# ═══════════════════════════════════════════════════════════════
+FROM aria:base AS aria_sim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# GUI support packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-dri \
+    libglx-mesa0 \
+    mesa-vulkan-drivers \
+    x11-xserver-utils \
+    xdg-utils \
+    dbus-x11 \
+    && rm -rf /var/lib/apt/lists/*
+
+# RViz2 plugins
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-rviz2 \
+    ros-humble-rviz-common \
+    ros-humble-rviz-default-plugins \
+    ros-humble-rqt \
+    ros-humble-rqt-common-plugins \
+    && rm -rf /var/lib/apt/lists/*
+
+# DISPLAY passthrough configuration
+ENV DISPLAY=:0
+ENV QT_X11_NO_MITSHM=1
+ENV LIBGL_ALWAYS_SOFTWARE=0
+
+# Allow X11 forwarding
+RUN echo "export DISPLAY=\${DISPLAY:-:0}" >> /etc/bash.bashrc
+
+ENTRYPOINT ["/aria_ws/docker/entrypoint.sh"]
+CMD ["ros2", "launch", "arm_bringup", "sim.launch.py"]

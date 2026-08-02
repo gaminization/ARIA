@@ -1,127 +1,85 @@
 <?xml version="1.0"?>
 <!-- ═══════════════════════════════════════════════════════════════
      ARIA Gazebo-Specific Configuration
-     Plugins, sensors, materials for Gazebo Harmonic (gz-sim)
+     Plugins, sensors, materials for Gazebo Classic 11
      Stage 1: CLEAN — all sensor noise set to zero
      ═══════════════════════════════════════════════════════════════ -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="aria_arm_gazebo">
 
   <!-- ═══════════════════════════════════════════════════════════
-       gz_ros2_control PLUGIN — bridges Gazebo ↔ ros2_control
-       Uses GazeboSimSystem for Gazebo Harmonic
+       gazebo_ros2_control PLUGIN — bridges Gazebo Classic ↔ ros2_control
+       Uses GazeboSystem for Gazebo Classic 11
        ═══════════════════════════════════════════════════════════ -->
   <gazebo>
-    <plugin filename="gz_ros2_control-system"
-            name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+    <plugin filename="libgazebo_ros2_control.so"
+            name="gazebo_ros2_control">
       <parameters>$(find arm_control)/config/aria_controllers.yaml</parameters>
-      <ros>
-        <namespace>/</namespace>
-      </ros>
+      <robot_param>robot_description</robot_param>
+      <robot_param_node>robot_state_publisher</robot_param_node>
     </plugin>
   </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════
-       MATERIAL COLORS — Gazebo-specific (overrides URDF materials)
+       MATERIAL COLORS — Gazebo Classic specific
        ═══════════════════════════════════════════════════════════ -->
 
   <!-- Base: white -->
   <gazebo reference="base_link">
-    <material>
-      <ambient>0.95 0.95 0.95 1</ambient>
-      <diffuse>0.95 0.95 0.95 1</diffuse>
-      <specular>0.3 0.3 0.3 1</specular>
-    </material>
+    <material>Gazebo/White</material>
   </gazebo>
 
   <!-- Waist bracket: orange -->
   <gazebo reference="waist_link">
-    <material>
-      <ambient>0.95 0.55 0.10 1</ambient>
-      <diffuse>0.95 0.55 0.10 1</diffuse>
-      <specular>0.3 0.3 0.3 1</specular>
-    </material>
+    <material>Gazebo/Orange</material>
   </gazebo>
 
   <!-- Upper arm: orange -->
   <gazebo reference="upper_arm_link">
-    <material>
-      <ambient>0.95 0.55 0.10 1</ambient>
-      <diffuse>0.95 0.55 0.10 1</diffuse>
-      <specular>0.3 0.3 0.3 1</specular>
-    </material>
+    <material>Gazebo/Orange</material>
   </gazebo>
 
   <!-- Forearm: orange -->
   <gazebo reference="forearm_link">
-    <material>
-      <ambient>0.95 0.55 0.10 1</ambient>
-      <diffuse>0.95 0.55 0.10 1</diffuse>
-      <specular>0.3 0.3 0.3 1</specular>
-    </material>
+    <material>Gazebo/Orange</material>
   </gazebo>
 
   <!-- Wrist: orange -->
   <gazebo reference="wrist_link">
-    <material>
-      <ambient>0.95 0.55 0.10 1</ambient>
-      <diffuse>0.95 0.55 0.10 1</diffuse>
-      <specular>0.3 0.3 0.3 1</specular>
-    </material>
+    <material>Gazebo/Orange</material>
   </gazebo>
 
   <!-- Gripper holder: white -->
   <gazebo reference="gripper_holder_link">
-    <material>
-      <ambient>0.95 0.95 0.95 1</ambient>
-      <diffuse>0.95 0.95 0.95 1</diffuse>
-      <specular>0.3 0.3 0.3 1</specular>
-    </material>
+    <material>Gazebo/White</material>
   </gazebo>
 
   <!-- Gear housing: white -->
   <gazebo reference="gear_housing_link">
-    <material>
-      <ambient>0.95 0.95 0.95 1</ambient>
-      <diffuse>0.95 0.95 0.95 1</diffuse>
-      <specular>0.3 0.3 0.3 1</specular>
-    </material>
+    <material>Gazebo/White</material>
   </gazebo>
 
   <!-- Left finger pair: blue -->
   <gazebo reference="finger_left_1_link">
-    <material>
-      <ambient>0.20 0.40 0.85 1</ambient>
-      <diffuse>0.20 0.40 0.85 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-    </material>
+    <material>Gazebo/Blue</material>
   </gazebo>
 
   <!-- Right finger pair: blue -->
   <gazebo reference="finger_right_1_link">
-    <material>
-      <ambient>0.20 0.40 0.85 1</ambient>
-      <diffuse>0.20 0.40 0.85 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-    </material>
+    <material>Gazebo/Blue</material>
   </gazebo>
 
   <!-- Cameras: dark gray -->
   <gazebo reference="top_camera_link">
-    <material>
-      <ambient>0.25 0.25 0.25 1</ambient>
-      <diffuse>0.25 0.25 0.25 1</diffuse>
-    </material>
+    <material>Gazebo/DarkGrey</material>
   </gazebo>
   <gazebo reference="wrist_camera_link">
-    <material>
-      <ambient>0.25 0.25 0.25 1</ambient>
-      <diffuse>0.25 0.25 0.25 1</diffuse>
-    </material>
+    <material>Gazebo/DarkGrey</material>
   </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════
        TOP CAMERA SENSOR — Logitech C270
        1280×720, 60° HFOV, 30fps
+       Uses libgazebo_ros_camera.so for Gazebo Classic
        CLEAN: noise stddev = 0
        ═══════════════════════════════════════════════════════════ -->
   <gazebo reference="top_camera_link">
@@ -145,13 +103,21 @@
           <stddev>0.0</stddev>  <!-- CLEAN: no noise in Stage 1 -->
         </noise>
       </camera>
-      <topic>top_camera/image_raw</topic>
+      <plugin name="top_camera_controller" filename="libgazebo_ros_camera.so">
+        <ros>
+          <remapping>~/image_raw:=/top_camera/image_raw</remapping>
+          <remapping>~/camera_info:=/top_camera/camera_info</remapping>
+        </ros>
+        <camera_name>top_camera</camera_name>
+        <frame_name>top_camera_link</frame_name>
+      </plugin>
     </sensor>
   </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════
        WRIST CAMERA SENSOR — ESP32-CAM
        640×480, 66° HFOV, 15fps
+       Uses libgazebo_ros_camera.so for Gazebo Classic
        CLEAN: noise stddev = 0
        ═══════════════════════════════════════════════════════════ -->
   <gazebo reference="wrist_camera_link">
@@ -175,7 +141,14 @@
           <stddev>0.0</stddev>  <!-- CLEAN: no noise in Stage 1 -->
         </noise>
       </camera>
-      <topic>wrist_camera/image_raw</topic>
+      <plugin name="wrist_camera_controller" filename="libgazebo_ros_camera.so">
+        <ros>
+          <remapping>~/image_raw:=/wrist_camera/image_raw</remapping>
+          <remapping>~/camera_info:=/wrist_camera/camera_info</remapping>
+        </ros>
+        <camera_name>wrist_camera</camera_name>
+        <frame_name>wrist_camera_link</frame_name>
+      </plugin>
     </sensor>
   </gazebo>
 
@@ -183,6 +156,7 @@
        IMU SENSOR — MPU6050 (on wrist_link)
        6-axis: 3-axis gyro + 3-axis accelerometer
        100 Hz update rate
+       Uses libgazebo_ros_imu_sensor.so for Gazebo Classic
        CLEAN: all noise set to zero
        ═══════════════════════════════════════════════════════════ -->
   <gazebo reference="imu_link">
@@ -191,75 +165,48 @@
       <update_rate>100</update_rate>
       <imu>
         <angular_velocity>
-          <x>
-            <noise type="gaussian">
-              <mean>0.0</mean>
-              <stddev>0.0</stddev>  <!-- CLEAN -->
-            </noise>
-          </x>
-          <y>
-            <noise type="gaussian">
-              <mean>0.0</mean>
-              <stddev>0.0</stddev>  <!-- CLEAN -->
-            </noise>
-          </y>
-          <z>
-            <noise type="gaussian">
-              <mean>0.0</mean>
-              <stddev>0.0</stddev>  <!-- CLEAN -->
-            </noise>
-          </z>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></z>
         </angular_velocity>
         <linear_acceleration>
-          <x>
-            <noise type="gaussian">
-              <mean>0.0</mean>
-              <stddev>0.0</stddev>  <!-- CLEAN -->
-            </noise>
-          </x>
-          <y>
-            <noise type="gaussian">
-              <mean>0.0</mean>
-              <stddev>0.0</stddev>  <!-- CLEAN -->
-            </noise>
-          </y>
-          <z>
-            <noise type="gaussian">
-              <mean>0.0</mean>
-              <stddev>0.0</stddev>  <!-- CLEAN -->
-            </noise>
-          </z>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></z>
         </linear_acceleration>
       </imu>
-      <topic>mpu6050/imu_raw</topic>
+      <plugin name="imu_controller" filename="libgazebo_ros_imu_sensor.so">
+        <ros>
+          <remapping>~/out:=/mpu6050/imu_raw</remapping>
+        </ros>
+        <frame_name>imu_link</frame_name>
+        <initial_orientation_as_reference>false</initial_orientation_as_reference>
+      </plugin>
     </sensor>
   </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════
        CONTACT SENSORS — on gripper fingers
        Detect objects grasped between finger pairs
-       Publishes to /gripper/contact
+       Uses libgazebo_ros_bumper.so for Gazebo Classic
        ═══════════════════════════════════════════════════════════ -->
   <gazebo reference="finger_left_1_link">
     <sensor name="gripper_contact_left" type="contact">
       <always_on>true</always_on>
       <update_rate>30</update_rate>
       <contact>
-        <collision>finger_left_1_link_collision</collision>
+        <collision>finger_left_1_link_fixed_joint_lump__finger_left_1_link_collision_1</collision>
       </contact>
-      <topic>gripper/contact_left</topic>
+      <plugin name="contact_left_controller" filename="libgazebo_ros_bumper.so">
+        <ros>
+          <remapping>~/out:=/gripper/contact_left</remapping>
+        </ros>
+        <frame_name>finger_left_1_link</frame_name>
+      </plugin>
     </sensor>
     <!-- Finger surface friction -->
-    <collision>
-      <surface>
-        <friction>
-          <ode>
-            <mu>0.8</mu>
-            <mu2>0.8</mu2>
-          </ode>
-        </friction>
-      </surface>
-    </collision>
+    <mu1>0.8</mu1>
+    <mu2>0.8</mu2>
   </gazebo>
 
   <gazebo reference="finger_right_1_link">
@@ -267,21 +214,18 @@
       <always_on>true</always_on>
       <update_rate>30</update_rate>
       <contact>
-        <collision>finger_right_1_link_collision</collision>
+        <collision>finger_right_1_link_fixed_joint_lump__finger_right_1_link_collision_1</collision>
       </contact>
-      <topic>gripper/contact_right</topic>
+      <plugin name="contact_right_controller" filename="libgazebo_ros_bumper.so">
+        <ros>
+          <remapping>~/out:=/gripper/contact_right</remapping>
+        </ros>
+        <frame_name>finger_right_1_link</frame_name>
+      </plugin>
     </sensor>
     <!-- Finger surface friction -->
-    <collision>
-      <surface>
-        <friction>
-          <ode>
-            <mu>0.8</mu>
-            <mu2>0.8</mu2>
-          </ode>
-        </friction>
-      </surface>
-    </collision>
+    <mu1>0.8</mu1>
+    <mu2>0.8</mu2>
   </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════

@@ -1,0 +1,198 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA Base Docker Image — Multi-stage build
+# ROS2 Humble + CUDA 12.8 + ML Models + ARIA workspace
+#
+# Build: docker build -f docker/Dockerfile.base -t aria:base .
+# Size:  ~12 GB (with all ML models pre-cached)
+# ═══════════════════════════════════════════════════════════════
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# STAGE 1 — System: Ubuntu 22.04 + ROS2 Humble + Gazebo
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FROM nvidia/cuda:12.8.0-devel-ubuntu22.04 AS system
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV ROS_DISTRO=humble
+
+SHELL ["/bin/bash", "-c"]
+
+# System packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl wget gnupg2 lsb-release software-properties-common \
+    build-essential cmake git pkg-config \
+    python3 python3-pip python3-dev python3-venv \
+    libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender-dev \
+    libopencv-dev libeigen3-dev libpcl-dev \
+    libboost-all-dev libflann-dev libusb-1.0-0-dev \
+    mesa-utils x11-apps \
+    sqlite3 libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ROS2 Humble
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+    | apt-key add - && \
+    echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu \
+    $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+    > /etc/apt/sources.list.d/ros2.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-desktop-full \
+    ros-humble-ros2-control \
+    ros-humble-ros2-controllers \
+    ros-humble-controller-manager \
+    ros-humble-joint-state-broadcaster \
+    ros-humble-joint-trajectory-controller \
+    ros-humble-moveit \
+    ros-humble-moveit-planners \
+    ros-humble-moveit-simple-controller-manager \
+    ros-humble-vision-msgs \
+    ros-humble-cv-bridge \
+    ros-humble-image-transport \
+    ros-humble-tf2-ros \
+    ros-humble-tf2-geometry-msgs \
+    ros-humble-apriltag-ros \
+    ros-humble-camera-calibration \
+    ros-humble-usb-cam \
+    ros-humble-rosbridge-server \
+    ros-humble-rosbag2 \
+    ros-humble-rosbag2-storage-default-plugins \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    && rm -rf /var/lib/apt/lists/*
+
+# Gazebo Harmonic + ros_gz bridge
+RUN wget https://packages.osrfoundation.org/gazebo.gpg \
+    -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] \
+    http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" \
+    > /etc/apt/sources.list.d/gazebo-stable.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    gz-harmonic \
+    ros-humble-ros-gz \
+    ros-humble-ros-gz-bridge \
+    ros-humble-ros-gz-sim \
+    && rm -rf /var/lib/apt/lists/*
+
+# Initialize rosdep
+RUN rosdep init 2>/dev/null || true && rosdep update
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# STAGE 2 — Python: Conda environment + PyTorch + pip deps
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FROM system AS python_base
+
+# Miniconda
+RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+    -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p /opt/conda && \
+    rm /tmp/miniconda.sh
+ENV PATH="/opt/conda/bin:${PATH}"
+
+# Create aria conda environment
+COPY docker/environment.yaml /tmp/environment.yaml
+RUN conda env create -f /tmp/environment.yaml || \
+    conda create -n aria python=3.10 -y
+
+# Install PyTorch with CUDA 12.8 support
+RUN /opt/conda/envs/aria/bin/pip install --no-cache-dir \
+    torch>=2.5.0 torchvision>=0.20.0 \
+    --index-url https://download.pytorch.org/whl/cu128
+
+# Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN /opt/conda/envs/aria/bin/pip install --no-cache-dir \
+    -r /tmp/requirements.txt 2>/dev/null || true
+
+# Core ML/Robotics packages (always needed)
+RUN /opt/conda/envs/aria/bin/pip install --no-cache-dir \
+    ultralytics>=8.0.0 \
+    ikpy>=3.3.4 \
+    roboticstoolbox-python>=1.1.0 \
+    spatialmath-python>=1.1.0 \
+    scipy>=1.10.0 \
+    scikit-image>=0.21.0 \
+    opencv-python-headless>=4.8.0 \
+    Pillow>=10.0.0 \
+    pyyaml>=6.0 \
+    sqlalchemy>=2.0.0 \
+    aiosqlite>=0.19.0 \
+    websockets>=12.0 \
+    aiohttp>=3.9.0 \
+    requests>=2.31.0 \
+    h5py>=3.9.0 \
+    mlflow>=2.10.0 \
+    pytest>=7.4.0 \
+    pytest-asyncio>=0.21.0
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# STAGE 3 — ML Models: Clone, install, download weights
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FROM python_base AS ml_models
+
+ENV MODELS_DIR=/models
+RUN mkdir -p ${MODELS_DIR}
+
+# Depth-Anything V2
+RUN git clone --depth 1 https://github.com/DepthAnything/Depth-Anything-V2.git \
+    /opt/depth-anything-v2 2>/dev/null || true
+
+# ByteTrack (object tracking)
+RUN git clone --depth 1 https://github.com/ifzhang/ByteTrack.git \
+    /opt/bytetrack 2>/dev/null || true && \
+    cd /opt/bytetrack && \
+    /opt/conda/envs/aria/bin/pip install --no-cache-dir -e . 2>/dev/null || true
+
+# gsplat (Gaussian Splatting — for U2)
+RUN /opt/conda/envs/aria/bin/pip install --no-cache-dir \
+    gsplat 2>/dev/null || true
+
+# Pre-download model weights
+RUN /opt/conda/envs/aria/bin/python3 -c "\
+from ultralytics import YOLO; \
+model = YOLO('yolov8m.pt'); \
+print('YOLOv8m downloaded')" 2>/dev/null || true
+
+RUN /opt/conda/envs/aria/bin/python3 -c "\
+import torch; \
+torch.hub.load('intel-isl/MiDaS', 'DPT_Hybrid', trust_repo=True); \
+print('MiDaS downloaded')" 2>/dev/null || true
+
+RUN /opt/conda/envs/aria/bin/python3 -c "\
+from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights; \
+mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.IMAGENET1K_V1); \
+print('MobileNetV3 downloaded')" 2>/dev/null || true
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# STAGE 4 — ARIA Runtime (final image)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FROM ml_models AS aria_runtime
+
+# Create workspace
+RUN mkdir -p /aria_ws/src
+
+# Copy ARIA source
+COPY . /aria_ws/src/aria
+
+WORKDIR /aria_ws
+
+# Build ARIA packages
+RUN source /opt/ros/humble/setup.bash && \
+    cd /aria_ws && \
+    colcon build --symlink-install \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release 2>&1 || true
+
+# Copy entrypoint
+COPY docker/entrypoint.sh /aria_ws/docker/entrypoint.sh
+RUN chmod +x /aria_ws/docker/entrypoint.sh
+
+# Create data directories
+RUN mkdir -p /aria_ws/logs /aria_ws/datasets /aria_ws/bags /aria_ws/mlflow
+
+# Default environment
+ENV ARIA_MODE=sim
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
+
+ENTRYPOINT ["/aria_ws/docker/entrypoint.sh"]
+CMD ["bash"]

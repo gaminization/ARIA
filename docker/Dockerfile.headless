@@ -1,0 +1,19 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA Headless Image — No GUI, for CI/CD and automated testing
+#
+# Build: docker build -f docker/Dockerfile.headless -t aria:headless .
+# ═══════════════════════════════════════════════════════════════
+FROM aria:base AS aria_headless
+
+# Headless rendering for Gazebo (software rendering)
+ENV LIBGL_ALWAYS_SOFTWARE=1
+ENV MESA_GL_VERSION_OVERRIDE=3.3
+ENV DISPLAY=
+
+# Minimal test dependencies
+RUN /opt/conda/envs/aria/bin/pip install --no-cache-dir \
+    pytest pytest-cov pytest-timeout pytest-asyncio \
+    2>/dev/null || true
+
+ENTRYPOINT ["/aria_ws/docker/entrypoint.sh"]
+CMD ["python3", "-m", "pytest", "/aria_ws/src/aria/", "-v", "--timeout=120"]

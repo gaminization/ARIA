@@ -216,7 +216,11 @@ FRONTEND_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "frontend", "dist")
 if os.path.exists(FRONTEND_DIR):
+    assets_dir = os.path.join(FRONTEND_DIR, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
 
 
 # ── Pydantic models ────────────────────────────────────────
@@ -258,7 +262,27 @@ async def send_command(req: CommandRequest):
     state.add_cot(f"[USER] {req.command}")
     state.task_state["command"] = req.command
     state.task_state["status"] = "PLANNING"
+    state.task_state["confidence"] = 0.0
+    state.task_state["awaiting_approval"] = False
+    # Auto-transition to IDLE after a brief display period
+    # (since no real planner is running in demo mode)
+    asyncio.get_event_loop().call_later(
+        3.0, lambda: state.task_state.update({"status": "IDLE"}))
     return {"accepted": True, "message": f"Command received: {req.command}"}
+
+
+@app.post("/api/reset")
+async def reset_state():
+    """Reset task state to IDLE."""
+    state.task_state["status"] = "IDLE"
+    state.task_state["command"] = ""
+    state.task_state["goal"] = ""
+    state.task_state["subgoals"] = []
+    state.task_state["action_queue"] = []
+    state.task_state["confidence"] = 0.0
+    state.task_state["awaiting_approval"] = False
+    state.add_cot("[SYSTEM] Task state reset to IDLE")
+    return {"success": True, "message": "State reset to IDLE"}
 
 
 @app.post("/api/approve")

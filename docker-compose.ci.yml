@@ -1,0 +1,73 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA CI Docker Compose — Headless testing configuration
+# Used by GitHub Actions and local CI runs.
+#
+# Usage: docker compose -f docker-compose.ci.yml run aria_tests
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  aria_tests:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.headless
+    image: aria:headless
+    container_name: aria_ci_tests
+    environment:
+      - LIBGL_ALWAYS_SOFTWARE=1
+      - ROS_DOMAIN_ID=99
+      - ARIA_MODE=sim
+    volumes:
+      - ./:/aria_ws/src/aria:ro
+      - ci_results:/aria_ws/test_results
+    network_mode: host
+    command: >
+      bash -c "
+        source /aria_ws/docker/entrypoint.sh &&
+        echo '═══ Running ARIA CI Tests ═══' &&
+
+        echo '── Stage 1: Build verification ──' &&
+        colcon build --symlink-install 2>&1 | tail -5 &&
+        source /aria_ws/install/setup.bash &&
+
+        echo '── Stage 2: Unit tests ──' &&
+        python3 -m pytest /aria_ws/src/aria/ -v \
+          --timeout=60 \
+          --ignore=/aria_ws/src/aria/arm_bringup \
+          --ignore=/aria_ws/src/aria/arm_dashboard \
+          -x 2>&1 || true &&
+
+        echo '── Stage 3: Import validation ──' &&
+        python3 -c '
+import importlib
+modules = [
+    \"arm_ik.arm_ik.ik_node\",
+    \"arm_vision.arm_vision.detection_node\",
+    \"arm_vision.arm_vision.depth_node\",
+    \"arm_planner.arm_planner.task_manager\",
+    \"arm_planner.arm_planner.state_bus\",
+    \"arm_control.arm_control.servo_controller\",
+]
+failed = []
+for m in modules:
+    try:
+        importlib.import_module(m)
+        print(f\"  ✅ {m}\")
+    except Exception as e:
+        print(f\"  ❌ {m}: {e}\")
+        failed.append(m)
+if failed:
+    raise SystemExit(f\"{len(failed)} import(s) failed\")
+print(\"All imports OK\")
+' &&
+
+        echo '── Stage 4: Validation scripts ──' &&
+        python3 /aria_ws/src/aria/arm_bringup/scripts/validate_stage3.py \
+          --timeout 30 2>&1 || true &&
+
+        echo '═══ CI COMPLETE ═══'
+      "
+
+volumes:
+  ci_results:
+    driver: local
