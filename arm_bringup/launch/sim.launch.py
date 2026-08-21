@@ -6,7 +6,6 @@
 # parameter parsing bug in v0.4.x
 # ═══════════════════════════════════════════════════════════════
 import os
-import tempfile
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -17,6 +16,7 @@ from launch.actions import (
     RegisterEventHandler,
     LogInfo,
     TimerAction,
+    SetEnvironmentVariable,
 )
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
@@ -48,11 +48,13 @@ def generate_launch_description():
     xacro.process_doc(doc)
     urdf_xml = doc.toxml()
 
-    # Write URDF to a temp file so it can be referenced without
-    # passing through RCL parameter parsing (which chokes on long XML)
-    urdf_tmp = os.path.join(tempfile.gettempdir(), "aria_arm.urdf")
-    with open(urdf_tmp, "w") as f:
-        f.write(urdf_xml)
+    # Strip XML comments and collapse whitespace.
+    # gazebo_ros2_control v0.4.x internally passes robot_description
+    # as a --param CLI arg; RCL parser fails on large XML with
+    # special characters in comments. Stripping comments fixes this.
+    import re
+    urdf_xml = re.sub(r"<!--.*?-->", "", urdf_xml, flags=re.DOTALL)
+    urdf_xml = re.sub(r"\s+", " ", urdf_xml).strip()
 
     robot_description = {"robot_description": urdf_xml}
 
@@ -60,6 +62,17 @@ def generate_launch_description():
     world_file = os.path.join(bringup_pkg, "worlds", "aria_workspace.world")
     controllers_file = os.path.join(ctrl_pkg, "config", "aria_controllers.yaml")
     rviz_config = os.path.join(bringup_pkg, "config", "aria_rviz.rviz")
+
+    # ── Set GAZEBO_MODEL_PATH so Gazebo resolves package:// mesh URIs ──
+    # Gazebo Classic converts package://pkg_name/path to model://pkg_name/path
+    # and looks in GAZEBO_MODEL_PATH for the pkg_name directory.
+    install_share = os.path.dirname(desc_pkg)  # .../install/share
+    existing_model_path = os.environ.get("GAZEBO_MODEL_PATH", "")
+    new_model_path = install_share + (":" + existing_model_path if existing_model_path else "")
+    set_gazebo_model_path = SetEnvironmentVariable(
+        name="GAZEBO_MODEL_PATH",
+        value=new_model_path,
+    )
 
     # ═══════════════════════════════════════════════════════
     # 1. GAZEBO CLASSIC 11
@@ -74,6 +87,7 @@ def generate_launch_description():
         launch_arguments={
             "world": world_file,
             "verbose": "true",
+            "pause": "true",  # Start paused — unpause after controllers load
         }.items(),
     )
 
@@ -115,18 +129,12 @@ def generate_launch_description():
         output="screen",
     )
 
-    load_gripper = ExecuteProcess(
-        cmd=["ros2", "control", "load_controller", "--set-state", "active",
-             "gripper_action_controller"],
-        output="screen",
-    )
-
     # ═══════════════════════════════════════════════════════
     # 5. MANUAL CONTROL NODE
     # ═══════════════════════════════════════════════════════
     manual_control = Node(
         package="arm_control",
-        executable="manual_control_node.py",
+        executable="manual_control_node",
         name="manual_control_node",
         output="screen",
         parameters=[{"use_sim_time": True}],
@@ -145,12 +153,13 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # EVENT CHAIN: spawn -> JSB -> JTC -> gripper -> manual
+    # EVENT CHAIN: spawn -> JSB -> JTC -> manual
     # ═══════════════════════════════════════════════════════
     return LaunchDescription([
         use_rviz_arg,
 
         # Core launch
+        set_gazebo_model_path,
         gazebo,
         robot_state_publisher,
         spawn_robot,
@@ -169,18 +178,18 @@ def generate_launch_description():
                 on_exit=[load_jtc],
             )
         ),
-        # Chain: after JTC, load gripper controller
+        # Chain: after JTC, unpause physics then start manual control
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=load_jtc,
-                on_exit=[load_gripper],
-            )
-        ),
-        # Chain: after gripper controller, start manual control
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=load_gripper,
                 on_exit=[
+                    # Unpause Gazebo — controllers are ready to hold the arm
+                    ExecuteProcess(
+                        cmd=["ros2", "service", "call",
+                             "/unpause_physics",
+                             "std_srvs/srv/Empty"],
+                        output="screen",
+                    ),
                     manual_control,
                     LogInfo(msg="=== ARIA Simulation ready ==="),
                 ],

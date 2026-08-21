@@ -253,12 +253,13 @@ class ManualControlNode(Node):
 
         duration_s = max(max_displacement_deg / speed, 0.1)
 
-        # Build and publish arm trajectory (5 joints, no gripper)
+        # Build and publish trajectory for ALL 6 joints (including gripper)
+        # The joint_trajectory_controller is configured with all 6 joints
         traj = JointTrajectory()
-        traj.joint_names = self.ARM_JOINT_NAMES
+        traj.joint_names = self.JOINT_NAMES
 
         point = JointTrajectoryPoint()
-        point.positions = [self._deg_to_rad(a) for a in safe_angles_deg[:5]]
+        point.positions = [self._deg_to_rad(a) for a in safe_angles_deg]
         point.time_from_start = Duration(
             sec=int(duration_s),
             nanosec=int((duration_s % 1.0) * 1e9)
@@ -271,23 +272,22 @@ class ManualControlNode(Node):
         self.target_positions_rad = [self._deg_to_rad(a) for a in safe_angles_deg]
         self.motion_complete = False
 
-        # Handle gripper separately via action
-        gripper_rad = self._deg_to_rad(safe_angles_deg[5])
-        self._send_gripper_command(gripper_rad)
-
         return True
 
     def _send_gripper_command(self, position_rad):
-        """Send gripper command via GripperCommand action."""
-        if not self.gripper_client.wait_for_server(timeout_sec=1.0):
-            self.get_logger().warn("Gripper action server not available")
-            return
+        """Send gripper command via JointTrajectory (gripper is in JTC)."""
+        traj = JointTrajectory()
+        traj.joint_names = self.JOINT_NAMES
 
-        goal = GripperCommand.Goal()
-        goal.command.position = position_rad
-        goal.command.max_effort = 0.18  # SG90 max torque
+        # Keep current arm positions, only change gripper
+        point = JointTrajectoryPoint()
+        positions = list(self.current_positions_rad)
+        positions[5] = position_rad  # Update gripper
+        point.positions = positions
+        point.time_from_start = Duration(sec=0, nanosec=500000000)  # 0.5s
+        traj.points.append(point)
 
-        self.gripper_client.send_goal_async(goal)
+        self.traj_pub.publish(traj)
 
     # ═══════════════════════════════════════════════════════════
     # SERVICE CALLBACKS
@@ -431,12 +431,10 @@ class ManualControlNode(Node):
         self.motion_complete = True
 
         # Send current position as target to hold
-        current_deg = [self._rad_to_deg(p) for p in self.current_positions_rad]
-
         traj = JointTrajectory()
-        traj.joint_names = self.ARM_JOINT_NAMES
+        traj.joint_names = self.JOINT_NAMES
         point = JointTrajectoryPoint()
-        point.positions = list(self.current_positions_rad[:5])
+        point.positions = list(self.current_positions_rad)
         point.time_from_start = Duration(sec=0, nanosec=100000000)  # 0.1s
         traj.points.append(point)
         self.traj_pub.publish(traj)

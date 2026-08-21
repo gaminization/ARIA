@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!-- ═══════════════════════════════════════════════════════════════
      ARIA 5-DoF Robotic Arm — URDF/Xacro Description
-     Techno-Tirupati kit with NEW gear-driven gripper
-     Derived from assembly manual + photo measurements
+     Techno-Tirupati kit with gear-driven gripper
+     Visual meshes from smart-methods/arduino-robot-arm repo
      ═══════════════════════════════════════════════════════════════ -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="aria_arm">
 
@@ -55,6 +55,9 @@
   <!-- Camera / sensor dimensions (small visual boxes) -->
   <xacro:property name="camera_size"        value="0.025"/>  <!-- 25mm cube for camera visual -->
 
+  <!-- Mesh scale factor: STLs are in mm, convert to meters -->
+  <xacro:property name="mesh_scale"         value="0.001 0.001 0.001"/>
+
   <!-- ═══════════════════════════════════════════════════════════
        MASS PARAMETERS
        PLA density = 1240 kg/m³
@@ -96,10 +99,10 @@
   <xacro:property name="gripper_lower"      value="0.0"/>      <!--   0° (closed) -->
   <xacro:property name="gripper_upper"      value="0.7854"/>   <!--  45° (open)   -->
 
-  <!-- Joint velocity/effort limits -->
-  <xacro:property name="mg995_effort"       value="1.0"/>      <!-- ~1.0 Nm for MG995 -->
+  <!-- Joint velocity/effort limits (simulation values — higher than real servos for PID headroom) -->
+  <xacro:property name="mg995_effort"       value="10.0"/>     <!-- real: 1.0 Nm, sim needs headroom -->
   <xacro:property name="mg995_velocity"     value="5.24"/>     <!-- ~300°/s max for MG995 -->
-  <xacro:property name="sg90_effort"        value="0.18"/>     <!-- ~0.18 Nm for SG90 -->
+  <xacro:property name="sg90_effort"        value="5.0"/>      <!-- real: 0.18 Nm, sim needs headroom -->
   <xacro:property name="sg90_velocity"      value="10.47"/>    <!-- ~600°/s max for SG90 -->
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -164,12 +167,13 @@
   <!-- ═══════════════════════════════════════════════════════════
        LINK 1: BASE — white PLA cylinder (bottom housing)
        Contains MG995 servo for waist rotation
+       Visual: Base.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <link name="base_link">
     <visual>
-      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
       <geometry>
-        <cylinder radius="${base_radius}" length="${base_height}"/>
+        <mesh filename="package://arm_description/meshes/stl/Base.stl" scale="${mesh_scale}"/>
       </geometry>
       <material name="white"/>
     </visual>
@@ -186,6 +190,7 @@
   <!-- ═══════════════════════════════════════════════════════════
        JOINT 1: WAIST — Z-axis rotation, MG995
        At top of base cylinder
+       Damping increased for stability
        ═══════════════════════════════════════════════════════════ -->
   <joint name="waist_joint" type="revolute">
     <parent link="base_link"/>
@@ -194,18 +199,19 @@
     <axis xyz="0 0 1"/>
     <limit lower="${waist_lower}" upper="${waist_upper}"
            effort="${mg995_effort}" velocity="${mg995_velocity}"/>
-    <dynamics damping="0.1" friction="0.05"/>
+    <dynamics damping="2.0" friction="0.3"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
        LINK 2: WAIST BRACKET — orange curved bracket
        Houses MG995 servo for shoulder rotation
+       Visual: Waist.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <link name="waist_link">
     <visual>
-      <origin xyz="0 0 ${waist_height/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
       <geometry>
-        <box size="${waist_width} ${waist_depth} ${waist_height}"/>
+        <mesh filename="package://arm_description/meshes/stl/Waist.stl" scale="${mesh_scale}"/>
       </geometry>
       <material name="orange"/>
     </visual>
@@ -230,19 +236,20 @@
     <axis xyz="0 1 0"/>
     <limit lower="${shoulder_lower}" upper="${shoulder_upper}"
            effort="${mg995_effort}" velocity="${mg995_velocity}"/>
-    <dynamics damping="0.1" friction="0.05"/>
+    <dynamics damping="3.0" friction="0.5"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
        LINK 3: UPPER ARM (Arm1) — orange tube, 145mm
        Slight curve, approximated as box for collision
        Houses MG995 servo for elbow
+       Visual: Arm 01.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <link name="upper_arm_link">
     <visual>
-      <origin xyz="0 0 ${upper_arm_length/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="${upper_arm_width} ${upper_arm_depth} ${upper_arm_length}"/>
+        <mesh filename="package://arm_description/meshes/stl/Arm 01.stl" scale="${mesh_scale}"/>
       </geometry>
       <material name="orange"/>
     </visual>
@@ -267,18 +274,19 @@
     <axis xyz="0 1 0"/>
     <limit lower="${elbow_lower}" upper="${elbow_upper}"
            effort="${mg995_effort}" velocity="${mg995_velocity}"/>
-    <dynamics damping="0.1" friction="0.05"/>
+    <dynamics damping="3.0" friction="0.5"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
        LINK 4: FOREARM (Arm2) — orange rectangular housing, 115mm
        Houses SG90 servo for wrist pitch
+       Visual: Arm 02.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <link name="forearm_link">
     <visual>
-      <origin xyz="0 0 ${forearm_length/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="-1.48894 -1.57209 1.57067"/>
       <geometry>
-        <box size="${forearm_width} ${forearm_depth} ${forearm_length}"/>
+        <mesh filename="package://arm_description/meshes/stl/Arm 02.stl" scale="${mesh_scale}"/>
       </geometry>
       <material name="orange"/>
     </visual>
@@ -303,18 +311,19 @@
     <axis xyz="0 1 0"/>
     <limit lower="${wrist_pitch_lower}" upper="${wrist_pitch_upper}"
            effort="${sg90_effort}" velocity="${sg90_velocity}"/>
-    <dynamics damping="0.05" friction="0.02"/>
+    <dynamics damping="1.5" friction="0.3"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
        LINK 5: WRIST (Arm3) — small orange housing, 55mm
        Houses SG90 servo for wrist roll
+       Visual: Arm 03.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <link name="wrist_link">
     <visual>
-      <origin xyz="0 0 ${wrist_length/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="1.2416 1.55752 1.5708"/>
       <geometry>
-        <box size="${wrist_width} ${wrist_depth} ${wrist_length}"/>
+        <mesh filename="package://arm_description/meshes/stl/Arm 03.stl" scale="${mesh_scale}"/>
       </geometry>
       <material name="orange"/>
     </visual>
@@ -363,18 +372,19 @@
     <axis xyz="1 0 0"/>
     <limit lower="${wrist_roll_lower}" upper="${wrist_roll_upper}"
            effort="${sg90_effort}" velocity="${sg90_velocity}"/>
-    <dynamics damping="0.02" friction="0.01"/>
+    <dynamics damping="1.5" friction="0.3"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
        LINK 6: GRIPPER HOLDER — white rectangular mount, 40mm
        Houses SG90 gripper servo, mounts gear mechanism
+       Visual: Gripper1.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <link name="gripper_holder_link">
     <visual>
-      <origin xyz="0 0 ${gripper_holder_length/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="${gripper_holder_width} ${gripper_holder_depth} ${gripper_holder_length}"/>
+        <mesh filename="package://arm_description/meshes/stl/Gripper1.stl" scale="1.0 1.0 1.0"/>
       </geometry>
       <material name="white"/>
     </visual>
@@ -415,6 +425,7 @@
   <!-- ═══════════════════════════════════════════════════════════
        GEAR HOUSING — circular white gear mechanism
        Fixed to gripper holder, parent for finger joints
+       Visual: gear1.stl + gear2.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <joint name="gear_housing_joint" type="fixed">
     <parent link="gripper_holder_link"/>
@@ -424,9 +435,9 @@
 
   <link name="gear_housing_link">
     <visual>
-      <origin xyz="0 0 ${gear_height/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="${gear_radius}" length="${gear_height}"/>
+        <mesh filename="package://arm_description/meshes/stl/gear1.stl" scale="1.0 1.0 1.0"/>
       </geometry>
       <material name="white"/>
     </visual>
@@ -452,18 +463,19 @@
     <axis xyz="0 0 1"/>
     <limit lower="${gripper_lower}" upper="${gripper_upper}"
            effort="${sg90_effort}" velocity="${sg90_velocity}"/>
-    <dynamics damping="0.02" friction="0.01"/>
+    <dynamics damping="2.0" friction="0.3"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
        LEFT FINGER PAIR — 2 curved blue plastic fingers
        Driven directly by gripper_joint
+       Visual: Gripper1.002.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <link name="finger_left_1_link">
     <visual>
-      <origin xyz="0 0 ${finger_length/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="-1.86728 0 0"/>
       <geometry>
-        <box size="${finger_width} ${finger_depth} ${finger_length}"/>
+        <mesh filename="package://arm_description/meshes/stl/Gripper1.002.stl" scale="1.0 1.0 1.0"/>
       </geometry>
       <material name="blue"/>
     </visual>
@@ -489,17 +501,18 @@
     <limit lower="${-gripper_upper}" upper="${-gripper_lower}"
            effort="${sg90_effort}" velocity="${sg90_velocity}"/>
     <mimic joint="gripper_joint" multiplier="-1" offset="0"/>
-    <dynamics damping="0.02" friction="0.01"/>
+    <dynamics damping="0.1" friction="0.02"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
        RIGHT FINGER PAIR — 2 curved blue plastic fingers (mirrored)
+       Visual: Gripper2.stl from smart-methods/arduino-robot-arm
        ═══════════════════════════════════════════════════════════ -->
   <link name="finger_right_1_link">
     <visual>
-      <origin xyz="0 0 ${finger_length/2}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="1.25673 0 0"/>
       <geometry>
-        <box size="${finger_width} ${finger_depth} ${finger_length}"/>
+        <mesh filename="package://arm_description/meshes/stl/Gripper2.stl" scale="1.0 1.0 1.0"/>
       </geometry>
       <material name="blue"/>
     </visual>
@@ -533,14 +546,14 @@
 
   <!-- ═══════════════════════════════════════════════════════════
        TOP CAMERA — Logitech C270, fixed to world via stand
-       Position: 80cm above table, 40cm in front
-       Angle: 45° downward toward workspace
+       Position: top of camera stand pole (0.76m table + 0.80m pole)
+       Angle: 45° downward toward workspace center
        ═══════════════════════════════════════════════════════════ -->
   <joint name="top_camera_joint" type="fixed">
     <parent link="world"/>
     <child link="top_camera_link"/>
-    <!-- 40cm in front of origin, 80cm above table (table surface at 0.76m) -->
-    <origin xyz="0.40 0.0 0.80" rpy="0 0.7854 0"/>
+    <!-- Camera at top of stand pole, looking back at arm -->
+    <origin xyz="0.40 0.0 1.56" rpy="0 0.7854 3.14159"/>
   </joint>
 
   <link name="top_camera_link">
@@ -579,7 +592,9 @@
         <param name="min">${waist_lower}</param>
         <param name="max">${waist_upper}</param>
       </command_interface>
-      <state_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
       <state_interface name="velocity"/>
     </joint>
 
@@ -589,7 +604,9 @@
         <param name="min">${shoulder_lower}</param>
         <param name="max">${shoulder_upper}</param>
       </command_interface>
-      <state_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">1.5708</param>
+      </state_interface>
       <state_interface name="velocity"/>
     </joint>
 
@@ -599,7 +616,9 @@
         <param name="min">${elbow_lower}</param>
         <param name="max">${elbow_upper}</param>
       </command_interface>
-      <state_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">1.3090</param>
+      </state_interface>
       <state_interface name="velocity"/>
     </joint>
 
@@ -609,7 +628,9 @@
         <param name="min">${wrist_pitch_lower}</param>
         <param name="max">${wrist_pitch_upper}</param>
       </command_interface>
-      <state_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
       <state_interface name="velocity"/>
     </joint>
 
@@ -619,7 +640,9 @@
         <param name="min">${wrist_roll_lower}</param>
         <param name="max">${wrist_roll_upper}</param>
       </command_interface>
-      <state_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
       <state_interface name="velocity"/>
     </joint>
 
@@ -629,7 +652,9 @@
         <param name="min">${gripper_lower}</param>
         <param name="max">${gripper_upper}</param>
       </command_interface>
-      <state_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.3491</param>
+      </state_interface>
       <state_interface name="velocity"/>
     </joint>
 
