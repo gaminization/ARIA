@@ -1,0 +1,1 @@
+Jlidi, Ali & Benotsmane, Rabab & László, Kovács & Trohak, Attila. (2025). A Novel Graph Neural Network Approach for Inverse Kinematics in Robotic Arms. 1-6. 10.1109/ICCC65605.2025.11022859. 
