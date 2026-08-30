@@ -35,6 +35,7 @@ def generate_launch_description():
         launch_arguments={
             "world": "aria_tester_workspace.world",
             "use_rviz": use_rviz,
+            "gui": "true",
         }.items(),
     )
 

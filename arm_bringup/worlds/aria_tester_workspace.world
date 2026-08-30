@@ -1,18 +1,12 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!-- ═══════════════════════════════════════════════════════════════
-     ARIA Tester Workspace - World Definition (Gazebo Classic 11)
-     Features:
-       1. IAI Precision Optical Breadboard Table
-       2. Multi-Affordance Benchmark Suite (Bullet3, YCB, Everyday Items)
-       3. Authentic 4-Tier Cross-Stacked Jenga Arena
-       4. Multi-Camera Rig (Logitech C270 Top Overhead + Multi-Angle Diagnostic Cameras)
-       5. Robust Non-Exploding Primitive Collisions & Controlled Dynamic Damping
+     ARIA Tester Workspace — Gazebo Classic 11 World
+     Curated Distinct Benchmark Suite & Original Sizing Jenga Arena
      ═══════════════════════════════════════════════════════════════ -->
 <sdf version="1.6">
-  <world name="aria_tester_workspace">
+  <world name="default">
 
-    <gravity>0 0 -9.81</gravity>
-
+    <!-- ═══ Physics Engine (Stable Anti-Glitch ODE Setup) ═══ -->
     <physics type="ode">
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1.0</real_time_factor>
@@ -21,102 +15,96 @@
         <solver>
           <type>quick</type>
           <iters>100</iters>
-          <sor>1.25</sor>
+          <sor>1.3</sor>
         </solver>
         <constraints>
-          <cfm>1e-5</cfm>
+          <cfm>0.00001</cfm>
           <erp>0.2</erp>
-          <contact_max_correcting_vel>0.05</contact_max_correcting_vel>
+          <contact_max_correcting_vel>10.0</contact_max_correcting_vel>
           <contact_surface_layer>0.001</contact_surface_layer>
         </constraints>
       </ode>
     </physics>
 
-    <!-- Ground Plane -->
-    <include>
-      <uri>model://ground_plane</uri>
-    </include>
+    <!-- ═══ Gravity ═══ -->
+    <gravity>0 0 -9.81</gravity>
 
-    <!-- Global Key Lighting -->
-    <include>
-      <uri>model://sun</uri>
-    </include>
+    <!-- ═══ Scene settings ═══ -->
+    <scene>
+      <ambient>0.70 0.70 0.72 1.0</ambient>
+      <background>0.84 0.86 0.90 1.0</background>
+      <shadows>true</shadows>
+      <grid>false</grid>
+    </scene>
 
-    <!-- Soft Workspace Diffuse Light -->
-    <light name="bench_soft_light" type="point">
-      <pose>0.0 0.0 2.2 0 0 0</pose>
-      <diffuse>0.8 0.8 0.8 1</diffuse>
-      <specular>0.1 0.1 0.1 1</specular>
-      <attenuation>
-        <range>6.0</range>
-        <constant>0.6</constant>
-        <linear>0.02</linear>
-        <quadratic>0.005</quadratic>
-      </attenuation>
+    <!-- ═══ GUI Viewpoint ═══ -->
+    <gui fullscreen="0">
+      <camera name="user_camera">
+        <pose>0.62 -0.52 1.05 0 0.52 2.42</pose>
+        <view_controller>orbit</view_controller>
+      </camera>
+    </gui>
+
+    <!-- ═══ Lighting ═══ -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0.5 0.5 5.0 0 0 0</pose>
+      <diffuse>0.92 0.92 0.90 1</diffuse>
+      <specular>0.3 0.3 0.3 1</specular>
+      <direction>-0.3 -0.3 -1.0</direction>
     </light>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         IAI OPTICAL BREADBOARD MANIPULATION BENCH (Z_surface = 0.608 m)
-         ═══════════════════════════════════════════════════════════ -->
-    <model name="iai_optical_table">
+    <light type="spot" name="table_spot">
+      <pose>0.0 0.0 2.2 0 0 0</pose>
+      <diffuse>0.92 0.90 0.85 1</diffuse>
+      <specular>0.4 0.4 0.4 1</specular>
+      <attenuation>
+        <range>4.5</range>
+        <constant>0.4</constant>
+        <linear>0.05</linear>
+        <quadratic>0.01</quadratic>
+      </attenuation>
+      <direction>0 0 -1</direction>
+      <spot>
+        <inner_angle>1.2</inner_angle>
+        <outer_angle>1.8</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <light type="point" name="workspace_fill_light">
+      <pose>0.0 0.0 1.8 0 0 0</pose>
+      <diffuse>0.48 0.48 0.50 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <attenuation>
+        <range>3.5</range>
+        <constant>0.6</constant>
+        <linear>0.06</linear>
+        <quadratic>0.01</quadratic>
+      </attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <!-- ═══ Overhead Camera (Logitech C270) ═══ -->
+    <model name="overhead_camera_model">
       <static>true</static>
-      <pose>0 0 0 0 0 0</pose>
-
-      <!-- Aluminum Extrusion Frame Legs -->
-      <link name="table_legs">
-        <visual name="leg_fl"><pose> 0.38  0.38 0.295 0 0 0</pose><geometry><box><size>0.04 0.04 0.59</size></box></geometry><material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material></visual>
-        <visual name="leg_fr"><pose> 0.38 -0.38 0.295 0 0 0</pose><geometry><box><size>0.04 0.04 0.59</size></box></geometry><material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material></visual>
-        <visual name="leg_bl"><pose>-0.38  0.38 0.295 0 0 0</pose><geometry><box><size>0.04 0.04 0.59</size></box></geometry><material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material></visual>
-        <visual name="leg_br"><pose>-0.38 -0.38 0.295 0 0 0</pose><geometry><box><size>0.04 0.04 0.59</size></box></geometry><material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material></visual>
-        <collision name="legs_c"><pose>0 0 0.295 0 0 0</pose><geometry><box><size>0.80 0.80 0.59</size></box></geometry></collision>
-      </link>
-
-      <!-- Optical Breadboard Top Plate -->
-      <link name="table_top">
-        <pose>0 0 0.599 0 0 0</pose>
-        <collision name="top_c"><geometry><box><size>0.80 0.80 0.018</size></box></geometry><surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface></collision>
-        <visual name="top_v"><geometry><box><size>0.80 0.80 0.018</size></box></geometry><material><ambient>0.10 0.10 0.12 1</ambient><diffuse>0.15 0.15 0.18 1</diffuse></material></visual>
-      </link>
-
-      <!-- Antistatic High-Contrast Work Mat -->
-      <link name="work_mat">
-        <pose>0 0 0.6081 0 0 0</pose>
-        <visual name="mat_v"><geometry><box><size>0.62 0.62 0.0002</size></box></geometry><material><ambient>0.35 0.38 0.42 1</ambient><diffuse>0.40 0.43 0.48 1</diffuse></material></visual>
-      </link>
-
-      <!-- Pedestal Stand 1 (Left Wing) -->
-      <link name="pedestal_left">
-        <pose>-0.18 0.22 0.618 0 0 0</pose>
-        <collision name="c"><geometry><cylinder><radius>0.045</radius><length>0.020</length></cylinder></geometry></collision>
-        <visual name="v"><geometry><cylinder><radius>0.045</radius><length>0.020</length></cylinder></geometry><material><ambient>0.5 0.5 0.55 1</ambient><diffuse>0.6 0.6 0.65 1</diffuse></material></visual>
-      </link>
-
-      <!-- Pedestal Stand 2 (Right Wing) -->
-      <link name="pedestal_right">
-        <pose>-0.18 -0.22 0.618 0 0 0</pose>
-        <collision name="c"><geometry><cylinder><radius>0.045</radius><length>0.020</length></cylinder></geometry></collision>
-        <visual name="v"><geometry><cylinder><radius>0.045</radius><length>0.020</length></cylinder></geometry><material><ambient>0.5 0.5 0.55 1</ambient><diffuse>0.6 0.6 0.65 1</diffuse></material></visual>
-      </link>
-    </model>
-
-    <!-- ═══════════════════════════════════════════════════════════
-         CAMERA SENSORS RIG
-         ═══════════════════════════════════════════════════════════ -->
-    <!-- Logitech C270 Top Overhead Camera -->
-    <model name="logitech_c270_overhead">
-      <static>true</static>
-      <pose>0.0 0.0 1.45 0 1.570796 1.570796</pose>
-      <link name="c270_optical_link">
+      <pose>0.0 0.0 1.45 0 1.5708 0</pose>
+      <link name="camera_link">
         <sensor name="top_camera" type="camera">
           <always_on>true</always_on>
-          <update_rate>30.0</update_rate>
-          <camera name="top">
-            <horizontal_fov>1.047198</horizontal_fov>
+          <update_rate>30</update_rate>
+          <visualize>false</visualize>
+          <camera>
+            <horizontal_fov>1.25</horizontal_fov>
             <image><width>1280</width><height>720</height><format>R8G8B8</format></image>
-            <clip><near>0.05</near><far>5.0</far></clip>
+            <clip><near>0.01</near><far>10.0</far></clip>
           </camera>
-          <plugin name="top_camera_controller" filename="libgazebo_ros_camera.so">
-            <ros><remapping>image_raw:=/top_camera/image_raw</remapping><remapping>camera_info:=/top_camera/camera_info</remapping></ros>
+          <plugin name="overhead_camera_driver" filename="libgazebo_ros_camera.so">
+            <ros>
+              <remapping>~/image_raw:=/top_camera/image_raw</remapping>
+              <remapping>~/camera_info:=/top_camera/camera_info</remapping>
+            </ros>
             <camera_name>top_camera</camera_name>
             <frame_name>top_camera_link</frame_name>
           </plugin>
@@ -124,21 +112,25 @@
       </link>
     </model>
 
-    <!-- Side Diagnostic 45-deg Perspective Camera -->
-    <model name="side_diagnostic_camera">
+    <!-- ═══ Side Inspection Camera ═══ -->
+    <model name="side_inspection_rig">
       <static>true</static>
-      <pose>0.58 -0.45 0.95 0 0.48 2.45</pose>
-      <link name="side_cam_link">
+      <pose>0.52 -0.42 0.95 0 0.40 2.45</pose>
+      <link name="link">
         <sensor name="side_camera" type="camera">
           <always_on>true</always_on>
-          <update_rate>30.0</update_rate>
-          <camera name="side">
-            <horizontal_fov>1.085</horizontal_fov>
+          <update_rate>30</update_rate>
+          <visualize>false</visualize>
+          <camera>
+            <horizontal_fov>1.15</horizontal_fov>
             <image><width>1280</width><height>720</height><format>R8G8B8</format></image>
-            <clip><near>0.05</near><far>6.0</far></clip>
+            <clip><near>0.01</near><far>10.0</far></clip>
           </camera>
-          <plugin name="side_camera_controller" filename="libgazebo_ros_camera.so">
-            <ros><remapping>image_raw:=/side_camera/image_raw</remapping><remapping>camera_info:=/side_camera/camera_info</remapping></ros>
+          <plugin name="side_camera_driver" filename="libgazebo_ros_camera.so">
+            <ros>
+              <remapping>~/image_raw:=/side_camera/image_raw</remapping>
+              <remapping>~/camera_info:=/side_camera/camera_info</remapping>
+            </ros>
             <camera_name>side_camera</camera_name>
             <frame_name>side_camera_link</frame_name>
           </plugin>
@@ -146,310 +138,511 @@
       </link>
     </model>
 
+    <!-- ═══ Ground Plane ═══ -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+          <surface><friction><ode><mu>100</mu><mu2>50</mu2></ode></friction></surface>
+        </collision>
+        <visual name="visual">
+          <cast_shadows>false</cast_shadows>
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+          <material>
+            <script><uri>file://media/materials/scripts/gazebo.material</uri><name>Gazebo/WoodFloor</name></script>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══ Optical Table ═══ -->
+    <model name="optical_table">
+      <static>true</static>
+      <pose>0.60 0.30 0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <pose>-0.60 -0.30 0.304 0 0 0</pose>
+          <geometry><box><size>1.20 0.60 0.608</size></box></geometry>
+          <surface>
+            <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+            <friction>
+              <ode><mu>1.5</mu><mu2>1.5</mu2><slip1>0.0</slip1><slip2>0.0</slip2></ode>
+            </friction>
+            <contact>
+              <ode><kp>1000000.0</kp><kd>1000.0</kd><max_vel>0.01</max_vel><min_depth>0.001</min_depth></ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/table/complete_table.dae</uri></mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══ Arm Mounting Plate ═══ -->
+    <model name="arm_mounting_plate">
+      <static>true</static>
+      <pose>0.0 0.0 0.608 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="c">
+          <pose>0 0 0.003 0 0 0</pose>
+          <geometry><box><size>0.18 0.15 0.006</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/table/base_to_optical_table.stl</uri></mesh>
+          </geometry>
+          <material>
+            <ambient>0.85 0.85 0.88 1</ambient>
+            <diffuse>0.88 0.88 0.90 1</diffuse>
+            <specular>0.9 0.9 0.9 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══ Workspace Calibration Mat ═══ -->
+    <model name="workspace_calibration_mat">
+      <static>true</static>
+      <pose>0.0 0.0 0.6081 0 0 0</pose>
+      <link name="mat_link">
+        <visual name="mat_visual">
+          <geometry><box><size>0.50 0.56 0.0002</size></box></geometry>
+          <material>
+            <ambient>0.20 0.21 0.23 1</ambient>
+            <diffuse>0.24 0.25 0.27 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══ Elevated Pedestals (Left & Right) ═══ -->
+    <model name="elevated_pedestal_left">
+      <static>true</static>
+      <pose>-0.16 0.20 0.628 0 0 0</pose>
+      <link name="pedestal_link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.032</radius><length>0.040</length></cylinder></geometry>
+          <surface>
+            <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+            <contact><ode><kp>100000.0</kp><kd>100.0</kd><min_depth>0.001</min_depth></ode></contact>
+          </surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.032</radius><length>0.040</length></cylinder></geometry>
+          <material>
+            <ambient>0.35 0.38 0.42 1</ambient>
+            <diffuse>0.42 0.45 0.50 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="elevated_pedestal_right">
+      <static>true</static>
+      <pose>-0.16 -0.20 0.628 0 0 0</pose>
+      <link name="pedestal_link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.032</radius><length>0.040</length></cylinder></geometry>
+          <surface>
+            <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+            <contact><ode><kp>100000.0</kp><kd>100.0</kd><min_depth>0.001</min_depth></ode></contact>
+          </surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.032</radius><length>0.040</length></cylinder></geometry>
+          <material>
+            <ambient>0.35 0.38 0.42 1</ambient>
+            <diffuse>0.42 0.45 0.50 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
     <!-- ═══════════════════════════════════════════════════════════
-         SECTOR 1: YCB & GROCERY BENCHMARKS (Front Arc, +X)
+         SECTOR 1: ACTIVE PICK & AFFORDANCE ARC (Front Center, +X)
          ═══════════════════════════════════════════════════════════ -->
 
-    <!-- 1. Fresh Banana -->
-    <model name="bullet_banana">
-      <pose>0.17 -0.06 0.6085 0 0 -0.4</pose>
+    <!-- 1. YCB Red Ceramic Coffee Mug with Loop Handle -->
+    <model name="mug_ycb_front">
+      <pose>0.18 -0.04 0.6081 0 0 0.6</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.22</mass>
+          <inertia><ixx>0.0002</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0002</iyy><iyz>0</iyz><izz>0.0002</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <pose>0 0 0.0225 0 0 0</pose>
+          <geometry><cylinder><radius>0.018</radius><length>0.045</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
+        </collision>
+        <visual name="v">
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/ycb_mug/ycb_mug_norm.obj</uri></mesh>
+          </geometry>
+          <material>
+            <ambient>0.85 0.15 0.15 1</ambient>
+            <diffuse>0.92 0.20 0.20 1</diffuse>
+            <specular>0.6 0.6 0.6 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 2. Yellow Rubber Duck -->
+    <model name="bullet_duck">
+      <pose>0.18 0.05 0.6081 0 0 1.5708</pose>
       <link name="body">
         <inertial>
           <mass>0.15</mass>
-          <inertia><ixx>1.5e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.5e-4</iyy><iyz>0</iyz><izz>5.0e-5</izz></inertia>
+          <inertia><ixx>0.00015</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.00015</iyy><iyz>0</iyz><izz>0.00015</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
-          <pose>0 0 0.015 0 0 0</pose>
-          <geometry><cylinder><radius>0.020</radius><length>0.15</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+          <pose>0 0 0.019 0 0 0</pose>
+          <geometry><cylinder><radius>0.016</radius><length>0.038</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/banana.obj</uri>
-              <scale>0.85 0.85 0.85</scale>
-            </mesh>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/duck_norm.obj</uri></mesh>
           </geometry>
-          <material><ambient>0.95 0.85 0.1 1</ambient><diffuse>1.0 0.9 0.12 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+          <material>
+            <ambient>0.95 0.85 0.1 1</ambient>
+            <diffuse>0.98 0.88 0.15 1</diffuse>
+            <specular>0.3 0.3 0.2 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- 2. YCB Red Coffee Mug -->
-    <model name="bullet_mug">
-      <pose>0.19 0.03 0.6085 0 0 0.8</pose>
-      <link name="body">
-        <inertial>
-          <mass>0.25</mass>
-          <inertia><ixx>2.5e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>2.5e-4</iyy><iyz>0</iyz><izz>2.0e-4</izz></inertia>
-        </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
-        <collision name="c">
-          <pose>0 0 0.040 0 0 0</pose>
-          <geometry><cylinder><radius>0.042</radius><length>0.080</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
-        </collision>
-        <visual name="v">
-          <pose>0 0 0.040 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/bullet_mug_norm.obj</uri>
-              <scale>0.09 0.09 0.09</scale>
-            </mesh>
-          </geometry>
-          <material><ambient>0.85 0.1 0.1 1</ambient><diffuse>0.9 0.12 0.12 1</diffuse><specular>0.4 0.4 0.4 1</specular></material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 3. Sphere Orange -->
-    <model name="fresh_orange">
-      <pose>0.14 -0.11 0.6085 0 0 0</pose>
-      <link name="body">
-        <inertial>
-          <mass>0.14</mass>
-          <inertia><ixx>7.0e-5</ixx><ixy>0</ixy><ixz>0</ixz><iyy>7.0e-5</iyy><iyz>0</iyz><izz>7.0e-5</izz></inertia>
-        </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
-        <collision name="c">
-          <pose>0 0 0.025 0 0 0</pose>
-          <geometry><sphere><radius>0.025</radius></sphere></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
-        </collision>
-        <visual name="v">
-          <pose>0 0 0.025 0 0 0</pose>
-          <geometry><sphere><radius>0.025</radius></sphere></geometry>
-          <material><ambient>0.95 0.45 0.05 1</ambient><diffuse>1.0 0.50 0.05 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 4. Rubber Duck -->
-    <model name="rubber_duck">
-      <pose>0.17 0.12 0.6085 0 0 1.2</pose>
-      <link name="body">
-        <inertial>
-          <mass>0.10</mass>
-          <inertia><ixx>8.0e-5</ixx><ixy>0</ixy><ixz>0</ixz><iyy>8.0e-5</iyy><iyz>0</iyz><izz>8.0e-5</izz></inertia>
-        </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
-        <collision name="c">
-          <pose>0 0 0.035 0 0 0</pose>
-          <geometry><cylinder><radius>0.035</radius><length>0.070</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
-        </collision>
-        <visual name="v">
-          <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/duck_norm.obj</uri>
-              <scale>0.07 0.07 0.07</scale>
-            </mesh>
-          </geometry>
-          <material><ambient>0.9 0.8 0.1 1</ambient><diffuse>0.95 0.85 0.15 1</diffuse><specular>0.3 0.3 0.3 1</specular></material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- ═══════════════════════════════════════════════════════════
-         SECTOR 2: DINING & DISHWARE BENCHMARKS (Lateral Wings)
-         ═══════════════════════════════════════════════════════════ -->
-
-    <!-- 5. Beverage Bottle -->
-    <model name="beverage_bottle">
-      <pose>0.12 0.19 0.6085 0 0 0</pose>
-      <link name="body">
-        <inertial>
-          <mass>0.30</mass>
-          <inertia><ixx>5.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>5.0e-4</iyy><iyz>0</iyz><izz>1.0e-4</izz></inertia>
-        </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
-        <collision name="c">
-          <pose>0 0 0.090 0 0 0</pose>
-          <geometry><cylinder><radius>0.028</radius><length>0.180</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
-        </collision>
-        <visual name="v">
-          <pose>0 0 0.090 0 0 0</pose>
-          <geometry><cylinder><radius>0.028</radius><length>0.180</length></cylinder></geometry>
-          <material><ambient>0.15 0.12 0.08 1</ambient><diffuse>0.25 0.20 0.15 1</diffuse><specular>0.5 0.5 0.5 1</specular></material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 6. Plastic Drinking Glass -->
-    <model name="plastic_glass">
-      <pose>0.02 0.16 0.6085 0 0 0</pose>
-      <link name="body">
-        <inertial>
-          <mass>0.12</mass>
-          <inertia><ixx>1.2e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.2e-4</iyy><iyz>0</iyz><izz>6.0e-5</izz></inertia>
-        </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
-        <collision name="c">
-          <pose>0 0 0.050 0 0 0</pose>
-          <geometry><cylinder><radius>0.028</radius><length>0.100</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
-        </collision>
-        <visual name="v">
-          <pose>0 0 0.050 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/plastic_glass_norm.obj</uri>
-              <scale>0.07 0.07 0.07</scale>
-            </mesh>
-          </geometry>
-          <material><ambient>0.4 0.7 0.9 0.7</ambient><diffuse>0.5 0.8 1.0 0.7</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 7. Plastic Salad Bowl -->
-    <model name="plastic_bowl">
-      <pose>-0.08 0.20 0.6085 0 0 0</pose>
+    <!-- 3. Ripe Yellow Banana -->
+    <model name="bullet_banana">
+      <pose>0.15 -0.12 0.6081 0 0 0.3</pose>
       <link name="body">
         <inertial>
           <mass>0.18</mass>
-          <inertia><ixx>2.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>2.0e-4</iyy><iyz>0</iyz><izz>2.0e-4</izz></inertia>
+          <inertia><ixx>0.00025</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.00025</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
-          <pose>0 0 0.022 0 0 0</pose>
-          <geometry><cylinder><radius>0.060</radius><length>0.045</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+          <pose>0 0 0.011 0 0 0</pose>
+          <geometry><box><size>0.10 0.032 0.022</size></box></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
-          <pose>0 0 0.022 0 0 0</pose>
           <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/plastic_bowl_norm.obj</uri>
-              <scale>0.11 0.11 0.11</scale>
-            </mesh>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/banana_norm.obj</uri></mesh>
           </geometry>
-          <material><ambient>0.1 0.6 0.7 1</ambient><diffuse>0.15 0.65 0.75 1</diffuse></material>
+          <material>
+            <ambient>0.95 0.85 0.1 1</ambient>
+            <diffuse>0.98 0.88 0.15 1</diffuse>
+            <specular>0.3 0.3 0.2 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- 8. White Dinner Plate -->
+    <!-- 4. Fuze Beverage Bottle (Textured Benchmark) -->
+    <model name="beverage_bottle">
+      <pose>0.15 0.12 0.6081 0 0 0</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.3</mass>
+          <inertia><ixx>0.0004</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0004</iyy><iyz>0</iyz><izz>0.00015</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <pose>0 0 0.0425 0 0 0</pose>
+          <geometry><cylinder><radius>0.016</radius><length>0.085</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
+        </collision>
+        <visual name="v">
+          <geometry>
+            <mesh>
+              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/fuze_bottle_visual.dae</uri>
+              <scale>0.40 0.40 0.40</scale>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTOR 2: DINING & GLASSWARE (Left Wing, +Y)
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- 5. Porcelain Dinner Plate -->
     <model name="dinner_plate">
-      <pose>-0.01 0.23 0.6085 0 0 0</pose>
-      <link name="body">
-        <inertial>
-          <mass>0.20</mass>
-          <inertia><ixx>2.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>2.0e-4</iyy><iyz>0</iyz><izz>3.0e-4</izz></inertia>
-        </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
-        <collision name="c">
-          <pose>0 0 0.008 0 0 0</pose>
-          <geometry><cylinder><radius>0.065</radius><length>0.016</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
-        </collision>
-        <visual name="v">
-          <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/plate.dae</uri>
-              <scale>0.13 0.13 0.13</scale>
-            </mesh>
-          </geometry>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 9. Tefal Frying Pan -->
-    <model name="tefal_pan">
-      <pose>0.07 -0.19 0.6085 0 0 0</pose>
-      <link name="body">
-        <inertial>
-          <mass>0.35</mass>
-          <inertia><ixx>6.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>6.0e-4</iyy><iyz>0</iyz><izz>1.0e-3</izz></inertia>
-        </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
-        <collision name="c">
-          <pose>0 0 0.022 0 0 0</pose>
-          <geometry><cylinder><radius>0.088</radius><length>0.045</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
-        </collision>
-        <visual name="v">
-          <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/pan.dae</uri>
-              <scale>0.36 0.36 0.36</scale>
-            </mesh>
-          </geometry>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 10. Sorting Tray -->
-    <model name="sorting_tray">
-      <pose>-0.09 -0.19 0.6085 0 0 0</pose>
+      <pose>0.08 0.22 0.6081 0 0 0</pose>
       <link name="body">
         <inertial>
           <mass>0.25</mass>
-          <inertia><ixx>3.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>4.0e-4</iyy><iyz>0</iyz><izz>6.0e-4</izz></inertia>
+          <inertia><ixx>0.0003</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0003</iyy><iyz>0</iyz><izz>0.0005</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
-          <pose>0 0 0.015 0 0 0</pose>
-          <geometry><box><size>0.14 0.11 0.030</size></box></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+          <pose>0 0 0.0125 0 0 0</pose>
+          <geometry><cylinder><radius>0.065</radius><length>0.025</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/tray.dae</uri>
-              <scale>0.45 0.45 0.45</scale>
-            </mesh>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/plate_norm.obj</uri></mesh>
           </geometry>
+          <material>
+            <ambient>0.92 0.92 0.95 1</ambient>
+            <diffuse>0.95 0.95 0.98 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- 11. Cyan Tea Mug -->
-    <model name="cyan_tea_mug">
-      <pose>-0.03 -0.12 0.6085 0 0 0.5</pose>
+    <!-- 6. Clear Drinking Glass Tumbler -->
+    <model name="plastic_glass">
+      <pose>-0.04 0.18 0.6081 0 0 0</pose>
       <link name="body">
         <inertial>
           <mass>0.15</mass>
-          <inertia><ixx>1.5e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.5e-4</iyy><iyz>0</iyz><izz>1.0e-4</izz></inertia>
+          <inertia><ixx>0.00018</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.00018</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
-          <pose>0 0 0.025 0 0 0</pose>
-          <geometry><cylinder><radius>0.022</radius><length>0.050</length></cylinder></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+          <pose>0 0 0.0275 0 0 0</pose>
+          <geometry><cylinder><radius>0.016</radius><length>0.055</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <geometry>
-            <mesh>
-              <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/mug.dae</uri>
-              <scale>0.55 0.55 0.55</scale>
-            </mesh>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/plastic_glass_norm.obj</uri></mesh>
           </geometry>
+          <material>
+            <ambient>0.6 0.85 0.95 0.8</ambient>
+            <diffuse>0.7 0.90 0.98 0.8</diffuse>
+            <specular>0.9 0.9 0.9 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- 12. Pop Tarts Box (On Pedestal) -->
-    <model name="pop_tarts_box">
-      <pose>-0.18 -0.22 0.628 0 0 0</pose>
+    <!-- 7. Cyan Dining Salad Bowl -->
+    <model name="plastic_bowl">
+      <pose>-0.04 0.26 0.6081 0 0 0</pose>
       <link name="body">
         <inertial>
-          <mass>0.20</mass>
-          <inertia><ixx>2.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>2.0e-4</iyy><iyz>0</iyz><izz>2.0e-4</izz></inertia>
+          <mass>0.18</mass>
+          <inertia><ixx>0.00025</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.00025</iyy><iyz>0</iyz><izz>0.0003</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
-          <pose>0 0 0.040 0 0 0</pose>
-          <geometry><box><size>0.045 0.075 0.080</size></box></geometry>
-          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+          <pose>0 0 0.019 0 0 0</pose>
+          <geometry><cylinder><radius>0.050</radius><length>0.038</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
+        </collision>
+        <visual name="v">
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/plastic_bowl_norm.obj</uri></mesh>
+          </geometry>
+          <material>
+            <ambient>0.15 0.65 0.75 1</ambient>
+            <diffuse>0.20 0.75 0.85 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 8. Ceramic Tea Mug with Loop Handle (on Left Elevated Pedestal) -->
+    <model name="ceramic_tea_mug">
+      <pose>-0.16 0.20 0.6481 0 0 -1.5708</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.24</mass>
+          <inertia><ixx>0.00025</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.00025</iyy><iyz>0</iyz><izz>0.00025</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <pose>0 0 0.0225 0 0 0</pose>
+          <geometry><cylinder><radius>0.016</radius><length>0.045</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
+        </collision>
+        <visual name="v">
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/tea_mug_norm.obj</uri></mesh>
+          </geometry>
+          <material>
+            <ambient>0.88 0.88 0.90 1</ambient>
+            <diffuse>0.92 0.92 0.95 1</diffuse>
+            <specular>0.7 0.7 0.7 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SECTOR 3: KITCHEN & GROCERY (Right Wing, -Y)
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- 9. Black Tefal Skillet Frying Pan -->
+    <model name="tefal_pan">
+      <pose>0.08 -0.22 0.6081 0 0 -0.5</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.35</mass>
+          <inertia><ixx>0.0005</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0005</iyy><iyz>0</iyz><izz>0.0008</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <pose>0 0 0.020 0 0 0</pose>
+          <geometry><cylinder><radius>0.075</radius><length>0.040</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
+        </collision>
+        <visual name="v">
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/pan_tefal_norm.obj</uri></mesh>
+          </geometry>
+          <material>
+            <ambient>0.2 0.2 0.22 1</ambient>
+            <diffuse>0.25 0.25 0.28 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 10. Cyan Travel Gym Mug with Loop Handle -->
+    <model name="mug_bullet_right">
+      <pose>-0.04 -0.15 0.6081 0 0 0.8</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.25</mass>
+          <inertia><ixx>0.00025</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.00025</iyy><iyz>0</iyz><izz>0.00025</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <pose>0 0 0.021 0 0 0</pose>
+          <geometry><cylinder><radius>0.018</radius><length>0.042</length></cylinder></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
+        </collision>
+        <visual name="v">
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/bullet_mug_norm.obj</uri></mesh>
+          </geometry>
+          <material>
+            <ambient>0.15 0.70 0.85 1</ambient>
+            <diffuse>0.20 0.78 0.92 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 11. Multi-Compartment Sorting Tray -->
+    <model name="sorting_tray">
+      <pose>-0.04 -0.25 0.6081 0 0 0</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.28</mass>
+          <inertia><ixx>0.0004</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0004</iyy><iyz>0</iyz><izz>0.0006</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <pose>0 0 0.015 0 0 0</pose>
+          <geometry><box><size>0.15 0.15 0.030</size></box></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
+        </collision>
+        <visual name="v">
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/bullet/tray_norm.obj</uri></mesh>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.65 1</ambient>
+            <diffuse>0.7 0.7 0.75 1</diffuse>
+            <specular>0.4 0.4 0.4 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 12. Fresh Orange Fruit (Spherical Benchmark) -->
+    <model name="orange_fruit">
+      <pose>0.04 -0.14 0.6081 0 0 0</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.18</mass>
+          <inertia><ixx>0.00015</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.00015</iyy><iyz>0</iyz><izz>0.00015</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <pose>0 0 0.016 0 0 0</pose>
+          <geometry><sphere><radius>0.016</radius></sphere></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
+        </collision>
+        <visual name="v">
+          <pose>0 0 0.016 0 0 0</pose>
+          <geometry><sphere><radius>0.016</radius></sphere></geometry>
+          <material>
+            <ambient>0.95 0.45 0.05 1</ambient>
+            <diffuse>0.98 0.50 0.10 1</diffuse>
+            <specular>0.4 0.4 0.3 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 13. Pop Tarts Box (Textured Grocery on Right Pedestal) -->
+    <model name="pop_tarts_box">
+      <pose>-0.16 -0.20 0.6481 0 0 1.5708</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.2</mass>
+          <inertia><ixx>0.00025</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.00035</iyy><iyz>0</iyz><izz>0.0002</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <pose>0 0 0.038 0 0 0</pose>
+          <geometry><box><size>0.051 0.053 0.077</size></box></geometry>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <geometry>
             <mesh>
               <uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/objects/pop_tarts_visual.dae</uri>
-              <scale>0.50 0.50 0.50</scale>
+              <scale>0.55 0.55 0.55</scale>
             </mesh>
           </geometry>
         </visual>
@@ -458,22 +651,23 @@
 
     <!-- ═══════════════════════════════════════════════════════════
          SECTOR 4: ORIGINAL STYLING & SIZING JENGA ARENA (Rear Center, -X)
-         4-Tier Cross-Stacked Tower (75x25x15mm) + Free Practice Blocks
          ═══════════════════════════════════════════════════════════ -->
 
-    <!-- Jenga Tower Tier 1 (Base Wood Block, 75x25x15mm) -->
+    <!-- 17. Jenga Tower Tier 1 (Base Wood Block, 75x25x15mm) -->
     <model name="jenga_tower_b1">
-      <pose>-0.17 0.00 0.6085 0 0 0</pose>
+      <pose>-0.16 0.00 0.6081 0 0 0</pose>
       <link name="body">
         <inertial>
           <mass>0.08</mass>
-          <inertia><ixx>1.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.0e-4</iyy><iyz>0</iyz><izz>1.0e-4</izz></inertia>
+          <inertia><ixx>4e-05</ixx><ixy>0</ixy><ixz>0</ixz><iyy>8e-05</iyy><iyz>0</iyz><izz>8e-05</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
           <pose>0 0 0.0075 0 0 0</pose>
           <geometry><box><size>0.075 0.025 0.015</size></box></geometry>
-          <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <pose>0 0 0.0075 0 0 0</pose>
@@ -483,24 +677,30 @@
               <scale>0.075 0.025 0.015</scale>
             </mesh>
           </geometry>
-          <material><ambient>0.82 0.65 0.42 1</ambient><diffuse>0.85 0.68 0.45 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+          <material>
+            <ambient>0.82 0.65 0.42 1</ambient>
+            <diffuse>0.85 0.68 0.45 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- Jenga Tower Tier 2 (Middle Cross-Stacked Block) -->
+    <!-- 18. Jenga Tower Tier 2 (Middle Cross-Stacked Block) -->
     <model name="jenga_tower_b2">
-      <pose>-0.17 0.00 0.6238 0 0 1.5708</pose>
+      <pose>-0.16 0.00 0.6233 0 0 1.5708</pose>
       <link name="body">
         <inertial>
           <mass>0.08</mass>
-          <inertia><ixx>1.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.0e-4</iyy><iyz>0</iyz><izz>1.0e-4</izz></inertia>
+          <inertia><ixx>4e-05</ixx><ixy>0</ixy><ixz>0</ixz><iyy>8e-05</iyy><iyz>0</iyz><izz>8e-05</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
           <pose>0 0 0.0075 0 0 0</pose>
           <geometry><box><size>0.075 0.025 0.015</size></box></geometry>
-          <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <pose>0 0 0.0075 0 0 0</pose>
@@ -510,24 +710,30 @@
               <scale>0.075 0.025 0.015</scale>
             </mesh>
           </geometry>
-          <material><ambient>0.88 0.70 0.45 1</ambient><diffuse>0.90 0.72 0.48 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+          <material>
+            <ambient>0.88 0.70 0.45 1</ambient>
+            <diffuse>0.90 0.72 0.48 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- Jenga Tower Tier 3 (Rotated Mid-Game Block) -->
+    <!-- 19. Jenga Tower Tier 3 (Rotated Mid-Game Block) -->
     <model name="jenga_tower_b3">
-      <pose>-0.16 0.00 0.6391 0 0 0.35</pose>
+      <pose>-0.15 0.00 0.6385 0 0 0.35</pose>
       <link name="body">
         <inertial>
           <mass>0.08</mass>
-          <inertia><ixx>1.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.0e-4</iyy><iyz>0</iyz><izz>1.0e-4</izz></inertia>
+          <inertia><ixx>4e-05</ixx><ixy>0</ixy><ixz>0</ixz><iyy>8e-05</iyy><iyz>0</iyz><izz>8e-05</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
           <pose>0 0 0.0075 0 0 0</pose>
           <geometry><box><size>0.075 0.025 0.015</size></box></geometry>
-          <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <pose>0 0 0.0075 0 0 0</pose>
@@ -537,24 +743,30 @@
               <scale>0.075 0.025 0.015</scale>
             </mesh>
           </geometry>
-          <material><ambient>0.85 0.68 0.45 1</ambient><diffuse>0.88 0.70 0.48 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+          <material>
+            <ambient>0.85 0.68 0.45 1</ambient>
+            <diffuse>0.88 0.70 0.48 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- Jenga Tower Tier 4 (Top Balancing Block) -->
+    <!-- 20. Jenga Tower Tier 4 (Top Balancing Block) -->
     <model name="jenga_tower_b4">
-      <pose>-0.17 0.00 0.6544 0 0 1.5708</pose>
+      <pose>-0.16 0.00 0.6537 0 0 1.5708</pose>
       <link name="body">
         <inertial>
           <mass>0.08</mass>
-          <inertia><ixx>1.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.0e-4</iyy><iyz>0</iyz><izz>1.0e-4</izz></inertia>
+          <inertia><ixx>4e-05</ixx><ixy>0</ixy><ixz>0</ixz><iyy>8e-05</iyy><iyz>0</iyz><izz>8e-05</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
           <pose>0 0 0.0075 0 0 0</pose>
           <geometry><box><size>0.075 0.025 0.015</size></box></geometry>
-          <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <pose>0 0 0.0075 0 0 0</pose>
@@ -564,24 +776,30 @@
               <scale>0.075 0.025 0.015</scale>
             </mesh>
           </geometry>
-          <material><ambient>0.92 0.75 0.50 1</ambient><diffuse>0.95 0.78 0.52 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+          <material>
+            <ambient>0.92 0.75 0.50 1</ambient>
+            <diffuse>0.95 0.78 0.52 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- Free Jenga Practice Block 1 -->
+    <!-- 21. Free Jenga Practice Block 1 -->
     <model name="jenga_block_1">
-      <pose>-0.11 0.06 0.6085 0 0 0.8</pose>
+      <pose>-0.10 0.06 0.6081 0 0 0.8</pose>
       <link name="body">
         <inertial>
           <mass>0.08</mass>
-          <inertia><ixx>1.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.0e-4</iyy><iyz>0</iyz><izz>1.0e-4</izz></inertia>
+          <inertia><ixx>4e-05</ixx><ixy>0</ixy><ixz>0</ixz><iyy>8e-05</iyy><iyz>0</iyz><izz>8e-05</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
           <pose>0 0 0.0075 0 0 0</pose>
           <geometry><box><size>0.075 0.025 0.015</size></box></geometry>
-          <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <pose>0 0 0.0075 0 0 0</pose>
@@ -591,24 +809,30 @@
               <scale>0.075 0.025 0.015</scale>
             </mesh>
           </geometry>
-          <material><ambient>0.82 0.65 0.42 1</ambient><diffuse>0.85 0.68 0.45 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+          <material>
+            <ambient>0.82 0.65 0.42 1</ambient>
+            <diffuse>0.85 0.68 0.45 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <!-- Free Jenga Practice Block 2 -->
+    <!-- 22. Free Jenga Practice Block 2 -->
     <model name="jenga_block_2">
-      <pose>-0.11 -0.06 0.6085 0 0 -0.8</pose>
+      <pose>-0.10 -0.06 0.6081 0 0 -0.8</pose>
       <link name="body">
         <inertial>
           <mass>0.08</mass>
-          <inertia><ixx>1.0e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.0e-4</iyy><iyz>0</iyz><izz>1.0e-4</izz></inertia>
+          <inertia><ixx>4e-05</ixx><ixy>0</ixy><ixz>0</ixz><iyy>8e-05</iyy><iyz>0</iyz><izz>8e-05</izz></inertia>
         </inertial>
-        <velocity_decay><linear>0.05</linear><angular>0.05</angular></velocity_decay>
         <collision name="c">
           <pose>0 0 0.0075 0 0 0</pose>
           <geometry><box><size>0.075 0.025 0.015</size></box></geometry>
-          <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+          <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>50000.0</kp><kd>100.0</kd><max_vel>0.01</max_vel><min_depth>0.002</min_depth></ode></contact>
+        </surface>
         </collision>
         <visual name="v">
           <pose>0 0 0.0075 0 0 0</pose>
@@ -618,10 +842,15 @@
               <scale>0.075 0.025 0.015</scale>
             </mesh>
           </geometry>
-          <material><ambient>0.88 0.70 0.45 1</ambient><diffuse>0.90 0.72 0.48 1</diffuse><specular>0.2 0.2 0.2 1</specular></material>
+          <material>
+            <ambient>0.88 0.70 0.45 1</ambient>
+            <diffuse>0.90 0.72 0.48 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
         </visual>
       </link>
     </model>
+
 
   </world>
 </sdf>

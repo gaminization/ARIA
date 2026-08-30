@@ -195,6 +195,37 @@ class ManualControlNode(Node):
 
         return clamped, was_clamped
 
+    def _enforce_table_height_safety(self, safe_angles_deg):
+        """
+        Enforce physical tabletop safety envelope (Z >= 0.620m).
+        Prevents arm and gripper from ever colliding with or clipping into the table surface.
+        """
+        if len(safe_angles_deg) < 4:
+            return safe_angles_deg
+
+        sh_rad = self._deg_to_rad(safe_angles_deg[1])
+        el_rad = self._deg_to_rad(safe_angles_deg[2])
+        wr_rad = self._deg_to_rad(safe_angles_deg[3])
+
+        z0 = 0.6937
+        l1 = 0.1169
+        l2 = 0.1275
+        l3 = 0.0950
+
+        # Estimated Z of claw tip
+        z_claw = z0 - l1 * math.sin(sh_rad) - l2 * math.sin(sh_rad + el_rad) - l3 * math.sin(sh_rad + el_rad + wr_rad)
+        min_allowed_z = 0.620  # 12mm above table surface (0.608m)
+
+        if z_claw < min_allowed_z:
+            excess = min_allowed_z - z_claw
+            self.get_logger().warn(
+                f"End-effector height {z_claw:.4f}m penetrates table. Clamping to safe envelope."
+            )
+            # Adjust shoulder safely
+            safe_angles_deg[1] = max(0.0, safe_angles_deg[1] - self._rad_to_deg(excess / l1))
+
+        return safe_angles_deg
+
     def _cap_speed(self, speed_deg_per_s):
         """Cap speed at maximum allowed."""
         if speed_deg_per_s <= 0:
@@ -254,6 +285,9 @@ class ManualControlNode(Node):
                 return False
             clamped, _ = self._apply_soft_limits(i, angles_deg[i])
             safe_angles_deg.append(clamped)
+
+        # Enforce physical tabletop safety envelope (Z >= 0.620m)
+        safe_angles_deg = self._enforce_table_height_safety(safe_angles_deg)
 
         # Pad with current positions if fewer angles provided
         while len(safe_angles_deg) < n_joints:

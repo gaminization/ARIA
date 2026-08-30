@@ -93,6 +93,8 @@ def generate_launch_description():
         launch_arguments={
             "world": world_file,
             "verbose": "true",
+            "gui": "true",
+            "server": "true",
         }.items(),
     )
 

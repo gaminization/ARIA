@@ -59,8 +59,8 @@
   <link name="base_link">
     <inertial>
       <origin xyz="0 0 0.025" rpy="0 0 0"/>
-      <mass value="0.20"/>
-      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      <mass value="0.30"/>
+      <inertia ixx="0.0002" ixy="0" ixz="0" iyy="0.0002" iyz="0" izz="0.0003"/>
     </inertial>
     <visual name="Base_Visual">
       <origin xyz="0 0 0" rpy="1.5708 0 0"/>
@@ -86,7 +86,7 @@
     <child link="waist_link"/>
     <axis xyz="0 0 1.0"/>
     <limit lower="${waist_lower}" upper="${waist_upper}" effort="${mg995_effort}" velocity="${mg995_velocity}"/>
-    <dynamics damping="5.0" friction="0.5"/>
+    <dynamics damping="0.1" friction="0.02"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -95,8 +95,8 @@
   <link name="waist_link">
     <inertial>
       <origin xyz="0 0 0.02" rpy="0 0 0"/>
-      <mass value="0.12"/>
-      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      <mass value="0.20"/>
+      <inertia ixx="0.00015" ixy="0" ixz="0" iyy="0.00015" iyz="0" izz="0.0002"/>
     </inertial>
     <visual name="Waist_Visual">
       <origin xyz="0 0 0" rpy="1.5708 0 0"/>
@@ -122,7 +122,7 @@
     <child link="upper_arm_link"/>
     <axis xyz="0 0 1.0"/>
     <limit lower="${shoulder_lower}" upper="${shoulder_upper}" effort="${mg995_effort}" velocity="${mg995_velocity}"/>
-    <dynamics damping="10.0" friction="1.0"/>
+    <dynamics damping="0.1" friction="0.02"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -131,8 +131,8 @@
   <link name="upper_arm_link">
     <inertial>
       <origin xyz="0 0.06 0" rpy="0 0 0"/>
-      <mass value="0.15"/>
-      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      <mass value="0.18"/>
+      <inertia ixx="0.0002" ixy="0" ixz="0" iyy="0.00004" iyz="0" izz="0.0002"/>
     </inertial>
     <visual name="Arm01_Visual">
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -158,7 +158,7 @@
     <child link="forearm_link"/>
     <axis xyz="0 0 1.0"/>
     <limit lower="${elbow_lower}" upper="${elbow_upper}" effort="${mg995_effort}" velocity="${mg995_velocity}"/>
-    <dynamics damping="8.0" friction="0.8"/>
+    <dynamics damping="0.1" friction="0.02"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -167,8 +167,8 @@
   <link name="forearm_link">
     <inertial>
       <origin xyz="0 0.06 0" rpy="0 0 0"/>
-      <mass value="0.10"/>
-      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.00018" ixy="0" ixz="0" iyy="0.00003" iyz="0" izz="0.00018"/>
     </inertial>
     <visual name="Arm02_Visual">
       <origin xyz="0 0 0" rpy="-1.48894 -1.57209 1.57067"/>
@@ -194,7 +194,7 @@
     <child link="wrist_link"/>
     <axis xyz="0 0 1.0"/>
     <limit lower="${wrist_pitch_lower}" upper="${wrist_pitch_upper}" effort="${sg90_effort}" velocity="${sg90_velocity}"/>
-    <dynamics damping="4.0" friction="0.4"/>
+    <dynamics damping="0.05" friction="0.01"/>
   </joint>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -203,8 +203,8 @@
   <link name="wrist_link">
     <inertial>
       <origin xyz="0 0.02 0" rpy="0 0 0"/>
-      <mass value="0.05"/>
-      <inertia ixx="0.0005" ixy="0" ixz="0" iyy="0.0005" iyz="0" izz="0.0005"/>
+      <mass value="0.10"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00006" iyz="0" izz="0.00006"/>
     </inertial>
     <visual name="Arm03_Visual">
       <origin xyz="0 0 0" rpy="1.2416 1.55752 1.5708"/>
@@ -222,23 +222,23 @@
   </link>
 
   <!-- ═══════════════════════════════════════════════════════════
-       IMU SENSOR LINK (MPU6050 mounted on wrist)
+       SENSOR LINK: MPU6050 6-Axis IMU (Inside wrist link)
        ═══════════════════════════════════════════════════════════ -->
   <joint name="imu_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
     <parent link="wrist_link"/>
     <child link="imu_link"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
   <link name="imu_link">
     <inertial>
-      <mass value="0.002"/>
-      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="1e-8"/>
+      <mass value="0.005"/>
+      <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
     </inertial>
   </link>
 
   <!-- ═══════════════════════════════════════════════════════════
-       WRIST CAMERA (ESP32-CAM mounted on wrist looking down at workspace)
+       SENSOR LINK: WRIST CAMERA (In-Hand Gripper Vision)
        ═══════════════════════════════════════════════════════════ -->
   <joint name="wrist_camera_joint" type="fixed">
     <parent link="wrist_link"/>
@@ -262,14 +262,14 @@
     <child link="finger_left_1_link"/>
     <axis xyz="0 0 1.0"/>
     <limit lower="${gripper_lower}" upper="${gripper_upper}" effort="${sg90_effort}" velocity="${sg90_velocity}"/>
-    <dynamics damping="2.0" friction="0.2"/>
+    <dynamics damping="0.02" friction="0.005"/>
   </joint>
 
   <link name="finger_left_1_link">
     <inertial>
       <origin xyz="0 0 0.03" rpy="0 0 0"/>
-      <mass value="0.015"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <mass value="0.03"/>
+      <inertia ixx="0.000015" ixy="0" ixz="0" iyy="0.000015" iyz="0" izz="0.000015"/>
     </inertial>
     <visual name="Gripper1_Visual">
       <origin xyz="0 0 0" rpy="-1.86728 0 0"/>
@@ -279,9 +279,9 @@
       <material name="blue"/>
     </visual>
     <collision name="Gripper1_Collision">
-      <origin xyz="0.00072 0.00044 0.03" rpy="-1.86728 0 0"/>
+      <origin xyz="0 0 0" rpy="-1.86728 0 0"/>
       <geometry>
-        <box size="0.025 0.03 0.08"/>
+        <mesh filename="package://arm_description/meshes/stl/Gripper1.002.stl" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>
@@ -296,14 +296,14 @@
     <axis xyz="0 0 1.0"/>
     <limit lower="${gripper_lower}" upper="${gripper_upper}" effort="${sg90_effort}" velocity="${sg90_velocity}"/>
     <mimic joint="gripper_joint" multiplier="1.0" offset="0.0"/>
-    <dynamics damping="2.0" friction="0.2"/>
+    <dynamics damping="0.02" friction="0.005"/>
   </joint>
 
   <link name="finger_right_1_link">
     <inertial>
       <origin xyz="0 0 0.03" rpy="0 0 0"/>
-      <mass value="0.015"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <mass value="0.03"/>
+      <inertia ixx="0.000015" ixy="0" ixz="0" iyy="0.000015" iyz="0" izz="0.000015"/>
     </inertial>
     <visual name="Gripper2_Visual">
       <origin xyz="0 0 0" rpy="1.25673 0 0"/>
@@ -313,9 +313,9 @@
       <material name="blue"/>
     </visual>
     <collision name="Gripper2_Collision">
-      <origin xyz="-0.00072 0.00044 0.03" rpy="-1.88476 0 0"/>
+      <origin xyz="0 0 0" rpy="1.25673 0 0"/>
       <geometry>
-        <box size="0.025 0.03 0.08"/>
+        <mesh filename="package://arm_description/meshes/stl/Gripper2.stl" scale="1.0 1.0 1.0"/>
       </geometry>
     </collision>
   </link>

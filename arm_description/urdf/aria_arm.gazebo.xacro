@@ -27,56 +27,70 @@
   <gazebo reference="base_link">
     <material>Gazebo/White</material>
     <self_collide>false</self_collide>
-    <kp>100000.0</kp>
+    <kp>50000.0</kp>
     <kd>10.0</kd>
+    <minDepth>0.002</minDepth>
+    <maxVel>0.05</maxVel>
   </gazebo>
 
   <!-- Waist bracket: orange -->
   <gazebo reference="waist_link">
     <material>Gazebo/Orange</material>
     <self_collide>false</self_collide>
-    <kp>100000.0</kp>
+    <kp>50000.0</kp>
     <kd>10.0</kd>
+    <minDepth>0.002</minDepth>
+    <maxVel>0.05</maxVel>
   </gazebo>
 
   <!-- Upper arm: orange -->
   <gazebo reference="upper_arm_link">
     <material>Gazebo/Orange</material>
     <self_collide>false</self_collide>
-    <kp>100000.0</kp>
+    <kp>50000.0</kp>
     <kd>10.0</kd>
+    <minDepth>0.002</minDepth>
+    <maxVel>0.05</maxVel>
   </gazebo>
 
   <!-- Forearm: orange -->
   <gazebo reference="forearm_link">
     <material>Gazebo/Orange</material>
     <self_collide>false</self_collide>
-    <kp>100000.0</kp>
+    <kp>50000.0</kp>
     <kd>10.0</kd>
+    <minDepth>0.002</minDepth>
+    <maxVel>0.05</maxVel>
   </gazebo>
 
   <!-- Wrist: orange -->
   <gazebo reference="wrist_link">
     <material>Gazebo/Orange</material>
     <self_collide>false</self_collide>
-    <kp>100000.0</kp>
+    <kp>50000.0</kp>
     <kd>10.0</kd>
+    <minDepth>0.002</minDepth>
+    <maxVel>0.05</maxVel>
   </gazebo>
 
   <!-- Gripper holder: white -->
   <gazebo reference="gripper_holder_link">
     <material>Gazebo/White</material>
     <self_collide>false</self_collide>
-    <kp>100000.0</kp>
+    <kp>50000.0</kp>
     <kd>10.0</kd>
+    <minDepth>0.002</minDepth>
+    <maxVel>0.05</maxVel>
   </gazebo>
 
   <!-- Gear housing: white -->
   <gazebo reference="gear_housing_link">
     <material>Gazebo/White</material>
     <self_collide>false</self_collide>
-    <kp>100000.0</kp>
+    <kp>50000.0</kp>
     <kd>10.0</kd>
+    <minDepth>0.002</minDepth>
+    <maxVel>0.05</maxVel>
   </gazebo>
 
   <!-- Left finger pair: blue -->
