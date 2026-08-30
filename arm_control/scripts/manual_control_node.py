@@ -298,7 +298,9 @@ class ManualControlNode(Node):
         # Keep current arm positions, only change gripper
         point = JointTrajectoryPoint()
         positions = list(self.current_positions_rad)
-        positions[5] = position_rad  # Update gripper
+        gripper_idx = self.JOINT_NAMES.index("gripper_joint") if "gripper_joint" in self.JOINT_NAMES else 4
+        if gripper_idx < len(positions):
+            positions[gripper_idx] = position_rad  # Update gripper
         point.positions = positions
         point.time_from_start = Duration(sec=0, nanosec=500000000)  # 0.5s
         traj.points.append(point)

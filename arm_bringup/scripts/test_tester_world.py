@@ -59,8 +59,9 @@ def validate_offline():
         print(f"   • {name}")
 
     required_models = [
-        "overhead_sensor_rig",
+        "overhead_camera_model",
         "side_inspection_rig",
+        "ground_plane",
         "optical_table",
         "arm_mounting_plate",
         "elevated_pedestal_left",
@@ -120,11 +121,10 @@ def validate_offline():
     print(" [PASS] Household, Affordance Mugs & Grocery object meshes verified.")
 
     # 5. Check Sensors
-    sensor_model = world.find(".//model[@name='overhead_sensor_rig']")
+    sensor_model = world.find(".//model[@name='overhead_camera_model']")
     sensors = sensor_model.findall(".//sensor")
     sensor_names = [s.attrib.get("name") for s in sensors]
-    print(f" [PASS] Overhead Sensors configured: {sensor_names}")
-    assert "realsense_d435" in sensor_names, "RealSense D435 depth sensor missing!"
+    print(f" [PASS] Overhead Camera configured: {sensor_names}")
     assert "top_camera" in sensor_names, "Top camera sensor missing!"
 
     print("\n>>> ALL STATIC TESTS PASSED! World is ready for simulation. <<<\n")

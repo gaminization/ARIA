@@ -243,7 +243,7 @@
   <joint name="wrist_camera_joint" type="fixed">
     <parent link="wrist_link"/>
     <child link="wrist_camera_link"/>
-    <origin xyz="-0.02 0.055 0.0" rpy="0 0.52 1.5708"/>
+    <origin xyz="-0.026 0.055 0.025" rpy="1.5708 0.0 -2.00"/>
   </joint>
 
   <link name="wrist_camera_link">
