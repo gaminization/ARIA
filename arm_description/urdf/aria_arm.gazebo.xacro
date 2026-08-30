@@ -76,56 +76,29 @@
     <material>Gazebo/DarkGrey</material>
   </gazebo>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       TOP CAMERA SENSOR — Logitech C270
-       1280×720, 60° HFOV, 30fps
-       Uses libgazebo_ros_camera.so for Gazebo Classic
-       CLEAN: noise stddev = 0
-       ═══════════════════════════════════════════════════════════ -->
-  <gazebo reference="top_camera_link">
-    <sensor name="top_camera" type="camera">
-      <always_on>true</always_on>
-      <update_rate>30</update_rate>
-      <camera>
-        <horizontal_fov>1.0472</horizontal_fov>  <!-- 60 degrees -->
-        <image>
-          <width>1280</width>
-          <height>720</height>
-          <format>R8G8B8</format>
-        </image>
-        <clip>
-          <near>0.01</near>
-          <far>10.0</far>
-        </clip>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.0</stddev>  <!-- CLEAN: no noise in Stage 1 -->
-        </noise>
-      </camera>
-      <plugin name="top_camera_controller" filename="libgazebo_ros_camera.so">
-        <ros>
-          <remapping>~/image_raw:=/top_camera/image_raw</remapping>
-          <remapping>~/camera_info:=/top_camera/camera_info</remapping>
-        </ros>
-        <camera_name>top_camera</camera_name>
-        <frame_name>top_camera_link</frame_name>
-      </plugin>
-    </sensor>
+  <!-- Preserve sensor joints from being lumped into parent link -->
+  <gazebo reference="wrist_camera_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+
+  <gazebo reference="imu_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════
-       WRIST CAMERA SENSOR — ESP32-CAM
+       WRIST CAMERA SENSOR — ESP32-CAM (attached to wrist_link)
        640×480, 66° HFOV, 15fps
        Uses libgazebo_ros_camera.so for Gazebo Classic
        CLEAN: noise stddev = 0
        ═══════════════════════════════════════════════════════════ -->
-  <gazebo reference="wrist_camera_link">
+  <gazebo reference="wrist_link">
     <sensor name="wrist_camera" type="camera">
       <always_on>true</always_on>
-      <update_rate>15</update_rate>
+      <update_rate>30</update_rate>
+      <visualize>false</visualize>
+      <pose>-0.02 0.055 0.0 0 0.52 1.5708</pose>
       <camera>
-        <horizontal_fov>1.1519</horizontal_fov>  <!-- 66 degrees -->
+        <horizontal_fov>1.35</horizontal_fov>  <!-- 77 degrees -->
         <image>
           <width>640</width>
           <height>480</height>

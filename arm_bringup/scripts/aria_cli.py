@@ -95,6 +95,12 @@ def cmd_sim_headless(args):
     )
 
 
+def cmd_sim_tester(args):
+    """Launch tester workspace (Bullet3 benchmarks + IAI table + RGB-D)."""
+    print(f"{C.GREEN}Launching ARIA Ultimate Tester Workspace...{C.RESET}")
+    run_ros2("ros2 launch arm_bringup tester_sim.launch.py")
+
+
 def cmd_sim_full(args):
     """Launch full system (sim + perception + agents)."""
     print(f"{C.GREEN}Launching full ARIA system...{C.RESET}")
@@ -286,7 +292,8 @@ Examples:
     # ── sim ────────────────────────────────────────────────
     sim = sub.add_parser("sim", help="Simulation commands")
     sim_sub = sim.add_subparsers(dest="action")
-    sim_sub.add_parser("start", help="Launch simulation").set_defaults(func=cmd_sim_start)
+    sim_sub.add_parser("start", help="Launch default simulation").set_defaults(func=cmd_sim_start)
+    sim_sub.add_parser("tester", help="Launch tester world (Bullet3 + IAI table + RGB-D)").set_defaults(func=cmd_sim_tester)
     sim_sub.add_parser("manual", help="Launch with manual control").set_defaults(func=cmd_sim_manual)
     sim_sub.add_parser("headless", help="Launch without GUI").set_defaults(func=cmd_sim_headless)
     sim_sub.add_parser("full", help="Launch full system").set_defaults(func=cmd_sim_full)

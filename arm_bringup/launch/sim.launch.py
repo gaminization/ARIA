@@ -2,8 +2,6 @@
 # ═══════════════════════════════════════════════════════════════
 # ARIA Simulation Launch File
 # Launches Gazebo Classic 11 + robot + controllers
-# Uses separate ros2_control_node to avoid gazebo_ros2_control
-# parameter parsing bug in v0.4.x
 # ═══════════════════════════════════════════════════════════════
 import os
 
@@ -15,7 +13,6 @@ from launch.actions import (
     IncludeLaunchDescription,
     RegisterEventHandler,
     LogInfo,
-    TimerAction,
     SetEnvironmentVariable,
 )
 from launch.conditions import IfCondition
@@ -23,8 +20,6 @@ from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-from launch_ros.parameter_descriptions import ParameterValue
 
 import xacro
 
@@ -42,36 +37,47 @@ def generate_launch_description():
     )
     use_rviz = LaunchConfiguration("use_rviz")
 
+    world_arg = DeclareLaunchArgument(
+        "world", default_value="aria_workspace.world",
+        description="World file name or path in arm_bringup/worlds"
+    )
+    world_conf = LaunchConfiguration("world")
+
     # ── Robot description (URDF via xacro) ──
     xacro_file = os.path.join(desc_pkg, "urdf", "aria_arm.urdf.xacro")
     doc = xacro.parse(open(xacro_file))
     xacro.process_doc(doc)
     urdf_xml = doc.toxml()
 
-    # Strip XML comments and collapse whitespace.
-    # gazebo_ros2_control v0.4.x internally passes robot_description
-    # as a --param CLI arg; RCL parser fails on large XML with
-    # special characters in comments. Stripping comments fixes this.
+    # Strip XML comments and collapse whitespace for gazebo_ros2_control
     import re
     urdf_xml = re.sub(r"<!--.*?-->", "", urdf_xml, flags=re.DOTALL)
+    urdf_xml = urdf_xml.replace("package://arm_description", f"file://{desc_pkg}")
     urdf_xml = re.sub(r"\s+", " ", urdf_xml).strip()
 
     robot_description = {"robot_description": urdf_xml}
 
     # ── Paths ──────────────────────────────────────────────
-    world_file = os.path.join(bringup_pkg, "worlds", "aria_workspace.world")
+    from launch.substitutions import PathJoinSubstitution
+    world_file = PathJoinSubstitution([bringup_pkg, "worlds", world_conf])
     controllers_file = os.path.join(ctrl_pkg, "config", "aria_controllers.yaml")
     rviz_config = os.path.join(bringup_pkg, "config", "aria_rviz.rviz")
 
-    # ── Set GAZEBO_MODEL_PATH so Gazebo resolves package:// mesh URIs ──
-    # Gazebo Classic converts package://pkg_name/path to model://pkg_name/path
-    # and looks in GAZEBO_MODEL_PATH for the pkg_name directory.
+    # ── Set GAZEBO_MODEL_PATH and GAZEBO_RESOURCE_PATH ──
+    # Point to the install/share directory so model://arm_description/... resolves
     install_share = os.path.dirname(desc_pkg)  # .../install/share
     existing_model_path = os.environ.get("GAZEBO_MODEL_PATH", "")
     new_model_path = install_share + (":" + existing_model_path if existing_model_path else "")
     set_gazebo_model_path = SetEnvironmentVariable(
         name="GAZEBO_MODEL_PATH",
         value=new_model_path,
+    )
+
+    existing_resource_path = os.environ.get("GAZEBO_RESOURCE_PATH", "")
+    new_resource_path = install_share + (":" + existing_resource_path if existing_resource_path else "")
+    set_gazebo_resource_path = SetEnvironmentVariable(
+        name="GAZEBO_RESOURCE_PATH",
+        value=new_resource_path,
     )
 
     # ═══════════════════════════════════════════════════════
@@ -87,7 +93,6 @@ def generate_launch_description():
         launch_arguments={
             "world": world_file,
             "verbose": "true",
-            "pause": "true",  # Start paused — unpause after controllers load
         }.items(),
     )
 
@@ -157,9 +162,11 @@ def generate_launch_description():
     # ═══════════════════════════════════════════════════════
     return LaunchDescription([
         use_rviz_arg,
+        world_arg,
 
-        # Core launch
+        # Environment & Core launch
         set_gazebo_model_path,
+        set_gazebo_resource_path,
         gazebo,
         robot_state_publisher,
         spawn_robot,
@@ -178,18 +185,11 @@ def generate_launch_description():
                 on_exit=[load_jtc],
             )
         ),
-        # Chain: after JTC, unpause physics then start manual control
+        # Chain: after JTC, start manual control
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=load_jtc,
                 on_exit=[
-                    # Unpause Gazebo — controllers are ready to hold the arm
-                    ExecuteProcess(
-                        cmd=["ros2", "service", "call",
-                             "/unpause_physics",
-                             "std_srvs/srv/Empty"],
-                        output="screen",
-                    ),
                     manual_control,
                     LogInfo(msg="=== ARIA Simulation ready ==="),
                 ],

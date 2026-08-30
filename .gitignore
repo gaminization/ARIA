@@ -110,3 +110,6 @@ arm_dashboard/frontend/dist/
 # ── Benchmark results (commit the summary YAML, not raw CSV) ────
 benchmark_*.csv
 # benchmark_*.yaml  ← COMMIT these (small, important for tracking)
+
+# ── Cloned reference repositories ───────────────────────────────
+repos/

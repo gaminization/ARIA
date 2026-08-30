@@ -12,12 +12,10 @@ controller_manager:
     joint_trajectory_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
-    # Note: gripper_joint is controlled via joint_trajectory_controller
-
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-# ── Joint Trajectory Controller (5 arm joints + gripper) ──────
+# ── Joint Trajectory Controller (4 arm joints + gripper) ──────
 joint_trajectory_controller:
   ros__parameters:
     joints:
@@ -25,7 +23,6 @@ joint_trajectory_controller:
       - shoulder_joint
       - elbow_joint
       - wrist_pitch_joint
-      - wrist_roll_joint
       - gripper_joint
 
     command_interfaces:
@@ -39,57 +36,13 @@ joint_trajectory_controller:
     action_monitor_rate: 20.0  # Hz
 
     allow_partial_joints_goal: false
-    open_loop_control: false   # use PID feedback — open_loop freezes physics with SetPosition()
+    open_loop_control: true    # GazeboSystem handles position directly
 
     constraints:
-      stopped_velocity_tolerance: 0.01  # rad/s
+      stopped_velocity_tolerance: 0.05  # rad/s
       goal_time: 0.0                    # 0 = no timeout
 
-    gains:
-      # MG995 joints — tuned for stability under gravity
-      waist_joint:
-        p: 80.0
-        d: 8.0
-        i: 0.01
-        i_clamp: 1.0
-      shoulder_joint:
-        p: 80.0
-        d: 8.0
-        i: 0.01
-        i_clamp: 1.0
-      elbow_joint:
-        p: 80.0
-        d: 8.0
-        i: 0.01
-        i_clamp: 1.0
-      # SG90 joints — need sufficient gains for gravity compensation
-      wrist_pitch_joint:
-        p: 50.0
-        d: 5.0
-        i: 0.01
-        i_clamp: 0.5
-      wrist_roll_joint:
-        p: 50.0
-        d: 5.0
-        i: 0.01
-        i_clamp: 0.5
-      gripper_joint:
-        p: 30.0
-        d: 3.0
-        i: 0.005
-        i_clamp: 0.5
-
-# ── Gripper Action Controller ─────────────────────────────────
-gripper_action_controller:
-  ros__parameters:
-    joint: gripper_joint
-    action_monitor_rate: 20.0  # Hz
-    goal_tolerance: 0.01       # rad
-    max_effort: 0.18           # Nm (SG90 max)
-    stall_velocity_threshold: 0.001
-    stall_timeout: 1.0
-
-# ── Joint State Broadcaster (all 6 joints) ────────────────────
+# ── Joint State Broadcaster (all 5 joints) ────────────────────
 joint_state_broadcaster:
   ros__parameters:
     joints:
@@ -97,7 +50,6 @@ joint_state_broadcaster:
       - shoulder_joint
       - elbow_joint
       - wrist_pitch_joint
-      - wrist_roll_joint
       - gripper_joint
 
     interfaces:

@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════
+# ARIA Robotics Suite — Command Line Interface (CLI)
+# ═══════════════════════════════════════════════════════════════
+
+set -e
+
+ARIA_ROOT="/home/gaminizer/Projects/ARIA"
+
+# Ensure ROS 2 Humble & ARIA workspace environment are sourced
+source /opt/ros/humble/setup.bash 2>/dev/null || true
+if [ -f "$ARIA_ROOT/install/setup.bash" ]; then
+    source "$ARIA_ROOT/install/setup.bash" 2>/dev/null || true
+fi
+
+cmd="${1:-help}"
+subcmd="${2:-}"
+
+case "$cmd" in
+    sim)
+        if [ "$subcmd" = "tester" ]; then
+            echo "🚀 Launching ARIA Tester Simulation (Bullet3 Benchmark + IAI Table + RGB-D)..."
+            ros2 launch arm_bringup tester_sim.launch.py "${@:3}"
+        else
+            echo "🚀 Launching ARIA Primary Simulation (Optical Table + Workstation Objects)..."
+            ros2 launch arm_bringup sim.launch.py "${@:2}"
+        fi
+        ;;
+
+    build)
+        echo "🔨 Building ARIA workspace packages..."
+        cd "$ARIA_ROOT"
+        if [ -n "$subcmd" ]; then
+            colcon build --symlink-install --packages-select "$subcmd" "${@:3}"
+        else
+            colcon build --symlink-install "${@:2}"
+        fi
+        ;;
+
+    pose)
+        pose_name="${subcmd:-ready}"
+        echo "🤖 Commanding robot arm to pose: '$pose_name'..."
+        ros2 service call /aria/go_named_pose arm_interfaces/srv/GoNamedPose "{pose_name: '$pose_name'}"
+        ;;
+
+    gripper)
+        if [ "$subcmd" = "open" ]; then
+            echo "👐 Opening gripper..."
+            ros2 service call /aria/open_gripper std_srvs/srv/Trigger "{}"
+        elif [ "$subcmd" = "close" ]; then
+            echo "✊ Closing gripper..."
+            ros2 service call /aria/close_gripper std_srvs/srv/Trigger "{}"
+        else
+            echo "Usage: aria gripper [open|close]"
+        fi
+        ;;
+
+    estop)
+        echo "🛑 Triggering ARIA Emergency Stop..."
+        ros2 service call /aria/estop std_srvs/srv/Trigger "{}"
+        ;;
+
+    release-estop)
+        echo "🟢 Releasing Emergency Stop..."
+        ros2 service call /aria/release_estop std_srvs/srv/Trigger "{}"
+        ;;
+
+    vision)
+        echo "👁️ Starting ARIA Vision & Perception Pipeline..."
+        ros2 launch arm_bringup perception.launch.py "${@:2}"
+        ;;
+
+    dashboard)
+        echo "📊 Starting ARIA Web Control Dashboard (FastAPI + Web UI)..."
+        python3 -m uvicorn arm_dashboard.server:app --host 0.0.0.0 --port 8000 --reload
+        ;;
+
+    help|--help|-h|*)
+        echo "═══════════════════════════════════════════════════════════"
+        echo "  ARIA Robotics Suite CLI"
+        echo "═══════════════════════════════════════════════════════════"
+        echo "Usage: aria <command> [options]"
+        echo ""
+        echo "Commands:"
+        echo "  aria sim [tester] [use_rviz:=true]  Launch Gazebo simulation"
+        echo "  aria build [package_name]           Build ARIA colcon packages"
+        echo "  aria pose <name>                    Move to pose (home, ready, reach, inspect, folded)"
+        echo "  aria gripper <open|close>           Control gripper aperture"
+        echo "  aria estop                          Immediate emergency stop"
+        echo "  aria release-estop                  Release emergency stop"
+        echo "  aria vision                         Launch perception and 6D pose estimation"
+        echo "  aria dashboard                      Start the web dashboard on http://localhost:8000"
+        echo "═══════════════════════════════════════════════════════════"
+        ;;
+esac

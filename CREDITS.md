@@ -1,65 +1,94 @@
-# CREDITS
+# CREDITS & ATTRIBUTION
 
-ARIA uses assets and draws inspiration from the following open-source projects:
-
-## Robot Arm Meshes
-
-### [smart-methods/arduino_robot_arm](https://github.com/smart-methods/arduino_robot_arm)
-- **Used**: STL meshes for the 5-DoF robotic arm (Base, Waist, Arm links, Gripper)
-- **License**: Not specified
-- **Description**: ROS packages for planning and executing motion trajectories for a robot arm in simulation and real-life. The robot arm uses MoveIt for kinematics via the KDL solver.
-
-### [smart-methods/arduino_robot_arm (with gripper)](https://github.com/smart-methods/arduino_robot_arm)
-- **Used**: Gripper STL meshes (Gripper1, Gripper2, gear1, gear2), URDF joint origins and transforms
-- **License**: Not specified
-- **Description**: Extended version of the arduino_robot_arm with a fully controllable gripper mechanism.
-
-## Object Assets
-
-### [personalrobotics/pr_assets](https://github.com/personalrobotics/pr_assets)
-- **Used**: Graspable object meshes (bowl, glass, plate, fuze_bottle, plastic variants)
-- **License**: BSD
-- **Description**: Repository of OpenRAVE resources used by the Personal Robotics Lab, including meshes and KinBody specifications for objects commonly encountered by HERB and ADA robots.
-- **Contributors**: Michael Koval, Aaron Walsman, Personal Robotics Lab at University of Washington
-
-## Table & Furniture Models
-
-### [code-iai/iai_table_robot_description](https://github.com/code-iai/iai_table_robot_description)
-- **Used**: Reference for table-mounted robot workspace design
-- **License**: Not specified
-- **Description**: URDF description of table-mounted UR5 robots in the IAI lab.
-
-## Simulation Scenarios
-
-### [niteshjha08/warebots](https://github.com/niteshjha08/warebots)
-- **Used**: Reference for warehouse simulation, multi-robot coordination patterns, DH parameter conventions
-- **License**: Not specified
-- **Description**: Warehouse Robotic Automation System — models and simulates multiple robots coordinating for pick-and-place, packaging, and labelling tasks.
-
-### [smart-methods/robot_scenarios_sim](https://github.com/smart-methods/robot_scenarios_sim)
-- **Used**: Gazebo model references (shelf, kitchen, table_set, tray models)
-- **License**: Not specified
-- **Description**: Collection of Gazebo simulation scenario models including kitchen, living room, storage, and shelf environments.
-
-## Grasping & Manipulation Reference
-
-### [gym-grasp](https://github.com/)
-- **Used**: Reference for RL-based grasping task design (LiftObject, OpenDoor, OpenDrawer, PourCup)
-- **License**: Not specified
-- **Description**: Isaac Gym environments for robotic grasping and dexterous hand manipulation, providing reinforcement learning environments powered by Isaac Gym.
-
-## Utility Tools
-
-### [ros-industrial/DH2URDF](https://github.com/)
-- **Used**: Reference for DH parameter to URDF conversion methodology
-- **License**: MIT
-- **Description**: JavaScript tool for converting Denavit-Hartenberg parameters to URDF format.
-
-### [puppet](https://github.com/)
-- **Used**: Reference for teleoperation GUI patterns
-- **License**: BSD
-- **Description**: ROS package for puppet-style robot control via GUI sliders.
+ARIA uses assets, 3D meshes, world models, and draws architectural design patterns from the following open-source projects:
 
 ---
 
-*All assets are used in compliance with their respective licenses. Files are copied (not moved) from the reference repositories as requested.*
+## 1. Robot Arm & Gripper CAD Models
+
+### [smart-methods/arduino_robot_arm](https://github.com/smart-methods/arduino_robot_arm)
+- **Files Copied**:
+  - `arm_description/meshes/stl/Base.stl` (Base housing)
+  - `arm_description/meshes/stl/Waist.stl` (Waist bracket)
+  - `arm_description/meshes/stl/Arm 01.stl` (Upper arm link)
+  - `arm_description/meshes/stl/Arm 02.stl` (Forearm link)
+- **Role**: Base 3D geometry, joint hierarchy, and dimensional measurements for the 5-DoF robotic manipulator.
+- **Original Authors**: Smart Methods Robotic Team.
+
+### [smart-methods/arduino_robot_arm_gripper](https://github.com/smart-methods/arduino_robot_arm)
+- **Files Copied**:
+  - `arm_description/meshes/stl/Arm 03.stl` (Wrist pitch/roll mount)
+  - `arm_description/meshes/stl/Gripper1.002.stl` (Primary drive finger pair)
+  - `arm_description/meshes/stl/Gripper2.stl` (Opposing gear mimic finger pair)
+  - `arm_description/meshes/stl/gear1.stl` & `gear2.stl` (Gear drive mechanism)
+- **Role**: CAD joint origins, transforms, rotation axes, and mesh scale factors for precision kinematic alignment and gear-driven gripper control.
+
+---
+
+## 2. Laboratory Workstation & Optical Table
+
+### [code-iai/iai_table_robot_description](https://github.com/code-iai/iai_table_robot_description)
+- **Files Copied**:
+  - `arm_description/meshes/table/complete_table.dae` (Industrial aluminum optical breadboard table)
+  - `arm_description/meshes/table/complete_table.stl` (Collision model)
+  - `arm_description/meshes/table/base_to_optical_table.stl` (CNC aluminum robot mounting adapter plate)
+- **Role**: High-fidelity optical workstation environment and robotic arm table mounting fixture in Gazebo simulation.
+- **Original Authors**: Institute for Artificial Intelligence (IAI), University of Bremen.
+
+---
+
+## 3. Realistic Scenario Props & Domestic Manipulation
+
+### [smart-methods/robot_scenarios_sim](https://github.com/smart-methods/robot_scenarios_sim)
+- **Files Copied**:
+  - `arm_description/meshes/objects/plate.dae` (Ceramic dining plate)
+  - `arm_description/meshes/objects/tray.dae` + texture maps (Sorting and serving tray)
+  - `arm_description/meshes/objects/Dishes_Mug.dae` (Ceramic coffee mug)
+  - `arm_description/meshes/objects/Green_Bottle.dae` + textures (Glass beverage bottle)
+  - `arm_description/meshes/furniture/shelf.dae` (Workshop wall shelving unit)
+- **Role**: Visual and physical collision assets for table-top object manipulation, sorting, and scene understanding.
+
+---
+
+## 4. Graspable Objects & Manipulation Assets
+
+### [personalrobotics/pr_assets](https://github.com/personalrobotics/pr_assets)
+- **Files Copied**:
+  - `arm_description/meshes/objects/bowl.stl` (Ceramic cereal bowl)
+  - `arm_description/meshes/objects/fork.stl` (Stainless steel fork)
+  - `arm_description/meshes/objects/cube_mesh.stl` (Precision calibration and sorting cube)
+  - `arm_description/meshes/objects/fuze_bottle_visual.dae` (Juice bottle)
+- **Role**: OpenRAVE-compatible graspable meshes with realistic contact friction parameters.
+- **License**: BSD-3-Clause
+- **Original Authors**: Michael Koval, Aaron Walsman, Personal Robotics Lab, University of Washington.
+
+---
+
+## 5. Simulation Scenarios & Multi-Robot Architecture
+
+### [niteshjha08/warebots](https://github.com/niteshjha08/warebots)
+- **Role**: Architectural reference for multi-stage automation, Gazebo world physics tuning, and DH parameter conventions.
+- **Original Authors**: Nitesh Jha.
+
+---
+
+## 6. Reinforcement Learning & Grasping Environments
+
+### [gym-grasp](https://github.com/)
+- **Role**: Reference for RL reward design, grasp reachability validation, and task formulation (Lift, Pour, Bin Sorting).
+
+---
+
+## 7. Kinematic & Teleoperation Tooling
+
+### [ros-industrial/DH2URDF](https://github.com/ros-industrial/DH2URDF)
+- **Role**: Reference tool for translating Denavit-Hartenberg parameter tables to standard URDF format.
+- **License**: MIT
+
+### [puppet](https://github.com/)
+- **Role**: Reference for responsive slider-based teleoperation GUI design.
+- **License**: BSD
+
+---
+
+*Note: All external assets are copied (not moved) from the reference repositories to preserve repository integrity. Attribution is documented in accordance with open-source licensing.*

@@ -34,7 +34,6 @@ class ManualControlNode(Node):
         "shoulder_joint",
         "elbow_joint",
         "wrist_pitch_joint",
-        "wrist_roll_joint",
         "gripper_joint",
     ]
 
@@ -43,31 +42,30 @@ class ManualControlNode(Node):
         "shoulder_joint",
         "elbow_joint",
         "wrist_pitch_joint",
-        "wrist_roll_joint",
     ]
 
-    # Home = all joints at center of their range, gripper slightly open
-    HOME_ANGLES_DEG = [0.0, 90.0, 75.0, 0.0, 0.0, 20.0]
+    # Home = straight upright reference pose (matching CAD zero and reference positions.png)
+    HOME_ANGLES_DEG = [0.0, 0.0, 0.0, 0.0, 0.0]
 
-    # Joint limits in degrees [min, max]
+    # Joint limits in degrees [min, max] (matching -1.571 to +1.571 rad)
     JOINT_LIMITS_DEG = [
         [-90.0,  90.0],   # waist
-        [  0.0, 180.0],   # shoulder
-        [  0.0, 150.0],   # elbow
+        [-90.0,  90.0],   # shoulder
+        [-90.0,  90.0],   # elbow
         [-90.0,  90.0],   # wrist_pitch
-        [-90.0,  90.0],   # wrist_roll
         [  0.0,  45.0],   # gripper (0=closed, 45=open)
     ]
 
     SOFT_LIMIT_MARGIN_DEG = 1.0  # degrees before hard limit
     MAX_SPEED_DEG_PER_S = 90.0   # max joint speed
 
-    # Named poses: [waist, shoulder, elbow, wrist_pitch, wrist_roll, gripper]
+    # Named poses: [waist, shoulder, elbow, wrist_pitch, gripper]
     NAMED_POSES = {
-        "home":    [  0.0,  90.0,  75.0,   0.0,  0.0, 20.0],
-        "ready":   [  0.0,  45.0, 135.0,   0.0,  0.0, 20.0],
-        "folded":  [  0.0, 160.0,  20.0,   0.0,  0.0, 10.0],
-        "inspect": [  0.0,  60.0, 120.0, -30.0,  0.0, 20.0],
+        "home":    [  0.0,   0.0,   0.0,   0.0,  0.0],
+        "ready":   [  0.0,  35.0, -55.0,  20.0, 20.0],
+        "reach":   [  0.0,  48.0, -70.0,  22.0, 25.0],
+        "inspect": [  0.0,  20.0, -30.0,  10.0, 20.0],
+        "folded":  [  0.0, -30.0,  60.0, -30.0,  0.0],
     }
 
     def __init__(self):
@@ -77,8 +75,8 @@ class ManualControlNode(Node):
         self.callback_group = ReentrantCallbackGroup()
 
         # ── State ──────────────────────────────────────────────
-        self.current_positions_rad = [0.0] * 6
-        self.target_positions_rad = [0.0] * 6
+        self.current_positions_rad = [0.0] * 5
+        self.target_positions_rad = [0.0] * 5
         self.estop_active = False
         self.motion_complete = True
 
@@ -151,10 +149,21 @@ class ManualControlNode(Node):
         )
         self.status_timer = self.create_timer(0.1, self._publish_status)
 
+        # ── Auto-home on startup ────────────────────────────────
+        self._startup_timer = self.create_timer(1.5, self._initial_home_callback)
+
         self.get_logger().info("═══ ARIA Manual Control Node ready ═══")
         self.get_logger().info("Services: /aria/set_joint, /aria/set_all_joints, "
                                "/aria/go_named_pose, /aria/open_gripper, "
                                "/aria/close_gripper, /aria/estop, /aria/release_estop")
+
+    def _initial_home_callback(self):
+        """Move to home pose on initial node start."""
+        if hasattr(self, '_startup_timer') and self._startup_timer is not None:
+            self._startup_timer.cancel()
+            self._startup_timer = None
+        self.get_logger().info("Executing automatic initial home pose...")
+        self._send_arm_command(self.HOME_ANGLES_DEG, speed_deg_per_s=30.0)
 
     # ═══════════════════════════════════════════════════════════
     # SAFETY CHECKS — run on EVERY command
@@ -219,8 +228,9 @@ class ManualControlNode(Node):
         if self._check_estop():
             return  # Silently ignore during e-stop
 
-        if len(msg.position) >= 6:
-            angles_deg = [self._rad_to_deg(p) for p in msg.position[:6]]
+        n_joints = len(self.JOINT_NAMES)
+        if len(msg.position) >= n_joints:
+            angles_deg = [self._rad_to_deg(p) for p in msg.position[:n_joints]]
             self._send_arm_command(angles_deg, speed_deg_per_s=60.0)
 
     # ═══════════════════════════════════════════════════════════
@@ -229,14 +239,15 @@ class ManualControlNode(Node):
     def _send_arm_command(self, angles_deg, speed_deg_per_s=30.0):
         """
         Send position command to the arm joints via JointTrajectory.
-        angles_deg: list of 6 target angles in degrees
+        angles_deg: list of target angles in degrees
         speed_deg_per_s: max speed per joint
         """
         speed = self._cap_speed(speed_deg_per_s)
+        n_joints = len(self.JOINT_NAMES)
 
         # Apply safety checks and soft limits to all joints
         safe_angles_deg = []
-        for i in range(6):
+        for i in range(min(len(angles_deg), n_joints)):
             if self._check_nan(angles_deg[i]):
                 self.get_logger().error(
                     f"NaN/Inf rejected for joint {self.JOINT_NAMES[i]}")
@@ -244,9 +255,14 @@ class ManualControlNode(Node):
             clamped, _ = self._apply_soft_limits(i, angles_deg[i])
             safe_angles_deg.append(clamped)
 
+        # Pad with current positions if fewer angles provided
+        while len(safe_angles_deg) < n_joints:
+            idx = len(safe_angles_deg)
+            safe_angles_deg.append(self._rad_to_deg(self.current_positions_rad[idx]))
+
         # Compute duration from max angular displacement
         max_displacement_deg = 0.0
-        for i in range(6):
+        for i in range(n_joints):
             current_deg = self._rad_to_deg(self.current_positions_rad[i])
             displacement = abs(safe_angles_deg[i] - current_deg)
             max_displacement_deg = max(max_displacement_deg, displacement)
@@ -350,11 +366,12 @@ class ManualControlNode(Node):
             response.expected_duration_s = 0.0
             return response
 
-        if len(request.angles_deg) != 6:
+        n_joints = len(self.JOINT_NAMES)
+        if len(request.angles_deg) != n_joints:
             response.success = False
             response.expected_duration_s = 0.0
             self.get_logger().error(
-                f"Expected 6 angles, got {len(request.angles_deg)}")
+                f"Expected {n_joints} angles, got {len(request.angles_deg)}")
             return response
 
         angles_deg = list(request.angles_deg)
@@ -363,7 +380,7 @@ class ManualControlNode(Node):
 
         # Compute expected duration
         max_disp = 0.0
-        for i in range(6):
+        for i in range(n_joints):
             current_deg = self._rad_to_deg(self.current_positions_rad[i])
             disp = abs(angles_deg[i] - current_deg)
             max_disp = max(max_disp, disp)
@@ -457,9 +474,10 @@ class ManualControlNode(Node):
     # ═══════════════════════════════════════════════════════════
     def _publish_status(self):
         """Publish manual control status at 10Hz."""
+        n_joints = len(self.JOINT_NAMES)
         # Check if motion is complete (all joints within 2° of target)
         all_within = True
-        for i in range(6):
+        for i in range(n_joints):
             current_deg = self._rad_to_deg(self.current_positions_rad[i])
             target_deg = self._rad_to_deg(self.target_positions_rad[i])
             if abs(current_deg - target_deg) > 2.0:
@@ -469,7 +487,7 @@ class ManualControlNode(Node):
 
         # Check joints within limits
         joints_ok = True
-        for i in range(6):
+        for i in range(n_joints):
             current_deg = self._rad_to_deg(self.current_positions_rad[i])
             limits = self.JOINT_LIMITS_DEG[i]
             if current_deg < limits[0] or current_deg > limits[1]:

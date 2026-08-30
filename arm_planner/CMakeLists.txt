@@ -107,6 +107,5 @@ install(DIRECTORY scripts/
   DESTINATION share/${PROJECT_NAME}/scripts
   OPTIONAL
 )
-)
 
 ament_package()
