@@ -26,46 +26,81 @@
   <!-- Base: white -->
   <gazebo reference="base_link">
     <material>Gazebo/White</material>
+    <self_collide>false</self_collide>
+    <kp>100000.0</kp>
+    <kd>10.0</kd>
   </gazebo>
 
   <!-- Waist bracket: orange -->
   <gazebo reference="waist_link">
     <material>Gazebo/Orange</material>
+    <self_collide>false</self_collide>
+    <kp>100000.0</kp>
+    <kd>10.0</kd>
   </gazebo>
 
   <!-- Upper arm: orange -->
   <gazebo reference="upper_arm_link">
     <material>Gazebo/Orange</material>
+    <self_collide>false</self_collide>
+    <kp>100000.0</kp>
+    <kd>10.0</kd>
   </gazebo>
 
   <!-- Forearm: orange -->
   <gazebo reference="forearm_link">
     <material>Gazebo/Orange</material>
+    <self_collide>false</self_collide>
+    <kp>100000.0</kp>
+    <kd>10.0</kd>
   </gazebo>
 
   <!-- Wrist: orange -->
   <gazebo reference="wrist_link">
     <material>Gazebo/Orange</material>
+    <self_collide>false</self_collide>
+    <kp>100000.0</kp>
+    <kd>10.0</kd>
   </gazebo>
 
   <!-- Gripper holder: white -->
   <gazebo reference="gripper_holder_link">
     <material>Gazebo/White</material>
+    <self_collide>false</self_collide>
+    <kp>100000.0</kp>
+    <kd>10.0</kd>
   </gazebo>
 
   <!-- Gear housing: white -->
   <gazebo reference="gear_housing_link">
     <material>Gazebo/White</material>
+    <self_collide>false</self_collide>
+    <kp>100000.0</kp>
+    <kd>10.0</kd>
   </gazebo>
 
   <!-- Left finger pair: blue -->
   <gazebo reference="finger_left_1_link">
     <material>Gazebo/Blue</material>
+    <self_collide>false</self_collide>
+    <mu1>1.5</mu1>
+    <mu2>1.5</mu2>
+    <kp>50000.0</kp>
+    <kd>10.0</kd>
+    <minDepth>0.001</minDepth>
+    <maxVel>0.1</maxVel>
   </gazebo>
 
   <!-- Right finger pair: blue -->
   <gazebo reference="finger_right_1_link">
     <material>Gazebo/Blue</material>
+    <self_collide>false</self_collide>
+    <mu1>1.5</mu1>
+    <mu2>1.5</mu2>
+    <kp>50000.0</kp>
+    <kd>10.0</kd>
+    <minDepth>0.001</minDepth>
+    <maxVel>0.1</maxVel>
   </gazebo>
 
   <!-- Cameras: dark gray -->
@@ -96,7 +131,7 @@
       <always_on>true</always_on>
       <update_rate>30</update_rate>
       <visualize>false</visualize>
-      <pose>0.025 0.050 -0.007 1.5708 0.0000 2.3358</pose>
+      <pose>0.015 0.040 -0.007 1.5708 0.2618 1.5708</pose>
       <camera>
         <horizontal_fov>1.35</horizontal_fov>  <!-- 77 degrees -->
         <image>
