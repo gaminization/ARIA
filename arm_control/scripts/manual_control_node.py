@@ -49,11 +49,11 @@ class ManualControlNode(Node):
 
     # Joint limits in degrees [min, max] (matching -1.571 to +1.571 rad)
     JOINT_LIMITS_DEG = [
-        [-90.0,  90.0],   # waist
+        [-180.0, 180.0],  # waist
         [-90.0,  90.0],   # shoulder
         [-90.0,  90.0],   # elbow
         [-90.0,  90.0],   # wrist_pitch
-        [  0.0,  45.0],   # gripper (0=closed, 45=open)
+        [  0.0,  60.0],   # gripper (0=closed, 45=open)
     ]
 
     SOFT_LIMIT_MARGIN_DEG = 1.0  # degrees before hard limit

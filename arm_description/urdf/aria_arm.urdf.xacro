@@ -17,8 +17,8 @@
   <xacro:property name="gripper_mesh_scale" value="0.00098 0.00098 0.00098"/>
 
   <!-- Joint Angle Limits (radians) -->
-  <xacro:property name="waist_lower"        value="-1.5708"/> <!-- -90 deg -->
-  <xacro:property name="waist_upper"        value="1.5708"/>  <!-- +90 deg -->
+  <xacro:property name="waist_lower"        value="-3.14159"/> <!-- -180 deg -->
+  <xacro:property name="waist_upper"        value="3.14159"/>  <!-- +180 deg -->
   <xacro:property name="shoulder_lower"     value="-1.5708"/> <!-- -90 deg -->
   <xacro:property name="shoulder_upper"     value="1.5708"/>  <!-- +90 deg -->
   <xacro:property name="elbow_lower"        value="-1.5708"/> <!-- -90 deg -->
