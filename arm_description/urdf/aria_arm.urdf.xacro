@@ -137,7 +137,7 @@
     <visual name="Arm01_Visual">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://arm_description/meshes/stl/Arm 01.stl" scale="${arm_mesh_scale}"/>
+        <mesh filename="package://arm_description/meshes/stl/Arm_01.stl" scale="${arm_mesh_scale}"/>
       </geometry>
       <material name="orange"/>
     </visual>
@@ -173,7 +173,7 @@
     <visual name="Arm02_Visual">
       <origin xyz="0 0 0" rpy="-1.48894 -1.57209 1.57067"/>
       <geometry>
-        <mesh filename="package://arm_description/meshes/stl/Arm 02.stl" scale="${arm_mesh_scale}"/>
+        <mesh filename="package://arm_description/meshes/stl/Arm_02.stl" scale="${arm_mesh_scale}"/>
       </geometry>
       <material name="orange"/>
     </visual>
@@ -209,7 +209,7 @@
     <visual name="Arm03_Visual">
       <origin xyz="0 0 0" rpy="1.2416 1.55752 1.5708"/>
       <geometry>
-        <mesh filename="package://arm_description/meshes/stl/Arm 03.stl" scale="${arm_mesh_scale}"/>
+        <mesh filename="package://arm_description/meshes/stl/Arm_03.stl" scale="${arm_mesh_scale}"/>
       </geometry>
       <material name="orange"/>
     </visual>
@@ -274,7 +274,7 @@
     <visual name="Gripper1_Visual">
       <origin xyz="0 0 0" rpy="-1.86728 0 0"/>
       <geometry>
-        <mesh filename="package://arm_description/meshes/stl/Gripper1.002.stl" scale="${gripper_mesh_scale}"/>
+        <mesh filename="package://arm_description/meshes/stl/Gripper1.002.stl" scale="1.0 1.0 1.0"/>
       </geometry>
       <material name="blue"/>
     </visual>
@@ -306,9 +306,9 @@
       <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
     </inertial>
     <visual name="Gripper2_Visual">
-      <origin xyz="0 0 0" rpy="-1.88476 0 0"/>
+      <origin xyz="0 0 0" rpy="1.25673 0 0"/>
       <geometry>
-        <mesh filename="package://arm_description/meshes/stl/Gripper1.003.stl" scale="${gripper_mesh_scale}"/>
+        <mesh filename="package://arm_description/meshes/stl/Gripper2.stl" scale="1.0 1.0 1.0"/>
       </geometry>
       <material name="blue"/>
     </visual>
