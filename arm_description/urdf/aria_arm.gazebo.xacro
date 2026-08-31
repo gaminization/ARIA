@@ -20,6 +20,35 @@
   </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════
+       ROBUST JOINT DYNAMICS (Implicit Spring-Damper in ODE)
+       Prevents joint constraint explosion and shearing forces
+       ═══════════════════════════════════════════════════════════ -->
+  <gazebo reference="waist_joint">
+    <implicitSpringDamper>true</implicitSpringDamper>
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+  <gazebo reference="shoulder_joint">
+    <implicitSpringDamper>true</implicitSpringDamper>
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+  <gazebo reference="elbow_joint">
+    <implicitSpringDamper>true</implicitSpringDamper>
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+  <gazebo reference="wrist_pitch_joint">
+    <implicitSpringDamper>true</implicitSpringDamper>
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+  <gazebo reference="gripper_joint">
+    <implicitSpringDamper>true</implicitSpringDamper>
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+  <gazebo reference="finger_mimic_joint">
+    <implicitSpringDamper>true</implicitSpringDamper>
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+
+  <!-- ═══════════════════════════════════════════════════════════
        MATERIAL COLORS — Gazebo Classic specific
        ═══════════════════════════════════════════════════════════ -->
 

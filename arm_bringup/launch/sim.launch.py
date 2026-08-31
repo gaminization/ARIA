@@ -80,6 +80,11 @@ def generate_launch_description():
         value=new_resource_path,
     )
 
+    set_display = SetEnvironmentVariable(
+        name="DISPLAY",
+        value=os.environ.get("DISPLAY", ":1"),
+    )
+
     # ═══════════════════════════════════════════════════════
     # 1. GAZEBO CLASSIC 11
     # ═══════════════════════════════════════════════════════
@@ -167,6 +172,7 @@ def generate_launch_description():
         world_arg,
 
         # Environment & Core launch
+        set_display,
         set_gazebo_model_path,
         set_gazebo_resource_path,
         gazebo,
