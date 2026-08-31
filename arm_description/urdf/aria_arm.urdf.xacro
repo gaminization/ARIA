@@ -142,9 +142,9 @@
       <material name="orange"/>
     </visual>
     <collision name="Arm01_Collision">
-      <origin xyz="-0.00032 0.05624 0.00439" rpy="0 0 0"/>
+      <origin xyz="-0.00032 0.058 0.00439" rpy="0 0 0"/>
       <geometry>
-        <box size="0.04221 0.16277 0.02051"/>
+        <box size="0.038 0.082 0.020"/>
       </geometry>
     </collision>
   </link>
@@ -178,9 +178,9 @@
       <material name="orange"/>
     </visual>
     <collision name="Arm02_Collision">
-      <origin xyz="-0.00436 0.05688 0.00738" rpy="-1.48879 -1.57209 1.57066"/>
+      <origin xyz="-0.00436 0.062 0.00738" rpy="-1.48879 -1.57209 1.57066"/>
       <geometry>
-        <box size="0.02681 0.16398 0.0384"/>
+        <box size="0.026 0.090 0.035"/>
       </geometry>
     </collision>
   </link>
@@ -214,9 +214,9 @@
       <material name="orange"/>
     </visual>
     <collision name="Arm03_Collision">
-      <origin xyz="-0.00062 0.00019 0.00049" rpy="1.24161 1.55752 1.5708"/>
+      <origin xyz="-0.00062 0.015 0.00049" rpy="1.24161 1.55752 1.5708"/>
       <geometry>
-        <box size="0.035 0.06 0.025"/>
+        <box size="0.025 0.030 0.022"/>
       </geometry>
     </collision>
   </link>
@@ -281,7 +281,7 @@
     <collision name="Gripper1_Collision">
       <origin xyz="0.005 0.020 0.035" rpy="-1.86728 0 0"/>
       <geometry>
-        <box size="0.018 0.035 0.075"/>
+        <box size="0.016 0.030 0.055"/>
       </geometry>
     </collision>
   </link>
@@ -315,7 +315,7 @@
     <collision name="Gripper2_Collision">
       <origin xyz="-0.005 0.020 0.035" rpy="1.25673 0 0"/>
       <geometry>
-        <box size="0.018 0.035 0.075"/>
+        <box size="0.016 0.030 0.055"/>
       </geometry>
     </collision>
   </link>

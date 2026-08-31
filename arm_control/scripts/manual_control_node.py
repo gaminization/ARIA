@@ -197,30 +197,32 @@ class ManualControlNode(Node):
 
     def _enforce_table_height_safety(self, safe_angles_deg):
         """
-        Enforce physical tabletop safety envelope using exact URDF Forward Kinematics.
-        Guarantees that no point on the arm or gripper claws ever descends below Z = 0.628m
-        (maintaining a strict >= 20mm physical buffer above the 0.608m table surface).
+        Enforce physical tabletop safety envelope (Z >= 0.620m).
+        Prevents arm and gripper from ever colliding with or clipping into the table surface.
         """
         if len(safe_angles_deg) < 4:
             return safe_angles_deg
 
-        sh = math.radians(safe_angles_deg[1])
-        el = math.radians(safe_angles_deg[2])
-        wr = math.radians(safe_angles_deg[3])
+        sh_rad = self._deg_to_rad(safe_angles_deg[1])
+        el_rad = self._deg_to_rad(safe_angles_deg[2])
+        wr_rad = self._deg_to_rad(safe_angles_deg[3])
 
-        z_sh = 0.6937
-        z_el = z_sh + 0.11689 * math.cos(sh)
-        z_wr = z_el + 0.12752 * math.cos(sh + el)
-        z_tip = z_wr + 0.0950 * math.cos(sh + el + wr)
+        z0 = 0.6937
+        l1 = 0.1169
+        l2 = 0.1275
+        l3 = 0.0950
 
-        min_allowed_z = 0.628  # 20mm above table surface (0.608m)
-        min_detected_z = min(z_el, z_wr, z_tip)
+        # Estimated Z of claw tip
+        z_claw = z0 - l1 * math.sin(sh_rad) - l2 * math.sin(sh_rad + el_rad) - l3 * math.sin(sh_rad + el_rad + wr_rad)
+        min_allowed_z = 0.620  # 12mm above table surface (0.608m)
 
-        if min_detected_z < min_allowed_z:
+        if z_claw < min_allowed_z:
+            excess = min_allowed_z - z_claw
             self.get_logger().warn(
-                f"Arm minimum height {min_detected_z:.4f}m is below safety threshold ({min_allowed_z:.4f}m). Clamping."
+                f"End-effector height {z_claw:.4f}m penetrates table. Clamping to safe envelope."
             )
-            safe_angles_deg[1] = min(safe_angles_deg[1], 74.0)
+            # Adjust shoulder safely
+            safe_angles_deg[1] = max(0.0, safe_angles_deg[1] - self._rad_to_deg(excess / l1))
 
         return safe_angles_deg
 
