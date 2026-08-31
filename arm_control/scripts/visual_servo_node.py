@@ -14,9 +14,11 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+from rclpy.callback_groups import ReentrantCallbackGroup
 from sensor_msgs.msg import Image, JointState
 from geometry_msgs.msg import Twist, Point
 from std_msgs.msg import Bool
+from std_srvs.srv import Trigger
 
 try:
     from cv_bridge import CvBridge
@@ -50,9 +52,15 @@ class VisualServoNode(Node):
     # Convergence threshold (pixels)
     CONVERGENCE_PX = 5
 
+    # Gain converting pixel error directly to joint angle correction (rad/px)
+    KP_JOINT_RAD_PER_PX = 0.00006
+    KD_JOINT_RAD_PER_PX = 0.00002
+    MAX_JOINT_STEP_RAD = 0.02  # per control tick (~30Hz)
+
     def __init__(self):
         super().__init__('visual_servo_node')
         self.get_logger().info("═══ ARIA Visual Servo Node ═══")
+        self.cb_group = ReentrantCallbackGroup()
 
         # PID gains
         self.declare_parameter('kp_xy', 0.001)
@@ -65,11 +73,13 @@ class VisualServoNode(Node):
 
         # State
         self.active = False
+        self.converged = False
         self.pixel_error_x = 0.0
         self.pixel_error_y = 0.0
         self.prev_error_x = 0.0
         self.prev_error_y = 0.0
         self.object_detected = False
+        self.current_joints_rad = [0.0] * 5  # waist, shoulder, elbow, wrist_pitch, wrist_roll
 
         self.bridge = CvBridge() if CV_AVAILABLE else None
 
@@ -94,15 +104,37 @@ class VisualServoNode(Node):
             Point, '/visual_servo/pixel_error', 10)
         self.correction_pub = self.create_publisher(
             Twist, '/visual_servo/correction', 10)
+        self.converged_pub = self.create_publisher(
+            Bool, '/visual_servo/converged', 10)
+
+        # Streaming joint corrections — consumed by manual_control_node's
+        # /aria/joint_stream, which is exactly how the gripper camera
+        # closes the loop on the real arm during final approach.
+        self.joint_stream_pub = self.create_publisher(
+            JointState, '/aria/joint_stream', 10)
+
+        # Services: activate/deactivate visual servo (used by SkillAgent)
+        self.create_service(
+            Trigger, '/aria/visual_servo/activate',
+            self._activate_cb, callback_group=self.cb_group)
+        self.create_service(
+            Trigger, '/aria/visual_servo/deactivate',
+            self._deactivate_cb, callback_group=self.cb_group)
 
         # Control timer at 30Hz
         self.control_timer = self.create_timer(1.0 / 30.0, self._control_loop)
 
-        self.get_logger().info("Visual servo node ready")
+        self.get_logger().info("Visual servo node ready — gripper-camera closed loop")
 
     def _joint_state_cb(self, msg: JointState):
-        """Track joint states for distance estimation."""
-        pass  # Joint tracking handled by grasp executor
+        """Track current joint positions so corrections are relative."""
+        names = ["waist_joint", "shoulder_joint", "elbow_joint",
+                 "wrist_pitch_joint", "wrist_roll_joint"]
+        for i, name in enumerate(names):
+            if name in msg.name:
+                idx = msg.name.index(name)
+                if idx < len(msg.position):
+                    self.current_joints_rad[i] = msg.position[idx]
 
     def _wrist_image_cb(self, msg: Image):
         """Process wrist camera image for object detection."""
@@ -153,8 +185,21 @@ class VisualServoNode(Node):
 
         self.object_detected = False
 
+    def _activate_cb(self, request, response):
+        self.activate()
+        response.success = True
+        response.message = "Visual servo activated — gripper camera closed-loop engaged"
+        return response
+
+    def _deactivate_cb(self, request, response):
+        self.deactivate()
+        response.success = True
+        response.message = "Visual servo deactivated"
+        return response
+
     def _control_loop(self):
-        """PD control loop at 30Hz."""
+        """PD control loop at 30Hz. Drives the real arm via /aria/joint_stream
+        using only the gripper (wrist) camera for feedback."""
         # Publish active state
         active_msg = Bool()
         active_msg.data = self.active
@@ -168,13 +213,31 @@ class VisualServoNode(Node):
         d_error_x = self.pixel_error_x - self.prev_error_x
         d_error_y = self.pixel_error_y - self.prev_error_y
 
-        # Correction velocities (m/s)
+        # Correction velocities (m/s) — kept for diagnostics/logging
         vx = -(self.kp * self.pixel_error_x + self.kd * d_error_x)
         vy = -(self.kp * self.pixel_error_y + self.kd * d_error_y)
-
-        # Clamp corrections
         vx = max(-self.max_correction, min(self.max_correction, vx))
         vy = max(-self.max_correction, min(self.max_correction, vy))
+
+        # Joint-space correction: map horizontal pixel error (x) to waist
+        # rotation, vertical pixel error (y) to wrist pitch — this is what
+        # actually moves the real arm using only the gripper camera image.
+        d_waist = -(self.KP_JOINT_RAD_PER_PX * self.pixel_error_x +
+                    self.KD_JOINT_RAD_PER_PX * d_error_x)
+        d_wrist_pitch = -(self.KP_JOINT_RAD_PER_PX * self.pixel_error_y +
+                          self.KD_JOINT_RAD_PER_PX * d_error_y)
+        d_waist = max(-self.MAX_JOINT_STEP_RAD, min(self.MAX_JOINT_STEP_RAD, d_waist))
+        d_wrist_pitch = max(-self.MAX_JOINT_STEP_RAD, min(self.MAX_JOINT_STEP_RAD, d_wrist_pitch))
+
+        target = list(self.current_joints_rad)
+        target[0] += d_waist          # waist_joint
+        target[3] += d_wrist_pitch    # wrist_pitch_joint
+
+        stream_msg = JointState()
+        stream_msg.name = ["waist_joint", "shoulder_joint", "elbow_joint",
+                           "wrist_pitch_joint", "wrist_roll_joint"]
+        stream_msg.position = target
+        self.joint_stream_pub.publish(stream_msg)
 
         self.prev_error_x = self.pixel_error_x
         self.prev_error_y = self.pixel_error_y
@@ -186,7 +249,7 @@ class VisualServoNode(Node):
         error_msg.z = 0.0
         self.error_pub.publish(error_msg)
 
-        # Publish correction
+        # Publish correction (m/s equivalent, for diagnostics)
         twist = Twist()
         twist.linear.x = vx
         twist.linear.y = vy
@@ -197,9 +260,13 @@ class VisualServoNode(Node):
         error_mag = math.sqrt(
             self.pixel_error_x**2 + self.pixel_error_y**2
         )
-        if error_mag < self.CONVERGENCE_PX:
+        self.converged = error_mag < self.CONVERGENCE_PX
+        conv_msg = Bool()
+        conv_msg.data = self.converged
+        self.converged_pub.publish(conv_msg)
+        if self.converged:
             self.get_logger().info(
-                f"Visual servo converged: error={error_mag:.1f}px"
+                f"Visual servo converged: error={error_mag:.1f}px (gripper camera)"
             )
 
     def activate(self):

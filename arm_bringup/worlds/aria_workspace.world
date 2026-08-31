@@ -331,6 +331,29 @@
       </link>
     </model>
 
+    <!-- 6. Banana (12 cm long, 2 cm diameter cylinder, 40g — Center-Left) -->
+    <model name="banana">
+      <pose>0.15 0.03 0.619 0 1.5708 0.3</pose>
+      <link name="body">
+        <inertial>
+          <mass>0.040</mass>
+          <inertia><ixx>4.2e-5</ixx><ixy>0</ixy><ixz>0</ixz><iyy>4.2e-5</iyy><iyz>0</iyz><izz>2.0e-6</izz></inertia>
+        </inertial>
+        <collision name="c">
+          <geometry><cylinder><radius>0.010</radius><length>0.120</length></cylinder></geometry>
+          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.010</radius><length>0.120</length></cylinder></geometry>
+          <material>
+            <ambient>0.95 0.85 0.10 1</ambient>
+            <diffuse>0.95 0.85 0.10 1</diffuse>
+            <specular>0.4 0.35 0.05 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
     <!-- ═══════════════════════════════════════════════════════════
          TARGET SORTING RECEPTACLES (Plate & Tray Drop Zones)
          ═══════════════════════════════════════════════════════════ -->

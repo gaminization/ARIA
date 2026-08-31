@@ -140,6 +140,8 @@ class AffordanceAgent(LifecycleNode):
 def main(args=None):
     rclpy.init(args=args)
     node = AffordanceAgent()
+    node.trigger_configure()
+    node.trigger_activate()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

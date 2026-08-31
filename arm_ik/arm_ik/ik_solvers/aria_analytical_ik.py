@@ -73,11 +73,11 @@ L_WRIST = 0.055   # wrist length (a5)
 L_GRIP  = 0.040   # gripper holder (d6)
 L_TOOL  = L_WRIST + L_GRIP  # total wrist-to-tool = 0.095m
 
-# Joint limits (radians) — from Stage 1 URDF
+# Joint limits (radians) — matching URDF and manual_control_node
 JOINT_LIMITS = np.array([
-    [-1.5708,  1.5708],   # waist:       -90° to +90°
-    [ 0.0000,  3.1416],   # shoulder:      0° to 180°
-    [ 0.0000,  2.6180],   # elbow:         0° to 150°
+    [-3.1416,  3.1416],   # waist:       -180° to +180°
+    [-1.5708,  1.5708],   # shoulder:    -90° to +90°
+    [-1.5708,  1.5708],   # elbow:       -90° to +90°
     [-1.5708,  1.5708],   # wrist_pitch: -90° to +90°
     [-1.5708,  1.5708],   # wrist_roll:  -90° to +90°
 ])

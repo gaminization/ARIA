@@ -37,6 +37,9 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(bringup_dir, 'launch', 'sim.launch.py')
         ),
+        launch_arguments={
+            'world': 'aria_tester_workspace.world',
+        }.items(),
     )
 
     # ═══════════════════════════════════════════════════════
@@ -73,6 +76,26 @@ def generate_launch_description():
             package='arm_ik',
             executable='ik_node',
             name='ik_node',
+            output='screen',
+        )],
+    )
+
+    grasp_node = TimerAction(
+        period=2.0,
+        actions=[Node(
+            package='arm_vision',
+            executable='grasp_node',
+            name='grasp_node',
+            output='screen',
+        )],
+    )
+
+    visual_servo_node = TimerAction(
+        period=2.0,
+        actions=[Node(
+            package='arm_control',
+            executable='visual_servo_node.py',
+            name='visual_servo_node',
             output='screen',
         )],
     )
@@ -198,6 +221,8 @@ def generate_launch_description():
         yolo_detection,
         depth_node,
         ik_node,
+        grasp_node,
+        visual_servo_node,
 
         # Stage 3 — 15 agents
         vision_agent,

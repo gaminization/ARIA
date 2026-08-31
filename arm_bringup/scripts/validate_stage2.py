@@ -232,9 +232,14 @@ class Stage2Validator(Node):
         result = ValidationResult("Coordinate Transform")
 
         try:
-            from arm_vision.arm_vision.coordinate_transformer import (
-                create_top_camera_transformer, benchmark_coordinate_accuracy
-            )
+            try:
+                from arm_vision.coordinate_transformer import (
+                    create_top_camera_transformer, benchmark_coordinate_accuracy
+                )
+            except ImportError:
+                from arm_vision.arm_vision.coordinate_transformer import (
+                    create_top_camera_transformer, benchmark_coordinate_accuracy
+                )
 
             transformer = create_top_camera_transformer()
 

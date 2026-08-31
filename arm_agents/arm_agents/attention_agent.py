@@ -113,6 +113,8 @@ class AttentionAgent(LifecycleNode):
 def main(args=None):
     rclpy.init(args=args)
     node = AttentionAgent()
+    node.trigger_configure()
+    node.trigger_activate()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

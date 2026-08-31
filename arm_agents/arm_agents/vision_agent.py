@@ -15,7 +15,10 @@ from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2DArray
 from arm_planner.msg import VisionState, ObjectDetection
 from arm_planner.state_bus import StateBus
-from arm_vision.arm_vision.coordinate_transformer import create_top_camera_transformer
+try:
+    from arm_vision.coordinate_transformer import create_top_camera_transformer
+except ImportError:
+    from arm_vision.arm_vision.coordinate_transformer import create_top_camera_transformer
 
 ACTIVE_PERCEPTION_CONFIDENCE_THRESHOLD = 0.6
 

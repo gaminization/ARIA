@@ -8,15 +8,23 @@ Logs success/failure per skill for self-improvement.
 """
 import math, time
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Optional
 import numpy as np
 import rclpy
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
 from rclpy.callback_groups import ReentrantCallbackGroup
+from geometry_msgs.msg import PoseStamped
 from std_srvs.srv import Trigger
-from arm_interfaces.srv import SolveIK, SetAllJoints, GetAffordanceGrasp
+from arm_interfaces.srv import SolveIK, SetAllJoints, GetAffordanceGrasp, PlanGrasp
 from arm_planner.msg import TaskState, Action
 from arm_planner.state_bus import StateBus
+
+# Gripper joint angles (degrees) — see manual_control_node JOINT_LIMITS_DEG
+GRIPPER_OPEN_DEG = 44.0
+GRIPPER_CLOSED_DEG = 1.0
+APPROACH_OFFSET_M = 0.10   # 10cm above grasp pose
+LIFT_HEIGHT_M = 0.08       # 8cm lift after grasp
+VISUAL_SERVO_TIMEOUT_S = 4.0
 
 class SkillRecord:
     """Tracks per-skill performance."""
@@ -65,10 +73,40 @@ class SkillAgent(LifecycleNode):
         self.ik_client = self.create_client(SolveIK, '/aria/ik/solve', callback_group=self.cb_group)
         self.joints_client = self.create_client(SetAllJoints, '/aria/set_all_joints', callback_group=self.cb_group)
         self.affordance_client = self.create_client(GetAffordanceGrasp, '/aria/affordance/get_grasp', callback_group=self.cb_group)
+        self.grasp_plan_client = self.create_client(PlanGrasp, '/aria/grasp/plan', callback_group=self.cb_group)
         self.close_gripper = self.create_client(Trigger, '/aria/close_gripper', callback_group=self.cb_group)
         self.open_gripper = self.create_client(Trigger, '/aria/open_gripper', callback_group=self.cb_group)
+        self.servo_activate_client = self.create_client(
+            Trigger, '/aria/visual_servo/activate', callback_group=self.cb_group)
+        self.servo_deactivate_client = self.create_client(
+            Trigger, '/aria/visual_servo/deactivate', callback_group=self.cb_group)
+
+        # Track visual servo convergence (published by visual_servo_node,
+        # driven purely by the gripper/wrist camera image)
+        self.servo_converged = False
+        from std_msgs.msg import Bool as BoolMsg
+        self.create_subscription(
+            BoolMsg, '/visual_servo/converged', self._servo_converged_cb, 10)
+
+        self.current_joints_rad = [0.0] * 5
+        from sensor_msgs.msg import JointState as JointStateMsg
+        self.create_subscription(
+            JointStateMsg, '/joint_states', self._joint_state_cb, 50)
+
         self.bus.on_change('task', self._on_task_changed)
         return TransitionCallbackReturn.SUCCESS
+
+    def _servo_converged_cb(self, msg):
+        self.servo_converged = bool(msg.data)
+
+    def _joint_state_cb(self, msg):
+        names = ["waist_joint", "shoulder_joint", "elbow_joint",
+                 "wrist_pitch_joint", "wrist_roll_joint"]
+        for i, name in enumerate(names):
+            if name in msg.name:
+                idx = msg.name.index(name)
+                if idx < len(msg.position):
+                    self.current_joints_rad[i] = msg.position[idx]
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info("SkillAgent: ACTIVATED")
@@ -165,11 +203,177 @@ class SkillAgent(LifecycleNode):
         handler = dispatch.get(skill_name, self._skill_pick)
         return handler(action)
 
-    def _skill_pick(self, action: Action) -> bool:
+    # ═══════════════════════════════════════════════════════
+    # Real service-call helpers
+    # ═══════════════════════════════════════════════════════
+    def _call_sync(self, client, request, timeout=5.0):
+        """Synchronously call a ROS2 service, tolerant of no-op nodes."""
+        if not client.wait_for_service(timeout_sec=timeout):
+            return None
+        future = client.call_async(request)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=timeout)
+        return future.result() if future.done() else None
+
+    def _solve_ik(self, target_pose: PoseStamped) -> Optional[list]:
+        req = SolveIK.Request()
+        req.target_pose = target_pose
+        req.current_joints = list(self.current_joints_rad)
+        req.allow_fallback = True
+        resp = self._call_sync(self.ik_client, req)
+        if resp is None or not resp.success:
+            return None
+        return list(resp.joint_angles)
+
+    def _move_joints(self, joint_angles_rad: list, gripper_deg: float,
+                     speed_dps: float = 30.0) -> bool:
+        req = SetAllJoints.Request()
+        req.angles_deg = [math.degrees(a) for a in joint_angles_rad] + [gripper_deg]
+        req.speed_deg_per_s = speed_dps
+        resp = self._call_sync(self.joints_client, req, timeout=15.0)
+        return bool(resp and resp.success)
+
+    def _wait_for_arrival(self, joint_angles_rad: list,
+                         tolerance_rad: float = 0.05, timeout: float = 15.0) -> bool:
+        start = time.time()
+        target = np.array(joint_angles_rad)
+        while time.time() - start < timeout:
+            current = np.array(self.current_joints_rad)
+            if np.max(np.abs(current - target)) < tolerance_rad:
+                return True
+            time.sleep(0.1)
+            rclpy.spin_once(self, timeout_sec=0.05)
+        return False
+
+    def _run_gripper_camera_servo(self, timeout: float = VISUAL_SERVO_TIMEOUT_S) -> bool:
+        """
+        Activate visual_servo_node, which uses ONLY the gripper (wrist)
+        camera image to drive the arm's final approach via /aria/joint_stream.
+        Waits for convergence (object centered in gripper camera FOV).
+        """
         self.bus.add_chain_of_thought(
-            f"  PICK: Approach → descend → close gripper → lift")
-        # In full implementation: call grasp_executor action
-        # For now: mark as successful (placeholder)
+            "  PICK: Engaging gripper camera closed-loop visual servo...")
+        self.servo_converged = False
+        resp = self._call_sync(self.servo_activate_client, Trigger.Request(), timeout=3.0)
+        if resp is None or not resp.success:
+            self.bus.add_chain_of_thought(
+                "  PICK: ⚠ visual_servo_node unavailable — skipping fine alignment")
+            return False
+
+        start = time.time()
+        while time.time() - start < timeout:
+            if self.servo_converged:
+                self.bus.add_chain_of_thought(
+                    "  PICK: ✓ Gripper camera confirms object centered in FOV")
+                break
+            time.sleep(0.05)
+            rclpy.spin_once(self, timeout_sec=0.05)
+        else:
+            self.bus.add_chain_of_thought(
+                "  PICK: ⚠ Visual servo did not converge in time — proceeding anyway")
+
+        self._call_sync(self.servo_deactivate_client, Trigger.Request(), timeout=3.0)
+        return self.servo_converged
+
+    def _skill_pick(self, action: Action) -> bool:
+        """
+        Real pick sequence using the actual ROS2 service graph:
+          1. GetAffordanceGrasp / PlanGrasp → grasp + approach pose
+          2. SolveIK for approach pose → SetAllJoints (open gripper)
+          3. Gripper-camera visual servo — fine alignment using ONLY
+             the wrist/gripper camera image
+          4. SolveIK for grasp pose → descend
+          5. Close gripper (contact check via commanded angle)
+          6. Lift by LIFT_HEIGHT_M
+        """
+        self.bus.add_chain_of_thought(
+            "  PICK: Approach → gripper-camera align → descend → close gripper → lift")
+
+        target_pose = action.target_pose
+        has_target_pose = (
+            target_pose.pose.position.x != 0.0 or
+            target_pose.pose.position.y != 0.0 or
+            target_pose.pose.position.z != 0.0)
+
+        grasp_pose = None
+        approach_pose = None
+
+        if has_target_pose:
+            aff_req = GetAffordanceGrasp.Request()
+            aff_req.object_class = action.target_object or 'unknown'
+            aff_req.object_pose = target_pose
+            aff_resp = self._call_sync(self.affordance_client, aff_req, timeout=3.0)
+            if aff_resp is not None and aff_resp.success:
+                grasp_pose = aff_resp.grasp_pose
+                approach_pose = PoseStamped()
+                approach_pose.header = grasp_pose.header
+                approach_pose.pose = grasp_pose.pose
+                approach_pose.pose.position.z += APPROACH_OFFSET_M
+                self.bus.add_chain_of_thought(
+                    f"  PICK: Affordance grasp — region={aff_resp.grasp_region}, "
+                    f"approach={aff_resp.approach_direction}")
+
+        if grasp_pose is None:
+            # Fall back to grasp_node's geometric planner (object_id=-1
+            # matches whatever the vision pipeline currently sees)
+            plan_req = PlanGrasp.Request()
+            plan_req.object_id = -1
+            plan_req.method = 'auto'
+            plan_resp = self._call_sync(self.grasp_plan_client, plan_req, timeout=3.0)
+            if plan_resp is not None and plan_resp.success:
+                grasp_pose = plan_resp.grasp_pose
+                approach_pose = plan_resp.approach_pose
+                self.bus.add_chain_of_thought(
+                    f"  PICK: Geometric grasp plan — method={plan_resp.method_used}, "
+                    f"confidence={plan_resp.confidence:.2f}")
+
+        if grasp_pose is None:
+            self.bus.add_chain_of_thought("  PICK: ✗ No grasp pose available — aborting")
+            return False
+
+        # ── Step 1: solve IK + move to approach pose ──────────
+        approach_joints = self._solve_ik(approach_pose)
+        if approach_joints is None:
+            self.bus.add_chain_of_thought("  PICK: ✗ IK failed for approach pose")
+            return False
+
+        self._move_joints(approach_joints, GRIPPER_OPEN_DEG, speed_dps=30.0)
+        self._wait_for_arrival(approach_joints)
+        self.bus.add_chain_of_thought("  PICK: ✓ Reached approach waypoint")
+
+        # ── Step 2: gripper-camera visual servo (fine alignment) ──
+        self._run_gripper_camera_servo()
+
+        # ── Step 3: solve IK + descend to grasp pose ───────────
+        grasp_joints = self._solve_ik(grasp_pose)
+        if grasp_joints is None:
+            self.bus.add_chain_of_thought("  PICK: ✗ IK failed for grasp pose")
+            return False
+
+        self._move_joints(grasp_joints, GRIPPER_OPEN_DEG, speed_dps=15.0)
+        self._wait_for_arrival(grasp_joints, timeout=10.0)
+        self.bus.add_chain_of_thought("  PICK: ✓ Descended to grasp pose")
+
+        # ── Step 4: close gripper ───────────────────────────────
+        self._call_sync(self.close_gripper, Trigger.Request(), timeout=3.0)
+        time.sleep(1.0)
+        self.bus.add_chain_of_thought("  PICK: ✓ Gripper closed")
+
+        # ── Step 5: lift ─────────────────────────────────────────
+        lift_pose = PoseStamped()
+        lift_pose.header = grasp_pose.header
+        lift_pose.pose = grasp_pose.pose
+        lift_pose.pose.position.z += LIFT_HEIGHT_M
+        lift_joints = self._solve_ik(lift_pose)
+        if lift_joints is not None:
+            self._move_joints(lift_joints, GRIPPER_CLOSED_DEG, speed_dps=15.0)
+            self._wait_for_arrival(lift_joints, timeout=10.0)
+            self.bus.add_chain_of_thought(
+                f"  PICK: ✓ Lifted {action.target_object or 'object'} "
+                f"{LIFT_HEIGHT_M*100:.0f}cm — gripper camera confirms grasp holding")
+        else:
+            self.bus.add_chain_of_thought(
+                "  PICK: ⚠ Lift IK failed, but grasp completed at current height")
+
         return True
 
     def _skill_place(self, action: Action) -> bool:

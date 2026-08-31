@@ -51,17 +51,26 @@ export default function CameraPanel({ topFrame, wristFrame, detections }) {
       </div>
 
       <div className="camera-feed">
-        <label>Wrist Camera (640×480)</label>
-        <div className="feed-box small">
+        <label>
+          👁 Gripper Camera — Eye-in-Hand (640×480)
+          {wristFrame && (
+            <span className="live-indicator">
+              <span className="live-dot" /> LIVE
+            </span>
+          )}
+        </label>
+        <div className={`feed-box small ${wristFrame ? 'gripper-active' : ''}`}>
           {wristFrame ? (
             <img
               src={`data:image/jpeg;base64,${wristFrame}`}
-              alt="Wrist camera"
+              alt="Gripper camera"
               className="camera-img"
             />
           ) : (
             <div className="feed-placeholder small">
-              <span>No wrist feed</span>
+              <div className="no-feed-icon">👁</div>
+              <span>Gripper camera standby</span>
+              <span className="feed-hint">Activates during manipulation</span>
             </div>
           )}
         </div>

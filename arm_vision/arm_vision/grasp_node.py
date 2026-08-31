@@ -18,6 +18,11 @@ from visualization_msgs.msg import Marker, MarkerArray
 from vision_msgs.msg import Detection2DArray
 
 from arm_interfaces.srv import PlanGrasp
+try:
+    from arm_planner.msg import VisionState
+    VISION_STATE_AVAILABLE = True
+except ImportError:
+    VISION_STATE_AVAILABLE = False
 
 
 class GraspNode(Node):
@@ -40,12 +45,25 @@ class GraspNode(Node):
 
         # Detection state (updated by subscription)
         self.latest_detections = None
+        self.latest_vision_state = None  # has real 3D pose_3d per object
 
         # Subscriber for detections
         self.det_sub = self.create_subscription(
             Detection2DArray, '/detection/objects',
             self._detection_cb, 10
         )
+
+        # Subscriber for VisionState — carries real 3D positions computed
+        # by VisionAgent's coordinate transformer (ray-plane intersection
+        # with the table plane, fused with monocular depth).
+        if VISION_STATE_AVAILABLE:
+            from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+            qos_state = QoSProfile(
+                reliability=ReliabilityPolicy.RELIABLE,
+                durability=DurabilityPolicy.TRANSIENT_LOCAL, depth=1)
+            self.vision_state_sub = self.create_subscription(
+                VisionState, '/aria/state/vision',
+                self._vision_state_cb, qos_state)
 
         # Service
         self.create_service(
@@ -63,6 +81,10 @@ class GraspNode(Node):
         """Store latest detections."""
         self.latest_detections = msg
 
+    def _vision_state_cb(self, msg):
+        """Store latest VisionState (has real 3D pose_3d per object)."""
+        self.latest_vision_state = msg
+
     def _plan_grasp_cb(self, request, response):
         """
         Service: /aria/grasp/plan
@@ -76,10 +98,15 @@ class GraspNode(Node):
             f"Planning grasp for object {object_id}, method={method}"
         )
 
-        # Get object info from detections
+        # Get object info from detections (2D bbox center, for fallback/logging)
         obj_class, obj_center = self._find_object(object_id)
 
-        if obj_class is None:
+        # Get the REAL 3D world position from VisionState (published by
+        # VisionAgent using the coordinate transformer). This is what makes
+        # the grasp actually land on the object instead of a placeholder.
+        world_pos = self._find_object_world_pos(object_id)
+
+        if obj_class is None and world_pos is None:
             response.success = False
             response.confidence = 0.0
             response.method_used = 'none'
@@ -87,15 +114,22 @@ class GraspNode(Node):
 
         # Select grasp strategy
         if method == 'auto':
-            method = self._select_strategy(obj_class)
+            method = self._select_strategy(obj_class or 'unknown')
 
-        # Generate grasp pose
+        # Generate grasp pose using the real detected 3D position when
+        # available; otherwise fall back to the default workspace position.
         if method == 'top_down':
-            grasp_pose, approach_pose, conf = self._top_down_grasp(obj_center)
+            grasp_pose, approach_pose, conf = self._top_down_grasp(obj_center, world_pos)
         elif method == 'side':
-            grasp_pose, approach_pose, conf = self._side_grasp(obj_center)
+            grasp_pose, approach_pose, conf = self._side_grasp(obj_center, world_pos)
         else:
-            grasp_pose, approach_pose, conf = self._top_down_grasp(obj_center)
+            grasp_pose, approach_pose, conf = self._top_down_grasp(obj_center, world_pos)
+
+        if world_pos is None:
+            conf *= 0.5  # no verified 3D fix — halve confidence
+            self.get_logger().warn(
+                f"No 3D pose available for object {object_id} — "
+                f"using default workspace position (low confidence)")
 
         response.success = True
         response.grasp_pose = grasp_pose
@@ -110,6 +144,17 @@ class GraspNode(Node):
             f"Grasp planned: method={method}, conf={conf:.2f}"
         )
         return response
+
+    def _find_object_world_pos(self, object_id: int):
+        """Look up the real 3D world position from the latest VisionState."""
+        if self.latest_vision_state is None:
+            return None
+        for det in self.latest_vision_state.detected_objects:
+            if det.tracking_id == object_id or object_id == -1:
+                pos = det.pose_3d.pose.position
+                if pos.x != 0.0 or pos.y != 0.0 or pos.z != 0.0:
+                    return np.array([pos.x, pos.y, pos.z])
+        return None
 
     def _find_object(self, object_id: int):
         """Find object by tracking ID in latest detections."""
