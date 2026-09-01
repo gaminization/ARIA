@@ -15,13 +15,13 @@ from std_srvs.srv import Trigger
 from std_msgs.msg import Float64MultiArray
 from arm_planner.state_bus import StateBus
 
-# Joint limits (rad) — from Stage 1 URDF
+# Joint limits (rad) — from Stage 1 URDF & manual_control_node
 JOINT_LIMITS = np.array([
-    [-1.5708, 1.5708],   # waist
-    [0.0, 3.1416],       # shoulder
-    [0.0, 3.1416],       # elbow
-    [-1.5708, 1.5708],   # wrist pitch
-    [-1.5708, 1.5708],   # wrist roll
+    [-math.pi, math.pi],         # waist [-180°, 180°]
+    [-math.pi/2, math.pi/2],     # shoulder [-90°, 90°]
+    [-math.pi/2, math.pi/2],     # elbow [-90°, 90°]
+    [-math.pi/2, math.pi/2],     # wrist pitch [-90°, 90°]
+    [-math.pi/2, math.pi/2],     # wrist roll [-90°, 90°]
 ])
 
 # Soft limits (5° inside hard limits)

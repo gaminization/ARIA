@@ -40,6 +40,8 @@ class ControlAgent(LifecycleNode):
         self.commanded_joints = np.zeros(5)
         self.tracking_error = np.zeros(5)
         self.visual_servo_active = False
+        self.is_moving = False
+        self._last_error_log_time = 0.0
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info("ControlAgent: CONFIGURING")
@@ -51,7 +53,7 @@ class ControlAgent(LifecycleNode):
             SetAllJoints, '/aria/set_all_joints', callback_group=self.cb_group)
         self.ik_client = self.create_client(
             SolveIK, '/aria/ik/solve', callback_group=self.cb_group)
-        self.create_timer(0.02, self._monitor)  # 50Hz monitoring
+        self.create_timer(0.1, self._monitor)  # 10Hz monitoring
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
@@ -66,15 +68,21 @@ class ControlAgent(LifecycleNode):
             if name in msg.name:
                 idx = msg.name.index(name)
                 self.current_joints[i] = msg.position[idx]
+        if not self.is_moving:
+            self.commanded_joints = self.current_joints.copy()
 
     def _servo_active_cb(self, msg: Bool):
         self.visual_servo_active = msg.data
 
     def _monitor(self):
-        """Monitor tracking error at 50Hz."""
+        """Monitor tracking error when moving."""
+        if not self.is_moving:
+            return
         self.tracking_error = np.abs(self.commanded_joints - self.current_joints)
         max_error = float(np.max(self.tracking_error))
-        if max_error > TRACKING_ERROR_THRESHOLD_RAD:
+        now = time.time()
+        if max_error > TRACKING_ERROR_THRESHOLD_RAD and (now - self._last_error_log_time > 3.0):
+            self._last_error_log_time = now
             worst_joint = int(np.argmax(self.tracking_error))
             self.bus.add_chain_of_thought(
                 f"CONTROL: High tracking error on {self.JOINT_NAMES[worst_joint]}: "

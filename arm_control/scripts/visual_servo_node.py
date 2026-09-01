@@ -50,7 +50,7 @@ class VisualServoNode(Node):
     TARGET_PY = 240
 
     # Convergence threshold (pixels)
-    CONVERGENCE_PX = 5
+    CONVERGENCE_PX = 25
 
     # Gain converting pixel error directly to joint angle correction (rad/px)
     KP_JOINT_RAD_PER_PX = 0.00006
@@ -146,20 +146,18 @@ class VisualServoNode(Node):
         except Exception:
             return
 
-        # Simple color-based detection for Stage 2
-        # (Full YOLO detection on wrist camera would be Stage 3)
         hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 
-        # Detect colored objects (broad range)
+        # Detect colored objects (broad range for banana, orange, colored cubes)
         # Red range
-        mask1 = cv2.inRange(hsv, (0, 80, 80), (10, 255, 255))
-        mask2 = cv2.inRange(hsv, (160, 80, 80), (180, 255, 255))
+        mask1 = cv2.inRange(hsv, (0, 40, 40), (12, 255, 255))
+        mask2 = cv2.inRange(hsv, (160, 40, 40), (180, 255, 255))
         # Green range
-        mask3 = cv2.inRange(hsv, (35, 80, 80), (85, 255, 255))
+        mask3 = cv2.inRange(hsv, (35, 40, 40), (85, 255, 255))
         # Blue range
-        mask4 = cv2.inRange(hsv, (95, 80, 80), (130, 255, 255))
-        # Yellow range
-        mask5 = cv2.inRange(hsv, (20, 80, 80), (35, 255, 255))
+        mask4 = cv2.inRange(hsv, (90, 40, 40), (130, 255, 255))
+        # Yellow & Orange (banana, orange) range
+        mask5 = cv2.inRange(hsv, (12, 40, 40), (40, 255, 255))
 
         mask = mask1 | mask2 | mask3 | mask4 | mask5
 

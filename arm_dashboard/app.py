@@ -141,10 +141,8 @@ class StateCache:
                 "task_id": msg.task_id,
                 "awaiting_approval": msg.awaiting_user_approval,
             }
-            # Surface any new reasoning steps agents appended via
-            # StateBus.add_chain_of_thought (this is the REAL chain of
-            # thought produced by PlanningAgent/AffordanceAgent/SkillAgent/
-            # ReachabilityAgent/etc — not synthesized by the dashboard).
+            if len(msg.chain_of_thought) < self._task_cot_seen:
+                self._task_cot_seen = 0
             new_entries = list(msg.chain_of_thought)[self._task_cot_seen:]
             self._task_cot_seen = len(msg.chain_of_thought)
         for entry in new_entries:
@@ -271,14 +269,16 @@ class DashboardBridge(Node):
         self.create_subscription(String, '/aria/dialogue/output', self._dialogue_cb, 10)
 
         # ── Real service clients (forward REST calls to the actual nodes) ──
-        self.cmd_client = self.create_client(SendCommand, '/aria/command')
-        self.approve_client = self.create_client(Trigger, '/aria/approve')
-        self.reject_client = self.create_client(Trigger, '/aria/reject')
-        self.cancel_client = self.create_client(Trigger, '/aria/cancel')
-        self.estop_client = self.create_client(Trigger, '/aria/estop')
-        self.release_estop_client = self.create_client(Trigger, '/aria/release_estop')
-        self.set_joint_client = self.create_client(SetJoint, '/aria/set_joint')
-        self.set_all_joints_client = self.create_client(SetAllJoints, '/aria/set_all_joints')
+        from rclpy.callback_groups import ReentrantCallbackGroup
+        self.cb_group = ReentrantCallbackGroup()
+        self.cmd_client = self.create_client(SendCommand, '/aria/command', callback_group=self.cb_group)
+        self.approve_client = self.create_client(Trigger, '/aria/approve', callback_group=self.cb_group)
+        self.reject_client = self.create_client(Trigger, '/aria/reject', callback_group=self.cb_group)
+        self.cancel_client = self.create_client(Trigger, '/aria/cancel', callback_group=self.cb_group)
+        self.estop_client = self.create_client(Trigger, '/aria/estop', callback_group=self.cb_group)
+        self.release_estop_client = self.create_client(Trigger, '/aria/release_estop', callback_group=self.cb_group)
+        self.set_joint_client = self.create_client(SetJoint, '/aria/set_joint', callback_group=self.cb_group)
+        self.set_all_joints_client = self.create_client(SetAllJoints, '/aria/set_all_joints', callback_group=self.cb_group)
 
         self.create_timer(1.0, self._connectivity_check)
         self.get_logger().info("Dashboard bridge started — bridging real ARIA state bus")
@@ -326,7 +326,7 @@ class DashboardBridge(Node):
 
     def _connectivity_check(self):
         """Consider ROS 'connected' once task_manager's command service appears."""
-        state.ros_connected = self.cmd_client.service_is_ready()
+        state.ros_connected = bool(self.cmd_client.service_is_ready() or self.cmd_client.wait_for_service(timeout_sec=0.05))
 
 
 def ros_spin_thread():
@@ -335,9 +335,12 @@ def ros_spin_thread():
     if not ROS_AVAILABLE:
         return
     try:
+        from rclpy.executors import MultiThreadedExecutor
         rclpy.init()
         bridge_node = DashboardBridge()
-        rclpy.spin(bridge_node)
+        executor = MultiThreadedExecutor()
+        executor.add_node(bridge_node)
+        executor.spin()
     except Exception as e:
         print(f"[Dashboard] ROS bridge error: {e}")
     finally:
@@ -350,22 +353,21 @@ def ros_spin_thread():
 def call_service_sync(client, request, timeout: float = 5.0):
     """
     Call a ROS2 service from a non-ROS thread and block for the result.
-    Safe to call from FastAPI's event loop thread while rclpy.spin() runs
-    on the dedicated background thread — call_async() just enqueues work,
-    and the spin thread invokes our done-callback when the response lands.
+    Safe to call from FastAPI's event loop thread with MultiThreadedExecutor.
     """
     if client is None:
         return None
     if not client.wait_for_service(timeout_sec=min(2.0, timeout)):
         return None
     future = client.call_async(request)
-    done_event = threading.Event()
-    future.add_done_callback(lambda f: done_event.set())
-    if not done_event.wait(timeout=timeout):
-        return None
-    if future.exception() is not None:
-        return None
-    return future.result()
+    start = time.time()
+    while time.time() - start < timeout:
+        if future.done():
+            if future.exception() is not None:
+                return None
+            return future.result()
+        time.sleep(0.05)
+    return None
 
 
 async def call_service(client, request, timeout: float = 5.0):
@@ -448,7 +450,7 @@ async def post_command(req: CommandRequest):
     if not command:
         return {"success": False, "message": "Empty command"}
 
-    if bridge_node is None or not bridge_node.cmd_client.service_is_ready():
+    if bridge_node is None:
         return _ros_unavailable_response()
 
     ros_req = SendCommand.Request()
@@ -463,7 +465,7 @@ async def post_command(req: CommandRequest):
 @app.post("/api/reset")
 async def reset_state():
     """Cancel the active task on the real task_manager (/aria/cancel)."""
-    if bridge_node is None or not bridge_node.cancel_client.service_is_ready():
+    if bridge_node is None:
         return _ros_unavailable_response()
     resp = await call_service(bridge_node.cancel_client, Trigger.Request(), timeout=3.0)
     if resp is None:
@@ -474,7 +476,7 @@ async def reset_state():
 @app.post("/api/approve")
 async def approve():
     """Approve the paused action via the real task_manager (/aria/approve)."""
-    if bridge_node is None or not bridge_node.approve_client.service_is_ready():
+    if bridge_node is None:
         return _ros_unavailable_response()
     resp = await call_service(bridge_node.approve_client, Trigger.Request(), timeout=3.0)
     if resp is None:
@@ -485,7 +487,7 @@ async def approve():
 @app.post("/api/reject")
 async def reject():
     """Reject the paused action via the real task_manager (/aria/reject)."""
-    if bridge_node is None or not bridge_node.reject_client.service_is_ready():
+    if bridge_node is None:
         return _ros_unavailable_response()
     resp = await call_service(bridge_node.reject_client, Trigger.Request(), timeout=3.0)
     if resp is None:
@@ -496,7 +498,7 @@ async def reject():
 @app.post("/api/estop")
 async def estop():
     """Trigger the real hardware/sim e-stop (/aria/estop on manual_control_node)."""
-    if bridge_node is None or not bridge_node.estop_client.service_is_ready():
+    if bridge_node is None:
         return _ros_unavailable_response()
     resp = await call_service(bridge_node.estop_client, Trigger.Request(), timeout=3.0)
     if resp is None:
@@ -507,7 +509,7 @@ async def estop():
 @app.post("/api/release_estop")
 async def release_estop():
     """Release the real e-stop (/aria/release_estop)."""
-    if bridge_node is None or not bridge_node.release_estop_client.service_is_ready():
+    if bridge_node is None:
         return _ros_unavailable_response()
     resp = await call_service(bridge_node.release_estop_client, Trigger.Request(), timeout=3.0)
     if resp is None:
@@ -535,7 +537,7 @@ async def get_logs():
 @app.post("/api/joint")
 async def set_joint(req: JointRequest):
     """Manual joint control — forwarded to the real /aria/set_joint service."""
-    if bridge_node is None or not bridge_node.set_joint_client.service_is_ready():
+    if bridge_node is None:
         return _ros_unavailable_response()
     ros_req = SetJoint.Request()
     ros_req.joint_name = req.joint_name
@@ -550,7 +552,7 @@ async def set_joint(req: JointRequest):
 @app.post("/api/joints")
 async def set_all_joints(req: AllJointsRequest):
     """Set all joint positions — forwarded to the real /aria/set_all_joints service."""
-    if bridge_node is None or not bridge_node.set_all_joints_client.service_is_ready():
+    if bridge_node is None:
         return _ros_unavailable_response()
     ros_req = SetAllJoints.Request()
     ros_req.angles_deg = [float(a) for a in req.angles_deg]

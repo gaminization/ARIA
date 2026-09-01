@@ -160,12 +160,6 @@ class VisionAgent(LifecycleNode):
         # Active perception decision
         self.active_perception = low_confidence_count > 0
 
-        if self.active_perception:
-            self.bus.add_chain_of_thought(
-                f"VISION: Active perception triggered — "
-                f"{low_confidence_count} objects need better view"
-            )
-
     def _publish_state(self):
         """Publish VisionState at 10Hz."""
         msg = VisionState()
