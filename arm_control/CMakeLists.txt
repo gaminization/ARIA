@@ -18,6 +18,12 @@ find_package(controller_manager REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(trajectory_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(gazebo_dev REQUIRED)
+find_package(gazebo_ros REQUIRED)
+find_package(arm_interfaces REQUIRED)
 
 # ── Hardware Interface Library ────────────────────────────
 add_library(aria_hardware_interface SHARED
@@ -38,9 +44,46 @@ ament_target_dependencies(aria_hardware_interface
 # Export hardware interface plugin
 pluginlib_export_plugin_description_file(hardware_interface aria_hardware_plugin.xml)
 
+# ── Gazebo Conveyor Belt Plugin Library ───────────────────
+add_library(aria_conveyor_plugin SHARED
+  src/conveyor_belt_plugin.cpp
+)
+target_include_directories(aria_conveyor_plugin PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${GAZEBO_INCLUDE_DIRS}
+)
+target_link_libraries(aria_conveyor_plugin
+  ${GAZEBO_LIBRARIES}
+)
+ament_target_dependencies(aria_conveyor_plugin
+  rclcpp
+  gazebo_ros
+  arm_interfaces
+  geometry_msgs
+  std_msgs
+)
+
+# ── Gazebo Industrial Gripper Attachment Plugin Library ────
+add_library(aria_gripper_plugin SHARED
+  src/gripper_plugin.cpp
+)
+target_include_directories(aria_gripper_plugin PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${GAZEBO_INCLUDE_DIRS}
+)
+target_link_libraries(aria_gripper_plugin
+  ${GAZEBO_LIBRARIES}
+)
+ament_target_dependencies(aria_gripper_plugin
+  rclcpp
+  gazebo_ros
+  std_srvs
+)
+
 # ── Install ───────────────────────────────────────────────
-install(TARGETS aria_hardware_interface
-  EXPORT aria_hardware_interface
+install(TARGETS aria_hardware_interface aria_conveyor_plugin aria_gripper_plugin
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin

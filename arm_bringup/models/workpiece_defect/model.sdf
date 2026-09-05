@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="workpiece_defect">
+    <link name="link">
+      <inertial>
+        <mass>0.035</mass>
+        <inertia>
+          <ixx>5.25e-6</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>5.25e-6</iyy>
+          <iyz>0.0</iyz>
+          <izz>5.25e-6</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.030 0.030 0.030</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.5</mu>
+              <mu2>1.5</mu2>
+              <slip1>0.0</slip1>
+              <slip2>0.0</slip2>
+            </ode>
+            <torsional>
+              <coefficient>5.0</coefficient>
+              <patch_radius>0.015</patch_radius>
+            </torsional>
+          </friction>
+          <contact>
+            <ode>
+              <kp>200000.0</kp>
+              <kd>200.0</kd>
+              <max_vel>0.005</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <bounce>
+            <restitution_coefficient>0.0</restitution_coefficient>
+            <threshold>1000000.0</threshold>
+          </bounce>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.030 0.030 0.030</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.85 0.15 0.15 1.0</ambient>
+          <diffuse>0.95 0.2 0.2 1.0</diffuse>
+          <specular>0.4 0.3 0.3 1.0</specular>
+        </material>
+      </visual>
+      <!-- Defect X marker on top surface -->
+      <visual name="defect_marker">
+        <pose>0 0 0.0151 0 0 0.785</pose>
+        <geometry>
+          <box>
+            <size>0.018 0.004 0.0002</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.95 0.9 0.1 1.0</ambient>
+          <diffuse>1.0 0.95 0.2 1.0</diffuse>
+        </material>
+      </visual>
+      <visual name="defect_marker_cross">
+        <pose>0 0 0.0151 0 0 -0.785</pose>
+        <geometry>
+          <box>
+            <size>0.018 0.004 0.0002</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.95 0.9 0.1 1.0</ambient>
+          <diffuse>1.0 0.95 0.2 1.0</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

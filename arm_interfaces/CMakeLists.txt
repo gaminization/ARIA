@@ -21,6 +21,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SendCommand.srv"
   "srv/GetAffordanceGrasp.srv"
   "srv/CheckReachability.srv"
+  "srv/SetConveyorPower.srv"
   "action/ExecuteGrasp.action"
   # U2 Advanced Perception messages
   "msg/SAM2Masks.msg"

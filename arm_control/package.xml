@@ -23,6 +23,8 @@
   <depend>geometry_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>cv_bridge</depend>
+  <depend>gazebo_dev</depend>
+  <depend>gazebo_ros</depend>
 
   <exec_depend>joint_trajectory_controller</exec_depend>
   <exec_depend>joint_state_broadcaster</exec_depend>

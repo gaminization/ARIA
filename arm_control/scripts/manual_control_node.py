@@ -6,6 +6,7 @@
 # Safety: soft limits (1° margin), max speed 90°/s, e-stop.
 # ═══════════════════════════════════════════════════════════════
 import math
+import time
 import numpy as np
 
 import rclpy
@@ -61,11 +62,20 @@ class ManualControlNode(Node):
 
     # Named poses: [waist, shoulder, elbow, wrist_pitch, gripper]
     NAMED_POSES = {
-        "home":    [  0.0,   0.0,   0.0,   0.0,  0.0],
-        "ready":   [  0.0,  35.0, -55.0,  20.0, 20.0],
-        "reach":   [  0.0,  48.0, -70.0,  22.0, 25.0],
-        "inspect": [  0.0,  20.0, -30.0,  10.0, 20.0],
-        "folded":  [  0.0, -30.0,  60.0, -30.0,  0.0],
+        "home":                   [  0.0,   0.0,   0.0,   0.0,  0.0],
+        "ready":                  [  0.0,  35.0, -55.0,  20.0, 20.0],
+        "reach":                  [  0.0,  48.0, -70.0,  22.0, 25.0],
+        "inspect":                [  0.0,  20.0, -30.0,  10.0, 20.0],
+        "folded":                 [  0.0, -30.0,  60.0, -30.0,  0.0],
+        # Industrial manufacturing workcell poses:
+        "conveyor_pick_approach": [ 22.0,  38.0, -55.0,  17.0, 35.0],
+        "conveyor_pick":          [ 22.0,  48.0, -70.0,  22.0, 35.0],
+        "conveyor_grasp":         [ 22.0,  48.0, -70.0,  22.0, 15.0],
+        "inspect_station":        [  0.0,  18.0, -25.0,   7.0, 15.0],
+        "assembly_approach":      [-70.0,  40.0, -58.0,  18.0, 15.0],
+        "assembly_place":         [-70.0,  50.0, -72.0,  22.0, 15.0],
+        "reject_approach":        [-36.0,  32.0, -45.0,  13.0, 15.0],
+        "reject_drop":            [-36.0,  42.0, -60.0,  18.0, 15.0],
     }
 
     def __init__(self):
@@ -97,6 +107,16 @@ class ManualControlNode(Node):
         self.gripper_client = ActionClient(
             self, GripperCommand,
             "/gripper_action_controller/gripper_cmd",
+            callback_group=self.callback_group
+        )
+
+        # ── Gripper attachment clients ─────────────────────────
+        self.attach_client = self.create_client(
+            Trigger, "/aria/gripper/attach",
+            callback_group=self.callback_group
+        )
+        self.detach_client = self.create_client(
+            Trigger, "/aria/gripper/detach",
             callback_group=self.callback_group
         )
 
@@ -459,10 +479,18 @@ class ManualControlNode(Node):
             response.message = "E-STOP active"
             return response
 
-        self._send_gripper_command(self._deg_to_rad(44.0))  # Near full open
+        # Release physical grasp if engaged
+        if self.detach_client.wait_for_service(timeout_sec=0.5):
+            try:
+                self.detach_client.call_async(Trigger.Request())
+                self.get_logger().info("⚡ Physical grasp detached")
+            except Exception as e:
+                self.get_logger().warn(f"Detach trigger error: {e}")
+
+        self._send_gripper_command(self._deg_to_rad(35.0))  # Full industrial open
         response.success = True
         response.message = "Opening gripper"
-        self.get_logger().info("Opening gripper to 44°")
+        self.get_logger().info("Opening gripper to 35°")
         return response
 
     def _close_gripper_cb(self, request, response):
@@ -472,10 +500,21 @@ class ManualControlNode(Node):
             response.message = "E-STOP active"
             return response
 
-        self._send_gripper_command(self._deg_to_rad(1.0))  # Near closed
+        # Command fingers to close snugly around workpiece (3.0 deg = 30mm width)
+        self._send_gripper_command(self._deg_to_rad(3.0))
+        time.sleep(0.3)
+
+        # Engage dynamic grasp attachment
+        if self.attach_client.wait_for_service(timeout_sec=0.5):
+            try:
+                self.attach_client.call_async(Trigger.Request())
+                self.get_logger().info("⚡ Physical grasp attached")
+            except Exception as e:
+                self.get_logger().warn(f"Attach trigger error: {e}")
+
         response.success = True
-        response.message = "Closing gripper"
-        self.get_logger().info("Closing gripper to 1°")
+        response.message = "Closing gripper and locking grasp"
+        self.get_logger().info("Closing gripper and locking grasp")
         return response
 
     def _estop_cb(self, request, response):

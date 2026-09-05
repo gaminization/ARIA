@@ -57,7 +57,7 @@ ARIA/
 │   │   ├── manual_control.launch.py   # ★ Start here
 │   │   └── hardware.launch.py        # Skeleton (Stage 4)
 │   ├── worlds/
-│   │   └── aria_workspace.sdf        # Gazebo world
+│   │   └── aria_tester_workspace.world # Gazebo tester world
 │   ├── config/
 │   │   └── aria_rviz.rviz            # RViz configuration
 │   └── scripts/

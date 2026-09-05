@@ -20,6 +20,20 @@
   </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════
+       ARIA INDUSTRIAL GRIPPER PLUGIN — High-Fidelity Grasp & Release
+       ═══════════════════════════════════════════════════════════ -->
+  <gazebo>
+    <plugin filename="libaria_gripper_plugin.so"
+            name="aria_gripper_plugin">
+      <ros>
+        <namespace>/aria</namespace>
+      </ros>
+      <palm_link>wrist_link</palm_link>
+      <max_attach_dist>0.14</max_attach_dist>
+    </plugin>
+  </gazebo>
+
+  <!-- ═══════════════════════════════════════════════════════════
        ROBUST JOINT DYNAMICS (Implicit Spring-Damper in ODE)
        Prevents joint constraint explosion and shearing forces
        ═══════════════════════════════════════════════════════════ -->
@@ -126,24 +140,44 @@
   <gazebo reference="finger_left_1_link">
     <material>Gazebo/Blue</material>
     <self_collide>false</self_collide>
-    <mu1>1.5</mu1>
-    <mu2>1.5</mu2>
-    <kp>50000.0</kp>
-    <kd>10.0</kd>
+    <mu1>2.5</mu1>
+    <mu2>2.5</mu2>
+    <kp>200000.0</kp>
+    <kd>20.0</kd>
     <minDepth>0.001</minDepth>
-    <maxVel>0.1</maxVel>
+    <maxVel>0.01</maxVel>
+    <torsional>
+      <ode>
+        <coefficient>10.0</coefficient>
+        <patch_radius>0.015</patch_radius>
+      </ode>
+    </torsional>
+    <bounce>
+      <restitution_coefficient>0.0</restitution_coefficient>
+      <threshold>1000000.0</threshold>
+    </bounce>
   </gazebo>
 
   <!-- Right finger pair: blue -->
   <gazebo reference="finger_right_1_link">
     <material>Gazebo/Blue</material>
     <self_collide>false</self_collide>
-    <mu1>1.5</mu1>
-    <mu2>1.5</mu2>
-    <kp>50000.0</kp>
-    <kd>10.0</kd>
+    <mu1>2.5</mu1>
+    <mu2>2.5</mu2>
+    <kp>200000.0</kp>
+    <kd>20.0</kd>
     <minDepth>0.001</minDepth>
-    <maxVel>0.1</maxVel>
+    <maxVel>0.01</maxVel>
+    <torsional>
+      <ode>
+        <coefficient>10.0</coefficient>
+        <patch_radius>0.015</patch_radius>
+      </ode>
+    </torsional>
+    <bounce>
+      <restitution_coefficient>0.0</restitution_coefficient>
+      <threshold>1000000.0</threshold>
+    </bounce>
   </gazebo>
 
   <!-- Cameras: dark gray -->
@@ -174,7 +208,7 @@
       <always_on>true</always_on>
       <update_rate>30</update_rate>
       <visualize>false</visualize>
-      <pose>0.015 0.040 -0.007 1.5708 0.2618 1.5708</pose>
+      <pose>0.025 0.050 -0.007 1.5708 0.0000 2.3358</pose>
       <camera>
         <horizontal_fov>1.35</horizontal_fov>  <!-- 77 degrees -->
         <image>

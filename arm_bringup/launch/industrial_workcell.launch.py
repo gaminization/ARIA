@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # ═══════════════════════════════════════════════════════════════
-# ARIA Simulation Launch File
-# Launches Gazebo Classic 11 + robot + controllers
+# ARIA Industrial Manufacturing Workcell Launch File
+# Launches Gazebo Classic 11 with the Industrial Manufacturing World:
+# Active Infeed Conveyor, Quality Control Station, Finished Goods Tray,
+# Defect Reject Bin, Perimeter Safety Guarding & Control Cabinet.
 # ═══════════════════════════════════════════════════════════════
 import os
+import re
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -18,7 +21,7 @@ from launch.actions import (
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 
 import xacro
@@ -33,51 +36,67 @@ def generate_launch_description():
     # ── Launch arguments ───────────────────────────────────
     use_rviz_arg = DeclareLaunchArgument(
         "use_rviz", default_value="false",
-        description="Launch RViz2 visualization"
+        description="Launch RViz2 visualization with camera and robot monitors"
     )
     use_rviz = LaunchConfiguration("use_rviz")
 
     world_arg = DeclareLaunchArgument(
-        "world", default_value="aria_tester_workspace.world",
-        description="World file name or path in arm_bringup/worlds"
+        "world", default_value="aria_industrial_workcell.world",
+        description="Industrial world file in arm_bringup/worlds"
     )
     world_conf = LaunchConfiguration("world")
 
-    # ── Robot description (URDF via xacro) ──
+    auto_cycle_arg = DeclareLaunchArgument(
+        "auto_cycle", default_value="false",
+        description="Automatically start the industrial pick-inspect-sort manufacturing coordinator"
+    )
+    auto_cycle = LaunchConfiguration("auto_cycle")
+
+    # ── Robot description (URDF via xacro) ─────────────────
     xacro_file = os.path.join(desc_pkg, "urdf", "aria_arm.urdf.xacro")
     doc = xacro.parse(open(xacro_file))
     xacro.process_doc(doc)
     urdf_xml = doc.toxml()
 
-    # Strip XML comments and collapse whitespace for gazebo_ros2_control
-    import re
+    # Clean XML comments and resolve package paths
     urdf_xml = re.sub(r"<!--.*?-->", "", urdf_xml, flags=re.DOTALL)
     urdf_xml = urdf_xml.replace("package://arm_description", f"file://{desc_pkg}")
     urdf_xml = re.sub(r"\s+", " ", urdf_xml).strip()
 
     robot_description = {"robot_description": urdf_xml}
 
-    # ── Paths ──────────────────────────────────────────────
-    from launch.substitutions import PathJoinSubstitution
+    # ── File Paths ─────────────────────────────────────────
     world_file = PathJoinSubstitution([bringup_pkg, "worlds", world_conf])
     controllers_file = os.path.join(ctrl_pkg, "config", "aria_controllers.yaml")
     rviz_config = os.path.join(bringup_pkg, "config", "aria_rviz.rviz")
+    models_dir = os.path.join(bringup_pkg, "models")
 
-    # ── Set GAZEBO_MODEL_PATH and GAZEBO_RESOURCE_PATH ──
-    # Point to the install/share directory so model://arm_description/... resolves
+    # ── Gazebo Environment Setup ───────────────────────────
     install_share = os.path.dirname(desc_pkg)  # .../install/share
+    install_lib = os.path.join(os.path.dirname(install_share), "arm_control", "lib")
+
+    # GAZEBO_MODEL_PATH: arm_description + bringup models
     existing_model_path = os.environ.get("GAZEBO_MODEL_PATH", "")
-    new_model_path = install_share + (":" + existing_model_path if existing_model_path else "")
+    new_model_path = f"{install_share}:{models_dir}" + (f":{existing_model_path}" if existing_model_path else "")
     set_gazebo_model_path = SetEnvironmentVariable(
         name="GAZEBO_MODEL_PATH",
         value=new_model_path,
     )
 
+    # GAZEBO_RESOURCE_PATH
     existing_resource_path = os.environ.get("GAZEBO_RESOURCE_PATH", "")
-    new_resource_path = install_share + (":" + existing_resource_path if existing_resource_path else "")
+    new_resource_path = install_share + (f":{existing_resource_path}" if existing_resource_path else "")
     set_gazebo_resource_path = SetEnvironmentVariable(
         name="GAZEBO_RESOURCE_PATH",
         value=new_resource_path,
+    )
+
+    # GAZEBO_PLUGIN_PATH: Ensure libaria_conveyor_plugin.so is discovered
+    existing_plugin_path = os.environ.get("GAZEBO_PLUGIN_PATH", "")
+    new_plugin_path = f"{install_lib}:/opt/ros/humble/lib" + (f":{existing_plugin_path}" if existing_plugin_path else "")
+    set_gazebo_plugin_path = SetEnvironmentVariable(
+        name="GAZEBO_PLUGIN_PATH",
+        value=new_plugin_path,
     )
 
     set_display = SetEnvironmentVariable(
@@ -114,7 +133,7 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # 3. SPAWN ROBOT IN GAZEBO CLASSIC
+    # 3. SPAWN ROBOT IN WORKCELL TABLE
     # ═══════════════════════════════════════════════════════
     spawn_robot = Node(
         package="gazebo_ros",
@@ -127,7 +146,7 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # 4. CONTROLLER LOADING (chained via OnProcessExit)
+    # 4. CONTROLLER LOADING (Joint State Broadcaster + JTC)
     # ═══════════════════════════════════════════════════════
     load_jsb = ExecuteProcess(
         cmd=["ros2", "control", "load_controller", "--set-state", "active",
@@ -142,7 +161,7 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # 5. MANUAL CONTROL NODE
+    # 5. MANUAL CONTROL NODE (With Industrial Poses)
     # ═══════════════════════════════════════════════════════
     manual_control = Node(
         package="arm_control",
@@ -153,7 +172,18 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # 6. RVIZ2 (optional)
+    # 6. OPTIONAL INDUSTRIAL ORCHESTRATOR
+    # ═══════════════════════════════════════════════════════
+    industrial_coordinator = Node(
+        package="arm_bringup",
+        executable="industrial_workcell_node.py",
+        name="industrial_workcell_node",
+        output="screen",
+        condition=IfCondition(auto_cycle),
+    )
+
+    # ═══════════════════════════════════════════════════════
+    # 7. RVIZ2 (Optional)
     # ═══════════════════════════════════════════════════════
     rviz2 = Node(
         package="rviz2",
@@ -165,16 +195,20 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # EVENT CHAIN: spawn -> JSB -> JTC -> manual
+    # EVENT CHAIN: spawn -> JSB -> JTC -> manual_control -> ready
     # ═══════════════════════════════════════════════════════
     return LaunchDescription([
         use_rviz_arg,
         world_arg,
+        auto_cycle_arg,
 
-        # Environment & Core launch
+        # Environment configuration
         set_display,
         set_gazebo_model_path,
         set_gazebo_resource_path,
+        set_gazebo_plugin_path,
+
+        # Core simulator & robot nodes
         gazebo,
         robot_state_publisher,
         spawn_robot,
@@ -193,17 +227,24 @@ def generate_launch_description():
                 on_exit=[load_jtc],
             )
         ),
-        # Chain: after JTC, start manual control
+        # Chain: after JTC, start manual control and log ready
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=load_jtc,
                 on_exit=[
                     manual_control,
-                    LogInfo(msg="=== ARIA Simulation ready ==="),
+                    LogInfo(msg="═════════════════════════════════════════════════════════"),
+                    LogInfo(msg="★ ARIA Industrial Manufacturing Workcell Ready!"),
+                    LogInfo(msg="  - Active Infeed Conveyor: /aria/conveyor/set_power"),
+                    LogInfo(msg="  - Optical Inspection Cameras: /top_camera, /side_camera"),
+                    LogInfo(msg="  - Assembly Tray: (0.08, -0.22, 0.614)"),
+                    LogInfo(msg="  - Defect Reject Bin: (0.22, -0.18, 0.614)"),
+                    LogInfo(msg="═════════════════════════════════════════════════════════"),
                 ],
             )
         ),
 
-        # Optional RViz
+        # Optional nodes
+        industrial_coordinator,
         rviz2,
     ])

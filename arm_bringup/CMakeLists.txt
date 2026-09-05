@@ -21,6 +21,12 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Install models
+install(DIRECTORY
+  models
+  DESTINATION share/${PROJECT_NAME}
+)
+
 # Install scripts
 install(PROGRAMS
   scripts/validate_stage1.py
@@ -30,6 +36,9 @@ install(PROGRAMS
   scripts/hardware_bringup_wizard.py
   scripts/aria_cli.py
   scripts/test_tester_world.py
+  scripts/industrial_workcell_node.py
+  scripts/conveyor_part_spawner.py
+  scripts/test_industrial_workcell.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

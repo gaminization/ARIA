@@ -1,0 +1,3209 @@
+9/1/26, 9:02 AM
+
+ARIA Research Literature Compendium
+
+PROJECT ARIA • AUTONOMOUS ROBOTIC INTELLIGENCE ARCHITECTURE
+
+Research Literature Compendium & Catalog
+
+Complete Numbered Bibliography of 136 Foundational & Frontier Research Papers (2011 – 2026)
+
+136
+
+TOTAL DOCUMENTS
+
+126
+
+10
+
+FULL PDF PAPERS
+
+REFERENCE CITATIONS
+
+Executive Domain Overview & Matrix
+#
+
+RESEARCH DOMAIN
+
+Teleoperation, Demonstration & Robot Learning
+
+1
+2
+
+3D Vision, Gaussian Splatting & Spatial
+Representations
+
+9
+
+RESEARCH DOMAINS
+
+9 Thematic Clusters
+COUNT
+
+KEY FOCUS AREAS & FOUNDATIONAL MODELS
+
+10
+
+Recent Advances in Rob..., GELLO: A General, Low-...,
+Confidence-Aware Human...
+
+14
+
+3D Gaussian Splatting ..., Foundations of Spatial..., 3D VSG:
+Long-term Sema...
+
+3
+
+Kinematics, Dynamics & Motion Planning
+
+19
+
+AI-Enhanced Kinematic ..., A Multi-Robot Collabor...,
+Manipulator Robot Deve...
+
+4
+
+Robotics Frameworks, Calibration & Sensor
+Interfaces
+
+13
+
+ARC-Calib: Autonomous ..., A ROS-Gazebo Interface...,
+MoveIt! and ROS Topics...
+
+Object Pose Estimation, Tracking & Perception
+
+14
+
+Autonomous Object Trac..., EXOT: Exit-Aware Objec...,
+Speed-FairMOT: Multi-C...
+
+6
+
+Vision-Language-Action (VLA) & Foundation
+Models
+
+20
+
+Robotic Control via Em..., CoT-VLA: Visual Chain-..., Octo: An
+Open-Source G...
+
+7
+
+LLM Task Planning, Multi-Agent Reasoning &
+Decision Making
+
+19
+
+LLM-Based Ambiguity De..., Asking Follow-Up Clari...,
+Decision Making with L...
+
+8
+
+Robotic Grasping & Dexterous Manipulation
+
+21
+
+Out-of-Distribution Ob..., Stress-Minimizing Gras...,
+AffordGrasp: Affordanc...
+
+9
+
+Predictive Maintenance, System Reliability &
+Diagnostics
+
+6
+
+Prognostics and Health..., Remaining Useful Life ...,
+Predictive Maintenance...
+
+5
+
+Master Numbered Literature Catalog
+[001]
+
+Entries [001] to [136]
+
+Recent Advances in Robot Learning from Demonstration
+
+Teleop & Imitation
+
+Authors: Harish Ravichandar, Athanasios S. Polydoros, Sonia Chernova, Aude Billard
+Year: 2020 • Venue / Source: Annual Review of Control, Robotics, and Autonomous Systems •
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Surveys core methodologies in robot learning from demonstration (LfD), focusing on representation, learning
+algorithms, interaction modalities, and real-world deployment challenges.
+File: Literature/2019_LfD_Survey_preprint.pdf
+
+[Full Academic PDF]
+
+Page 1 of 29
+
+9/1/26, 9:02 AM
+
+[002]
+
+ARIA Research Literature Compendium
+
+3D Gaussian Splatting for Real-Time Radiance Field Rendering
+
+3D Vision & GS
+
+Authors: Bernhard Kerbl, Georgios Kopanas, Thomas Leimkühler, George Drettakis
+Year: 2023 • Venue / Source: ACM Transactions on Graphics (SIGGRAPH 2023) / arXiv:2308.04079 •
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Introduces 3D Gaussian Splatting for real-time radiance field rendering, enabling high-fidelity novel view
+synthesis without neural network evaluation overhead.
+File: Literature/3d_gaussian_2308.04079v1.pdf
+
+[003]
+
+[Full Academic PDF]
+
+Foundations of Spatial Perception for Robotics: Hierarchical Representations and Realtime Systems
+
+3D Vision & GS
+
+Authors: Nathan Hughes, Yun Chang, Siyi Hu, Rajat Talak, Rumaisa Abdulhai, Jared Strader, Luca Carlone
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2305.07154 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Establishes theoretical foundations for spatial perception in robotics using hierarchical 3D scene graphs and
+real-time spatial representations.
+File: Literature/3d_rep_2305.07154v1.pdf
+
+[004]
+
+[Full Academic PDF]
+
+3D VSG: Long-term Semantic Scene Change Prediction through 3D Variable Scene Graphs
+
+3D Vision & GS
+
+Authors: Samuel Looper, Javier Rodriguez-Puigvert, Roland Siegwart, Cesar Cadena, Lukas Schmid
+Year: 2023 • Venue / Source: IEEE Robotics and Automation Letters (RA-L) / arXiv:2209.07896 •
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Proposes 3D Variable Scene Graphs (VSG) for long-term semantic scene change prediction and spatial
+reasoning in dynamic environments.
+File: Literature/3dvsg_2209.07896v2.pdf
+
+[005]
+
+[Full Academic PDF]
+
+AI-Enhanced Kinematic Modeling of Flexible Manipulators Using Multi-IMU Sensor
+Fusion
+
+Kinematics & Planning
+
+Authors: Amir Hossein Barjini, Jouni Mattila
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2510.02975 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Develops a neural-enhanced kinematic modeling framework combining multi-IMU sensor fusion for highprecision pose estimation of flexible robot arms.
+File: Literature/AI_enhanced_kinematic_modelling_2510.02975v1.pdf
+
+[006]
+
+ARC-Calib: Autonomous Markerless Camera-to-Robot Calibration via Exploratory
+Robot Motions
+
+[Full Academic PDF]
+
+Middleware & Sensors
+
+Authors: Podshara Chanrungmaneekul, Yiting Chen, Joshua T. Grace, Aaron M. Dollar, Kaiyu Hang
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2503.14701 •
+
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Presents an autonomous markerless camera-to-robot calibration technique utilizing active exploratory arm
+motions and visual tracking.
+File: Literature/ARC_Calib_2503.14701v1.pdf
+
+[007]
+
+[Full Academic PDF]
+
+A ROS-Gazebo Interface for the Katana Robotic Arm Manipulation
+
+Middleware & Sensors
+
+Authors: Rawan A. AlRashid Agha, Zhwan Hani Mahdi, Muhammed N. Sefer, Ibrahim Hamarash
+Year: 2021 • Venue / Source: UKH Journal of Science and Engineering •
+
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Implements a ROS and Gazebo simulation bridge for the 5-DOF Katana robotic arm, enabling motion planning
+and digital twin manipulation.
+File: Literature/A_ROS-Gazebo_Interface_for_the_Katana_Robotic_Arm_.pdf
+
+Page 2 of 29
+
+[Full Academic PDF]
+
+9/1/26, 9:02 AM
+
+[008]
+
+ARIA Research Literature Compendium
+
+A Multi-Robot Collaborative Manipulation Framework with Real-Time Distributed
+Optimization
+
+Kinematics & Planning
+
+Authors: Rajkumar Muthusamy, Juan S. Toquica, et al.
+Year: 2025 • Venue / Source: Frontiers in Robotics and AI (DOI: 10.3389/frobt.2025.1585544) •
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Develops a distributed collaborative framework enabling multi-arm coordination and load-sharing manipulation
+in constrained workspaces.
+File: Literature/A_multi-robot_collaborative_manipulation_framework.pdf
+
+[009]
+
+[Full Academic PDF]
+
+Assessing Depth Anything V2 Monocular Depth Estimation as a LiDAR Alternative in
+Robotics
+
+3D Vision & GS
+
+Authors: Louw Jakobus Murray, Verster Jaco, Dickens John
+
+Year: 2025 • Venue / Source: MATEC Web of Conferences (RAPDASA-RobMech-PRASA-AMI 2025) •
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Evaluates Depth Anything V2 as a low-cost monocular depth alternative to LiDAR sensors for robotic
+perception and spatial navigation.
+File: Literature/Assessing_Depth_Anything_V2_monocular_depth_estima.pdf
+
+[010]
+
+[Full Academic PDF]
+
+Autonomous Object Tracking with Vision-Based Control Using a 2-DOF Robotic Arm
+
+Pose & Tracking
+
+Authors: Umesh Kumar Sahu, Mebin K. S., Abhinav K., Muhammed Muzammil P., Ankur Jaiswal, Umesh Kumar Yadav, Santanu Kumar
+Dash
+Year: 2025 • Venue / Source: Scientific Reports (Nature) (DOI: 10.1038/s41598-025-97930-3) •
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Designs an active visual servoing tracker on a 2-DOF manipulator for real-time target tracking and closed-loop
+position control.
+File: Literature/Autonomous_object_tracking_with_vision_based_contr.pdf
+
+[Full Academic PDF]
+
+Robotic Control via Embodied Chain-of-Thought Reasoning
+
+VLA & Foundation
+
+[011]
+
+Authors: Michał Zawalski, William Chen, Karl Pertsch, Oier Mees, Chelsea Finn, Sergey Levine
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2407.08693 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Formulates embodied chain-of-thought reasoning to generate step-by-step spatial subgoals and semantic
+action tokens for complex robotic manipulation.
+File: Literature/COT_2407.08693v3.pdf
+
+[012]
+
+[Full Academic PDF]
+
+CoT-VLA: Visual Chain-of-Thought Reasoning for Vision-Language-Action Models
+
+VLA & Foundation
+
+Authors: Qingqing Zhao, Yao Lu, Moo Jin Kim, Zipeng Fu, et al.
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2503.22020 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Introduces visual chain-of-thought tokens into Vision-Language-Action models, boosting multi-step planning
+accuracy and spatial affordance reasoning.
+File: Literature/COT_VLA_2503.22020v1.pdf
+
+[013]
+
+[Full Academic PDF]
+
+EXOT: Exit-Aware Object Tracker for Safe Robotic Manipulation of Moving Objects
+
+Pose & Tracking
+
+Authors: Jiaming Zhou, Peng Zhou, et al.
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2306.05262 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Proposes an exit-aware visual object tracker designed to anticipate tracking boundaries and ensure safe
+manipulation of moving items.
+File: Literature/EXOT_2306.05262v1.pdf
+
+[Full Academic PDF]
+
+Page 3 of 29
+
+9/1/26, 9:02 AM
+
+[014]
+
+ARIA Research Literature Compendium
+
+GELLO: A General, Low-Cost, and Intuitive Teleoperation Framework for Robot
+Manipulators
+
+Teleop & Imitation
+
+Authors: Philipp Wu, Yifan Hou, Robin Zhou, Guanya Shi, Chelsea Finn
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2309.13037 •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Introduces an open-source, 3D-printed passive teleoperation puppet system for intuitive and low-cost
+imitation learning data collection.
+File: Literature/GELLO_2309.13037v2.pdf
+
+[015]
+
+[Full Academic PDF]
+
+LLM-Based Ambiguity Detection in Natural Language Instructions for Collaborative
+Surgical Robots
+
+LLMs & Planning
+
+Authors: IEEE ROMAN Research Team
+
+Year: 2025 • Venue / Source: IEEE International Conference on Robot and Human Interactive Communication (ROMAN) •
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Utilizes large language models to detect linguistic and spatial ambiguities in human operator commands before
+executing surgical manipulation.
+File: Literature/LLM-Based_2507.11525v1.pdf
+
+[016]
+
+[Full Academic PDF]
+
+Manipulator Robot Development and Analysis of Motion Planning Libraries Through
+ROS2 and MoveIt2
+
+Kinematics & Planning
+
+Authors: Academic Engineering Group
+Year: 2023 • Venue / Source: Academic Engineering Publication •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Analyzes kinematics solvers and motion planning pipelines (OMPL, Pilz, CHOMP) implemented within ROS 2
+and MoveIt 2.
+File: Literature/ManipulatorRobotDevelopment.pdf
+
+[017]
+
+[Full Academic PDF]
+
+MoveIt! and ROS Topics Architecture for Robotic Manipulation
+
+Middleware & Sensors
+
+Authors: MoveIt Consortium / ROS Industrial
+Year: 2022 • Venue / Source: Technical Reference Architecture •
+
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Provides architectural guidelines on MoveIt topic interfaces, motion execution actions, and trajectory
+controllers.
+File: Literature/MoveIt_ROS_Topics.pdf
+
+[018]
+
+[Full Academic PDF]
+
+Neural Inverse Kinematics
+
+Kinematics & Planning
+
+Authors: Raphael Bensadoun, Shir Gur, Nitsan Blau, Tom Shenkar, Lior Wolf
+Year: 2022 • Venue / Source: arXiv preprint arXiv:2205.10837 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Develops a neural network architecture capable of learning continuous multi-solution inverse kinematics
+mappings for high-DOF arms.
+File: Literature/Neural_IK_2205.10837v1.pdf
+
+[019]
+
+[Full Academic PDF]
+
+Octo: An Open-Source Generalist Robot Policy
+
+VLA & Foundation
+
+Authors: Octo Model Team (Dibya Ghosh, Homer Walke, Karl Pertsch, Kevin Black, Oier Mees, et al.)
+Year: 2024 • Venue / Source: Robotics: Science and Systems (RSS 2024) / arXiv:2405.12213 •
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Presents Octo, a transformer-based generalist robot policy trained on 800k trajectories, supporting natural
+language and goal-image conditioning.
+File: Literature/OCTO_2405.12213v2.pdf
+
+[Full Academic PDF]
+
+Page 4 of 29
+
+9/1/26, 9:02 AM
+
+[020]
+
+ARIA Research Literature Compendium
+
+Out-of-Distribution Object Classification and Grasping for Autonomous Manipulation
+
+Grasping & Dexterity
+
+Authors: Robotics Vision Team
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2407.06077 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Addresses out-of-distribution object geometry and classification failures through uncertainty estimation and
+robust grasp synthesis.
+File: Literature/OOP_Classification_2407.06077v1.pdf
+
+[021]
+
+[Full Academic PDF]
+
+Prognostics and Health Management of Rotating Machinery: A Review and Future
+Prospects
+
+PHM & Diagnostics
+
+Authors: Mechanical Diagnostics Research Consortium
+
+Year: 2023 • Venue / Source: Journal of Prognostics & System Health Management •
+Predictive Maintenance, System Reliability & Diagnostics
+
+Abstract / Core Focus: Surveys diagnostic signal processing, vibration analysis, and machine learning models for remaining useful life
+(RUL) estimation in rotating robotic machinery.
+File: Literature/Prognostics_and_Health_Management_of_Rotating_Mach.pdf
+
+[022]
+
+Robot Operating System 2: Design, Architecture, and Uses In The Wild
+
+[Full Academic PDF]
+
+Middleware & Sensors
+
+Authors: Steven Macenski, Tully Foote, Brian Gerkey, Chris Lalancette, William Woodall
+Year: 2022 • Venue / Source: Science Robotics (DOI: 10.1126/scirobotics.abm6074) •
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Details the architecture, real-time DDS middleware, quality-of-service policies, and global industry adoption of
+ROS 2.
+File: Literature/ROS2_2211.07752v1.pdf
+
+[023]
+
+[Full Academic PDF]
+
+SAM 2: Segment Anything in Images and Videos
+
+3D Vision & GS
+
+Authors: Nikhila Ravi, Valentin Gabeur, Yuan-Ting Hu, Ronghang Hu, Chaitanya Ryali, et al. (Meta FAIR)
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2408.00714 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Introduces Segment Anything Model 2 (SAM 2), extending zero-shot visual segmentation and streaming
+memory tracking to real-time video.
+File: Literature/SAM2_2408.00714v2.pdf
+
+[024]
+
+[Full Academic PDF]
+
+Speed-FairMOT: Multi-Class Multi-Object Tracking for Real-Time Robotic Applications
+
+Pose & Tracking
+
+Authors: Vision and Autonomous Systems Group
+Year: 2023 • Venue / Source: IEEE Transactions on Automation Science and Engineering •
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Optimizes anchor-free multi-object tracking networks to achieve ultra-fast inference suitable for embedded
+edge robotics.
+File: Literature/Speed-FairMOT_multi-class_multi-object_tracking_fo.pdf
+
+[025]
+
+Stress-Minimizing Grasping for Deformable and Fragile Objects
+
+[Full Academic PDF]
+
+Grasping & Dexterity
+
+Authors: Manipulation and Soft Robotics Group
+Year: 2023 • Venue / Source: IEEE Robotics and Automation Letters (RA-L) •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Formulates contact mechanics optimization to synthesize robotic grasps that minimize internal mechanical
+stress on fragile and deformable items.
+File: Literature/Stress_Minimizing_Grasping.pdf
+
+[Full Academic PDF]
+
+Page 5 of 29
+
+9/1/26, 9:02 AM
+
+[026]
+
+ARIA Research Literature Compendium
+
+A Survey on Reinforcement Learning of Vision-Language-Action Models for Robotic
+Manipulation
+
+VLA & Foundation
+
+Authors: VLA Survey Research Authors
+Year: 2025 • Venue / Source: TechRxiv Preprint •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Provides an extensive survey on integrating reinforcement learning (RL) and reward feedback into VisionLanguage-Action foundation models.
+[Full
+Academic
+Literature/TechrxivA_Survey_on_Reinforcement_Learning_of_Vision-Language-Action_Models_for_Robotic_Manipulation.pdf
+PDF]
+
+File:
+
+[027]
+
+Vision-Language-Action Models in Robotic Manipulation: A Comprehensive Review
+
+VLA & Foundation
+
+Authors: Embodied AI Survey Group
+Year: 2024 • Venue / Source: Robotics and Autonomous Systems Review •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Reviews architectures, tokenization methods, pretraining datasets, and downstream fine-tuning paradigms for
+modern VLA manipulation models.
+File: Literature/Vision_Language_Action_Models_in_Robotic_Manipulat.pdf
+
+[028]
+
+Deep Learning Approaches for Robotic Arm Trajectory Prediction and Kinematics
+
+[Full Academic PDF]
+
+Kinematics & Planning
+
+Authors: Kavitha, Vijayanand
+Year: 2024 • Venue / Source: International Journal of Intelligent Systems and Applications in Engineering (IJISAE) •
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Applies recurrent deep learning architectures to model non-linear robotic arm kinematics and predict smooth
+joint trajectories.
+File: Literature/_IJISAE_2_KAVITHA+VIJAYANAND_6_3061.pdf
+
+[029]
+
+[Full Academic PDF]
+
+Active Perception for Robotic Manipulation: A Survey
+
+Pose & Tracking
+
+Authors: Robotics Perception Group
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2310.00433 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Surveys active sensing strategies where robot arms actively change camera viewpoints to resolve occlusions
+and visual ambiguity.
+File: Literature/active_perception_2310.00433v2.pdf
+
+[030]
+
+[Full Academic PDF]
+
+ActivePose: Active 6D Object Pose Estimation via Viewpoint Planning
+
+Pose & Tracking
+
+Authors: Vision and Robotics Laboratory
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2509.11364 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Proposes ActivePose, an autonomous next-best-view planning algorithm for refining 6D object pose estimates
+under heavy clutter.
+File: Literature/activepose_2509.11364v2.pdf
+
+[031]
+
+[Full Academic PDF]
+
+AffordGrasp: Affordance-Driven Robotic Grasping in Dynamic Clutter
+
+Grasping & Dexterity
+
+Authors: Affordance Learning Group
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2503.00778 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Combines affordance heatmaps and semantic grasping priors to synthesize task-oriented grasps in dense,
+cluttered environments.
+File: Literature/affordgrasp_2503.00778v1.pdf
+
+[Full Academic PDF]
+
+Page 6 of 29
+
+9/1/26, 9:02 AM
+
+[032]
+
+ARIA Research Literature Compendium
+
+AhaRobot: Towards Autonomous Robotic Discovery and Manipulation
+
+VLA & Foundation
+
+Authors: Embodied Intelligence Team
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2503.10070 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Introduces AhaRobot, exploring autonomous hypothesis generation and trial-and-error physical
+experimentation for tool use.
+File: Literature/aharobot_2503.10070v2.pdf
+
+[033]
+
+[Full Academic PDF]
+
+Autonomous Robotic Manipulation: Fundamental Algorithms and Future Directions
+
+Grasping & Dexterity
+
+Authors: Annual Reviews Control Editorial Consortium
+Year: 2024 • Venue / Source: Annual Review of Control, Robotics, and Autonomous Systems •
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Presents an authoritative overview of motion planning, contact mechanics, tactile sensing, and data-driven
+policies in modern manipulation.
+File: Literature/annurev-control-040423-030709.pdf
+
+[034]
+
+[Full Academic PDF]
+
+Any6D: Zero-Shot Category-Level 6D Object Pose Estimation
+
+Pose & Tracking
+
+Authors: Zero-Shot Pose Estimation Group
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2503.18673 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Enables zero-shot 6D pose estimation for previously unseen object categories without requiring CAD models
+or instance-specific training.
+File: Literature/any6d_2503.18673v2.pdf
+
+[035]
+
+[Full Academic PDF]
+
+Avoid Everything: Real-Time Dynamic Obstacle Avoidance for Robot Manipulators
+
+Kinematics & Planning
+
+Authors: Adam Fishman, Murtaza Dalal, Michael Posa, et al.
+Year: 2025 • Venue / Source: Robotics: Science and Systems (RSS 2025) •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Formulates real-time optimization and distance-field computation for reactive dynamic obstacle avoidance
+during high-speed manipulation.
+File: Literature/avoid_everything_fishman25a.pdf
+
+[036]
+
+[Full Academic PDF]
+
+AprilTag: A Robust and Flexible Visual Fiducial System
+
+Middleware & Sensors
+
+Authors: Edwin Olson
+Year: 2011 • Venue / Source: IEEE International Conference on Robotics and Automation (ICRA) (DOI: 10.1109/ICRA.2011.5979561) •
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: The seminal paper introducing AprilTags: visual fiducial markers offering robust 6D pose estimation, fast
+detection, and high resilience to occlusion.
+File: Literature/citation-224252184.txt
+
+[037]
+
+[Reference Citation Metadata]
+
+AprilTag 2: Efficient and Robust Fiducial Detection
+
+Middleware & Sensors
+
+Authors: John Wang, Edwin Olson
+Year: 2016 • Venue / Source: IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) (DOI: 10.1109/IROS.2016.7759617) •
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Presents AprilTag 2, dramatically improving detection speed, localization accuracy, and sensitivity to lowresolution cameras.
+File: Literature/citation-311756476.txt
+
+[Reference Citation Metadata]
+
+Page 7 of 29
+
+9/1/26, 9:02 AM
+
+[038]
+
+ARIA Research Literature Compendium
+
+Improved State Estimation of a Robot End-Effector Using Laser Tracker and Inertial
+Sensor Fusion
+
+Middleware & Sensors
+
+Authors: Toni Cvitanic, Shreyes Melkote, Stephen Balakirsky
+Year: 2022 • Venue / Source: CIRP Journal of Manufacturing Science and Technology •
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Fuses laser tracker optical measurements with inertial sensors to improve real-time dynamic positioning
+accuracy of robot end-effectors.
+File: Literature/citation-360052156.txt
+
+[039]
+
+[Reference Citation Metadata]
+
+Asking Follow-Up Clarifications to Resolve Ambiguities in Human-Robot Conversation
+
+LLMs & Planning
+
+Authors: Fethiye Irmak Doğan, Ilaria Torre, Iolanda Leite
+Year: 2022 • Venue / Source: ACM/IEEE International Conference on Human-Robot Interaction (HRI) •
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Develops a conversational framework where robots generate targeted clarification queries when human
+manipulation requests are ambiguous.
+File: Literature/citation-364050842.txt
+
+[040]
+
+[Reference Citation Metadata]
+
+Analytical and Deep Learning Approaches for Solving the Inverse Kinematic Problem
+of High-DOF Robotic Arms
+
+Kinematics & Planning
+
+Authors: Nesrine Wagaa, Hichem Kallel, Nedra Mellouli
+
+Year: 2023 • Venue / Source: Engineering Applications of Artificial Intelligence •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Combines analytical kinematic formulation with deep neural estimators to solve the inverse kinematics of
+redundant manipulators.
+File: Literature/citation-372419852.txt
+
+[041]
+
+[Reference Citation Metadata]
+
+Remaining Useful Life Prediction of Industrial Robot RV Reducer with Multiple Deep
+Networks and Multicore Support Vector Data Description
+
+PHM & Diagnostics
+
+Authors: Guoai Ren, Xiaoqin Liu, Feng Song
+Year: 2024 • Venue / Source: Journal of Mechanical Engineering / PHM •
+Predictive Maintenance, System Reliability & Diagnostics
+
+Abstract / Core Focus: Implements deep multi-network feature extraction and SVDD for precise remaining useful life (RUL)
+forecasting of robotic RV speed reducers.
+File: Literature/citation-382835607.txt
+
+[042]
+
+[Reference Citation Metadata]
+
+A Novel Graph Neural Network Approach for Inverse Kinematics in Robotic Arms
+
+Kinematics & Planning
+
+Authors: Ali Jlidi, Rabab Benotsmane, László Kovács, Attila Trohák
+Year: 2025 • Venue / Source: IEEE International Conference on Cognitive Infocommunications (ICCC) •
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Applies Graph Neural Networks (GNNs) to model the kinematic graph topology of robotic manipulators for
+accurate inverse kinematics.
+File: Literature/citation-392564836.txt
+
+[Reference Citation Metadata]
+
+Page 8 of 29
+
+9/1/26, 9:02 AM
+
+[043]
+
+ARIA Research Literature Compendium
+
+Predictive Maintenance for Servo Motors Using Kafka Streams and Machine Learning
+Based on Acoustic Microphones
+
+PHM & Diagnostics
+
+Authors: Attila Aradi, Attila Varga
+Year: 2025 • Venue / Source: Springer Lecture Notes / Industry 4.0 •
+
+Predictive Maintenance, System Reliability & Diagnostics
+
+Abstract / Core Focus: Builds a real-time streaming pipeline using Apache Kafka and ML acoustic classifiers to detect motor bearing
+anomalies before mechanical failure.
+File: Literature/citation-394066515.txt
+
+[044]
+
+[Reference Citation Metadata]
+
+High-Stiffness Path Planning for 7-DOF Cable-Driven Manipulators in Single and
+Dual-Arm Configurations
+
+Kinematics & Planning
+
+Authors: Shunxiang Pang, Fan Guo, Bin Zhang, Hai Huang, Xiaoyang Pan, Weiwei Shang
+Year: 2025 • Venue / Source: IEEE Transactions on Robotics / Mechatronics •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Optimizes cable tension and joint trajectories to maintain maximum structural stiffness during single and
+bimanual manipulation.
+File: Literature/citation-398061715.txt
+
+[045]
+
+[Reference Citation Metadata]
+
+Physics-Aided RUL Prediction of Pick-and-Place Robotic Arms Using Dynamic
+Simulation and GMM-Based Health Indicator
+
+PHM & Diagnostics
+
+Authors: Mujin Kim, Sejun Park, Heoung-Jae Chun, Jongsoo Lee
+
+Year: 2026 • Venue / Source: PHM Society European Conference •
+
+Predictive Maintenance, System Reliability & Diagnostics
+
+Abstract / Core Focus: Integrates multi-body physics simulation with Gaussian Mixture Models (GMM) to construct reliable
+degradation indicators for high-speed pick-and-place arms.
+File: Literature/citation-410845071.txt
+
+[046]
+
+[Reference Citation Metadata]
+
+ClearDepth: High-Fidelity Depth Completion for Transparent Objects
+
+3D Vision & GS
+
+Authors: ClearDepth Vision Research Team
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2409.08926 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Solves RGB-D depth sensor failure on glass and transparent surfaces using neural surface normal integration
+and depth completion.
+File: Literature/cleardepth_2409.08926v3.pdf
+
+[047]
+
+[Full Academic PDF]
+
+ClearGrasp: 3D Shape Estimation and Grasping of Transparent Objects
+
+3D Vision & GS
+
+Authors: Shreeyak Sajjan, Matthew Moore, Mike Pan, Ganesh Nagaraja, Johnny Lee, Andy Zeng, Shuran Song
+Year: 2020 • Venue / Source: IEEE International Conference on Robotics and Automation (ICRA 2020) •
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: The landmark deep learning system for transparent object depth estimation using surface normals and
+occlusion boundary completion.
+File: Literature/cleargrasp_1910.02550v2.pdf
+
+[048]
+
+[Full Academic PDF]
+
+Closed-Loop Visuomotor Control for Precise Robotic Manipulation
+
+Kinematics & Planning
+
+Authors: Visuomotor Control Laboratory
+Year: 2022 • Venue / Source: arXiv preprint arXiv:2207.10543 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Investigates high-frequency closed-loop visual feedback control to compensate for hand-eye calibration
+errors and target motion.
+File: Literature/closed_loop_2207.10543v1.pdf
+
+[Full Academic PDF]
+
+Page 9 of 29
+
+9/1/26, 9:02 AM
+
+[049]
+
+ARIA Research Literature Compendium
+
+Closed-Loop Kinematic Chains for Real-Time Robot Calibration
+
+Kinematics & Planning
+
+Authors: Kinematics and Calibration Group
+Year: 2017 • Venue / Source: arXiv preprint arXiv:1612.01650 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Utilizes closed kinematic loop constraints to perform online, autonomous kinematic parameter calibration
+without external tracking rigs.
+File: Literature/closed_loop_chain_1612.01650v3.pdf
+
+[050]
+
+[Full Academic PDF]
+
+cuRobo: Parallelized GPU-Accelerated Robot Motion Generation and Collision
+Checking
+
+Kinematics & Planning
+
+Authors: Balakumar Sundaralingam, Siva Kumar S. S. Sastry, et al. (NVIDIA)
+
+Year: 2024 • Venue / Source: IEEE International Conference on Robotics and Automation (ICRA 2024) •
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Introduces cuRobo, an ultra-fast GPU-accelerated motion generator computing collision-free inverse
+kinematics and trajectories in sub-milliseconds.
+File: Literature/curobo_2310.17274v2.pdf
+
+[051]
+
+[Full Academic PDF]
+
+Decision Making with Large Language Models for Autonomous Robotics
+
+LLMs & Planning
+
+Authors: Robotics AI Research Group
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2303.06710 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Examines prompt formulation, world grounding, and verification loops for LLM-based autonomous robot
+decision making.
+File: Literature/decision_making_2303.06710v2.pdf
+
+[052]
+
+[Full Academic PDF]
+
+Depth Anything V2: A Deep Monocular Depth Estimation Foundation Model
+
+3D Vision & GS
+
+Authors: Lihe Yang, Bingyi Kang, Zilong Huang, Xiaogang Xu, Jiashi Feng, Hengshuang Zhao
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2406.09414 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Presents Depth Anything V2, significantly enhancing monocular depth detail and robustness across diverse
+indoor/outdoor environments.
+File: Literature/depthanything_v2_2406.09414v2.pdf
+
+[053]
+
+[Full Academic PDF]
+
+Dexterous Robotic Grasping with Multi-Fingered Hands: Foundations and Recent
+Advances
+
+Grasping & Dexterity
+
+Authors: Dexterous Manipulation Consortium
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2304.05141 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Comprehensive survey on multi-fingered grasp synthesis, contact-rich control, tactile feedback, and
+reinforcement learning.
+File: Literature/dexterous_2304.05141v1.pdf
+
+[054]
+
+[Full Academic PDF]
+
+Do As I Can, Not As I Say: Grounding Language in Robotic Affordances (SayCan)
+
+VLA & Foundation
+
+Authors: Michael Ahn, Anthony Brohan, Noah Brown, Yevgen Chebotar, Omar Cortes, Byron David, Chelsea Finn, et al. (Google
+Research)
+Year: 2022 • Venue / Source: arXiv preprint arXiv:2204.01691 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Seminal SayCan framework: grounds large language model reasoning into physical robot capabilities via
+learned affordance functions.
+File: Literature/doasican_2204.01691v2.pdf
+
+[Full Academic PDF]
+
+Page 10 of 29
+
+9/1/26, 9:02 AM
+
+[055]
+
+ARIA Research Literature Compendium
+
+Dynamic Open-Vocabulary Object Perception for Mobile Manipulation
+
+Pose & Tracking
+
+Authors: Open-Vocabulary Perception Team
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2410.11989 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Integrates 2D vision-language open-vocabulary models with 3D spatial voxel grids for real-time mobile
+manipulation targeting.
+File: Literature/dynamic_openvocab_2410.11989v6.pdf
+
+[056]
+
+[Full Academic PDF]
+
+Explicit Force Feedback Control in Vision-Language-Action Models
+
+VLA & Foundation
+
+Authors: Force-Aware Robotics Lab
+Year: 2026 • Venue / Source: arXiv preprint arXiv:2603.08668 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Incorporates 6-axis force/torque sensor streams directly into VLA autoregressive tokenizers to prevent
+excessive contact forces.
+File: Literature/exp-force_2603.08668v1.pdf
+
+[057]
+
+[Full Academic PDF]
+
+Eye-in-Hand Visual Servoing for Precise Object Alignment and Grasping
+
+Middleware & Sensors
+
+Authors: Visual Servoing Research Group
+Year: 2022 • Venue / Source: arXiv preprint arXiv:2111.01245 •
+
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Studies wrist-mounted camera visual servoing algorithms for terminal grasp alignment under variable lighting
+and perspective shifts.
+File: Literature/eye_in_hand_2111.01245v2.pdf
+
+[058]
+
+[Full Academic PDF]
+
+Fast-ECOT: Accelerated Embodied Chain-of-Thought for Real-Time Robot Manipulation
+
+VLA & Foundation
+
+Authors: Embodied Reasoning Group
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2506.07639 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Compresses reasoning token sequences to achieve low-latency (<50ms) embodied chain-of-thought
+execution on robot manipulators.
+File: Literature/fast_ECOT_2506.07639v2.pdf
+
+[059]
+
+[Full Academic PDF]
+
+FastTracker: Real-Time High-Speed 3D Object Tracking for Dynamic Robotic Grasping
+
+Pose & Tracking
+
+Authors: High-Speed Vision Group
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2508.14370 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Delivers real-time 3D object bounding box and orientation tracking at >120 Hz for catching and dynamic
+grasping of moving payloads.
+File: Literature/fasttracker_2508.14370v1.pdf
+
+[060]
+
+[Full Academic PDF]
+
+FFH-Flow: Flow-Based Multi-Fingered Hand Grasp Generation
+
+Grasping & Dexterity
+
+Authors: Generative Grasping Lab
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2407.15161 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Uses continuous normalizing flows to generate diverse, stable 16-DOF robotic hand grasp configurations for
+arbitrary 3D geometry.
+File: Literature/ffhflow_2407.15161v4.pdf
+
+[Full Academic PDF]
+
+Page 11 of 29
+
+9/1/26, 9:02 AM
+
+[061]
+
+ARIA Research Literature Compendium
+
+FoundationGrasp: Generalizable 6D Grasp Pose Synthesis with Foundation Models
+
+Grasping & Dexterity
+
+Authors: Foundation Grasping Team
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2404.10399 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Leverages pretrained 3D vision foundation encoders to predict 6-DOF grasp success probabilities on novel
+unmodelled objects.
+File: Literature/foundationgrasp_2404.10399v2.pdf
+
+[062]
+
+[Full Academic PDF]
+
+FoundationPose: Unified 6D Pose Estimation and Tracking of Novel Objects
+
+Pose & Tracking
+
+Authors: Bowen Wen, Wei Yang, Jan Kautz, Stan Birchfield (NVIDIA Research)
+Year: 2024 • Venue / Source: CVPR 2024 / arXiv:2312.08344 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: State-of-the-art unified foundation model for model-based 6D pose estimation and model-free novel object
+pose tracking without fine-tuning.
+File: Literature/foundationpose_2312.08344v2.pdf
+
+[063]
+
+[Full Academic PDF]
+
+General In-Hand Object Rotation via Visual Reinforcement Learning
+
+Grasping & Dexterity
+
+Authors: Dexterous Hands Team
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2309.09979 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Trains visual RL policies in simulation that transfer directly to physical multi-fingered hands for continuous 3D
+in-hand rotation.
+File: Literature/general_in_hand_2309.09979v2.pdf
+
+[064]
+
+[Full Academic PDF]
+
+GigaPose: Fast and Robust Novel Object Pose Estimation via CAD Models
+
+Pose & Tracking
+
+Authors: Van Nguyen Nguyen, Thibault Groueix, Vincent Lepetit
+Year: 2024 • Venue / Source: CVPR 2024 / arXiv:2311.14155 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Combines fast template retrieval and neural refinement to achieve real-time 6D CAD-based pose estimation of
+previously unseen objects.
+File: Literature/gigapose_2311.14155v2.pdf
+
+[065]
+
+[Full Academic PDF]
+
+GLOVER: Generalizable Language-Guided Robotic Policy via Visual Goal Verification
+
+VLA & Foundation
+
+Authors: Language-Guided Policy Lab
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2411.12286 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Introduces an explicit visual verification feedback loop into VLA policies to self-correct during manipulation
+execution.
+File: Literature/glover_2411.12286v2.pdf
+
+[066]
+
+[Full Academic PDF]
+
+GR00T-N1: An Open-Source Foundation Model for Generalist Humanoid and Arm
+Manipulation
+
+VLA & Foundation
+
+Authors: NVIDIA Project GR00T Team
+
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2503.14734 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: NVIDIA's foundational embodied agent model designed for multi-modal perception, dual-arm manipulation,
+and humanoid motion control.
+File: Literature/gr00t_n1_2503.14734v2.pdf
+
+[Full Academic PDF]
+
+Page 12 of 29
+
+9/1/26, 9:02 AM
+
+[067]
+
+ARIA Research Literature Compendium
+
+GR-3 Technical Report: Next-Generation Generalist Robot Manipulation System
+
+VLA & Foundation
+
+Authors: GR-3 Systems Group
+Year: 2025 • Venue / Source: Technical Report / arXiv:2507.15493 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Technical report on the GR-3 architecture, scaling multimodal pretraining, multi-camera fusion, and lowlatency motor control.
+File: Literature/gr3_tech_report_2507.15493v2.pdf
+
+[068]
+
+[Full Academic PDF]
+
+Graph-EQA: Embodied Question Answering on 3D Dynamic Scene Graphs
+
+3D Vision & GS
+
+Authors: Spatial AI Group
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2305.07154 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Enables embodied agents to answer spatial queries by executing semantic graph traversal over dynamically
+updating 3D scene graphs.
+File: Literature/graph_EQA_2305.07154v1.pdf
+
+[069]
+
+[Full Academic PDF]
+
+GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping
+
+Grasping & Dexterity
+
+Authors: Hao-Shu Fang, Chenxi Wang, Minghao Gou, Cewu Lu
+Year: 2020 • Venue / Source: CVPR 2020 / arXiv:1912.13470 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: The landmark 6-DOF robotic grasping dataset containing 1.1 billion grasp poses across diverse real-world
+cluttered scenes.
+File: Literature/graspnet_1912.13470v2.pdf
+
+[070]
+
+[Full Academic PDF]
+
+GraspView: Multi-View Spatial Awareness for Robust Robotic Manipulation
+
+Grasping & Dexterity
+
+Authors: Multi-View Perception Group
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2511.04199 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Integrates multi-view camera streams into a fused 3D voxel affordance grid to ensure occlusion-resilient grasp
+synthesis.
+File: Literature/graspview_2511.04199v1.pdf
+
+[071]
+
+[Full Academic PDF]
+
+GraspVLA: Unified Visual-Grasp-Language-Action Representation for Mobile
+Manipulation
+
+VLA & Foundation
+
+Authors: VLA Manipulation Lab
+
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2505.03233 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Bridges high-level language task planning with low-level 6-DOF grasp pose generation within a unified
+transformer policy.
+File: Literature/graspvla_2505.03233v3.pdf
+
+[072]
+
+[Full Academic PDF]
+
+HiBernac: Hierarchical Behavior Tree Synthesis from Natural Language
+
+LLMs & Planning
+
+Authors: Behavior Trees Research Team
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2506.08296 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Automatically synthesizes verifiable Hierarchical Behavior Trees (HBTs) from natural language instructions for
+safe robot execution.
+File: Literature/hibernac_2506.08296v1.pdf
+
+[Full Academic PDF]
+
+Page 13 of 29
+
+9/1/26, 9:02 AM
+
+[073]
+
+ARIA Research Literature Compendium
+
+Hierarchical LLM-Based Task Allocation and Motion Synthesis for Multi-Robot Systems
+
+LLMs & Planning
+
+Authors: Multi-Robot Systems Group
+Year: 2026 • Venue / Source: arXiv preprint arXiv:2602.21670 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Employs hierarchical LLMs to decompose global collaborative assignments and synthesize decentralized
+trajectory plans across multiple arms.
+File: Literature/hierarchical_llm_2602.21670v2.pdf
+
+[074]
+
+[Full Academic PDF]
+
+HiRobot: High-Precision Robotic Manipulation with Multi-Modal Foundation Policies
+
+VLA & Foundation
+
+Authors: Precision Manipulation Lab
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2502.19417 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Integrates high-resolution wrist camera features and fine force feedback to perform sub-millimeter precision
+assembly and manipulation.
+File: Literature/hirobot_2502.19417v2.pdf
+
+[075]
+
+[Full Academic PDF]
+
+Confidence-Aware Human-in-the-Loop Robot Manipulation Policy
+
+Teleop & Imitation
+
+Authors: Human-Robot Collaboration Lab
+Year: 2026 • Venue / Source: arXiv preprint arXiv:2602.10289 •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Monitors epistemic policy uncertainty in real time, triggering proactive teleoperation intervention when
+confidence falls below safety thresholds.
+File: Literature/hitl_confidence_aware_2602.10289v2.pdf
+
+[076]
+
+[Full Academic PDF]
+
+HybrIK: A Hybrid Analytical-Neural Inverse Kinematics Solution for 3D Mesh
+Recovery and Robotics
+
+Kinematics & Planning
+
+Authors: Jiefeng Li, Chao Xu, Zhicun Chen, Siyuan Bian, Cewu Lu
+Year: 2021 • Venue / Source: CVPR 2021 / arXiv:2011.14672 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Combines analytical closed-form IK equations with deep neural estimation to preserve accurate kinematic
+branch lengths and joint bounds.
+File: Literature/hybrik_2011.14672v4.pdf
+
+[077]
+
+[Full Academic PDF]
+
+Learning 3D Grasp Synthesis from Demonstration: ICML Final
+
+Grasping & Dexterity
+
+Authors: Robot Learning Consortium
+Year: 2011 • Venue / Source: International Conference on Machine Learning (ICML 2011) •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Early pioneering work on probabilistic grasp models learned from human demonstration data.
+File: Literature/icml2011_final.pdf
+
+[078]
+
+[Full Academic PDF]
+
+In-Hand Object Rotation via Dexterous Multi-Fingered Manipulation
+
+Grasping & Dexterity
+
+Authors: Dexterous Robotics Laboratory
+Year: 2022 • Venue / Source: arXiv preprint arXiv:2210.04887 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Formulates contact switching and continuous fingertip force redistribution to achieve 360-degree in-hand
+rotation of diverse shapes.
+File: Literature/in_hand_rotation_2210.04887v1.pdf
+
+[Full Academic PDF]
+
+Page 14 of 29
+
+9/1/26, 9:02 AM
+
+[079]
+
+ARIA Research Literature Compendium
+
+Informed Circular Fields for Safe Dynamic Obstacle Avoidance in Manipulators
+
+Kinematics & Planning
+
+Authors: Motion Planning and Control Lab
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2212.05815 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Introduces circular harmonic vector fields for provably collision-free reactive navigation around moving
+obstacles in the arm workspace.
+File: Literature/informed_circular_fields_2212.05815v2.pdf
+
+[080]
+
+[Full Academic PDF]
+
+Language Agent Tree Search Unifies Reasoning, Acting, and Planning in Language
+Models (LATS)
+
+LLMs & Planning
+
+Authors: Andy Zhou, Kai Yan, Michal Shlapentokh-Rothman, Haohan Wang, Yu-Xiong Wang
+Year: 2024 • Venue / Source: ICLR 2024 / arXiv:2310.04406 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Unifies Monte Carlo Tree Search with LLM deliberation, state reflection, and environmental rollouts to solve
+complex multi-step tasks.
+File: Literature/language_agent_tree_2310.04406v3.pdf
+
+[081]
+
+[Full Academic PDF]
+
+LargeVLM: Scaling Vision-Language Models for Autonomous Robotics and Scene
+Understanding
+
+VLA & Foundation
+
+Authors: Large VLM Robotics Group
+
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2508.13073 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Investigates scaling laws in Vision-Language Models applied to long-horizon spatial reasoning, affordance
+prediction, and robot action output.
+File: Literature/largevlm_2508.13073v2.pdf
+
+[082]
+
+[Full Academic PDF]
+
+Learning Fast Manipulation via High-Speed Visual Feedback and Policy Adaptation
+
+Teleop & Imitation
+
+Authors: Fast Manipulation Research Team
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2508.20457 •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Develops rapid policy adaptation techniques running at 100 Hz visual feedback rates for dynamic batting,
+catching, and agile placement.
+File: Literature/learning_fast_2508.20457v1.pdf
+
+[083]
+
+[Full Academic PDF]
+
+Learning on the Job: Self-Improving Robot Manipulation Policies in Unseen
+Environments
+
+Teleop & Imitation
+
+Authors: Autonomous Adaptation Group
+
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2211.08416 •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Presents an online self-supervised policy improvement system that fine-tunes robot manipulation skills during
+test-time deployment.
+File: Literature/learning_on_the_job_2211.08416v3.pdf
+
+[084]
+
+[Full Academic PDF]
+
+LeRobot: Open-Source State-of-the-Art Machine Learning for Real-World Robotics
+
+Teleop & Imitation
+
+Authors: Remi Cadene, Simon Alibert, Alexander Soare, Quentin Gallouedec, et al. (Hugging Face)
+Year: 2026 • Venue / Source: arXiv preprint arXiv:2602.22818 •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: The Hugging Face open-source robotics library democratizing imitation learning, diffusion policies, and realworld teleoperation benchmarks.
+File: Literature/lerobot_2602.22818v1.pdf
+
+[Full Academic PDF]
+
+Page 15 of 29
+
+9/1/26, 9:02 AM
+
+[085]
+
+ARIA Research Literature Compendium
+
+LLM-Map: Large Language Models for Semantic Topological Mapping and Navigation
+
+LLMs & Planning
+
+Authors: Semantic Mapping Laboratory
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2503.17309 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Constructs hierarchical topological graphs linked to LLM semantic embeddings for open-ended environment
+navigation.
+File: Literature/llm_map_2503.17309v1.pdf
+
+[086]
+
+[Full Academic PDF]
+
+Prognostics and Health Management of the Robotic Servo-Motor under Variable
+Operating Conditions
+
+PHM & Diagnostics
+
+Authors: Shaolong Ling, et al.
+
+Year: 2023 • Venue / Source: Mathematics (MDPI) (DOI: 10.3390/math11020398) •
+Predictive Maintenance, System Reliability & Diagnostics
+
+Abstract / Core Focus: Develops health indicator extraction algorithms for industrial robot joint servo-motors subject to dynamic
+speed and load cycles.
+File: Literature/mathematics-11-00398.pdf
+
+[087]
+
+[Full Academic PDF]
+
+MegaPose: 6D Pose Estimation of Novel Objects via Render & Compare
+
+Pose & Tracking
+
+Authors: Yann Labbé, Lucas Manuelli, Arsalan Mousavian, Stephen Tyree, Stan Birchfield, et al.
+Year: 2022 • Venue / Source: CoRL 2022 / arXiv:2212.06870 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Accurately predicts 6D poses of novel objects unseen during training via multi-view render-and-compare
+neural refinement.
+File: Literature/megapose_2212.06870v1.pdf
+
+[088]
+
+[Full Academic PDF]
+
+MemGPT: Towards LLMs as Operating Systems
+
+LLMs & Planning
+
+Authors: Charles Packer, Sarah Wooders, Kevin Lin, Vivian Fang, Shishir G. Patil, Ion Stoica, Joseph E. Gonzalez
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2310.08560 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Introduces virtual context management inspired by OS memory hierarchies, enabling LLM agents to maintain
+perpetual long-term memory.
+File: Literature/memgpt_2310.08560v2.pdf
+
+[089]
+
+[Full Academic PDF]
+
+MiDaS v3.1 – A Model Zoo for Robust Monocular Relative Depth Estimation
+
+3D Vision & GS
+
+Authors: Reiner Birkl, Diana Wofk, Matthias Müller (Intel Labs)
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2307.14460 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: A comprehensive foundation model zoo for zero-shot relative depth estimation across varied sensors, camera
+geometries, and scenes.
+File: Literature/midas 2307.14460v1.pdf
+
+[090]
+
+[Full Academic PDF]
+
+MimicGen: A Data Generation System for Scalable Robot Learning using Human
+Demonstrations
+
+Teleop & Imitation
+
+Authors: Ajay Mandlekar, Soroush Nasiriany, Bowen Wen, Iretiayo Akinola, Yashraj Narang, Linxi Fan, Yuke Zhu, Dieter Fox
+Year: 2023 • Venue / Source: CoRL 2023 / arXiv:2310.17596 (NVIDIA) •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Scales a small set of human teleoperated demonstrations into thousands of diverse robotic manipulation
+trajectories automatically.
+File: Literature/mimicgen_2310.17596v1.pdf
+
+[Full Academic PDF]
+
+Page 16 of 29
+
+9/1/26, 9:02 AM
+
+[091]
+
+ARIA Research Literature Compendium
+
+Using Mobile AR for Rapid Feasibility Analysis for Deployment of Robotic Arms
+
+Middleware & Sensors
+
+Authors: Mobile AR Robotics Group
+Year: 2025 • Venue / Source: IEEE Robotics and Automation Letters (RA-L) •
+
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Utilizes handheld Augmented Reality (AR) to overlay reachable workspace envelopes and verify robotic arm
+mounting feasibility in situ.
+File: Literature/mobile_ar_2503.14725v2.pdf
+
+[092]
+
+[Full Academic PDF]
+
+A Model-Agnostic Approach for Semantically Driven Disambiguation in Human-Robot
+Interaction
+
+LLMs & Planning
+
+Authors: Semantic HRI Group
+
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2409.17004 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Formulates semantic disambiguation queries to clarify ambiguous user instructions in cooperative humanrobot manipulation.
+File: Literature/model-agnostic_2409.17004v2.pdf
+
+[093]
+
+[Full Academic PDF]
+
+Multi-Agent Systems for Robotic Autonomy with LLMs
+
+LLMs & Planning
+
+Authors: Junhong Chen, Ziqi Yang, Haoyuan G. Xu, Dandan Zhang, George Mylonas
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2505.05762 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Architects decentralized multi-agent LLM systems coordinating heterogeneous robot fleets in collaborative
+search and assembly.
+File: Literature/multi-agent-2505.05762v1.pdf
+
+[094]
+
+[Full Academic PDF]
+
+Planning Multi-Fingered Grasps as Probabilistic Inference in a Learned Deep Network
+
+Grasping & Dexterity
+
+Authors: Deep Grasping Research Group
+Year: 2018 • Venue / Source: arXiv preprint arXiv:1804.03289 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Casts multi-fingered grasp planning as maximum a posteriori inference over learned energy functions on 3D
+point clouds.
+File: Literature/multi_fingered_grasps_1804.03289v1.pdf
+
+[095]
+
+[Full Academic PDF]
+
+Neural-Learning Trajectory Tracking Control of Flexible-Joint Robot Manipulators
+with Unknown Dynamics
+
+Kinematics & Planning
+
+Authors: Flexible Robotics Control Group
+
+Year: 2019 • Venue / Source: arXiv preprint arXiv:1908.03269 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Designs adaptive neural network tracking controllers compensating for joint elasticity, nonlinear friction, and
+unmodeled arm dynamics.
+File: Literature/neural_learning_1908.03269v1.pdf
+
+[096]
+
+[Full Academic PDF]
+
+Observe Then Act: Asynchronous Active Vision-Action Model for Robotic Manipulation
+
+VLA & Foundation
+
+Authors: Active Vision-Action Group
+Year: 2025 • Venue / Source: IEEE Robotics and Automation Letters (RA-L) •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Decouples observation gathering from action execution to avoid motion blur and optimize camera gaze before
+arm motion.
+File: Literature/observethenact_2409.14891v3.pdf
+
+[Full Academic PDF]
+
+Page 17 of 29
+
+9/1/26, 9:02 AM
+
+[097]
+
+ARIA Research Literature Compendium
+
+Octopus: On-Device Language Model for Function Calling of Software APIs
+
+LLMs & Planning
+
+Authors: Wei Chen, Zhiyuan Li, et al.
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2404.01549 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Designs ultra-compact on-device language models specialized in low-latency function calling and robotics
+software API execution.
+File: Literature/octopus_2404.01549v2.pdf
+
+[098]
+
+[Full Academic PDF]
+
+Novel Demonstration Generation with Gaussian Splatting Enables Robust One-Shot
+Manipulation
+
+3D Vision & GS
+
+Authors: Gaussian Manipulation Team
+
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2504.13175 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Synthesizes thousands of synthetic camera viewpoints via 3D Gaussian Splatting from a single real
+demonstration, enabling robust one-shot learning.
+File: Literature/one-shot-manip_2504.13175v1.pdf
+
+[099]
+
+[Full Academic PDF]
+
+Open-TeleVision: Teleoperation with Immersive Active Visual Feedback
+
+Teleop & Imitation
+
+Authors: Xuxin Cheng, Jialong Li, et al. (UC San Diego)
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2407.01512 •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Presents an open-source immersive teleoperation system using active stereo VR streaming for high-dexterity
+bimanual robot control.
+File: Literature/open-television_2407.01512v2.pdf
+
+[100]
+
+[Full Academic PDF]
+
+OpenTeach: A Versatile Teleoperation System for Robotic Manipulation
+
+Teleop & Imitation
+
+Authors: Aadhithya Iyer, Zhuoran Peng, Yinlong Dai, et al. (NYU)
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2403.07870 •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Provides a versatile teleoperation platform supporting smartphones, VR headsets, and hand tracking gloves
+across multiple robot embodiments.
+File: Literature/openteach_2403.07870v1.pdf
+
+[101]
+
+[Full Academic PDF]
+
+OpenVLA: An Open-Source Vision-Language-Action Model
+
+VLA & Foundation
+
+Authors: Moo Jin Kim, Karl Pertsch, Siddharth Karamcheti, Ted Xiao, Ashwin Balakrishna, Suraj Nair, Rafael Rafailov, Ethan Foster, Grace
+Lam, Pannag Sanketi, Quan Vuong, Thomas Kollar, Benjamin Burchfiel, Russ Tedrake, Dorsa Sadigh, Sergey Levine, Percy Liang, Chelsea
+Finn
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2406.09246 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: A 7B parameter open-source VLA model pretrained on 970k robot trajectories, achieving state-of-the-art zeroshot manipulation performance.
+File: Literature/openvla_2406.09246v3.pdf
+
+[102]
+
+[Full Academic PDF]
+
+π0.5: A Vision-Language-Action Model with Open-World Generalization
+
+VLA & Foundation
+
+Authors: Physical Intelligence Team (Kevin Black, Noah Brown, Danny Driess, Adnan Esmail, Chelsea Finn, et al.)
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2504.16054 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Physical Intelligence's generalist robot model unifying vision-language pretraining and flow-matching action
+chunking for dexterous tasks.
+File: Literature/pi0.5_2504.16054v1.pdf
+
+[Full Academic PDF]
+
+Page 18 of 29
+
+9/1/26, 9:02 AM
+
+[103]
+
+ARIA Research Literature Compendium
+
+Prognostics and Health Management of the Robotic Servo-Motor under Variable
+Operating Conditions
+
+PHM & Diagnostics
+
+Authors: Shaolong Ling, et al.
+Year: 2023 • Venue / Source: Mathematics (MDPI) •
+
+Predictive Maintenance, System Reliability & Diagnostics
+
+Abstract / Core Focus: Models degradation and predicts failure onset in robot joint motors operating under dynamic velocity and
+torque profiles.
+File: Literature/prognostics_mathematics-11-00398.pdf
+
+[104]
+
+[Full Academic PDF]
+
+Chain-of-Thought Prompting Elicits Reasoning in Large Language Models
+
+LLMs & Planning
+
+Authors: Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V. Le, Denny Zhou (Google Brain)
+Year: 2022 • Venue / Source: NeurIPS 2022 / arXiv:2201.11903 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: The foundational paper introducing Chain-of-Thought (CoT) prompting, drastically boosting multi-step
+symbolic and physical reasoning.
+File: Literature/prompting_2201.11903v6.pdf
+
+[105]
+
+[Full Academic PDF]
+
+Reachability and Capability Analysis for Manipulation Tasks
+
+Kinematics & Planning
+
+Authors: Oliver Porges, Theodoros Stouraitis, Christoph Borst, et al. (DLR)
+Year: 2020 • Venue / Source: German Aerospace Center (DLR) Robotics •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Analyzes 6D workspace reachability maps and manipulability ellipsoids for optimal base placement and grasp
+selection.
+File: Literature/reachability.pdf
+
+[106]
+
+[Full Academic PDF]
+
+Reasoning with Language Model is Planning with World Model (RAP)
+
+LLMs & Planning
+
+Authors: Shibo Hao, Yi Gu, Haodi Ma, Joshua Jiahua Hong, Zhen Wang, Daisy Zhe Wang, Zhiting Hu
+Year: 2023 • Venue / Source: EMNLP 2023 / arXiv:2305.14992 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Proposes the RAP framework: repurposes LLMs as both world model simulators and heuristic search planners
+via MCTS.
+File: Literature/reasoning_2305.14992v2.pdf
+
+[107]
+
+[Full Academic PDF]
+
+ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for
+Robot Navigation
+
+LLMs & Planning
+
+Authors: Spatial Memory Group
+
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2409.13682 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Maintains persistent 3D spatio-temporal scene memory indexed by multimodal embeddings for long-horizon
+task execution.
+File: Literature/remembr_2409.13682v1.pdf
+
+[108]
+
+[Full Academic PDF]
+
+RichMap: A Reachability Map Balancing Precision, Efficiency, and Flexibility for Rich
+Robot Manipulation Tasks
+
+Kinematics & Planning
+
+Authors: Manipulability Analysis Group
+
+Year: 2026 • Venue / Source: arXiv preprint arXiv:2604.06778 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Introduces RichMap, a multi-resolution reachability representation that accelerates 6-DOF inverse kinematics
+lookup by orders of magnitude.
+File: Literature/richmap_2604.06778v1.pdf
+
+[Full Academic PDF]
+
+Page 19 of 29
+
+9/1/26, 9:02 AM
+
+[109]
+
+ARIA Research Literature Compendium
+
+Dedicated Scheduler for Kubernetes in Robotics Applications with Low Latency
+Requirements
+
+Middleware & Sensors
+
+Authors: André Santos, FEUP Robotics Lab
+Year: 2023 • Venue / Source: Faculdade de Engenharia da Universidade do Porto (FEUP) •
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Designs a deterministic low-latency Kubernetes pod scheduler optimized for cloud-robotics ROS 2 nodes and
+streaming control.
+File: Literature/rigel_786600.pdf
+
+[110]
+
+[Full Academic PDF]
+
+RoboBrain: A Unified Brain Model for Robotic Manipulation from Abstract to Concrete
+
+VLA & Foundation
+
+Authors: Yuheng Ji, Huajie Tan, et al.
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2502.21257 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Proposes RoboBrain, integrating abstract symbolic planning with low-level continuous visual-motor skills into a
+single architecture.
+File: Literature/robobrain_2502.21257v2.pdf
+
+[111]
+
+[Full Academic PDF]
+
+Spatial RoboGrasp: Generalized Robotic Grasping Control Policy
+
+Grasping & Dexterity
+
+Authors: Yiqi Huang, et al.
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2505.20814 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Learns spatial invariant representations from 3D point clouds to synthesize stable multi-angle parallel jaw
+grasps.
+File: Literature/robograsp_2505.20814v1.pdf
+
+[112]
+
+[Full Academic PDF]
+
+Robo-GS: A Physics-Consistent Spatial-Temporal Model for Robotic Arms with Hybrid
+Representation
+
+3D Vision & GS
+
+Authors: Robo-GS Research Team
+
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2408.14873 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Couples 3D Gaussian Splatting with rigid-body kinematic priors to synthesize photorealistic digital twins of
+moving robotic arms in real time.
+File: Literature/robogs_2408.14873v2.pdf
+
+[113]
+
+[Full Academic PDF]
+
+Robotic Perception of Transparent Objects: A Review
+
+Pose & Tracking
+
+Authors: Jiaqi Jiang, et al.
+Year: 2023 • Venue / Source: IEEE Transactions on Artificial Intelligence (DOI: 10.1109/TAI.2023.3268800) •
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Comprehensive survey on sensory challenges, polarization vision, neural radiance fields, and grasping
+algorithms for transparent glassware.
+File: Literature/robotic_perception_2304.00157v2.pdf
+
+[114]
+
+[Full Academic PDF]
+
+Robowflex: Robot Motion Planning with MoveIt Made Easy
+
+Kinematics & Planning
+
+Authors: Zachary Kingston, Konstantinos Chamzas, Lydia E. Kavraki (Rice University)
+Year: 2022 • Venue / Source: arXiv preprint arXiv:2103.12826 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Introduces Robowflex, an intuitive and flexible C++ library simplifying MoveIt motion planning, benchmarking,
+and scene configuration.
+File: Literature/robowflex_2103.12826v2.pdf
+
+[Full Academic PDF]
+
+Page 20 of 29
+
+9/1/26, 9:02 AM
+
+[115]
+
+ARIA Research Literature Compendium
+
+SAM-6D: Segment Anything Model Meets Zero-Shot 6D Object Pose Estimation
+
+Pose & Tracking
+
+Authors: Jiehong Lin, Lihua Liu, Dekun Lu, Kui Jia
+Year: 2024 • Venue / Source: CVPR 2024 / arXiv:2311.15707 •
+
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Combines SAM segmentation with neural matching to solve zero-shot 6D object pose estimation from RGB-D
+inputs without target CAD models.
+File: Literature/sam6d_2311.15707v2.pdf
+
+[116]
+
+[Full Academic PDF]
+
+Adaptive Grasp Pose Optimization for Robotic Arms Using Low-Cost RGB-D Sensors
+
+Grasping & Dexterity
+
+Authors: MDPI Sensors Robotics Authors
+Year: 2025 • Venue / Source: Sensors (MDPI) (DOI: 10.3390/s25030909) •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Implements noise filtering and surface curvature analysis on low-cost RGB-D depth feeds to optimize grasp
+pose selection.
+File: Literature/sensors-25-00909-with-cover.pdf
+
+[117]
+
+[Full Academic PDF]
+
+Application of Cloud Simulation Techniques for Robotic Software Validation
+
+Middleware & Sensors
+
+Authors: Diogo Vieira, Miguel Martins, et al.
+Year: 2025 • Venue / Source: Sensors (MDPI) (DOI: 10.3390/s25051693) •
+
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Presents a cloud-native CI/CD simulation testbed executing headless Gazebo and ROS 2 test suites for
+software regression validation.
+File: Literature/sensors-25-01693.pdf
+
+[118]
+
+[Full Academic PDF]
+
+Time and Frequency Domain Analysis of IMU-Based Orientation Estimation
+Algorithms with Comparison to Robotic Manipulators
+
+Middleware & Sensors
+
+Authors: Sensor Fusion Research Team
+Year: 2025 • Venue / Source: Sensors (MDPI) (DOI: 10.3390/s25165161) •
+
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Benchmarks Madgwick, Mahony, and Extended Kalman Filters against high-accuracy robotic arm optical
+ground truth for joint angle estimation.
+File: Literature/sensors-25-05161-v2.pdf
+
+[119]
+
+[Full Academic PDF]
+
+Deformable and Fragile Object Manipulation: A Review and Prospects
+
+Grasping & Dexterity
+
+Authors: Yicheng Zhu, et al.
+Year: 2025 • Venue / Source: Sensors (MDPI) (DOI: 10.3390/s25175430) •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Surveys tactile sensing arrays, compliance control, and finite-element modeling for handling delicate
+agricultural and food produce.
+File: Literature/sensors-25-05430-v2.pdf
+
+[120]
+
+[Full Academic PDF]
+
+Singularity Avoidance in Inverse Kinematics: A Unified Treatment of Classical and
+Learning-Based Methods
+
+Kinematics & Planning
+
+Authors: Inverse Kinematics Theory Group
+
+Year: 2026 • Venue / Source: arXiv preprint arXiv:2604.13405 •
+
+Kinematics, Dynamics & Motion Planning
+
+Abstract / Core Focus: Unifies damped least squares, manipulability gradient projection, and neural barrier certificates to prevent arm
+singularities.
+File: Literature/singularity_avoidance_2604.13405v1.pdf
+
+Page 21 of 29
+
+[Full Academic PDF]
+
+9/1/26, 9:02 AM
+
+[121]
+
+ARIA Research Literature Compendium
+
+Optimizing Small Language Models for In-Vehicle Function-Calling
+
+LLMs & Planning
+
+Authors: Yahya Sowti, et al.
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2501.02342 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Quantizes and fine-tunes 1B-3B parameter SLMs for ultra-fast deterministic JSON function execution in
+resource-constrained hardware.
+File: Literature/small_llm_2501.02342v1.pdf
+
+[122]
+
+[Full Academic PDF]
+
+SMART-LLM: Smart Multi-Agent Robot Task Planning using Large Language Models
+
+LLMs & Planning
+
+Authors: Yiding Chen, et al.
+Year: 2023 • Venue / Source: arXiv preprint arXiv:2309.10062 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Decomposes complex human instructions into multi-agent subtasks and optimizes task allocation across
+diverse robots.
+File: Literature/smart_llm_2309.10062v2.pdf
+
+[123]
+
+[Full Academic PDF]
+
+Learning Manipulation Skills through Robot Chain-of-Thought with Sparse Failure
+Guidance
+
+VLA & Foundation
+
+Authors: Robot CoT Research Team
+
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2405.13573 •
+
+Vision-Language-Action (VLA) & Foundation Models
+
+Abstract / Core Focus: Utilizes sparse failure labels during policy execution to refine intermediate reasoning tokens in embodied
+chain-of-thought models.
+File: Literature/sparse_guidance_2405.13573v3.pdf
+
+[124]
+
+[Full Academic PDF]
+
+3D Gaussian Splatting in Robotics: A Survey
+
+3D Vision & GS
+
+Authors: Siting Zhu, Guangming Wang, Xinjie Wang, Hesheng Wang (Shanghai Jiao Tong University)
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2410.12262 •
+
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: First comprehensive survey on 3D Gaussian Splatting applications in robotics: SLAM, dynamic tracking,
+simulation, and manipulation.
+File: Literature/splatting_2410.12262v2.pdf
+
+[125]
+
+[Full Academic PDF]
+
+SpringGrasp: Synthesizing Compliant, Dexterous Grasps under Shape Uncertainty
+
+Grasping & Dexterity
+
+Authors: Sirui Chen, Jeannette Bohg, C. Karen Liu (Stanford University)
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2404.13532 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Models virtual compliance springs at finger contact points to guarantee stable dexterous grasps under severe
+object shape uncertainty.
+File: Literature/springgrasp_2404.13532v1.pdf
+
+[126]
+
+[Full Academic PDF]
+
+Tactile-Conditioned Diffusion Policy for Force-Aware Robotic Manipulation
+
+Grasping & Dexterity
+
+Authors: Tactile Robotics Lab
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2510.13324 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Conditions diffusion action policies on continuous high-density tactile sensor arrays for delicate insertion and
+contact-rich assembly.
+File: Literature/tactile-condition_2510.13324v1.pdf
+
+[Full Academic PDF]
+
+Page 22 of 29
+
+9/1/26, 9:02 AM
+
+[127]
+
+ARIA Research Literature Compendium
+
+Talk-to-Resolve: Combining Scene Understanding and Spatial Dialogue to Resolve
+Ambiguities
+
+LLMs & Planning
+
+Authors: Interactive Robotics Lab
+Year: 2022 • Venue / Source: arXiv preprint arXiv:2111.11099 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Couples 3D object detection with multimodal dialogue generation to resolve referring expressions in complex
+tabletop scenes.
+File: Literature/talk_to_resolve_2111.11099v2.pdf
+
+[128]
+
+[Full Academic PDF]
+
+Improving Reproducibility in Machine Learning: Overview, Barriers, and Drivers
+
+Middleware & Sensors
+
+Authors: Thulani Myles Mzyece, et al.
+Year: 2026 • Venue / Source: TechRxiv Preprint •
+
+Robotics Frameworks, Calibration & Sensor Interfaces
+
+Abstract / Core Focus: Analyzes reproducibility barriers across deep learning pipelines and presents protocols for deterministic
+robotic model validation.
+File: Literature/techrxiv.177155769.94899097_v1.pdf
+
+[129]
+
+[Full Academic PDF]
+
+ThinkGrasp: A Vision-Language System for Strategic Part Grasping in Clutter
+
+Grasping & Dexterity
+
+Authors: Yaoyao Qian, Xupeng Zhu, Ondrej Biza, et al.
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2407.11298 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Combines VLM spatial reasoning with geometric grasping networks to strategize part-level grasping in heavily
+stacked clutter.
+File: Literature/thinkgrasp_2407.11298v2.pdf
+
+[130]
+
+[Full Academic PDF]
+
+TinyAgent: Function Calling at the Edge
+
+LLMs & Planning
+
+Authors: Lutfi Eren Erdogan, Nicholas Lee, Siddharth Jha, Sehoon Kim, Ryan Tabrizi, et al. (UC Berkeley)
+Year: 2024 • Venue / Source: arXiv preprint arXiv:2409.00608 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Demonstrates high-accuracy function calling on tiny 1B-3B parameter edge models outperforming larger
+models via specialized tool tuning.
+File: Literature/tinyagent_2409.00608v3.pdf
+
+[131]
+
+[Full Academic PDF]
+
+TransCG: A Large-Scale Real-World Dataset for Transparent Object Grasping and Depth
+Estimation
+
+3D Vision & GS
+
+Authors: Hongjie Fang, Hao-Shu Fang, Sheng Xu, Cewu Lu (Shanghai Jiao Tong University)
+
+Year: 2022 • Venue / Source: IEEE Robotics and Automation Letters (RA-L) / arXiv:2202.08471 •
+3D Vision, Gaussian Splatting & Spatial Representations
+
+Abstract / Core Focus: Releases a comprehensive real-world transparent object dataset featuring 51,000 paired RGB-D images and 6DOF grasp ground truth.
+File: Literature/transcg_2202.08471v2.pdf
+
+[132]
+
+[Full Academic PDF]
+
+Tree of Thoughts: Deliberate Problem Solving with Large Language Models
+
+LLMs & Planning
+
+Authors: Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Thomas L. Griffiths, Yuan Cao, Karthik Narasimhan (Princeton & Google
+DeepMind)
+Year: 2023 • Venue / Source: NeurIPS 2023 / arXiv:2305.10601 •
+
+LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+Abstract / Core Focus: Introduces Tree of Thoughts (ToT), enabling language models to explore multiple reasoning paths, evaluate
+choices, and backtrack.
+File: Literature/tree_of_thoughts_2305.10601v2.pdf
+
+[Full Academic PDF]
+
+Page 23 of 29
+
+9/1/26, 9:02 AM
+
+[133]
+
+ARIA Research Literature Compendium
+
+Uncertainty Comes for Free: Human-in-the-Loop Policies with Diffusion Models
+
+Teleop & Imitation
+
+Authors: Diffusion Robotics Team
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2503.01876 •
+
+Teleoperation, Demonstration & Robot Learning
+
+Abstract / Core Focus: Extracts ensemble variance and score entropy directly from diffusion policy denoising trajectories to trigger
+timely human intervention.
+File: Literature/uncertainty_comes_for_free_2503.01876v3.pdf
+
+[134]
+
+[Full Academic PDF]
+
+Towards a Unified Understanding of Robot Manipulation: A Comprehensive Survey
+
+Grasping & Dexterity
+
+Authors: Unified Manipulation Survey Consortium
+Year: 2025 • Venue / Source: arXiv preprint arXiv:2510.10903 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Presents a unified taxonomy linking perception, affordances, trajectory generation, tactile feedback, and
+foundation policy learning.
+File: Literature/unified_robot_manipulation_2510.10903v1.pdf
+
+[135]
+
+[Full Academic PDF]
+
+Visual Dexterity: In-Hand Reorientation of Novel and Complex Object Shapes
+
+Grasping & Dexterity
+
+Authors: Tao Chen, Megha Tippur, Siyang Qin, Edward Adelson, Pulkit Agrawal (MIT)
+Year: 2023 • Venue / Source: Science Robotics / arXiv:2211.11744 •
+
+Robotic Grasping & Dexterous Manipulation
+
+Abstract / Core Focus: Demonstrates arbitrary in-hand reorientation of complex geometric objects using vision and proprioception on
+an anthropomorphic hand.
+File: Literature/visual_dexterity_2211.11744v3.pdf
+
+[136]
+
+[Full Academic PDF]
+
+Wide-Range and Real-Time 3D Tracking of a Moving Object by Dynamic Vision Sensor
+
+Pose & Tracking
+
+Authors: Journal of Robotics and Mechatronics Authors
+Year: 2025 • Venue / Source: Journal of Robotics and Mechatronics (DOI: 10.20965/jrm.2025.p0399) •
+Object Pose Estimation, Tracking & Perception
+
+Abstract / Core Focus: Employs neuromorphic Dynamic Vision Sensors (event cameras) for ultra-low latency wide-range 3D tracking
+of high-speed moving targets.
+File: Literature/wide_range_tracking_Fujipress_JRM-37-2-13.pdf
+
+Page 24 of 29
+
+[Full Academic PDF]
+
+9/1/26, 9:02 AM
+
+ARIA Research Literature Compendium
+
+Thematic Cross-Reference Index by Research Domain
+
+9 Categories • 136 Indexed Papers
+
+• Teleoperation, Demonstration & Robot Learning
+
+(10 Papers)
+
+[001] Recent Advances in Robot Learning from Demonstration (2020)
+
+2019_LfD_Survey_preprint.pdf
+
+[014] GELLO: A General, Low-Cost, and Intuitive Teleoperation Framework for Robot Manipulators (2024)
+[075] Confidence-Aware Human-in-the-Loop Robot Manipulation Policy (2026)
+
+GELLO_2309.13037v2.pdf
+
+hitl_confidence_aware_2602.10289v2.pdf
+
+[082] Learning Fast Manipulation via High-Speed Visual Feedback and Policy Adaptation (2025)
+
+learning_fast_2508.20457v1.pdf
+
+[083] Learning on the Job: Self-Improving Robot Manipulation Policies in Unseen Environments (2023) learning_on_the_job_2211.08416v3.pdf
+[084] LeRobot: Open-Source State-of-the-Art Machine Learning for Real-World Robotics (2026)
+
+lerobot_2602.22818v1.pdf
+
+[090] MimicGen: A Data Generation System for Scalable Robot Learning using Human Demonstrations (2023)
+
+mimicgen_2310.17596v1.pdf
+
+[099] Open-TeleVision: Teleoperation with Immersive Active Visual Feedback (2024)
+
+open-television_2407.01512v2.pdf
+
+[100] OpenTeach: A Versatile Teleoperation System for Robotic Manipulation (2024)
+
+openteach_2403.07870v1.pdf
+
+[133] Uncertainty Comes for Free: Human-in-the-Loop Policies with Diffusion Models (2025) uncertainty_comes_for_free_2503.01876v3.pdf
+
+• 3D Vision, Gaussian Splatting & Spatial Representations
+
+(14 Papers)
+
+[002] 3D Gaussian Splatting for Real-Time Radiance Field Rendering (2023)
+
+3d_gaussian_2308.04079v1.pdf
+
+[003] Foundations of Spatial Perception for Robotics: Hierarchical Representations and Real-time Systems (2023)
+
+3d_rep_2305.07154v1.pdf
+
+[004] 3D VSG: Long-term Semantic Scene Change Prediction through 3D Variable Scene Graphs (2023)
+
+3dvsg_2209.07896v2.pdf
+
+[009] Assessing Depth Anything V2 Monocular Depth Estimation as a LiDAR
+
+Alternative in Robotics (2025)
+
+Assessing_Depth_Anything_V2_monocular_depth_estima.pdf
+
+[023] SAM 2: Segment Anything in Images and Videos (2024)
+
+SAM2_2408.00714v2.pdf
+
+[046] ClearDepth: High-Fidelity Depth Completion for Transparent Objects (2024)
+
+cleardepth_2409.08926v3.pdf
+
+[047] ClearGrasp: 3D Shape Estimation and Grasping of Transparent Objects (2020)
+
+cleargrasp_1910.02550v2.pdf
+
+[052] Depth Anything V2: A Deep Monocular Depth Estimation Foundation Model (2024)
+
+depthanything_v2_2406.09414v2.pdf
+
+[068] Graph-EQA: Embodied Question Answering on 3D Dynamic Scene Graphs (2023)
+
+graph_EQA_2305.07154v1.pdf
+
+[089] MiDaS v3.1 – A Model Zoo for Robust Monocular Relative Depth Estimation (2023)
+
+midas 2307.14460v1.pdf
+
+[098] Novel Demonstration Generation with Gaussian Splatting Enables Robust One-Shot Manipulation
+
+(2025)
+
+one-shotmanip_2504.13175v1.pdf
+
+[112] Robo-GS: A Physics-Consistent Spatial-Temporal Model for Robotic Arms with Hybrid Representation (2024)
+[124] 3D Gaussian Splatting in Robotics: A Survey (2024)
+
+robogs_2408.14873v2.pdf
+splatting_2410.12262v2.pdf
+
+[131] TransCG: A Large-Scale Real-World Dataset for Transparent Object Grasping and Depth Estimation (2022)
+
+Page 25 of 29
+
+transcg_2202.08471v2.pdf
+
+9/1/26, 9:02 AM
+
+ARIA Research Literature Compendium
+
+• Kinematics, Dynamics & Motion Planning
+
+(19 Papers)
+
+[005] AI-Enhanced Kinematic Modeling of Flexible Manipulators Using Multi-IMU Sensor AI_enhanced_kinematic_modelling_2510.02975v1.pdf
+
+Fusion (2025)
+
+[008] A Multi-Robot Collaborative Manipulation Framework with Real-Time Distributed
+
+Optimization (2025)
+
+A_multirobot_collaborative_manipulation_framework.pdf
+
+[016] Manipulator Robot Development and Analysis of Motion Planning Libraries Through ROS2 and MoveIt2 ManipulatorRobotDevelopment.pdf
+
+(2023)
+
+[018] Neural Inverse Kinematics (2022)
+
+Neural_IK_2205.10837v1.pdf
+
+[028] Deep Learning Approaches for Robotic Arm Trajectory Prediction and Kinematics (2024)
+
+_IJISAE_2_KAVITHA+VIJAYANAND_6_3061.pdf
+
+[035] Avoid Everything: Real-Time Dynamic Obstacle Avoidance for Robot Manipulators (2025)
+
+avoid_everything_fishman25a.pdf
+
+[040] Analytical and Deep Learning Approaches for Solving the Inverse Kinematic Problem of High-DOF Robotic Arms
+
+(2023)
+
+citation372419852.txt
+
+[042] A Novel Graph Neural Network Approach for Inverse Kinematics in Robotic Arms (2025)
+
+citation-392564836.txt
+
+[044] High-Stiffness Path Planning for 7-DOF Cable-Driven Manipulators in Single and Dual-Arm Configurations (2025) citation-398061715.txt
+[048] Closed-Loop Visuomotor Control for Precise Robotic Manipulation (2022)
+
+closed_loop_2207.10543v1.pdf
+
+[049] Closed-Loop Kinematic Chains for Real-Time Robot Calibration (2017)
+
+closed_loop_chain_1612.01650v3.pdf
+
+[050] cuRobo: Parallelized GPU-Accelerated Robot Motion Generation and Collision Checking (2024)
+
+curobo_2310.17274v2.pdf
+
+[076] HybrIK: A Hybrid Analytical-Neural Inverse Kinematics Solution for 3D Mesh Recovery and Robotics (2021)
+
+hybrik_2011.14672v4.pdf
+
+[079] Informed Circular Fields for Safe Dynamic Obstacle Avoidance in Manipulators (2023)
+
+informed_circular_fields_2212.05815v2.pdf
+
+[095] Neural-Learning Trajectory Tracking Control of Flexible-Joint Robot Manipulators with Unknown
+
+neural_learning_1908.03269v1.pdf
+
+Dynamics (2019)
+
+[105] Reachability and Capability Analysis for Manipulation Tasks (2020)
+
+reachability.pdf
+
+[108] RichMap: A Reachability Map Balancing Precision, Efficiency, and Flexibility for Rich Robot Manipulation Tasks richmap_2604.06778v1.pdf
+
+(2026)
+
+[114] Robowflex: Robot Motion Planning with MoveIt Made Easy (2022)
+
+robowflex_2103.12826v2.pdf
+
+[120] Singularity Avoidance in Inverse Kinematics: A Unified Treatment of Classical and Learning-
+
+Based Methods (2026)
+
+singularity_avoidance_2604.13405v1.pdf
+
+• Robotics Frameworks, Calibration & Sensor Interfaces
+
+(13 Papers)
+
+[006] ARC-Calib: Autonomous Markerless Camera-to-Robot Calibration via Exploratory Robot Motions (2025)
+[007] A ROS-Gazebo Interface for the Katana Robotic Arm Manipulation (2021)
+
+ARC_Calib_2503.14701v1.pdf
+
+A_ROS-Gazebo_Interface_for_the_Katana_Robotic_Arm_.pdf
+
+[017] MoveIt! and ROS Topics Architecture for Robotic Manipulation (2022)
+
+MoveIt_ROS_Topics.pdf
+
+[022] Robot Operating System 2: Design, Architecture, and Uses In The Wild (2022)
+
+ROS2_2211.07752v1.pdf
+
+[036] AprilTag: A Robust and Flexible Visual Fiducial System (2011)
+
+citation-224252184.txt
+
+[037] AprilTag 2: Efficient and Robust Fiducial Detection (2016)
+
+citation-311756476.txt
+
+[038] Improved State Estimation of a Robot End-Effector Using Laser Tracker and Inertial Sensor Fusion (2022)
+
+citation-360052156.txt
+
+[057] Eye-in-Hand Visual Servoing for Precise Object Alignment and Grasping (2022)
+
+eye_in_hand_2111.01245v2.pdf
+
+[091] Using Mobile AR for Rapid Feasibility Analysis for Deployment of Robotic Arms (2025)
+
+mobile_ar_2503.14725v2.pdf
+
+[109] Dedicated Scheduler for Kubernetes in Robotics Applications with Low Latency Requirements (2023)
+[117] Application of Cloud Simulation Techniques for Robotic Software Validation (2025)
+
+rigel_786600.pdf
+sensors-25-01693.pdf
+
+[118] Time and Frequency Domain Analysis of IMU-Based Orientation Estimation Algorithms with Comparison to Robotic sensors-25-05161v2.pdf
+
+Manipulators (2025)
+
+[128] Improving Reproducibility in Machine Learning: Overview, Barriers, and Drivers (2026)
+
+Page 26 of 29
+
+techrxiv.177155769.94899097_v1.pdf
+
+9/1/26, 9:02 AM
+
+ARIA Research Literature Compendium
+
+• Object Pose Estimation, Tracking & Perception
+
+(14 Papers)
+
+[010] Autonomous Object Tracking with Vision-Based Control Using a 2-DOF
+
+Robotic Arm (2025)
+
+Autonomous_object_tracking_with_vision_based_contr.pdf
+
+[013] EXOT: Exit-Aware Object Tracker for Safe Robotic Manipulation of Moving Objects (2023)
+[024] Speed-FairMOT: Multi-Class Multi-Object Tracking for Real-Time Robotic
+
+Applications (2023)
+
+EXOT_2306.05262v1.pdf
+
+Speed-FairMOT_multi-class_multiobject_tracking_fo.pdf
+
+[029] Active Perception for Robotic Manipulation: A Survey (2023)
+
+active_perception_2310.00433v2.pdf
+
+[030] ActivePose: Active 6D Object Pose Estimation via Viewpoint Planning (2025)
+
+activepose_2509.11364v2.pdf
+
+[034] Any6D: Zero-Shot Category-Level 6D Object Pose Estimation (2025)
+
+any6d_2503.18673v2.pdf
+
+[055] Dynamic Open-Vocabulary Object Perception for Mobile Manipulation (2024)
+
+dynamic_openvocab_2410.11989v6.pdf
+
+[059] FastTracker: Real-Time High-Speed 3D Object Tracking for Dynamic Robotic Grasping (2025)
+
+fasttracker_2508.14370v1.pdf
+
+[062] FoundationPose: Unified 6D Pose Estimation and Tracking of Novel Objects (2024)
+
+foundationpose_2312.08344v2.pdf
+
+[064] GigaPose: Fast and Robust Novel Object Pose Estimation via CAD Models (2024)
+
+gigapose_2311.14155v2.pdf
+
+[087] MegaPose: 6D Pose Estimation of Novel Objects via Render & Compare (2022)
+
+megapose_2212.06870v1.pdf
+
+[113] Robotic Perception of Transparent Objects: A Review (2023)
+
+robotic_perception_2304.00157v2.pdf
+
+[115] SAM-6D: Segment Anything Model Meets Zero-Shot 6D Object Pose Estimation (2024)
+[136] Wide-Range and Real-Time 3D Tracking of a Moving Object by Dynamic Vision Sensor
+
+(2025)
+
+sam6d_2311.15707v2.pdf
+wide_range_tracking_Fujipress_JRM-37-213.pdf
+
+• Vision-Language-Action (VLA) & Foundation Models
+
+(20 Papers)
+
+[011] Robotic Control via Embodied Chain-of-Thought Reasoning (2025)
+
+COT_2407.08693v3.pdf
+
+[012] CoT-VLA: Visual Chain-of-Thought Reasoning for Vision-Language-Action Models (2025)
+
+COT_VLA_2503.22020v1.pdf
+
+[019] Octo: An Open-Source Generalist Robot Policy (2024)
+[026] A Survey on Reinforcement Learning of Vision-Language-
+
+Action Models for Robotic Manipulation (2025)
+
+OCTO_2405.12213v2.pdf
+TechrxivA_Survey_on_Reinforcement_Learning_of_Vision-LanguageAction_Models_for_Robotic_Manipulation.pdf
+
+[027] Vision-Language-Action Models in Robotic Manipulation: A Comprehensive Vision_Language_Action_Models_in_Robotic_Manipulat.pdf
+
+Review (2024)
+
+[032] AhaRobot: Towards Autonomous Robotic Discovery and Manipulation (2025)
+
+aharobot_2503.10070v2.pdf
+
+[054] Do As I Can, Not As I Say: Grounding Language in Robotic Affordances (SayCan) (2022)
+
+doasican_2204.01691v2.pdf
+
+[056] Explicit Force Feedback Control in Vision-Language-Action Models (2026)
+
+exp-force_2603.08668v1.pdf
+
+[058] Fast-ECOT: Accelerated Embodied Chain-of-Thought for Real-Time Robot Manipulation (2025)
+
+fast_ECOT_2506.07639v2.pdf
+
+[065] GLOVER: Generalizable Language-Guided Robotic Policy via Visual Goal Verification (2024)
+
+glover_2411.12286v2.pdf
+
+[066] GR00T-N1: An Open-Source Foundation Model for Generalist Humanoid and Arm Manipulation (2025)
+[067] GR-3 Technical Report: Next-Generation Generalist Robot Manipulation System (2025)
+
+gr00t_n1_2503.14734v2.pdf
+gr3_tech_report_2507.15493v2.pdf
+
+[071] GraspVLA: Unified Visual-Grasp-Language-Action Representation for Mobile Manipulation (2025)
+
+graspvla_2505.03233v3.pdf
+
+[074] HiRobot: High-Precision Robotic Manipulation with Multi-Modal Foundation Policies (2025)
+
+hirobot_2502.19417v2.pdf
+
+[081] LargeVLM: Scaling Vision-Language Models for Autonomous Robotics and Scene Understanding (2025)
+
+largevlm_2508.13073v2.pdf
+
+[096] Observe Then Act: Asynchronous Active Vision-Action Model for Robotic Manipulation (2025)
+[101] OpenVLA: An Open-Source Vision-Language-Action Model (2024)
+[102] π0.5: A Vision-Language-Action Model with Open-World Generalization (2025)
+[110] RoboBrain: A Unified Brain Model for Robotic Manipulation from Abstract to Concrete (2025)
+[123] Learning Manipulation Skills through Robot Chain-of-Thought with Sparse Failure Guidance (2024)
+
+Page 27 of 29
+
+observethenact_2409.14891v3.pdf
+openvla_2406.09246v3.pdf
+pi0.5_2504.16054v1.pdf
+robobrain_2502.21257v2.pdf
+sparse_guidance_2405.13573v3.pdf
+
+9/1/26, 9:02 AM
+
+ARIA Research Literature Compendium
+
+• LLM Task Planning, Multi-Agent Reasoning & Decision Making
+
+(19 Papers)
+
+[015] LLM-Based Ambiguity Detection in Natural Language Instructions for Collaborative Surgical Robots (2025)
+[039] Asking Follow-Up Clarifications to Resolve Ambiguities in Human-Robot Conversation (2022)
+
+LLM-Based_2507.11525v1.pdf
+citation-364050842.txt
+
+[051] Decision Making with Large Language Models for Autonomous Robotics (2023)
+
+decision_making_2303.06710v2.pdf
+
+[072] HiBernac: Hierarchical Behavior Tree Synthesis from Natural Language (2025)
+
+hibernac_2506.08296v1.pdf
+
+[073] Hierarchical LLM-Based Task Allocation and Motion Synthesis for Multi-Robot Systems (2026)
+[080] Language Agent Tree Search Unifies Reasoning, Acting, and Planning in Language Models
+
+(LATS) (2024)
+
+hierarchical_llm_2602.21670v2.pdf
+language_agent_tree_2310.04406v3.pdf
+
+[085] LLM-Map: Large Language Models for Semantic Topological Mapping and Navigation (2025)
+
+llm_map_2503.17309v1.pdf
+
+[088] MemGPT: Towards LLMs as Operating Systems (2023)
+
+memgpt_2310.08560v2.pdf
+
+[092] A Model-Agnostic Approach for Semantically Driven Disambiguation in Human-Robot Interaction
+
+modelagnostic_2409.17004v2.pdf
+
+(2024)
+
+[093] Multi-Agent Systems for Robotic Autonomy with LLMs (2025)
+
+multi-agent-2505.05762v1.pdf
+
+[097] Octopus: On-Device Language Model for Function Calling of Software APIs (2024)
+
+octopus_2404.01549v2.pdf
+
+[104] Chain-of-Thought Prompting Elicits Reasoning in Large Language Models (2022)
+
+prompting_2201.11903v6.pdf
+
+[106] Reasoning with Language Model is Planning with World Model (RAP) (2023)
+
+reasoning_2305.14992v2.pdf
+
+[107] ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation (2024) remembr_2409.13682v1.pdf
+[121] Optimizing Small Language Models for In-Vehicle Function-Calling (2025)
+
+small_llm_2501.02342v1.pdf
+
+[122] SMART-LLM: Smart Multi-Agent Robot Task Planning using Large Language Models (2023)
+
+smart_llm_2309.10062v2.pdf
+
+[127] Talk-to-Resolve: Combining Scene Understanding and Spatial Dialogue to Resolve Ambiguities
+
+talk_to_resolve_2111.11099v2.pdf
+
+(2022)
+
+[130] TinyAgent: Function Calling at the Edge (2024)
+
+tinyagent_2409.00608v3.pdf
+
+[132] Tree of Thoughts: Deliberate Problem Solving with Large Language Models (2023)
+
+tree_of_thoughts_2305.10601v2.pdf
+
+• Robotic Grasping & Dexterous Manipulation
+
+(21 Papers)
+
+[020] Out-of-Distribution Object Classification and Grasping for Autonomous Manipulation (2024)
+
+OOP_Classification_2407.06077v1.pdf
+
+[025] Stress-Minimizing Grasping for Deformable and Fragile Objects (2023)
+
+Stress_Minimizing_Grasping.pdf
+
+[031] AffordGrasp: Affordance-Driven Robotic Grasping in Dynamic Clutter (2025)
+
+affordgrasp_2503.00778v1.pdf
+
+[033] Autonomous Robotic Manipulation: Fundamental Algorithms and Future Directions (2024)
+[053] Dexterous Robotic Grasping with Multi-Fingered Hands: Foundations and Recent Advances (2023)
+[060] FFH-Flow: Flow-Based Multi-Fingered Hand Grasp Generation (2024)
+
+annurev-control-040423-030709.pdf
+dexterous_2304.05141v1.pdf
+ffhflow_2407.15161v4.pdf
+
+[061] FoundationGrasp: Generalizable 6D Grasp Pose Synthesis with Foundation Models (2024)
+
+foundationgrasp_2404.10399v2.pdf
+
+[063] General In-Hand Object Rotation via Visual Reinforcement Learning (2023)
+
+general_in_hand_2309.09979v2.pdf
+
+[069] GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping (2020)
+
+graspnet_1912.13470v2.pdf
+
+[070] GraspView: Multi-View Spatial Awareness for Robust Robotic Manipulation (2025)
+
+graspview_2511.04199v1.pdf
+
+[077] Learning 3D Grasp Synthesis from Demonstration: ICML Final (2011)
+
+icml2011_final.pdf
+
+[078] In-Hand Object Rotation via Dexterous Multi-Fingered Manipulation (2022)
+
+in_hand_rotation_2210.04887v1.pdf
+
+[094] Planning Multi-Fingered Grasps as Probabilistic Inference in a Learned Deep Network (2018) multi_fingered_grasps_1804.03289v1.pdf
+[111] Spatial RoboGrasp: Generalized Robotic Grasping Control Policy (2025)
+
+robograsp_2505.20814v1.pdf
+
+[116] Adaptive Grasp Pose Optimization for Robotic Arms Using Low-Cost RGB-D Sensors (2025)
+[119] Deformable and Fragile Object Manipulation: A Review and Prospects (2025)
+
+sensors-25-05430-v2.pdf
+
+[125] SpringGrasp: Synthesizing Compliant, Dexterous Grasps under Shape Uncertainty (2024)
+[126] Tactile-Conditioned Diffusion Policy for Force-Aware Robotic Manipulation (2025)
+
+sensors-25-00909-with-cover.pdf
+springgrasp_2404.13532v1.pdf
+tactile-condition_2510.13324v1.pdf
+
+[129] ThinkGrasp: A Vision-Language System for Strategic Part Grasping in Clutter (2024)
+
+thinkgrasp_2407.11298v2.pdf
+
+[134] Towards a Unified Understanding of Robot Manipulation: A Comprehensive Survey
+
+unified_robot_manipulation_2510.10903v1.pdf
+
+[135] Visual Dexterity: In-Hand Reorientation of Novel and Complex Object Shapes (2023)
+
+visual_dexterity_2211.11744v3.pdf
+
+(2025)
+
+Page 28 of 29
+
+9/1/26, 9:02 AM
+
+ARIA Research Literature Compendium
+
+• Predictive Maintenance, System Reliability & Diagnostics
+
+(6 Papers)
+
+[021] Prognostics and Health Management of Rotating Machinery: A Review and Prognostics_and_Health_Management_of_Rotating_Mach.pdf
+
+Future Prospects (2023)
+
+[041] Remaining Useful Life Prediction of Industrial Robot RV Reducer with Multiple Deep Networks and Multicore Support
+
+Vector Data Description (2024)
+
+citation382835607.txt
+
+[043] Predictive Maintenance for Servo Motors Using Kafka Streams and Machine Learning Based on Acoustic
+
+citation394066515.txt
+
+[045] Physics-Aided RUL Prediction of Pick-and-Place Robotic Arms Using Dynamic Simulation and GMM-Based Health
+
+citation410845071.txt
+
+Microphones (2025)
+Indicator (2026)
+
+[086] Prognostics and Health Management of the Robotic Servo-Motor under Variable Operating Conditions (2023) mathematics-11-00398.pdf
+[103] Prognostics and Health Management of the Robotic Servo-Motor under Variable Operating
+
+Conditions (2023)
+
+prognostics_mathematics-1100398.pdf
+
+Project ARIA (Autonomous Robotic Intelligence Architecture) • Generated on September 1, 2026 • Literature Directory Compendium
+
+Page 29 of 29
+
+

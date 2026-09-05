@@ -91,4 +91,24 @@ ARIA uses assets, 3D meshes, world models, and draws architectural design patter
 
 ---
 
+## 8. Industrial Workcell & Conveyor Automation
+
+### [IFRA-Cranfield/IFRA_ConveyorBelt](https://github.com/IFRA-Cranfield/IFRA_ConveyorBelt)
+- **Role**: Architectural reference and physics model for active conveyor belt simulation in Gazebo with ROS 2 service control (`/aria/conveyor/set_power`), speed publishing, and continuous prismatic limit cycling.
+- **License**: Apache-2.0
+- **Authors**: Mikel Bueno Viso, Dr. Seemal Asif, Prof. Phil Webb, Intelligent Flexible Robotics and Assembly (IFRA) Group, Cranfield University.
+
+### [usnistgov/ARIAC](https://github.com/usnistgov/ARIAC)
+- **Role**: Foundational methodology for simulating linear conveyor belts via prismatic joints with position resets in Gazebo Classic.
+- **License**: Public Domain / NIST
+
+### [HantigoZore/ROS2-Industrial-Workcell](https://github.com/HantigoZore/ROS2-Industrial-Workcell)
+- **Role**: Architectural reference for automated manufacturing workcell sequencing (conveyor infeed, optical inspection gating, pick-and-place trajectories, dual sorting destinations).
+
+### [aws-robotics/aws-robomaker-small-warehouse-world](https://github.com/aws-robotics/aws-robomaker-small-warehouse-world)
+- **Role**: Reference for industrial factory floor lighting, hazard perimeter markings, safety enclosure design, and warehouse clutter physics tuning.
+- **License**: Apache-2.0
+
+---
+
 *Note: All external assets are copied (not moved) from the reference repositories to preserve repository integrity. Attribution is documented in accordance with open-source licensing.*

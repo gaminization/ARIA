@@ -1,0 +1,907 @@
+<?xml version="1.0"?>
+<!-- ═══════════════════════════════════════════════════════════════
+     ARIA Industrial Manufacturing Workcell — Gazebo Classic 11 World
+     Automated Production Cell: Infeed Conveyor, Vision QC,
+     Finished Goods Assembly Tray, Defect Reject Bin & Safety Fencing.
+     ═══════════════════════════════════════════════════════════════ -->
+<sdf version="1.6">
+  <world name="default">
+
+    <!-- ═══ Physics Engine (Anti-Glitch ODE Setup) ═══ -->
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>150</iters>
+          <sor>1.3</sor>
+        </solver>
+        <constraints>
+          <cfm>0.00001</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>5.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.0005</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
+    <!-- ═══ Gravity ═══ -->
+    <gravity>0 0 -9.81</gravity>
+
+    <!-- ═══ Scene settings ═══ -->
+    <scene>
+      <ambient>0.68 0.68 0.72 1.0</ambient>
+      <background>0.82 0.84 0.88 1.0</background>
+      <shadows>true</shadows>
+      <grid>false</grid>
+    </scene>
+
+    <!-- ═══ GUI Viewpoint (Industrial Perspective) ═══ -->
+    <gui fullscreen="0">
+      <camera name="user_camera">
+        <pose>0.85 -0.65 1.15 0 0.55 2.45</pose>
+        <view_controller>orbit</view_controller>
+      </camera>
+    </gui>
+
+    <!-- ═══ Factory Overhead Lighting ═══ -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>1.0 1.0 6.0 0 0 0</pose>
+      <diffuse>0.85 0.85 0.85 1</diffuse>
+      <specular>0.3 0.3 0.3 1</specular>
+      <direction>-0.3 -0.3 -1.0</direction>
+    </light>
+
+    <!-- High-Lux Focused Vision Inspection Spotlight -->
+    <light type="spot" name="inspection_spotlight">
+      <pose>0.18 0.04 1.8 0 0 0</pose>
+      <diffuse>0.95 0.95 0.92 1</diffuse>
+      <specular>0.5 0.5 0.5 1</specular>
+      <attenuation>
+        <range>3.5</range>
+        <constant>0.4</constant>
+        <linear>0.05</linear>
+        <quadratic>0.01</quadratic>
+      </attenuation>
+      <direction>0 0 -1</direction>
+      <spot>
+        <inner_angle>0.8</inner_angle>
+        <outer_angle>1.4</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <!-- Conveyor Pick Station Spotlight -->
+    <light type="spot" name="conveyor_spotlight">
+      <pose>0.20 0.08 1.6 0 0 0</pose>
+      <diffuse>0.92 0.92 0.95 1</diffuse>
+      <specular>0.4 0.4 0.4 1</specular>
+      <attenuation>
+        <range>3.0</range>
+        <constant>0.4</constant>
+        <linear>0.06</linear>
+        <quadratic>0.01</quadratic>
+      </attenuation>
+      <direction>0 0 -1</direction>
+      <spot>
+        <inner_angle>0.6</inner_angle>
+        <outer_angle>1.1</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <!-- Cell Ambient Fill Light -->
+    <light type="point" name="cell_fill_light">
+      <pose>0.0 0.0 2.2 0 0 0</pose>
+      <diffuse>0.45 0.45 0.50 1</diffuse>
+      <specular>0.15 0.15 0.15 1</specular>
+      <attenuation>
+        <range>4.0</range>
+        <constant>0.5</constant>
+        <linear>0.05</linear>
+        <quadratic>0.01</quadratic>
+      </attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <!-- ═══ Overhead Inspection Camera (Logitech C270 / Industrial Basler) ═══ -->
+    <model name="overhead_camera_model">
+      <static>true</static>
+      <pose>0.18 0.03 1.35 0 1.5708 0</pose>
+      <link name="camera_link">
+        <sensor name="top_camera" type="camera">
+          <always_on>true</always_on>
+          <update_rate>30</update_rate>
+          <visualize>false</visualize>
+          <camera>
+            <horizontal_fov>1.25</horizontal_fov>
+            <image><width>1280</width><height>720</height><format>R8G8B8</format></image>
+            <clip><near>0.01</near><far>10.0</far></clip>
+          </camera>
+          <plugin name="overhead_camera_driver" filename="libgazebo_ros_camera.so">
+            <ros>
+              <remapping>~/image_raw:=/top_camera/image_raw</remapping>
+              <remapping>~/camera_info:=/top_camera/camera_info</remapping>
+            </ros>
+            <camera_name>top_camera</camera_name>
+            <frame_name>top_camera_link</frame_name>
+          </plugin>
+        </sensor>
+        <!-- Camera physical enclosure visual -->
+        <visual name="cam_housing">
+          <geometry><box><size>0.04 0.06 0.03</size></box></geometry>
+          <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══ Angled Side Inspection Camera (Mounted to Optical Breadboard Table) ═══ -->
+    <model name="side_inspection_rig">
+      <static>true</static>
+      <pose>0.48 -0.25 0.608 0 0 0</pose>
+      <link name="link">
+        <!-- Optical Table Mounting Pedestal Base -->
+        <collision name="pedestal_col">
+          <pose>0 0 0.006 0 0 0</pose>
+          <geometry><box><size>0.06 0.06 0.012</size></box></geometry>
+        </collision>
+        <visual name="pedestal_vis">
+          <pose>0 0 0.006 0 0 0</pose>
+          <geometry><box><size>0.06 0.06 0.012</size></box></geometry>
+          <material><ambient>0.2 0.22 0.25 1</ambient><diffuse>0.3 0.32 0.35 1</diffuse></material>
+        </visual>
+        <!-- Stainless Steel Optical Riser Post -->
+        <collision name="post_col">
+          <pose>0 0 0.125 0 0 0</pose>
+          <geometry><cylinder><radius>0.012</radius><length>0.230</length></cylinder></geometry>
+        </collision>
+        <visual name="post_vis">
+          <pose>0 0 0.125 0 0 0</pose>
+          <geometry><cylinder><radius>0.012</radius><length>0.230</length></cylinder></geometry>
+          <material><ambient>0.65 0.68 0.72 1</ambient><diffuse>0.8 0.82 0.85 1</diffuse><specular>0.9 0.9 0.95 1</specular></material>
+        </visual>
+        <!-- Post Swivel Mounting Knuckle -->
+        <visual name="knuckle_vis">
+          <pose>0 0 0.235 0 0 0</pose>
+          <geometry><cylinder><radius>0.018</radius><length>0.030</length></cylinder></geometry>
+          <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.25 0.25 0.25 1</diffuse></material>
+        </visual>
+        <!-- Industrial Basler Camera Housing (Angled towards inspection station) -->
+        <visual name="side_cam_housing">
+          <pose>0 0 0.245 0 0.10 2.40</pose>
+          <geometry><box><size>0.035 0.045 0.030</size></box></geometry>
+          <material><ambient>0.15 0.30 0.55 1</ambient><diffuse>0.2 0.4 0.7 1</diffuse><specular>0.6 0.7 0.8 1</specular></material>
+        </visual>
+        <!-- Machine Vision C-Mount Lens -->
+        <visual name="side_cam_lens">
+          <pose>-0.012 0.013 0.245 0 0.10 2.40</pose>
+          <geometry><cylinder><radius>0.010</radius><length>0.022</length></cylinder></geometry>
+          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.15 0.15 0.15 1</diffuse><specular>0.8 0.8 0.8 1</specular></material>
+        </visual>
+        <!-- Camera Optical Sensor -->
+        <sensor name="side_camera" type="camera">
+          <pose>0 0 0.245 0 0.10 2.40</pose>
+          <always_on>true</always_on>
+          <update_rate>30</update_rate>
+          <visualize>false</visualize>
+          <camera>
+            <horizontal_fov>1.15</horizontal_fov>
+            <image><width>1280</width><height>720</height><format>R8G8B8</format></image>
+            <clip><near>0.01</near><far>10.0</far></clip>
+          </camera>
+          <plugin name="side_camera_driver" filename="libgazebo_ros_camera.so">
+            <ros>
+              <remapping>~/image_raw:=/side_camera/image_raw</remapping>
+              <remapping>~/camera_info:=/side_camera/camera_info</remapping>
+            </ros>
+            <camera_name>side_camera</camera_name>
+            <frame_name>side_camera_link</frame_name>
+          </plugin>
+        </sensor>
+      </link>
+    </model>
+
+    <!-- ═══ Factory Floor with Hazard Safety Zone Striping ═══ -->
+    <model name="factory_floor">
+      <static>true</static>
+      <link name="floor_link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>25 25</size></plane></geometry>
+          <surface>
+            <friction><ode><mu>100</mu><mu2>50</mu2></ode></friction>
+          </surface>
+        </collision>
+        <!-- Concrete Industrial Floor Visual -->
+        <visual name="floor_visual">
+          <geometry><plane><normal>0 0 1</normal><size>25 25</size></plane></geometry>
+          <material>
+            <ambient>0.35 0.36 0.38 1</ambient>
+            <diffuse>0.42 0.44 0.46 1</diffuse>
+            <specular>0.15 0.15 0.15 1</specular>
+          </material>
+        </visual>
+        <!-- Yellow-and-Black Hazard Perimeter Line around Robot Workcell -->
+        <!-- Hazard North Border -->
+        <visual name="hazard_border_north">
+          <pose>0.0 0.85 0.001 0 0 0</pose>
+          <geometry><box><size>1.70 0.08 0.001</size></box></geometry>
+          <material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material>
+        </visual>
+        <!-- Hazard South Border -->
+        <visual name="hazard_border_south">
+          <pose>0.0 -0.85 0.001 0 0 0</pose>
+          <geometry><box><size>1.70 0.08 0.001</size></box></geometry>
+          <material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material>
+        </visual>
+        <!-- Hazard West Border -->
+        <visual name="hazard_border_west">
+          <pose>-0.80 0.0 0.001 0 0 0</pose>
+          <geometry><box><size>0.08 1.78 0.001</size></box></geometry>
+          <material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material>
+        </visual>
+        <!-- Hazard East Border -->
+        <visual name="hazard_border_east">
+          <pose>0.80 0.0 0.001 0 0 0</pose>
+          <geometry><box><size>0.08 1.78 0.001</size></box></geometry>
+          <material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material>
+        </visual>
+        <!-- Operator Stand Mat (Black Anti-Fatigue Ergonomic Mat) -->
+        <visual name="operator_mat">
+          <pose>0.0 -1.05 0.003 0 0 0</pose>
+          <geometry><box><size>1.20 0.50 0.005</size></box></geometry>
+          <material><ambient>0.15 0.15 0.15 1</ambient><diffuse>0.18 0.18 0.18 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══ Optical Workstation Table ═══ -->
+    <model name="optical_table">
+      <static>true</static>
+      <pose>0.0 0.0 0.0 0 0 0</pose>
+      <link name="table_link">
+        <!-- Tabletop surface: center at (0.0, 0.0, 0.304), size 1.20 x 0.60 x 0.608 -->
+        <collision name="collision">
+          <pose>0.0 0.0 0.304 0 0 0</pose>
+          <geometry><box><size>1.20 0.60 0.608</size></box></geometry>
+          <surface>
+            <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+            <contact><ode><kp>1000000.0</kp><kd>1000.0</kd><max_vel>0.01</max_vel><min_depth>0.001</min_depth></ode></contact>
+          </surface>
+        </collision>
+        <!-- Visual: Optical Breadboard Workstation -->
+        <visual name="visual">
+          <pose>0.60 0.30 0.0 0 0 0</pose>
+          <geometry>
+            <mesh><uri>file:///home/gaminizer/Projects/ARIA/install/arm_description/share/arm_description/meshes/table/complete_table.dae</uri></mesh>
+          </geometry>
+        </visual>
+        <!-- Tabletop surface plate (metallic brushed aluminum finish) -->
+        <visual name="top_plate_visual">
+          <pose>0.0 0.0 0.606 0 0 0</pose>
+          <geometry><box><size>1.20 0.60 0.004</size></box></geometry>
+          <material>
+            <ambient>0.55 0.58 0.62 1</ambient>
+            <diffuse>0.70 0.72 0.75 1</diffuse>
+            <specular>0.8 0.8 0.85 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══ Arm Mounting Adapter Plate ═══ -->
+    <model name="arm_mounting_plate">
+      <static>true</static>
+      <pose>0.0 0.0 0.608 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="c">
+          <pose>0 0 0.003 0 0 0</pose>
+          <geometry><cylinder><radius>0.075</radius><length>0.006</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <pose>0 0 0.003 0 0 0</pose>
+          <geometry><cylinder><radius>0.075</radius><length>0.006</length></cylinder></geometry>
+          <material>
+            <ambient>0.25 0.55 0.85 1</ambient>
+            <diffuse>0.3 0.65 0.95 1</diffuse>
+            <specular>0.7 0.8 0.9 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ACTIVE INFEED CONVEYOR SYSTEM
+         Heavy-Duty Industrial Extruded Aluminum Construction:
+         - 4-Legged Floor Stand with Leveling Feet & Cross-Bracing
+         - Rigid Billet Optical Table Clamping Saddles
+         - Continuous Stationary Low-Friction Slider Bed Collision
+         - Continuous Scrolling Slat Belt Visual Animation
+         - Rotating Drive & Idler Rollers (Head & Tail Drums)
+         - Precision Pick Stopper & Optical Presence Sensor
+         ═══════════════════════════════════════════════════════════ -->
+    <model name="conveyor_system">
+      <pose>0.0 0.0 0.0 0 0 0</pose>
+
+      <!-- Conveyor Structural Frame, Stand & Guide Rails (Static) -->
+      <link name="conveyor_frame">
+        <static>true</static>
+
+        <!-- 1. Heavy Conveyor Bed Chassis (Extruded Aluminum Base) -->
+        <visual name="bed_chassis_vis">
+          <pose>0.20 0.38 0.612 0 0 0</pose>
+          <geometry><box><size>0.210 0.760 0.024</size></box></geometry>
+          <material><ambient>0.32 0.34 0.36 1</ambient><diffuse>0.42 0.44 0.48 1</diffuse><specular>0.6 0.65 0.7 1</specular></material>
+        </visual>
+
+        <!-- 2. Continuous Stationary Slider Bed Collision (Workpieces rest here — NEVER teleports!) -->
+        <collision name="slider_bed_collision">
+          <pose>0.20 0.38 0.627 0 0 0</pose>
+          <geometry><box><size>0.165 0.760 0.004</size></box></geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.5</mu>
+                <mu2>1.5</mu2>
+              </ode>
+              <torsional>
+                <coefficient>5.0</coefficient>
+                <patch_radius>0.015</patch_radius>
+              </torsional>
+            </friction>
+            <contact>
+              <ode>
+                <kp>500000.0</kp>
+                <kd>500.0</kd>
+                <max_vel>0.005</max_vel>
+                <min_depth>0.001</min_depth>
+              </ode>
+            </contact>
+            <bounce><restitution_coefficient>0.0</restitution_coefficient><threshold>1000000.0</threshold></bounce>
+          </surface>
+        </collision>
+
+        <!-- 3. Left Guide Rail (Low-friction UHMW-PE lining, mu=0.05) -->
+        <collision name="left_rail_col">
+          <pose>0.105 0.38 0.638 0 0 0</pose>
+          <geometry><box><size>0.015 0.760 0.030</size></box></geometry>
+          <surface>
+            <friction><ode><mu>0.05</mu><mu2>0.05</mu2></ode></friction>
+            <contact><ode><kp>1000000.0</kp><kd>100.0</kd><max_vel>0.005</max_vel><min_depth>0.001</min_depth></ode></contact>
+          </surface>
+        </collision>
+        <visual name="left_rail_vis">
+          <pose>0.105 0.38 0.638 0 0 0</pose>
+          <geometry><box><size>0.015 0.760 0.030</size></box></geometry>
+          <material><ambient>0.65 0.65 0.68 1</ambient><diffuse>0.8 0.8 0.82 1</diffuse><specular>0.8 0.8 0.8 1</specular></material>
+        </visual>
+
+        <!-- 4. Right Guide Rail (Low-friction UHMW-PE lining, mu=0.05) -->
+        <collision name="right_rail_col">
+          <pose>0.295 0.38 0.638 0 0 0</pose>
+          <geometry><box><size>0.015 0.760 0.030</size></box></geometry>
+          <surface>
+            <friction><ode><mu>0.05</mu><mu2>0.05</mu2></ode></friction>
+            <contact><ode><kp>1000000.0</kp><kd>100.0</kd><max_vel>0.005</max_vel><min_depth>0.001</min_depth></ode></contact>
+          </surface>
+        </collision>
+        <visual name="right_rail_vis">
+          <pose>0.295 0.38 0.638 0 0 0</pose>
+          <geometry><box><size>0.015 0.760 0.030</size></box></geometry>
+          <material><ambient>0.65 0.65 0.68 1</ambient><diffuse>0.8 0.8 0.82 1</diffuse><specular>0.8 0.8 0.8 1</specular></material>
+        </visual>
+
+        <!-- 5. Precision Mechanical End Stopper Bar at Pick Location (inner face at y = 0.055, docks part at y = 0.070) -->
+        <collision name="end_stop_col">
+          <pose>0.20 0.045 0.638 0 0 0</pose>
+          <geometry><box><size>0.180 0.020 0.030</size></box></geometry>
+          <surface>
+            <friction><ode><mu>0.05</mu><mu2>0.05</mu2></ode></friction>
+            <contact><ode><kp>500000.0</kp><kd>500.0</kd><max_vel>0.005</max_vel><min_depth>0.001</min_depth></ode></contact>
+            <bounce><restitution_coefficient>0.0</restitution_coefficient><threshold>1000000.0</threshold></bounce>
+          </surface>
+        </collision>
+        <visual name="end_stop_vis">
+          <pose>0.20 0.045 0.638 0 0 0</pose>
+          <geometry><box><size>0.180 0.020 0.030</size></box></geometry>
+          <material><ambient>0.4 0.42 0.45 1</ambient><diffuse>0.55 0.58 0.62 1</diffuse><specular>0.7 0.75 0.8 1</specular></material>
+        </visual>
+
+        <!-- 6. Optical Presence Sensor Bracket & Optics Housing (aligned with docked part at y = 0.070) -->
+        <visual name="sensor_bracket">
+          <pose>0.090 0.070 0.645 0 0 0</pose>
+          <geometry><box><size>0.025 0.025 0.030</size></box></geometry>
+          <material><ambient>0.1 0.7 0.9 1</ambient><diffuse>0.2 0.8 1.0 1</diffuse></material>
+        </visual>
+        <!-- Infrared Beam Visual Emitter -->
+        <visual name="sensor_beam_lens">
+          <pose>0.103 0.070 0.645 0 1.5708 0</pose>
+          <geometry><cylinder><radius>0.004</radius><length>0.002</length></cylinder></geometry>
+          <material><ambient>1 0 0 1</ambient><diffuse>1 0 0 1</diffuse><emissive>1 0 0 1</emissive></material>
+        </visual>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             HEAVY-DUTY INDUSTRIAL SUPPORT GANTRY & TABLE INTERFACE
+             ═══════════════════════════════════════════════════════════ -->
+        <!-- Front Table Clamping Saddles (Bolted to Optical Table M6 Grid) -->
+        <visual name="clamp_f_l_vis"><pose>0.095 0.070 0.612 0 0 0</pose><geometry><box><size>0.030 0.040 0.020</size></box></geometry><material><ambient>0.2 0.4 0.7 1</ambient><diffuse>0.25 0.5 0.8 1</diffuse></material></visual>
+        <visual name="clamp_f_r_vis"><pose>0.305 0.070 0.612 0 0 0</pose><geometry><box><size>0.030 0.040 0.020</size></box></geometry><material><ambient>0.2 0.4 0.7 1</ambient><diffuse>0.25 0.5 0.8 1</diffuse></material></visual>
+
+        <!-- Table Edge Clamping Saddles (at y = 0.26) -->
+        <visual name="clamp_m_l_vis"><pose>0.095 0.260 0.612 0 0 0</pose><geometry><box><size>0.030 0.040 0.020</size></box></geometry><material><ambient>0.2 0.4 0.7 1</ambient><diffuse>0.25 0.5 0.8 1</diffuse></material></visual>
+        <visual name="clamp_m_r_vis"><pose>0.305 0.260 0.612 0 0 0</pose><geometry><box><size>0.030 0.040 0.020</size></box></geometry><material><ambient>0.2 0.4 0.7 1</ambient><diffuse>0.25 0.5 0.8 1</diffuse></material></visual>
+
+        <!-- ── Intermediate Support Stand at Table Edge (y = 0.33) ── -->
+        <!-- Left Leg 40x40 Extrusion to Floor -->
+        <visual name="stand1_leg_l_vis"><pose>0.105 0.330 0.300 0 0 0</pose><geometry><box><size>0.040 0.040 0.600</size></box></geometry><material><ambient>0.5 0.52 0.55 1</ambient><diffuse>0.65 0.68 0.72 1</diffuse></material></visual>
+        <!-- Right Leg 40x40 Extrusion to Floor -->
+        <visual name="stand1_leg_r_vis"><pose>0.295 0.330 0.300 0 0 0</pose><geometry><box><size>0.040 0.040 0.600</size></box></geometry><material><ambient>0.5 0.52 0.55 1</ambient><diffuse>0.65 0.68 0.72 1</diffuse></material></visual>
+        <!-- Upper Bed Support Beam -->
+        <visual name="stand1_upper_vis"><pose>0.200 0.330 0.585 0 0 0</pose><geometry><box><size>0.230 0.040 0.030</size></box></geometry><material><ambient>0.45 0.47 0.50 1</ambient><diffuse>0.6 0.62 0.65 1</diffuse></material></visual>
+        <!-- Lower Floor Tie-Bar -->
+        <visual name="stand1_lower_vis"><pose>0.200 0.330 0.100 0 0 0</pose><geometry><box><size>0.230 0.040 0.030</size></box></geometry><material><ambient>0.45 0.47 0.50 1</ambient><diffuse>0.6 0.62 0.65 1</diffuse></material></visual>
+        <!-- Floor Leveling Feet -->
+        <visual name="stand1_foot_l"><pose>0.105 0.330 0.008 0 0 0</pose><geometry><cylinder><radius>0.035</radius><length>0.016</length></cylinder></geometry><material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.25 0.25 0.25 1</diffuse></material></visual>
+        <visual name="stand1_foot_r"><pose>0.295 0.330 0.008 0 0 0</pose><geometry><cylinder><radius>0.035</radius><length>0.016</length></cylinder></geometry><material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.25 0.25 0.25 1</diffuse></material></visual>
+
+        <!-- ── Infeed Tail End Floor Support Stand (y = 0.72) ── -->
+        <!-- Left Leg 40x40 Extrusion to Floor -->
+        <visual name="stand2_leg_l_vis"><pose>0.105 0.720 0.300 0 0 0</pose><geometry><box><size>0.040 0.040 0.600</size></box></geometry><material><ambient>0.5 0.52 0.55 1</ambient><diffuse>0.65 0.68 0.72 1</diffuse></material></visual>
+        <!-- Right Leg 40x40 Extrusion to Floor -->
+        <visual name="stand2_leg_r_vis"><pose>0.295 0.720 0.300 0 0 0</pose><geometry><box><size>0.040 0.040 0.600</size></box></geometry><material><ambient>0.5 0.52 0.55 1</ambient><diffuse>0.65 0.68 0.72 1</diffuse></material></visual>
+        <!-- Upper Bed Support Beam -->
+        <visual name="stand2_upper_vis"><pose>0.200 0.720 0.585 0 0 0</pose><geometry><box><size>0.230 0.040 0.030</size></box></geometry><material><ambient>0.45 0.47 0.50 1</ambient><diffuse>0.6 0.62 0.65 1</diffuse></material></visual>
+        <!-- Lower Floor Tie-Bar -->
+        <visual name="stand2_lower_vis"><pose>0.200 0.720 0.100 0 0 0</pose><geometry><box><size>0.230 0.040 0.030</size></box></geometry><material><ambient>0.45 0.47 0.50 1</ambient><diffuse>0.6 0.62 0.65 1</diffuse></material></visual>
+        <!-- Floor Leveling Feet -->
+        <visual name="stand2_foot_l"><pose>0.105 0.720 0.008 0 0 0</pose><geometry><cylinder><radius>0.035</radius><length>0.016</length></cylinder></geometry><material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.25 0.25 0.25 1</diffuse></material></visual>
+        <visual name="stand2_foot_r"><pose>0.295 0.720 0.008 0 0 0</pose><geometry><cylinder><radius>0.035</radius><length>0.016</length></cylinder></geometry><material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.25 0.25 0.25 1</diffuse></material></visual>
+        <!-- Diagonal 45-degree gusset struts -->
+        <visual name="gusset_l"><pose>0.105 0.640 0.500 0 0.785 0</pose><geometry><box><size>0.025 0.025 0.180</size></box></geometry><material><ambient>0.4 0.42 0.45 1</ambient></material></visual>
+        <visual name="gusset_r"><pose>0.295 0.640 0.500 0 0.785 0</pose><geometry><box><size>0.025 0.025 0.180</size></box></geometry><material><ambient>0.4 0.42 0.45 1</ambient></material></visual>
+
+        <!-- Longitudinal Heavy Lower Stringer Beams (Connecting stands at floor level) -->
+        <visual name="stringer_l"><pose>0.105 0.525 0.100 0 0 0</pose><geometry><box><size>0.030 0.390 0.030</size></box></geometry><material><ambient>0.45 0.47 0.50 1</ambient><diffuse>0.6 0.62 0.65 1</diffuse></material></visual>
+        <visual name="stringer_r"><pose>0.295 0.525 0.100 0 0 0</pose><geometry><box><size>0.030 0.390 0.030</size></box></geometry><material><ambient>0.45 0.47 0.50 1</ambient><diffuse>0.6 0.62 0.65 1</diffuse></material></visual>
+
+        <!-- Bearing Pillow Blocks for Rotating End Drums -->
+        <visual name="bearing_head_l"><pose>0.095 0.038 0.615 0 0 0</pose><geometry><box><size>0.015 0.030 0.025</size></box></geometry><material><ambient>0.2 0.4 0.7 1</ambient></material></visual>
+        <visual name="bearing_head_r"><pose>0.305 0.038 0.615 0 0 0</pose><geometry><box><size>0.015 0.030 0.025</size></box></geometry><material><ambient>0.2 0.4 0.7 1</ambient></material></visual>
+        <visual name="bearing_tail_l"><pose>0.095 0.755 0.615 0 0 0</pose><geometry><box><size>0.015 0.030 0.025</size></box></geometry><material><ambient>0.2 0.4 0.7 1</ambient></material></visual>
+        <visual name="bearing_tail_r"><pose>0.305 0.755 0.615 0 0 0</pose><geometry><box><size>0.015 0.030 0.025</size></box></geometry><material><ambient>0.2 0.4 0.7 1</ambient></material></visual>
+      </link>
+
+      <!-- Rigid World Anchor: locks conveyor_frame immovably to the world frame (cannot tilt, tip, or tumble) -->
+      <joint name="conveyor_world_anchor" type="fixed">
+        <parent>world</parent>
+        <child>conveyor_frame</child>
+      </joint>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           ROTATING HEAD DRIVE DRUM (Pick Station End)
+           ═══════════════════════════════════════════════════════════ -->
+      <link name="head_roller">
+        <pose>0.200 0.038 0.615 0 1.5708 0</pose>
+        <inertial>
+          <mass>0.5</mass>
+          <inertia><ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz></inertia>
+        </inertial>
+        <visual name="head_roller_drum">
+          <geometry><cylinder><radius>0.014</radius><length>0.165</length></cylinder></geometry>
+          <material><ambient>0.6 0.65 0.7 1</ambient><diffuse>0.75 0.8 0.85 1</diffuse><specular>0.9 0.9 0.9 1</specular></material>
+        </visual>
+        <!-- Rotation Indicator Stripe along Drum Surface -->
+        <visual name="head_roller_stripe">
+          <pose>0.013 0 0 0 0 0</pose>
+          <geometry><box><size>0.003 0.003 0.165</size></box></geometry>
+          <material><ambient>0.9 0.1 0.1 1</ambient><diffuse>1.0 0.1 0.1 1</diffuse></material>
+        </visual>
+      </link>
+
+      <joint name="head_roller_joint" type="continuous">
+        <parent>conveyor_frame</parent>
+        <child>head_roller</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <dynamics><damping>0.01</damping></dynamics>
+        </axis>
+      </joint>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           ROTATING TAIL IDLER DRUM (Infeed End)
+           ═══════════════════════════════════════════════════════════ -->
+      <link name="tail_roller">
+        <pose>0.200 0.755 0.615 0 1.5708 0</pose>
+        <inertial>
+          <mass>0.5</mass>
+          <inertia><ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz></inertia>
+        </inertial>
+        <visual name="tail_roller_drum">
+          <geometry><cylinder><radius>0.014</radius><length>0.165</length></cylinder></geometry>
+          <material><ambient>0.6 0.65 0.7 1</ambient><diffuse>0.75 0.8 0.85 1</diffuse><specular>0.9 0.9 0.9 1</specular></material>
+        </visual>
+        <visual name="tail_roller_stripe">
+          <pose>0.013 0 0 0 0 0</pose>
+          <geometry><box><size>0.003 0.003 0.165</size></box></geometry>
+          <material><ambient>0.9 0.1 0.1 1</ambient><diffuse>1.0 0.1 0.1 1</diffuse></material>
+        </visual>
+      </link>
+
+      <joint name="tail_roller_joint" type="continuous">
+        <parent>conveyor_frame</parent>
+        <child>tail_roller</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <dynamics><damping>0.01</damping></dynamics>
+        </axis>
+      </joint>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           CONTINUOUS SCROLLING VISUAL BELT SURFACE (NO COLLISIONS!)
+           Zero ODE impact on workpieces — Seamless 60mm Pitch Scrolling!
+           ═══════════════════════════════════════════════════════════ -->
+      <link name="belt_visual_surface">
+        <pose>0.20 0.380 0.6285 0 0 0</pose>
+        <inertial>
+          <mass>0.1</mass>
+          <inertia><ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz></inertia>
+        </inertial>
+
+        <!-- Dark Textured Industrial Rubber Belt Backing -->
+        <visual name="belt_backing">
+          <geometry><box><size>0.162 0.760 0.001</size></box></geometry>
+          <material><ambient>0.10 0.10 0.10 1</ambient><diffuse>0.14 0.14 0.14 1</diffuse><specular>0.03 0.03 0.03 1</specular></material>
+        </visual>
+
+        <!-- 13 High-Visibility Yellow Transverse Cleats Spaced Every 60mm -->
+        <visual name="slat_01"><pose>0 -0.360 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_02"><pose>0 -0.300 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_03"><pose>0 -0.240 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_04"><pose>0 -0.180 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_05"><pose>0 -0.120 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_06"><pose>0 -0.060 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_07"><pose>0  0.000 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_08"><pose>0  0.060 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_09"><pose>0  0.120 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_10"><pose>0  0.180 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_11"><pose>0  0.240 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_12"><pose>0  0.300 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+        <visual name="slat_13"><pose>0  0.360 0.0006 0 0 0</pose><geometry><box><size>0.145 0.008 0.0002</size></box></geometry><material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material></visual>
+      </link>
+
+      <!-- Prismatic joint driving the visual belt towards pick position (in -Y direction) -->
+      <joint name="belt_joint" type="prismatic">
+        <parent>conveyor_frame</parent>
+        <child>belt_visual_surface</child>
+        <axis>
+          <xyz>0 -1 0</xyz>
+          <limit>
+            <lower>0.0</lower>
+            <upper>0.060</upper>
+          </limit>
+          <dynamics><damping>0.1</damping></dynamics>
+        </axis>
+      </joint>
+
+      <!-- Conveyor Plugin Integration -->
+      <plugin name="aria_conveyor_plugin" filename="libaria_conveyor_plugin.so">
+        <ros>
+          <namespace>/aria/conveyor</namespace>
+        </ros>
+        <joint_name>belt_joint</joint_name>
+        <max_velocity>0.25</max_velocity>
+        <limit>0.060</limit>
+        <publish_rate>25.0</publish_rate>
+        <initial_power>0.0</initial_power>
+      </plugin>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         OUTPUT 1: FINISHED GOODS ASSEMBLY TRAY (PASSED PARTS)
+         Positioned at (0.065, -0.200, 0.608) — Resting flush on optical table
+         Kinematically aligned with assembly_place pose.
+         ═══════════════════════════════════════════════════════════ -->
+    <model name="assembly_finished_tray">
+      <static>true</static>
+      <pose>0.065 -0.200 0.608 0 0 0</pose>
+      <link name="tray_link">
+        <!-- Main Tray Base -->
+        <collision name="base_col">
+          <pose>0 0 0.0075 0 0 0</pose>
+          <geometry><box><size>0.15 0.15 0.015</size></box></geometry>
+          <surface>
+            <friction><ode><mu>1.5</mu><mu2>1.5</mu2></ode></friction>
+            <contact>
+              <ode>
+                <kp>500000.0</kp>
+                <kd>500.0</kd>
+                <max_vel>0.005</max_vel>
+                <min_depth>0.001</min_depth>
+              </ode>
+            </contact>
+            <bounce>
+              <restitution_coefficient>0.0</restitution_coefficient>
+              <threshold>1000000.0</threshold>
+            </bounce>
+          </surface>
+        </collision>
+        <visual name="base_vis">
+          <pose>0 0 0.0075 0 0 0</pose>
+          <geometry><box><size>0.15 0.15 0.015</size></box></geometry>
+          <material>
+            <ambient>0.1 0.45 0.25 1</ambient>
+            <diffuse>0.15 0.60 0.35 1</diffuse>
+            <specular>0.6 0.7 0.6 1</specular>
+          </material>
+        </visual>
+        <!-- 4 Machined Pocket Visuals for 2x2 Assembly Grid -->
+        <visual name="pocket_1"><pose>-0.035 -0.035 0.0151 0 0 0</pose><geometry><box><size>0.036 0.036 0.001</size></box></geometry><material><ambient>0.05 0.25 0.15 1</ambient></material></visual>
+        <visual name="pocket_2"><pose> 0.035 -0.035 0.0151 0 0 0</pose><geometry><box><size>0.036 0.036 0.001</size></box></geometry><material><ambient>0.05 0.25 0.15 1</ambient></material></visual>
+        <visual name="pocket_3"><pose>-0.035  0.035 0.0151 0 0 0</pose><geometry><box><size>0.036 0.036 0.001</size></box></geometry><material><ambient>0.05 0.25 0.15 1</ambient></material></visual>
+        <visual name="pocket_4"><pose> 0.035  0.035 0.0151 0 0 0</pose><geometry><box><size>0.036 0.036 0.001</size></box></geometry><material><ambient>0.05 0.25 0.15 1</ambient></material></visual>
+        <!-- Label Bar: "QC PASSED / ASSEMBLY" -->
+        <visual name="pass_label">
+          <pose>0 -0.070 0.0155 0 0 0</pose>
+          <geometry><box><size>0.13 0.010 0.001</size></box></geometry>
+          <material><ambient>0.1 0.9 0.3 1</ambient><diffuse>0.2 1.0 0.4 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         OUTPUT 2: DEFECT / REJECT BIN
+         Positioned at (0.190, -0.150, 0.608) — Kinematically aligned with reject_drop
+         Industrial Red Polypropylene Scrap Bin with High Walls & Zero-Restitution Landing.
+         ═══════════════════════════════════════════════════════════ -->
+    <model name="reject_bin">
+      <static>true</static>
+      <pose>0.190 -0.150 0.608 0 0 0</pose>
+      <link name="bin_link">
+        <!-- Bin Bottom -->
+        <collision name="bottom_col">
+          <pose>0 0 0.005 0 0 0</pose>
+          <geometry><box><size>0.12 0.14 0.010</size></box></geometry>
+          <surface>
+            <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+            <contact>
+              <ode>
+                <kp>500000.0</kp>
+                <kd>500.0</kd>
+                <max_vel>0.005</max_vel>
+                <min_depth>0.001</min_depth>
+              </ode>
+            </contact>
+            <bounce>
+              <restitution_coefficient>0.0</restitution_coefficient>
+              <threshold>1000000.0</threshold>
+            </bounce>
+          </surface>
+        </collision>
+        <visual name="bottom_vis">
+          <pose>0 0 0.005 0 0 0</pose>
+          <geometry><box><size>0.12 0.14 0.010</size></box></geometry>
+          <material><ambient>0.7 0.1 0.1 1</ambient><diffuse>0.85 0.15 0.15 1</diffuse></material>
+        </visual>
+        <!-- North Wall -->
+        <collision name="n_wall_col">
+          <pose>0 0.065 0.045 0 0 0</pose>
+          <geometry><box><size>0.12 0.010 0.080</size></box></geometry>
+          <surface>
+            <friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction>
+            <bounce><restitution_coefficient>0.0</restitution_coefficient><threshold>1000000.0</threshold></bounce>
+          </surface>
+        </collision>
+        <visual name="n_wall_vis"><pose>0 0.065 0.045 0 0 0</pose><geometry><box><size>0.12 0.010 0.080</size></box></geometry><material><ambient>0.7 0.1 0.1 1</ambient></material></visual>
+        <!-- South Wall -->
+        <collision name="s_wall_col">
+          <pose>0 -0.065 0.045 0 0 0</pose>
+          <geometry><box><size>0.12 0.010 0.080</size></box></geometry>
+          <surface>
+            <friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction>
+            <bounce><restitution_coefficient>0.0</restitution_coefficient><threshold>1000000.0</threshold></bounce>
+          </surface>
+        </collision>
+        <visual name="s_wall_vis"><pose>0 -0.065 0.045 0 0 0</pose><geometry><box><size>0.12 0.010 0.080</size></box></geometry><material><ambient>0.7 0.1 0.1 1</ambient></material></visual>
+        <!-- East Wall -->
+        <collision name="e_wall_col">
+          <pose>0.055 0 0.045 0 0 0</pose>
+          <geometry><box><size>0.010 0.14 0.080</size></box></geometry>
+          <surface>
+            <friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction>
+            <bounce><restitution_coefficient>0.0</restitution_coefficient><threshold>1000000.0</threshold></bounce>
+          </surface>
+        </collision>
+        <visual name="e_wall_vis"><pose>0.055 0 0.045 0 0 0</pose><geometry><box><size>0.010 0.14 0.080</size></box></geometry><material><ambient>0.7 0.1 0.1 1</ambient></material></visual>
+        <!-- West Wall -->
+        <collision name="w_wall_col">
+          <pose>-0.055 0 0.045 0 0 0</pose>
+          <geometry><box><size>0.010 0.14 0.080</size></box></geometry>
+          <surface>
+            <friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction>
+            <bounce><restitution_coefficient>0.0</restitution_coefficient><threshold>1000000.0</threshold></bounce>
+          </surface>
+        </collision>
+        <visual name="w_wall_vis"><pose>-0.055 0 0.045 0 0 0</pose><geometry><box><size>0.010 0.14 0.080</size></box></geometry><material><ambient>0.7 0.1 0.1 1</ambient></material></visual>
+        <!-- Yellow "REJECT / SCRAP" Warning Strip on Bin Rim -->
+        <visual name="reject_rim_stripe">
+          <pose>0 0.065 0.085 0 0 0</pose>
+          <geometry><box><size>0.11 0.008 0.002</size></box></geometry>
+          <material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.85 0.0 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══ AUXILIARY COMPONENT SUPPLY BIN (Raw Parts Stock) ═══ -->
+    <model name="supply_bin">
+      <static>true</static>
+      <pose>-0.06 0.22 0.608 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <pose>0 0 0.025 0 0 0</pose>
+          <geometry><box><size>0.10 0.12 0.050</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <pose>0 0 0.025 0 0 0</pose>
+          <geometry><box><size>0.10 0.12 0.050</size></box></geometry>
+          <material><ambient>0.15 0.35 0.7 1</ambient><diffuse>0.2 0.45 0.85 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         INDUSTRIAL INFRASTRUCTURE: CONTROL CABINET & STACK LIGHT
+         ═══════════════════════════════════════════════════════════ -->
+    <model name="industrial_control_cabinet">
+      <static>true</static>
+      <pose>-0.55 0.70 0.0 0 0 -0.52</pose>
+      <link name="cabinet_link">
+        <!-- Main Enclosure (RAL 7035 Light Grey) -->
+        <collision name="cabinet_col">
+          <pose>0 0 0.70 0 0 0</pose>
+          <geometry><box><size>0.40 0.30 1.40</size></box></geometry>
+        </collision>
+        <visual name="cabinet_vis">
+          <pose>0 0 0.70 0 0 0</pose>
+          <geometry><box><size>0.40 0.30 1.40</size></box></geometry>
+          <material><ambient>0.7 0.72 0.75 1</ambient><diffuse>0.8 0.82 0.85 1</diffuse></material>
+        </visual>
+        <!-- HMI Touchscreen Display Panel -->
+        <visual name="hmi_screen">
+          <pose>0.201 0 1.15 0 0 0</pose>
+          <geometry><box><size>0.005 0.20 0.15</size></box></geometry>
+          <material><ambient>0.05 0.25 0.4 1</ambient><diffuse>0.1 0.4 0.6 1</diffuse><emissive>0.05 0.2 0.35 1</emissive></material>
+        </visual>
+        <!-- Emergency Stop (E-Stop) Mushroom Button -->
+        <visual name="estop_button">
+          <pose>0.205 0.08 0.95 0 1.5708 0</pose>
+          <geometry><cylinder><radius>0.022</radius><length>0.015</length></cylinder></geometry>
+          <material><ambient>0.9 0.05 0.05 1</ambient><diffuse>1.0 0.1 0.1 1</diffuse></material>
+        </visual>
+
+        <!-- 3-Tier Industrial Stack Light (Andon Tower) -->
+        <!-- Mast Upright -->
+        <visual name="light_mast">
+          <pose>0 0 1.50 0 0 0</pose>
+          <geometry><cylinder><radius>0.012</radius><length>0.20</length></cylinder></geometry>
+          <material><ambient>0.2 0.2 0.2 1</ambient></material>
+        </visual>
+        <!-- Green Tier: Normal Running -->
+        <visual name="stack_green">
+          <pose>0 0 1.63 0 0 0</pose>
+          <geometry><cylinder><radius>0.025</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.1 0.9 0.2 1</ambient><diffuse>0.2 1.0 0.3 1</diffuse><emissive>0.1 0.8 0.2 1</emissive></material>
+        </visual>
+        <!-- Amber Tier: Inspection / Alert -->
+        <visual name="stack_amber">
+          <pose>0 0 1.69 0 0 0</pose>
+          <geometry><cylinder><radius>0.025</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.8 0.6 0.1 1</ambient><diffuse>1.0 0.75 0.1 1</diffuse></material>
+        </visual>
+        <!-- Red Tier: Stop / Fault -->
+        <visual name="stack_red">
+          <pose>0 0 1.75 0 0 0</pose>
+          <geometry><cylinder><radius>0.025</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.8 0.1 0.1 1</ambient><diffuse>0.9 0.15 0.15 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PERIMETER SAFETY GUARDING FENCE (Extruded Aluminum & Mesh)
+         ═══════════════════════════════════════════════════════════ -->
+    <model name="safety_perimeter_fence">
+      <static>true</static>
+      <pose>0.0 0.0 0.0 0 0 0</pose>
+      <link name="fence_link">
+        <!-- Rear Guard Panel -->
+        <collision name="rear_fence_col"><pose>-0.75 0.0 0.80 0 0 0</pose><geometry><box><size>0.04 1.80 1.60</size></box></geometry></collision>
+        <visual name="rear_fence_frame"><pose>-0.75 0.0 0.80 0 0 0</pose><geometry><box><size>0.04 1.80 1.60</size></box></geometry><material><ambient>0.8 0.7 0.1 0.5</ambient><diffuse>0.9 0.8 0.1 0.6</diffuse></material></visual>
+
+        <!-- Left Guard Panel -->
+        <collision name="left_fence_col"><pose>0.0 0.95 0.80 0 0 0</pose><geometry><box><size>1.50 0.04 1.60</size></box></geometry></collision>
+        <visual name="left_fence_frame"><pose>0.0 0.95 0.80 0 0 0</pose><geometry><box><size>1.50 0.04 1.60</size></box></geometry><material><ambient>0.8 0.7 0.1 0.5</ambient><diffuse>0.9 0.8 0.1 0.6</diffuse></material></visual>
+
+        <!-- Right Guard Panel -->
+        <collision name="right_fence_col"><pose>0.0 -0.95 0.80 0 0 0</pose><geometry><box><size>1.50 0.04 1.60</size></box></geometry></collision>
+        <visual name="right_fence_frame"><pose>0.0 -0.95 0.80 0 0 0</pose><geometry><box><size>1.50 0.04 1.60</size></box></geometry><material><ambient>0.8 0.7 0.1 0.5</ambient><diffuse>0.9 0.8 0.1 0.6</diffuse></material></visual>
+
+        <!-- Warning Sign Plate on Fence -->
+        <visual name="warning_sign">
+          <pose>-0.72 0.0 1.30 0 0 0</pose>
+          <geometry><box><size>0.005 0.35 0.20</size></box></geometry>
+          <material><ambient>0.9 0.8 0.1 1</ambient><diffuse>1.0 0.9 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         INITIAL WORKPIECES ON THE CONVEYOR LINE
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════
+         INDUSTRIAL MANUFACTURING LINE: MULTI-PART INFEED STREAM
+         Queued along the conveyor line from pick stopper to tail.
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Part 1: Good Component docked at the Pick Station Stopper -->
+    <include>
+      <uri>model://workpiece_good</uri>
+      <name>workpiece_01</name>
+      <pose>0.20 0.070 0.644 0 0 0</pose>
+    </include>
+
+    <!-- Part 2: Good Component in queue -->
+    <include>
+      <uri>model://workpiece_good</uri>
+      <name>workpiece_02</name>
+      <pose>0.20 0.160 0.644 0 0 0</pose>
+    </include>
+
+    <!-- Part 3: Good Component in queue -->
+    <include>
+      <uri>model://workpiece_good</uri>
+      <name>workpiece_03</name>
+      <pose>0.20 0.250 0.644 0 0 0</pose>
+    </include>
+
+    <!-- Part 4: Defective Component (Red with yellow defect cross) in queue -->
+    <include>
+      <uri>model://workpiece_defect</uri>
+      <name>workpiece_04</name>
+      <pose>0.20 0.340 0.644 0 0 0</pose>
+    </include>
+
+    <!-- Part 5: Good Component in queue -->
+    <include>
+      <uri>model://workpiece_good</uri>
+      <name>workpiece_05</name>
+      <pose>0.20 0.430 0.644 0 0 0</pose>
+    </include>
+
+    <!-- Part 6: Good Component in queue -->
+    <include>
+      <uri>model://workpiece_good</uri>
+      <name>workpiece_06</name>
+      <pose>0.20 0.520 0.644 0 0 0</pose>
+    </include>
+
+    <!-- Part 7: Defective Component in queue -->
+    <include>
+      <uri>model://workpiece_defect</uri>
+      <name>workpiece_07</name>
+      <pose>0.20 0.610 0.644 0 0 0</pose>
+    </include>
+
+    <!-- Part 8: Good Component entering at infeed tail -->
+    <include>
+      <uri>model://workpiece_good</uri>
+      <name>workpiece_08</name>
+      <pose>0.20 0.700 0.644 0 0 0</pose>
+    </include>
+
+  </world>
+</sdf>
