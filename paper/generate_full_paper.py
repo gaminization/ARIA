@@ -77,12 +77,10 @@ def write_paper(filename):
 % ====================================================================
 \title{Project ARIA: A Cognitive Multi-Agent Vision-Language-Action Architecture for Autonomous Manipulation on Low-Cost 5-DoF Robotic Arms}
 
-\author{Garv~Arora
-        and~Yuvaraj~N%
-\thanks{The authors are with the School of Computer Science and Engineering, Vellore Institute of Technology (VIT), Vellore 632014, Tamil Nadu, India (e-mail: garv.arora@vitstudent.ac.in; yuvaraj.n@vit.ac.in). Corresponding author: Yuvaraj N.}}
+\author{Garv~Arora\quad and\quad Yuvaraj~N}
 
 % The paper headers
-\markboth{IEEE TRANSACTIONS ON ROBOTICS, SUBMISSION MANUSCRIPT, SEPTEMBER~2026}%
+\markboth{Project ARIA: Cognitive Multi-Agent VLA for Low-Cost Manipulators, September~2026}%
 {Arora and Yuvaraj: Project ARIA: Cognitive Multi-Agent VLA for Low-Cost Manipulators}
 
 \maketitle
