@@ -265,7 +265,7 @@ To establish the geometric relationship between adjacent articulated links, we a
     \item $\theta_i$: Joint angle variable, representing the rotation from $X_{i-1}$ to $X_i$ about the joint axis $Z_i$.
 \end{itemize}
 
-The spatial frame assignments across all five revolute joints and the tool center point (TCP) are illustrated in Fig.~\ref{fig_kinematics_dh}. The precise numerical kinematic parameters, coordinate offsets, and dynamic operating bounds are cataloged in Table~\ref{table_dh_parameters}.
+The spatial frame assignments across all five revolute joints and the tool center point (TCP) are illustrated in Fig.~\ref{fig_kinematics_dh}. The precise numerical kinematic parameters, coordinate offsets, and dynamic operating bounds derived from the physical manipulator are cataloged in Table~\ref{table_dh_parameters}. Here, $a_2 = 0.145$\,m and $a_3 = 0.115$\,m specify the upper arm and forearm link lengths, while $d_5 = 0.095$\,m denotes the total tool offset from the wrist roll pivot to the fingertip plane ($L_{\text{wrist}} + L_{\text{grip}} = 0.055 + 0.040$\,m). The joint ranges reflect the symmetric operating bounds enforced by the low-level motor controllers.
 
 \begin{table}[!t]
 \centering
@@ -277,11 +277,11 @@ The spatial frame assignments across all five revolute joints and the tool cente
 \toprule
 \textbf{Link $i$} & \textbf{Joint Name} & \textbf{$\alpha_{i-1}$ (rad)} & \textbf{$a_{i-1}$ (m)} & \textbf{$d_i$ (m)} & \textbf{$\theta_i$ Range (rad)} & \textbf{Max $\ddot{\theta}_i$ (rad/s$^2$)} \\
 \midrule
-1 & Waist & $0$ & $0$ & $d_1 = 0.105$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $15.0$ \\
-2 & Shoulder & $+\frac{\pi}{2}$ & $a_1 = 0.030$ & $0$ & $[0, \pi]$ & $10.0$ \\
-3 & Elbow & $0$ & $a_2 = 0.145$ & $0$ & $[0, \frac{5\pi}{6}]$ & $12.0$ \\
-4 & Wrist Pitch & $0$ & $a_3 = 0.140$ & $0$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $20.0$ \\
-5 & Wrist Roll & $+\frac{\pi}{2}$ & $0$ & $d_5 = 0.065$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $25.0$ \\
+1 & Waist & $0$ & $0$ & $d_1 = 0.105$ & $[-\pi, +\pi]$ & $15.0$ \\
+2 & Shoulder & $+\frac{\pi}{2}$ & $a_1 = 0.030$ & $0$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $10.0$ \\
+3 & Elbow & $0$ & $a_2 = 0.145$ & $0$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $12.0$ \\
+4 & Wrist Pitch & $0$ & $a_3 = 0.115$ & $0$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $20.0$ \\
+5 & Wrist Roll & $+\frac{\pi}{2}$ & $0$ & $d_5 = 0.095$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $25.0$ \\
 \bottomrule
 \end{tabular}%
 }
@@ -625,9 +625,10 @@ Every computational responsibility within Project ARIA is encapsulated within a 
 \toprule
 \textbf{Tier} & \textbf{Agent Identifier} & \textbf{Primary Input Source} & \textbf{Primary Output Topic / Service} & \textbf{QoS Profile} & \textbf{Freq.} & \textbf{VRAM} \\
 \midrule
-\multirow{3}{*}{Tier 1: Perception} & \texttt{VisionAgent} & \texttt{/overhead/image\_raw} & \texttt{/aria/vision/detections} & Best Effort & $30$\,Hz & $1,850$\,MB \\
+\multirow{4}{*}{Tier 1: Perception} & \texttt{VisionAgent} & \texttt{/overhead/image\_raw} & \texttt{/aria/vision/detections} & Best Effort & $30$\,Hz & $1,850$\,MB \\
  & \texttt{DepthAgent} & \texttt{/wrist/image\_raw} & \texttt{/aria/vision/metric\_depth} & Best Effort & $15$\,Hz & $1,420$\,MB \\
  & \texttt{TrackingAgent} & \texttt{/aria/vision/detections} & \texttt{/aria/vision/tracked\_tracks} & Reliable & $30$\,Hz & $120$\,MB \\
+ & \texttt{AttentionAgent} & \texttt{/aria/state/task} & \texttt{/detection/focus\_region} (ROI) & Reliable & $10$\,Hz & $30$\,MB \\
 \midrule
 \multirow{3}{*}{Tier 2: Scene Modeling} & \texttt{WorldModelAgent} & \texttt{/aria/vision/tracked\_tracks} & \texttt{/aria/state/scene\_graph} & Reliable & $20$\,Hz & $150$\,MB \\
  & \texttt{MemoryAgent} & \texttt{/aria/state/*} & \texttt{/aria/memory/query} (SQLite) & Reliable & Event & $60$\,MB \\
@@ -641,8 +642,7 @@ Every computational responsibility within Project ARIA is encapsulated within a 
  & \texttt{ControlAgent} & \texttt{/aria/skill/trajectory} & \texttt{/arm\_controller/joint\_cmd} & Reliable & $50$\,Hz & $0$\,MB (CPU) \\
  & \texttt{SafetyAgent} & \texttt{/joint\_states} & \texttt{/aria/safety/e\_stop} & High-Priority & $100$\,Hz & $20$\,MB \\
 \midrule
-\multirow{3}{*}{Tier 5: Diagnostics} & \texttt{HealthAgent} & \texttt{/aria/state/*} & \texttt{/aria/state/health} & Reliable & $10$\,Hz & $30$\,MB \\
- & \texttt{EvaluationAgent} & \texttt{/aria/state/task} & \texttt{/aria/eval/metrics} & Reliable & Event & $40$\,MB \\
+\multirow{2}{*}{Tier 5: Diagnostics \& LfD} & \texttt{EvaluationAgent} & \texttt{/aria/state/task} & \texttt{/aria/eval/metrics} & Reliable & Event & $40$\,MB \\
  & \texttt{LearningAgent} & \texttt{/joint\_states} & \texttt{/aria/demo/hdf5\_record} & Reliable & $50$\,Hz & $80$\,MB \\
 \bottomrule
 \end{tabular}%
@@ -654,11 +654,12 @@ Every computational responsibility within Project ARIA is encapsulated within a 
     \item \textbf{VisionAgent (Overhead)}: Ingests the $1280\times720$ RGB video stream from the overhead eye-to-hand camera. Executes YOLOv8m ($94.2\%$ mAP) object detection and runs SAM2 video mask propagation to segment multi-class workpieces and assembly fixtures. Also computes optical quality inspection metrics to classify defective workpieces.
     \item \textbf{DepthAgent (Wrist)}: Ingests the $640\times480$ RGB stream from the end-effector ESP32-CAM module. Executes Depth-Anything v2 to generate dense relative disparity maps, applying claw geometric grounding to compute calibrated metric depth maps ($RMSE = 8.2$\,mm) in the gripper approach direction.
     \item \textbf{TrackingAgent}: Implements ByteTrack coupled with a 6D Kalman filter, associating object bounding boxes and masks across successive video frames to estimate instantaneous 3D object velocities ($\mathbf{v}_{\text{object}} = [\dot{X}, \dot{Y}, \dot{Z}]^T$).
+    \item \textbf{AttentionAgent}: Dynamically allocates visual perception focus regions of interest (ROI) based on current task priority, publishing bounding ROIs to \texttt{/detection/focus\_region} and \texttt{/depth/focus\_region} to accelerate neural inference on active target workpieces.
 \end{enumerate}
 
 \subsubsection{Tier 2: Scene Modeling Agents}
 \begin{enumerate}
-    \setcounter{enumi}{3}
+    \setcounter{enumi}{4}
     \item \textbf{WorldModelAgent}: Maintains a dynamic topological 3D Scene Graph encoding workspace geometry, spatial relationships (\texttt{on}, \texttt{inside}, \texttt{adjacent}), and clear approach corridors.
     \item \textbf{MemoryAgent}: Operates an SQLite-backed spatial-semantic episodic memory system, logging object tracking histories, task execution durations, and historical failure signatures.
     \item \textbf{AffordanceAgent}: Samples candidate antipodal grasp contact points $(\mathbf{c}_1, \mathbf{c}_2)$ along segmented object boundaries, evaluates Coulomb friction cone constraints ($\mu = 0.45$), and outputs ranked grasp candidates with orientation angles.
@@ -666,7 +667,7 @@ Every computational responsibility within Project ARIA is encapsulated within a 
 
 \subsubsection{Tier 3: Cognition \& Planning Agents}
 \begin{enumerate}
-    \setcounter{enumi}{6}
+    \setcounter{enumi}{7}
     \item \textbf{PlanningAgent}: Orchestrates cognitive task reasoning via a local quantized LLM (Mistral-7B / Llama 3.1 8B via Ollama). Decomposes natural language user goals into structured sequences of parameterized skill primitives using Tree-of-Thoughts (ToT) search with confidence scoring ($\tau$).
     \item \textbf{DialogueAgent}: Manages conversational Human-in-the-Loop (HITL) interactions through the web dashboard, generating plain-language explanations of robot decisions and requesting operator confirmation when plan confidence falls below threshold ($\tau < 0.70$).
     \item \textbf{ReachabilityAgent}: Intercepts proposed manipulation target poses and executes analytical inverse kinematics evaluations prior to plan commitment, preemptively pruning unfeasible waypoints outside the manipulability workspace.
@@ -674,19 +675,19 @@ Every computational responsibility within Project ARIA is encapsulated within a 
 
 \subsubsection{Tier 4: Control \& Execution Agents}
 \begin{enumerate}
-    \setcounter{enumi}{9}
+    \setcounter{enumi}{10}
     \item \textbf{SkillAgent}: Operates the procedural manipulation engine, executing parameterized atomic manipulation skills (\texttt{pick}, \texttt{place}, \texttt{palletize}, \texttt{sweep}, \texttt{pour}, \texttt{insert}, \texttt{push}, \texttt{inspect}, \texttt{stack}, \texttt{home}) and synthesizing minimum-jerk Cartesian trajectory profiles.
     \item \textbf{ControlAgent}: Translates Cartesian trajectory waypoints into deterministic joint-space motor commands using the $0.08$\,ms closed-form analytical IK solver, streaming joint setpoints at $50$\,Hz to the embedded micro-ROS firmware over high-speed serial XRCE-DDS.
     \item \textbf{SafetyAgent}: Executes continuous safety monitoring at $100$\,Hz, enforcing workspace bounding box limits, checking joint velocity and acceleration thresholds, and triggering an immediate software emergency stop (\texttt{E-STOP}) in under $5$\,ms upon limit violation.
 \end{enumerate}
 
-\subsubsection{Tier 5: Diagnostics \& Metamonitoring Agents}
+\subsubsection{Tier 5: Diagnostics \& Demonstration Learning}
 \begin{enumerate}
-    \setcounter{enumi}{12}
-    \item \textbf{HealthAgent}: Ingests continuous telemetry from all active nodes, monitoring servo potentiometer ADC drift, PWM thermal accumulation, and DDS message drop rates to classify 11 distinct hardware and communication failure states.
+    \setcounter{enumi}{13}
     \item \textbf{EvaluationAgent}: Logs performance metrics across physical and simulated trials, computing positional tracking errors, cycle completion durations, and task success rates for automated benchmark evaluation.
     \item \textbf{LearningAgent}: Manages the Teach-by-Demonstration framework, recording human-guided joint potentiometer positions and end-effector trajectories into standard HDF5 datasets during relaxed-servo compliance mode for downstream imitation learning.
 \end{enumerate}
+System-level hardware health monitoring, task sequencing, and memory persistence are supervised by dedicated daemon orchestrators (\texttt{HealthMonitor}, \texttt{TaskManager}, and \texttt{MemoryManager}).
 
 \subsection{ROS 2 Managed Lifecycle Transitions \& Fault Consensus Protocol}
 To ensure robust fault tolerance in industrial operations, every ARIA agent implements the deterministic ROS 2 managed lifecycle state machine:
@@ -947,6 +948,9 @@ The complete affordance-driven grasp synthesis algorithm is detailed in Algorith
 \RETURN $\mathbf{G}^*, Q^*$
 \end{algorithmic}
 \end{algorithm}
+
+\subsection{Dynamic Perception Orchestration, 6D Pose \& 3D Gaussian Splatting}
+To maximize physical autonomy while operating strictly within an 8.0\,GB VRAM budget, ARIA incorporates a dynamic perception orchestrator (\texttt{perception\_orchestrator}) activating high-capacity neural models across five operational modes: (i)~\textbf{SIMPLE\_PICK} ($2.8$\,GB): YOLOv8, SAM2, Depth-Anything v2, and material recognition; (ii)~\textbf{PRECISION\_PICK} ($4.8$\,GB): Dynamically allocates FoundationPose~\cite{aria_062_wen_2024_foundationpose} ($2.0$\,GB) for 6D poses ($SE(3)$) on tools and mugs; (iii)~\textbf{TRANSPARENT\_PICK} ($3.4$\,GB): Engages geometric plane fitting and ClearGrasp to eliminate depth dropouts on glassware; (iv)~\textbf{FULL\_PRECISION} ($5.4$\,GB): Concurrently executes FoundationPose and ClearGrasp for precision assembly; and (v)~\textbf{SCENE\_UNDERSTANDING} ($3.1$\,GB): Employs a 3D Gaussian Splatting model (\texttt{gaussian\_splatting\_node} trained via \texttt{gsplat}~\cite{aria_002_kerbl_2023_3d}) to render depth in $5$\,ms, generating a live foreground change mask (\texttt{/gaussian/change\_mask}). In parallel, a MobileNetV3-Small classifier ($0.2$\,GB) identifies workpiece materials (glass, metal, plastic, wood), dynamically tuning $\mu \in [0.25, 0.65]$ and grip force. All outputs are unified into \texttt{UnifiedScene.msg} on \texttt{/perception/unified\_scene}.
 """)
 
         # Section VI: Cognitive Planning
@@ -1202,6 +1206,9 @@ Operator oversight is unified within the **ARIA Control Center** (\texttt{arm\_d
     \item \textbf{Backend (FastAPI)}: Asynchronous Python server interfacing with the ROS 2 DDS State Bus, streaming live node health, telemetry, and camera streams over WebSockets ($10$\,Hz).
     \item \textbf{Frontend (React 18 + Vite)}: Modern dark-mode user interface featuring interactive servo gauges, 3D WebGL arm visualization, live video feeds with SAM2 mask overlays, and instant HITL confirmation dialogs.
 \end{itemize}
+
+\subsection{Production Infrastructure, Docker Containerization \& Cable Constraints}
+To bridge the gap between laboratory prototyping and industrial deployment, ARIA implements a hardened production infrastructure: (i)~\textbf{Docker Containerization}: Modular OCI images (\texttt{aria:base}, \texttt{aria:sim}, \texttt{aria:headless}, \texttt{aria:dashboard}) guaranteeing bitwise reproducible deployments; (ii)~\textbf{Continuous Integration}: Automated GitHub Actions running unit tests across all 15 agents and headless simulation benchmarks (alerting on $>10\%$ regressions); (iii)~\textbf{Experiment Tracking}: MLflow and HDF5 logging demonstration trajectories and benchmark metrics; and (iv)~\textbf{MoveIt 2 Cable Constraints}: Dynamic volumetric wire harness modeling (\texttt{cable\_constraints.yaml}, \texttt{cable\_scene\_updater.py}) preventing cable tension and snagging.
 """)
 
         # Section IX: Results & Discussion
@@ -1270,7 +1277,7 @@ LeRobot ACT~\cite{zhao2023learning} & 80M & $72.0\%$ & $3.8 \pm 0.6$ & $6.0$\,GB
 \end{table*}
 
 \subsection{End-to-End VLA Policy Benchmark Comparison}
-We conducted an exhaustive manipulation benchmark comparing Project ARIA against four leading foundation and imitation learning policies: OpenVLA-7B~\cite{kim2024openvla}, Octo Transformer~\cite{aria_019_ghosh_2024_octo}, Physical Intelligence $\pi_0$~\cite{pi0_2024}, and LeRobot Action Chunking with Transformers (ACT)~\cite{zhao2023learning}. To ensure rigorous and equitable baseline comparisons, OpenVLA-7B~\cite{kim2024openvla} and Octo~\cite{aria_019_ghosh_2024_octo} were evaluated both under zero-shot conditions and fine-tuned via Low-Rank Adaptation (LoRA, rank $r=32$, $\alpha=64$, AdamW optimizer with learning rate $10^{-4}$) on a balanced dataset of $N=100$ expert demonstration trajectories collected via ARIA's physical teleoperation interface. The benchmark comprises 10 standardized manipulation tasks (10 physical/simulated trials per task, 100 trials total per model, evaluated with 95\% binomial confidence intervals):
+We conducted an exhaustive manipulation benchmark comparing Project ARIA against leading foundation and imitation learning policies: OpenVLA-7B~\cite{kim2024openvla}, LeRobot Action Chunking with Transformers (ACT)~\cite{zhao2023learning}, Octo Transformer~\cite{aria_019_ghosh_2024_octo}, and Physical Intelligence $\pi_0$~\cite{pi0_2024}. To ensure rigorous and equitable baseline comparisons, OpenVLA-7B and LeRobot ACT were natively integrated into ARIA's unified VLA evaluation interface (\texttt{arm\_vla}) and evaluated directly within the robotic workcell, conditioned on overhead and wrist camera imagery and task instructions. For Octo and $\pi_0$, performance was benchmarked under standardized cross-embodiment tabletop simulation protocols following published evaluation suites. The benchmark comprises 10 standardized manipulation tasks (10 physical/simulated trials per task, 100 trials total per model, evaluated with 95\% binomial confidence intervals):
 \begin{enumerate}
     \item \textbf{Task 1: Pick Tabletop Block}: Static antipodal grasp acquisition.
     \item \textbf{Task 2: Place in Tray Pocket}: Precision insertion ($<1.8$\,mm clearance).
@@ -1569,20 +1576,10 @@ Software Licensing & Proprietary Control Suite ($\$2,500$) & Open-Source ROS 2 (
 \end{table}
 
 \subsection{Operational Limitations}
-Despite its high empirical performance, Project ARIA exhibits several operational limitations:
-\begin{itemize}
-    \item \textbf{Ambient Lighting Sensitivity}: Because the Zero-Cost-Depth pipeline relies on commodity 2D RGB streams, extreme illumination drops ($<80$\,lux) or severe directional glare degrade monocular disparity estimation, increasing depth error from $8.2$\,mm to $18.4$\,mm.
-    \item \textbf{Actuator Backlash and Thermal Drift}: Low-cost PWM hobbyist servomotors lack optical joint encoders and active cooling. Continuous operation exceeding 2.5 hours causes thermal accumulation in the motor windings, inducing potentiometer deadband drift of $\pm 1.2^\circ$.
-    \item \textbf{Underactuated Wrist Degrees of Freedom}: Because the arm lacks an independent wrist yaw axis, the end-effector cannot rotate horizontally without displacing the base azimuth joint, restricting grasping access in tightly cluttered lateral corridors.
-\end{itemize}
+Despite high empirical performance, Project ARIA exhibits three operational limitations: (i)~\textbf{Ambient Lighting}: Extreme illumination drops ($<80$\,lux) or directional glare degrade monocular disparity estimation ($RMSE$ increases from $8.2$\,mm to $18.4$\,mm); (ii)~\textbf{Actuator Backlash and Thermal Drift}: Low-cost uncooled PWM servomotors exhibit thermal potentiometer drift ($\pm 1.2^\circ$) after $>2.5$\,hours of continuous operation; and (iii)~\textbf{Kinematic Degrees of Freedom}: Lacking an independent wrist yaw axis, lateral grasping requires base azimuth rotation, restricting clearance in tightly cluttered corridors.
 
 \subsection{Future Enhancements}
-Future development trajectories will explore:
-\begin{itemize}
-    \item \textbf{Flexible Tactile Fingertip Arrays}: Integrating thin-film piezoresistive pressure arrays onto the inner gripper pads to provide high-frequency ($200$\,Hz) normal and shear force telemetry, enabling closed-loop slip preemption.
-    \item \textbf{Multi-Arm Collaborative Workcells}: Extending the decentralized ROS 2 State Bus to coordinate multiple 5-DoF manipulators executing collaborative sorting along shared conveyor lines.
-    \item \textbf{TensorRT-Edge INT8 Compilation}: Compiling the vision, segmentation, and depth models into INT8 TensorRT engines, enabling full standalone deployment on embedded $40$\,W platforms such as the NVIDIA Jetson Orin Nano.
-\end{itemize}
+Future trajectories will explore: (i)~\textbf{Tactile Fingertip Arrays}: Integrating thin-film piezoresistive arrays ($200$\,Hz) onto gripper pads for dynamic slip preemption; (ii)~\textbf{Multi-Arm Collaboration}: Extending the decentralized State Bus across multiple 5-DoF arms on shared conveyors; and (iii)~\textbf{Embedded TensorRT INT8 Engines}: Deploying compiled perception engines onto $40$\,W NVIDIA Jetson Orin edge modules.
 
 % ====================================================================
 % SECTION XI: CONCLUSION
@@ -1616,6 +1613,7 @@ The authors express sincere gratitude to the open-source robotics and machine le
 % ====================================================================
 % REFERENCES IN IEEE FORMAT (Sequentially Cited [1]–[20+])
 % ====================================================================
+\def\IEEEbibitemsep{-1.2pt}
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 
