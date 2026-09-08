@@ -52,6 +52,11 @@ def write_paper(filename):
 
 % URL AND HYPERLINK PACKAGES
 \usepackage{url}
+\usepackage{microtype}
+
+% SUPPRESS INFORMATIONAL LOOSE-LINE MESSAGES (STANDARD FOR TWO-COLUMN IEEEtran)
+\hbadness=10000
+\vbadness=10000
 
 % HYPHENATION
 \hyphenation{op-ti-cal net-works semi-conduc-tor multi-agent kine-matics ma-nip-u-la-tion}
@@ -1623,3 +1628,5 @@ The authors express sincere gratitude to the open-source robotics and machine le
 if __name__ == "__main__":
     out_file = "/home/gaminizer/Projects/ARIA/paper/aria_journal_paper.tex"
     write_paper(out_file)
+    write_paper("/home/gaminizer/Projects/ARIA/paper/aria_draft_paper.tex")
+    write_paper("/home/gaminizer/Projects/ARIA/paper/main.tex")
