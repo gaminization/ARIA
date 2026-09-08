@@ -1,4 +1,15 @@
-%% ====================================================================
+#!/usr/bin/env python3
+"""
+Full paper generator for Project ARIA targeting >= 25 pages in IEEEtran journal format.
+"""
+
+import os
+import sys
+
+def write_paper(filename):
+    with open(filename, "w", encoding="utf-8") as f:
+        # Preamble
+        f.write(r"""%% ====================================================================
 %% Project ARIA: Autonomous Reasoning & Interaction Agent
 %% IEEE Robotics and Automation Letters (RA-L) / IEEE Transactions on Robotics (T-RO)
 %% Template: IEEEtran.cls v1.8b
@@ -194,7 +205,10 @@ Deploying autonomous robotic systems requires rigorous verification within high-
 \end{tabular}%
 }
 \end{table*}
+""")
 
+        # Section III: Hardware Platform & Kinematic Modeling
+        f.write(r"""
 % ====================================================================
 % SECTION III: HARDWARE PLATFORM & KINEMATIC MODELING
 % ====================================================================
@@ -539,7 +553,10 @@ Link 5 (End-Effector) & $0.085$ & $[0.035, 0, 0]$ & $5.10 \times 10^{-5}$ & $7.4
 \bottomrule
 \end{tabular}
 \end{table}
+""")
 
+        # Section IV: Multi-Agent Architecture
+        f.write(r"""
 % ====================================================================
 % SECTION IV: MULTI-AGENT ARCHITECTURE
 % ====================================================================
@@ -694,7 +711,10 @@ The complete multi-agent consensus and health management protocol is formalized 
 \ENDWHILE
 \end{algorithmic}
 \end{algorithm}
+""")
 
+        # Section V: Perception Pipeline
+        f.write(r"""
 % ====================================================================
 % SECTION V: HYBRID ZERO-COST-DEPTH PERCEPTION PIPELINE
 % ====================================================================
@@ -881,7 +901,10 @@ The complete affordance-driven grasp synthesis algorithm is detailed in Algorith
 \RETURN $\mathbf{G}^*, Q^*$
 \end{algorithmic}
 \end{algorithm}
+""")
 
+        # Section VI: Cognitive Planning
+        f.write(r"""
 % ====================================================================
 % SECTION VI: COGNITIVE TASK PLANNING
 % ====================================================================
@@ -994,7 +1017,10 @@ The complete Tree-of-Thoughts cognitive planning and HITL safety gating procedur
 \RETURN $\Pi^* \leftarrow \pi^*$
 \end{algorithmic}
 \end{algorithm}
+""")
 
+        # Section VII: World Modeling & In-Hand Dexterity
+        f.write(r"""
 % ====================================================================
 % SECTION VII: WORLD MODELING & IN-HAND MANIPULATION
 % ====================================================================
@@ -1082,7 +1108,10 @@ The complete in-hand pivoting control algorithm is detailed in Algorithm~\ref{al
 \RETURN SUCCESS
 \end{algorithmic}
 \end{algorithm}
+""")
 
+        # Section VIII: Hardware Integration & Digital Twin
+        f.write(r"""
 % ====================================================================
 % SECTION VIII: HARDWARE INTEGRATION & DIGITAL TWIN
 % ====================================================================
@@ -1123,7 +1152,10 @@ Operator oversight is unified within the **ARIA Control Center** (\texttt{arm\_d
     \item \textbf{Backend (FastAPI)}: Asynchronous Python server interfacing with the ROS 2 DDS State Bus, streaming live node health, telemetry, and camera streams over WebSockets ($10$\,Hz).
     \item \textbf{Frontend (React 18 + Vite)}: Modern dark-mode user interface featuring interactive servo gauges, 3D WebGL arm visualization, live video feeds with SAM2 mask overlays, and instant HITL confirmation dialogs.
 \end{itemize}
+""")
 
+        # Section IX: Results & Discussion
+        f.write(r"""
 % ====================================================================
 % SECTION IX: EXPERIMENTAL EVALUATION & BENCHMARK RESULTS
 % ====================================================================
@@ -1377,7 +1409,10 @@ E: Thermal Servo Drift & 1 & $9.1\%$ & Automated zero-offset re-calibration \\
 \bottomrule
 \end{tabular}
 \end{table}
+""")
 
+        # Section X: Discussion & Section XI: Conclusion
+        f.write(r"""
 % ====================================================================
 % SECTION X: DISCUSSION, LIMITATIONS & FUTURE ENHANCEMENTS
 % ====================================================================
@@ -1479,3 +1514,9 @@ The authors express sincere gratitude to the open-source robotics and machine le
 \end{IEEEbiography}
 
 \end{document}
+""")
+    print(f"Successfully generated full paper at: {filename}")
+
+if __name__ == "__main__":
+    out_file = "/home/gaminizer/Projects/ARIA/paper/aria_journal_paper.tex"
+    write_paper(out_file)
