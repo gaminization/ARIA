@@ -50,9 +50,6 @@ def write_paper(filename):
   \usepackage[caption=false,font=footnotesize]{subfig}
 \fi
 
-% FLOAT PACKAGES
-\usepackage{fixltx2e}
-
 % URL AND HYPERLINK PACKAGES
 \usepackage{url}
 
@@ -686,7 +683,10 @@ System-level hardware health monitoring, task sequencing, and memory persistence
 \subsection{ROS 2 Managed Lifecycle Transitions \& Fault Consensus Protocol}
 To ensure robust fault tolerance in industrial operations, every ARIA agent implements the deterministic ROS 2 managed lifecycle state machine:
 \begin{equation}
-\mathcal{S}_{\text{lifecycle}} \in \{\text{\texttt{Unconfigured}}, \text{\texttt{Inactive}}, \text{\texttt{Active}}, \text{\texttt{Finalized}}\}
+\begin{split}
+\mathcal{S}_{\text{lifecycle}} \in \{ &\text{\texttt{Unconfigured}}, \text{\texttt{Inactive}}, \\
+&\text{\texttt{Active}}, \text{\texttt{Finalized}} \}
+\end{split}
 \end{equation}
 
 During system initialization, the multi-agent orchestrator executes sequential state transitions:
@@ -699,10 +699,12 @@ During system initialization, the multi-agent orchestrator executes sequential s
 \end{enumerate}
 
 \textit{Dynamic Crash Recovery}: In conventional monolithic robotics architectures, an unhandled exception in an auxiliary node (such as a vision model GPU out-of-memory error or camera USB disconnection) causes the entire robotic control process to terminate, leaving the physical arm frozen in an unsafe state. In Project ARIA, node failures are completely isolated by the lifecycle supervisor. If a non-critical worker node (e.g., \texttt{DialogueAgent} or \texttt{VisionAgent}) experiences an unhandled software crash:
-\begin{align}
-\text{Supervisor} &\xrightarrow{\text{Catch Fault}} \texttt{on\_deactivate()} \to \texttt{on\_cleanup()} \nonumber \\
+\begin{equation}
+\begin{split}
+\text{Supervisor} &\xrightarrow{\text{Fault}} \texttt{on\_deactivate()} \to \texttt{on\_cleanup()} \\
 &\to \texttt{on\_configure()} \to \texttt{on\_activate()}
-\end{align}
+\end{split}
+\end{equation}
 The supervisor resets and re-instantiates the crashed agent in under $180$\,ms. Throughout this recovery window, the real-time $50$\,Hz trajectory execution loop of \texttt{ControlAgent} remains uninterrupted, holding the physical arm at its current safe trajectory waypoint.
 
 The complete multi-agent consensus and health management protocol is formalized in Algorithm~\ref{alg_multiagent_consensus}.
@@ -967,16 +969,19 @@ In mainstream robotic foundation architectures (e.g., SayCan~\cite{ahn2022can}, 
 Project ARIA executes cognitive task reasoning strictly onboard the consumer laptop host using quantized open-weight Large Language Models (Mistral-7B / Llama 3.1 8B quantized to 4-bit GGUF via Ollama). By maintaining localized inference, ARIA bounds LLM evaluation latency to $320 \pm 45$\,ms within a fixed $3.45$\,GB VRAM footprint.
 
 To eliminate syntax hallucinations and guarantee that generated action tokens conform to valid robot execution primitives, ARIA enforces \textbf{Constrained Grammar-Based Decoding}. The LLM decoding engine is constrained via a formal Backus-Naur Form (BNF) schema:
+{\scriptsize
 \begin{verbatim}
-root       ::= "{" ws "\"plan_id\":" id "," ws 
-               "\"confidence\":" num "," ws 
-               "\"subgoals\":" "[" subgoal_list "]" "}"
-subgoal    ::= "{" ws "\"skill\":" skill_name "," ws 
-               "\"args\":" "{" arg_list "}" "}"
-skill_name ::= "\"pick\"" | "\"place\"" | "\"palletize\"" 
-             | "\"sweep\"" | "\"pour\"" | "\"inspect\"" 
-             | "\"stack\"" | "\"push\"" | "\"home\""
+root    ::= "{" ws "\"plan_id\":" id "," ws 
+            "\"confidence\":" num "," ws 
+            "\"subgoals\":" "[" subgoals "]" "}"
+subgoal ::= "{" ws "\"skill\":" name "," ws 
+            "\"args\":" "{" args "}" "}"
+name    ::= "\"pick\""      | "\"place\"" 
+          | "\"palletize\"" | "\"sweep\"" 
+          | "\"pour\""      | "\"inspect\"" 
+          | "\"stack\""     | "\"push\"" | "\"home\""
 \end{verbatim}
+}
 By restricting logit sampling strictly to grammatically valid JSON tokens, ARIA achieves a 100\% syntactic validity rate across all generated action plans.
 
 \subsection{Hierarchical Tree-of-Thoughts (ToT) Planning Formulation}
@@ -1014,15 +1019,15 @@ where the confidence gating threshold is configured to $\tau = 0.70$.
 Whenever the planner's confidence falls below $\tau$, execution automatically pauses. The \texttt{DialogueAgent} issues an interactive visual confirmation modal on the web dashboard (Fig.~\ref{fig_dashboard}), prompting the operator with plain-language explanations of the proposed plan, identified uncertainties, and one-click \textit{Approve}, \textit{Modify}, or \textit{Abort} buttons.
 
 Crucially, every internal cognitive state transition, vision detection, and IK check is compiled into an \textbf{emoji-annotated Chain-of-Thought (CoT) telemetry stream} published to \texttt{/aria/state/task} and displayed on the web dashboard (Fig.~\ref{fig_planning_hitl}(b)):
-{\footnotesize
+{\scriptsize
 \begin{verbatim}
 17:25:05 -> [PLAN] Task: task_c84a | Llama 3.1 8B
 17:25:05 -> [THINK] Decomposing moving conveyor task...
 17:25:05 -> [TREE] Evaluated 3 candidate branches.
-17:25:05 -> [SELECT] Dynamic Rendezvous. Score = 0.54.
+17:25:05 -> [SELECT] Dynamic Rendezvous (Score: 0.54).
 17:25:05 -> [PAUSED] Score 0.54 < 0.70. Need Approval.
 17:25:12 -> [OPERATOR] Approval confirmed via UI.
-17:25:12 -> [RESUMED] Dispatching 4 subgoals to Skill.
+17:25:12 -> [RESUMED] Dispatching subgoals to Skill.
 17:25:13 -> [EXEC] Subgoal 1: Optical Inspection.
 \end{verbatim}
 }
