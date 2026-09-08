@@ -64,10 +64,14 @@ def generate_launch_description():
     rviz_config = os.path.join(bringup_pkg, "config", "aria_rviz.rviz")
 
     # ── Set GAZEBO_MODEL_PATH and GAZEBO_RESOURCE_PATH ──
-    # Point to the install/share directory so model://arm_description/... resolves
+    # Point to install/share AND arm_bringup/models so model://workpiece_* resolves
     install_share = os.path.dirname(desc_pkg)  # .../install/share
+    bringup_models = os.path.join(bringup_pkg, "models")
     existing_model_path = os.environ.get("GAZEBO_MODEL_PATH", "")
-    new_model_path = install_share + (":" + existing_model_path if existing_model_path else "")
+    new_model_path = (
+        install_share + ":" + bringup_models
+        + (":" + existing_model_path if existing_model_path else "")
+    )
     set_gazebo_model_path = SetEnvironmentVariable(
         name="GAZEBO_MODEL_PATH",
         value=new_model_path,

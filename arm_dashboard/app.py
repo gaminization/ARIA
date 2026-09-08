@@ -303,23 +303,29 @@ class DashboardBridge(Node):
         try:
             import cv2
             from cv_bridge import CvBridge
-            bridge = CvBridge()
-            cv_img = bridge.imgmsg_to_cv2(msg, "bgr8")
+            if not hasattr(self, '_cv_bridge'):
+                self._cv_bridge = CvBridge()
+            cv_img = self._cv_bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+            if msg.encoding == 'rgb8':
+                cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
             _, jpeg = cv2.imencode('.jpg', cv_img, [cv2.IMWRITE_JPEG_QUALITY, 70])
             state.top_camera_jpeg = jpeg.tobytes()
-        except Exception:
-            pass
+        except Exception as e:
+            self.get_logger().warn(f"Top cam cb error: {e}")
 
     def _wrist_cam_cb(self, msg):
         try:
             import cv2
             from cv_bridge import CvBridge
-            bridge = CvBridge()
-            cv_img = bridge.imgmsg_to_cv2(msg, "bgr8")
-            _, jpeg = cv2.imencode('.jpg', cv_img, [cv2.IMWRITE_JPEG_QUALITY, 70])
+            if not hasattr(self, '_cv_bridge'):
+                self._cv_bridge = CvBridge()
+            cv_img = self._cv_bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+            if msg.encoding == 'rgb8':
+                cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
+            _, jpeg = cv2.imencode('.jpg', cv_img, [cv2.IMWRITE_JPEG_QUALITY, 75])
             state.wrist_camera_jpeg = jpeg.tobytes()
-        except Exception:
-            pass
+        except Exception as e:
+            self.get_logger().warn(f"Wrist cam cb error: {e}")
 
     def _dialogue_cb(self, msg):
         state.add_cot(f"[DIALOGUE] {msg.data}")

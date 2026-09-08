@@ -38,22 +38,31 @@ def generate_launch_description():
 
     bringup_dir = get_package_share_directory('arm_bringup')
 
+    # ── World override (industrial workcell by default) ────
+    world = DeclareLaunchArgument(
+        'world', default_value='aria_industrial_workcell.world',
+        description='World file in arm_bringup/worlds')
+
+    world_conf = LaunchConfiguration('world')
     # ═══════════════════════════════════════════════════════
     # STAGE 1: Gazebo + Robot + Controllers (0s)
     # ═══════════════════════════════════════════════════════
     stage1_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(bringup_dir, 'launch', 'sim.launch.py')),
+        launch_arguments={'world': world_conf}.items(),
     )
 
     # ═══════════════════════════════════════════════════════
     # STAGE 2: Detection + Depth + IK (2s)
     # ═══════════════════════════════════════════════════════
+    # GRIPPER CAMERA ONLY — both nodes subscribe to /wrist_camera/image_raw
     yolo_detection = TimerAction(
         period=2.0,
         actions=[Node(
             package='arm_vision', executable='detection_node',
             name='detection_node', output='screen',
+            parameters=[{'camera_topic': '/wrist_camera/image_raw'}],
         )],
     )
 
@@ -62,6 +71,7 @@ def generate_launch_description():
         actions=[Node(
             package='arm_vision', executable='depth_node',
             name='depth_node', output='screen',
+            parameters=[{'camera_topic': '/wrist_camera/image_raw'}],
         )],
     )
 
@@ -166,17 +176,28 @@ def generate_launch_description():
         )],
     )
 
-    # rosbridge for dashboard WebSocket
-    rosbridge = TimerAction(
-        period=8.0,
-        actions=[Node(
-            package='rosbridge_server',
-            executable='rosbridge_websocket',
-            name='rosbridge',
-            parameters=[{'port': 9090}],
-            output='screen',
-        )],
-    )
+    # rosbridge for dashboard WebSocket (optional — dashboard WebSocket works without it)
+    # Only include if package is available
+    try:
+        from ament_index_python.packages import get_package_share_directory as _gpsd
+        _gpsd('rosbridge_server')  # will raise if not installed
+        rosbridge = TimerAction(
+            period=8.0,
+            actions=[Node(
+                package='rosbridge_server',
+                executable='rosbridge_websocket',
+                name='rosbridge',
+                parameters=[{'port': 9090}],
+                output='screen',
+            )],
+        )
+    except Exception:
+        import warnings
+        warnings.warn(
+            "[ARIA U3] rosbridge_server not found — skipping. "
+            "Install with: sudo apt install ros-humble-rosbridge-server"
+        )
+        rosbridge = LogInfo(msg='rosbridge_server not installed — skipped')
 
     # Dashboard (9s)
     dashboard = TimerAction(
@@ -210,6 +231,7 @@ def generate_launch_description():
         dashboard_port,
         bag_mode,
         tracking_backend,
+        world,   # industrial workcell world arg
 
         # Stage 1
         stage1_sim,

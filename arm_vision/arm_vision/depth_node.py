@@ -60,10 +60,13 @@ class DepthNode(Node):
         self.declare_parameter('device', 'cuda:0')
         self.declare_parameter('run_midas', True)
         self.declare_parameter('publish_colorized', True)
+        # ── Gripper-camera-only mode ──────────────────────────────
+        self.declare_parameter('camera_topic', '/wrist_camera/image_raw')
 
         self.device_str = self.get_parameter('device').value
         self.run_midas = self.get_parameter('run_midas').value
         self.publish_colorized = self.get_parameter('publish_colorized').value
+        self.camera_topic = self.get_parameter('camera_topic').value
 
         self.bridge = CvBridge() if CV_BRIDGE else None
         self.da_model = None
@@ -91,8 +94,10 @@ class DepthNode(Node):
             durability=DurabilityPolicy.VOLATILE, depth=5
         )
         self.image_sub = self.create_subscription(
-            Image, '/top_camera/image_raw', self._image_cb, qos
+            Image, self.camera_topic, self._image_cb, qos
         )
+        self.get_logger().info(
+            f"Depth node subscribing to: {self.camera_topic}")
 
         # Publishers
         self.da_pub = self.create_publisher(

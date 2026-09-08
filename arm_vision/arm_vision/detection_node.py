@@ -58,11 +58,16 @@ class DetectionNode(Node):
         self.declare_parameter('confidence_threshold', 0.5)
         self.declare_parameter('device', 'cuda:0')
         self.declare_parameter('half_precision', True)
+        # ── Gripper-camera-only mode ──────────────────────────────
+        # Default: wrist/gripper camera (eye-in-hand). Override with
+        # camera_topic:=/top_camera/image_raw for overhead mode.
+        self.declare_parameter('camera_topic', '/wrist_camera/image_raw')
 
         model_name = self.get_parameter('model').value
         self.conf_threshold = self.get_parameter('confidence_threshold').value
         device = self.get_parameter('device').value
         use_half = self.get_parameter('half_precision').value
+        self.camera_topic = self.get_parameter('camera_topic').value
 
         # Load YOLO model
         self.model = None
@@ -97,16 +102,18 @@ class DetectionNode(Node):
         self.total_inference_ms = 0.0
         self.max_inference_ms = 0.0
 
-        # Subscribers
+        # Subscribers — always the gripper/wrist camera (eye-in-hand)
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE,
             depth=5
         )
         self.image_sub = self.create_subscription(
-            Image, '/top_camera/image_raw',
+            Image, self.camera_topic,
             self._image_cb, qos
         )
+        self.get_logger().info(
+            f"Detection subscribing to camera: {self.camera_topic}")
 
         # Publishers
         self.det_pub = self.create_publisher(
@@ -114,7 +121,8 @@ class DetectionNode(Node):
         self.annotated_pub = self.create_publisher(
             Image, '/detection/image_annotated', 10)
 
-        self.get_logger().info("Detection node ready")
+        self.get_logger().info(
+            f"Detection node ready — YOLOv8 tracking on {self.camera_topic}")
 
     def _image_cb(self, msg: Image):
         """Process incoming camera frame with YOLO."""
