@@ -278,19 +278,24 @@ The spatial frame assignments across all five revolute joints and the tool cente
 
 Following Craig's convention, the general homogeneous transformation matrix relating coordinate frame $\{i-1\}$ to coordinate frame $\{i\}$ is parameterized by the product of fundamental screw motions:
 \begin{equation}
-{}^{i-1}\mathbf{T}_i = \text{Rot}_{X_{i-1}}(\alpha_{i-1}) \cdot \text{Trans}_{X_{i-1}}(a_{i-1}) \cdot \text{Rot}_{Z_i}(\theta_i) \cdot \text{Trans}_{Z_i}(d_i)
+\begin{split}
+{}^{i-1}\mathbf{T}_i &= \text{Rot}_{X_{i-1}}(\alpha_{i-1}) \cdot \text{Trans}_{X_{i-1}}(a_{i-1}) \\
+&\quad \cdot \text{Rot}_{Z_i}(\theta_i) \cdot \text{Trans}_{Z_i}(d_i)
+\end{split}
 \end{equation}
 Evaluating the matrix multiplication yields the standard closed-form Craig transformation matrix:
 \begin{equation}
-{}^{i-1}\mathbf{T}_i = \begin{bmatrix}
-\cos\theta_i & -\sin\theta_i & 0 & a_{i-1} \\
-\sin\theta_i\cos\alpha_{i-1} & \cos\theta_i\cos\alpha_{i-1} & -\sin\alpha_{i-1} & -d_i\sin\alpha_{i-1} \\
-\sin\theta_i\sin\alpha_{i-1} & \cos\theta_i\sin\alpha_{i-1} & \cos\alpha_{i-1} & d_i\cos\alpha_{i-1} \\
+{}^{i-1}\mathbf{T}_i = \left[\begin{array}{@{\hspace{2pt}}cccc@{\hspace{2pt}}}
+c_i & -s_i & 0 & a_{i-1} \\
+s_i c_{\alpha_{i-1}} & c_i c_{\alpha_{i-1}} & -s_{\alpha_{i-1}} & -d_i s_{\alpha_{i-1}} \\
+s_i s_{\alpha_{i-1}} & c_i s_{\alpha_{i-1}} & c_{\alpha_{i-1}} & d_i c_{\alpha_{i-1}} \\
 0 & 0 & 0 & 1
-\end{bmatrix}
+\end{array}\right]
 \end{equation}
+where $c_{\alpha_{i-1}} = \cos\alpha_{i-1}$ and $s_{\alpha_{i-1}} = \sin\alpha_{i-1}$.
 
 Substituting the explicit DH parameters from Table~\ref{table_dh_parameters} into (2) for each link index yields the five elementary link transformation matrices:
+{\setlength{\arraycolsep}{2pt}
 \begin{align}
 {}^0\mathbf{T}_1 &= \begin{bmatrix}
 c_1 & -s_1 & 0 & 0 \\
@@ -323,6 +328,7 @@ s_5 & c_5 & 0 & 0 \\
 0 & 0 & 0 & 1
 \end{bmatrix}
 \end{align}
+}
 where we introduce the compact trigonometric shorthand $c_i = \cos\theta_i$, $s_i = \sin\theta_i$, $c_{ij} = \cos(\theta_i + \theta_j)$, $s_{ij} = \sin(\theta_i + \theta_j)$, $c_{ijk} = \cos(\theta_i + \theta_j + \theta_k)$, and $s_{ijk} = \sin(\theta_i + \theta_j + \theta_k)$.
 
 \subsection{Symbolic Forward Kinematics Transformation}
@@ -539,7 +545,8 @@ For the ARIA 5-DoF manipulator, the explicit gravity compensation torques for th
 G_1(\mathbf{q}) &= 0 \\
 G_2(\mathbf{q}) &= g \left( m_2 r_{c2} c_2 + m_3 (a_2 c_2 + r_{c3} c_{23}) \right. \nonumber \\
                 &\quad \left. + (m_4 + m_5 + m_{\text{load}}) (a_2 c_2 + a_3 c_{23} + r_{c4} c_{234}) \right) \\
-G_3(\mathbf{q}) &= g \left( m_3 r_{c3} c_{23} + (m_4 + m_5 + m_{\text{load}}) (a_3 c_{23} + r_{c4} c_{234}) \right) \\
+G_3(\mathbf{q}) &= g m_3 r_{c3} c_{23} \nonumber \\
+                &\quad + g (m_4 + m_5 + m_{\text{load}}) (a_3 c_{23} + r_{c4} c_{234}) \\
 G_4(\mathbf{q}) &= g (m_4 + m_5 + m_{\text{load}}) r_{c4} c_{234} \\
 G_5(\mathbf{q}) &= 0
 \end{align}
@@ -683,9 +690,10 @@ During system initialization, the multi-agent orchestrator executes sequential s
 \end{enumerate}
 
 \textit{Dynamic Crash Recovery}: In conventional monolithic robotics architectures, an unhandled exception in an auxiliary node (such as a vision model GPU out-of-memory error or camera USB disconnection) causes the entire robotic control process to terminate, leaving the physical arm frozen in an unsafe state. In Project ARIA, node failures are completely isolated by the lifecycle supervisor. If a non-critical worker node (e.g., \texttt{DialogueAgent} or \texttt{VisionAgent}) experiences an unhandled software crash:
-\begin{equation}
-\text{Supervisor} \xrightarrow{\text{Catch Exception}} \texttt{on\_deactivate()} \to \texttt{on\_cleanup()} \to \texttt{on\_configure()} \to \texttt{on\_activate()}
-\end{equation}
+\begin{align}
+\text{Supervisor} &\xrightarrow{\text{Catch Fault}} \texttt{on\_deactivate()} \to \texttt{on\_cleanup()} \nonumber \\
+&\to \texttt{on\_configure()} \to \texttt{on\_activate()}
+\end{align}
 The supervisor resets and re-instantiates the crashed agent in under $180$\,ms. Throughout this recovery window, the real-time $50$\,Hz trajectory execution loop of \texttt{ControlAgent} remains uninterrupted, holding the physical arm at its current safe trajectory waypoint.
 
 The complete multi-agent consensus and health management protocol is formalized in Algorithm~\ref{alg_multiagent_consensus}.
@@ -763,10 +771,10 @@ f_x & 0 & c_x \\
 \end{equation}
 where $f_x, f_y$ represent focal lengths in pixel units, and $c_x, c_y$ denote principal point coordinates. Radial and tangential lens distortions are corrected online using a five-parameter Brown-Conrady polynomial model ($k_1, k_2, p_1, p_2, k_3$):
 \begin{align}
-x_{\text{corrected}} &= x (1 + k_1 r^2 + k_2 r^4 + k_3 r^6) + 2 p_1 x y + p_2 (r^2 + 2 x^2) \\
-y_{\text{corrected}} &= y (1 + k_1 r^2 + k_2 r^4 + k_3 r^6) + p_1 (r^2 + 2 y^2) + 2 p_2 x y
+x_{\text{corr}} &= x D(r) + 2 p_1 x y + p_2 (r^2 + 2 x^2) \\
+y_{\text{corr}} &= y D(r) + p_1 (r^2 + 2 y^2) + 2 p_2 x y
 \end{align}
-where $r^2 = x^2 + y^2$, and $[x, y]^T$ are normalized image coordinates.
+where $D(r) = 1 + k_1 r^2 + k_2 r^4 + k_3 r^6$, $r^2 = x^2 + y^2$, and $[x, y]^T$ are normalized image coordinates.
 
 For the overhead eye-to-hand camera viewing planar objects resting on the horizontal tabletop workspace ($Z_w = 0$), the 3D-to-2D projection simplifies to a planar projective homography:
 \begin{equation}
@@ -979,8 +987,8 @@ As demonstrated in Fig.~\ref{fig_planning_hitl}(a), during an industrial conveyo
 In automated manufacturing, executing low-confidence plans autonomously can result in catastrophic tool collisions or workpiece damage. To ensure operational safety, ARIA implements a formal **Human-in-the-Loop (HITL) confirmation gate**:
 \begin{equation}
 \text{Dispatch Mode} = \begin{cases}
-\text{Autonomous Execution}, & \text{if } S(\pi^*) \ge \tau \\
-\text{Trigger Operator Dialogue}, & \text{if } S(\pi^*) < \tau
+\text{Autonomous}, & \text{if } S(\pi^*) \ge \tau \\
+\text{HITL Gated}, & \text{if } S(\pi^*) < \tau
 \end{cases}
 \end{equation}
 where the confidence gating threshold is configured to $\tau = 0.70$.
@@ -988,16 +996,18 @@ where the confidence gating threshold is configured to $\tau = 0.70$.
 Whenever the planner's confidence falls below $\tau$, execution automatically pauses. The \texttt{DialogueAgent} issues an interactive visual confirmation modal on the web dashboard (Fig.~\ref{fig_dashboard}), prompting the operator with plain-language explanations of the proposed plan, identified uncertainties, and one-click \textit{Approve}, \textit{Modify}, or \textit{Abort} buttons.
 
 Crucially, every internal cognitive state transition, vision detection, and IK check is compiled into an **emoji-annotated Chain-of-Thought (CoT) telemetry stream** published to \texttt{/aria/state/task} and displayed on the web dashboard (Fig.~\ref{fig_planning_hitl}(b)):
+{\footnotesize
 \begin{verbatim}
-17:25:05 -> [PLANNING] Task ID: task_c84a29ef | Llama 3.1 8B
-17:25:05 -> [THINKING] Decomposing moving conveyor task...
-17:25:05 -> [TREE-OF-THOUGHTS] Evaluated 3 candidate paths.
-17:25:05 -> [SELECTED] Dynamic Rendezvous. Score = 0.54.
-17:25:05 -> [PAUSED] Score 0.54 < 0.70. Requesting Approval.
-17:25:12 -> [OPERATOR] Approval confirmed via Dashboard.
-17:25:12 -> [RESUMED] Dispatching 4 subgoals to SkillAgent.
-17:25:13 -> [EXEC] Subgoal 1: Optical Defect Inspection (30fps).
+17:25:05 -> [PLAN] Task: task_c84a | Llama 3.1 8B
+17:25:05 -> [THINK] Decomposing moving conveyor task...
+17:25:05 -> [TREE] Evaluated 3 candidate branches.
+17:25:05 -> [SELECT] Dynamic Rendezvous. Score = 0.54.
+17:25:05 -> [PAUSED] Score 0.54 < 0.70. Need Approval.
+17:25:12 -> [OPERATOR] Approval confirmed via UI.
+17:25:12 -> [RESUMED] Dispatching 4 subgoals to Skill.
+17:25:13 -> [EXEC] Subgoal 1: Optical Inspection.
 \end{verbatim}
+}
 
 The complete Tree-of-Thoughts cognitive planning and HITL safety gating procedure is formalized in Algorithm~\ref{alg_tot_planning}.
 
