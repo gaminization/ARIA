@@ -1,0 +1,25 @@
+cycle_id,timestamp,git_commit_hash,belt_speed_mps,workpiece_instance,object_color,defect_status,defect_cue_type,optical_conf,interception_error_mm,velocity_diff_mps,grasp_success,sort_success,cycle_time_s,failure_category,notes
+SYN_C001,2026-09-18T14:00:00,a1b2c3d,0.02,block_blue_01,blue,conforming,none,0.995,0.7,0.0010,SUCCESS,SUCCESS,3.55,NONE,Nominal 0.02 m/s palletized
+SYN_C002,2026-09-18T14:01:00,a1b2c3d,0.02,block_blue_crack_01,blue,defective_crack_A,engraved_crack,0.991,0.9,0.0011,SUCCESS,SUCCESS,3.60,NONE,Nominal scrap reject
+SYN_C003,2026-09-18T14:02:00,a1b2c3d,0.02,block_blue_02,blue,conforming,none,0.994,0.8,0.0012,SUCCESS,SUCCESS,3.58,NONE,Nominal palletized
+SYN_C004,2026-09-18T14:03:00,a1b2c3d,0.02,block_blue_crack_02,blue,defective_crack_B,engraved_crack,0.989,1.1,0.0014,SUCCESS,SUCCESS,3.65,NONE,Nominal scrap reject
+SYN_C005,2026-09-18T14:05:00,a1b2c3d,0.04,block_blue_01,blue,conforming,none,0.993,1.2,0.0015,SUCCESS,SUCCESS,3.62,NONE,Nominal 0.04 m/s palletized
+SYN_C006,2026-09-18T14:06:00,a1b2c3d,0.04,block_blue_crack_01,blue,defective_crack_A,engraved_crack,0.990,1.4,0.0018,SUCCESS,SUCCESS,3.70,NONE,Nominal scrap reject
+SYN_C007,2026-09-18T14:07:00,a1b2c3d,0.04,block_blue_02,blue,conforming,none,0.992,1.3,0.0016,SUCCESS,SUCCESS,3.65,NONE,Nominal palletized
+SYN_C008,2026-09-18T14:08:00,a1b2c3d,0.04,block_blue_crack_02,blue,defective_crack_B,engraved_crack,0.988,1.5,0.0019,SUCCESS,SUCCESS,3.72,NONE,Nominal scrap reject
+SYN_C009,2026-09-18T14:10:00,a1b2c3d,0.06,block_blue_01,blue,conforming,none,0.991,1.8,0.0021,SUCCESS,SUCCESS,3.75,NONE,Nominal 0.06 m/s palletized
+SYN_C010,2026-09-18T14:11:00,a1b2c3d,0.06,block_blue_crack_01,blue,defective_crack_A,engraved_crack,0.987,2.1,0.0024,SUCCESS,SUCCESS,3.82,NONE,Nominal scrap reject
+SYN_C011,2026-09-18T14:12:00,a1b2c3d,0.06,block_blue_02,blue,conforming,none,0.989,1.9,0.0022,SUCCESS,SUCCESS,3.78,NONE,Nominal palletized
+SYN_C012,2026-09-18T14:13:00,a1b2c3d,0.06,block_blue_crack_02,blue,defective_crack_B,engraved_crack,0.985,2.3,0.0026,SUCCESS,SUCCESS,3.85,NONE,Nominal scrap reject
+SYN_C013,2026-09-18T14:15:00,a1b2c3d,0.08,block_blue_01,blue,conforming,none,0.988,2.8,0.0031,SUCCESS,SUCCESS,3.90,NONE,Nominal 0.08 m/s palletized
+SYN_C014,2026-09-18T14:16:00,a1b2c3d,0.08,block_blue_crack_01,blue,defective_crack_A,engraved_crack,0.984,3.2,0.0035,SUCCESS,SUCCESS,4.02,NONE,Nominal scrap reject
+SYN_C015,2026-09-18T14:17:00,a1b2c3d,0.08,block_blue_02,blue,conforming,none,0.986,3.0,0.0033,SUCCESS,SUCCESS,3.95,NONE,Nominal palletized
+SYN_C016,2026-09-18T14:18:00,a1b2c3d,0.08,block_blue_crack_02,blue,defective_crack_B,engraved_crack,0.981,3.5,0.0038,FAILURE,FAILURE,4.40,B_GRASP_SLIP,Slipped during lift
+SYN_C017,2026-09-18T14:20:00,a1b2c3d,0.10,block_blue_01,blue,conforming,none,0.982,4.1,0.0048,SUCCESS,SUCCESS,4.10,NONE,High speed rendezvous success
+SYN_C018,2026-09-18T14:21:00,a1b2c3d,0.10,block_blue_crack_01,blue,defective_crack_A,engraved_crack,0.978,4.5,0.0052,SUCCESS,SUCCESS,4.25,NONE,High speed reject success
+SYN_C019,2026-09-18T14:22:00,a1b2c3d,0.10,block_blue_02,blue,conforming,none,0.980,4.3,0.0050,FAILURE,FAILURE,4.60,C_CONVEYOR_SPEED_JITTER,Tracking error offset
+SYN_C020,2026-09-18T14:23:00,a1b2c3d,0.10,block_blue_crack_02,blue,defective_crack_B,engraved_crack,0.975,4.8,0.0055,FAILURE,FAILURE,4.75,B_GRASP_SLIP,Belt friction slip
+SYN_C021,2026-09-18T14:25:00,a1b2c3d,0.12,block_blue_01,blue,conforming,none,0.974,6.5,0.0085,SUCCESS,SUCCESS,4.30,NONE,Limit operating speed success
+SYN_C022,2026-09-18T14:26:00,a1b2c3d,0.12,block_blue_crack_01,blue,defective_crack_A,engraved_crack,0.970,7.1,0.0092,FAILURE,FAILURE,4.85,B_GRASP_SLIP,Workpiece toppled
+SYN_C023,2026-09-18T14:27:00,a1b2c3d,0.12,block_blue_02,blue,conforming,none,0.971,6.8,0.0089,FAILURE,FAILURE,4.90,B_GRASP_SLIP,Clamp slip at 0.12 m/s
+SYN_C024,2026-09-18T14:28:00,a1b2c3d,0.12,block_blue_crack_02,blue,defective_crack_B,engraved_crack,0.968,7.5,0.0105,FAILURE,FAILURE,5.10,C_CONVEYOR_SPEED_JITTER,Missed rendezvous window

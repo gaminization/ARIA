@@ -38,6 +38,8 @@ setup(
             'llm_dialogue_agent = arm_agents.llm_dialogue_agent:main',
             # U2 Upgrade — enhanced affordance
             'affordance_agent_v2 = arm_agents.affordance_agent_v2:main',
+            # U3 Upgrade — OpenVLA VLA executor (gripper-camera inference)
+            'openvla_executor = arm_agents.openvla_executor:main',
         ],
     },
 )

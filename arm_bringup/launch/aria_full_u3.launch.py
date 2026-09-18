@@ -146,6 +146,12 @@ def generate_launch_description():
         package='arm_agents', executable='dialogue_agent',
         name='dialogue_agent', output='screen')])
 
+    # OpenVLA Executor — VLA inference from gripper camera
+    # Model loads lazily in background (15GB — ~30s on first activation)
+    openvla_executor = TimerAction(period=7.0, actions=[Node(
+        package='arm_agents', executable='openvla_executor',
+        name='openvla_executor', output='screen')])
+
     # Orchestration
     task_manager = TimerAction(period=7.0, actions=[Node(
         package='arm_planner', executable='task_manager',
@@ -211,6 +217,18 @@ def generate_launch_description():
         )],
     )
 
+    # Agent Activator (8.5s) — automatically configures and activates all LifecycleNode agents
+    activate_agents = TimerAction(
+        period=8.5,
+        actions=[ExecuteProcess(
+            cmd=['python3', os.path.join(
+                os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'),
+                'arm_bringup', 'scripts', 'activate_agents.py'
+            )],
+            name='activate_agents', output='screen',
+        )],
+    )
+
     startup_msg = TimerAction(
         period=10.0,
         actions=[LogInfo(msg='\n'
@@ -249,11 +267,13 @@ def generate_launch_description():
         safety_agent, memory_agent,
         world_model_agent, learning_agent,
         evaluation_agent, dialogue_agent,
+        openvla_executor,
 
         # Orchestration
         task_manager, memory_manager, health_monitor,
 
         # U3 — infrastructure
+        activate_agents,
         bag_recorder,
         rosbridge,
         dashboard,

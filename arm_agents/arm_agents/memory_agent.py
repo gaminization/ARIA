@@ -117,7 +117,7 @@ class MemoryAgent(LifecycleNode):
     def _on_vision(self, msg: VisionState):
         """Update memory from vision detections."""
         for det in msg.detected_objects:
-            if det.tracking_id < 0:
+            if not det.class_name or det.class_name == 'unknown':
                 continue
 
             # Check if we know this object

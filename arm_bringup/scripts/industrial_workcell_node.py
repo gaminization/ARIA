@@ -134,6 +134,16 @@ class IndustrialWorkcellNode(Node):
             except Exception as e:
                 self.get_logger().warn(f"CvBridge decode error: {e}")
 
+    def _call_sync(self, client, request, timeout=5.0):
+        """Synchronously call a ROS2 service under MultiThreadedExecutor."""
+        if not client.wait_for_service(timeout_sec=timeout):
+            return None
+        future = client.call_async(request)
+        start = time.time()
+        while not future.done() and (time.time() - start) < timeout:
+            time.sleep(0.02)
+        return future.result() if future.done() else None
+
     def _set_conveyor_power(self, power_pct: float):
         """Set conveyor belt speed."""
         if not self.conveyor_client.service_is_ready():
@@ -141,9 +151,8 @@ class IndustrialWorkcellNode(Node):
         req = SetConveyorPower.Request()
         req.power = float(power_pct)
         try:
-            future = self.conveyor_client.call_async(req)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=1.5)
-            return future.result().success if future.result() else False
+            res = self._call_sync(self.conveyor_client, req, timeout=2.0)
+            return res.success if res else False
         except Exception as e:
             self.get_logger().warn(f"Conveyor command error: {e}")
             return False
@@ -154,9 +163,7 @@ class IndustrialWorkcellNode(Node):
         req = GoNamedPose.Request()
         req.pose_name = pose_name
         try:
-            future = self.named_pose_client.call_async(req)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=4.0)
-            res = future.result()
+            res = self._call_sync(self.named_pose_client, req, timeout=5.0)
             time.sleep(1.2)  # Allow physical settling
             return res.success if res else False
         except Exception as e:
@@ -170,28 +177,24 @@ class IndustrialWorkcellNode(Node):
         self.get_logger().info(f"Gripper -> {action_name}")
         req = Trigger.Request()
         try:
-            future = client.call_async(req)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=2.5)
+            res = self._call_sync(client, req, timeout=3.0)
             time.sleep(0.5)
 
             # Direct physical grasp confirmation with AriaGripperPlugin
             grasp_success = True
             if not open_grip and self.attach_client.wait_for_service(timeout_sec=1.0):
-                att_f = self.attach_client.call_async(Trigger.Request())
-                rclpy.spin_until_future_complete(self, att_f, timeout_sec=1.5)
-                if att_f.result():
-                    msg = att_f.result().message
+                res_att = self._call_sync(self.attach_client, Trigger.Request(), timeout=2.0)
+                if res_att:
+                    msg = res_att.message
                     self.get_logger().info(f"⚡ {msg}")
-                    if not att_f.result().success and "Already holding" not in msg:
+                    if not res_att.success and "Already holding" not in msg:
                         grasp_success = False
             elif open_grip and self.detach_client.wait_for_service(timeout_sec=1.0):
-                det_f = self.detach_client.call_async(Trigger.Request())
-                rclpy.spin_until_future_complete(self, det_f, timeout_sec=1.5)
-                if det_f.result():
-                    self.get_logger().info(f"⚡ {det_f.result().message}")
+                res_det = self._call_sync(self.detach_client, Trigger.Request(), timeout=2.0)
+                if res_det:
+                    self.get_logger().info(f"⚡ {res_det.message}")
 
             time.sleep(0.5)
-            res = future.result()
             return (res.success if res else False) and grasp_success
         except Exception as e:
             self.get_logger().error(f"Gripper trigger failed: {e}")
@@ -343,14 +346,17 @@ class IndustrialWorkcellNode(Node):
     def _start_cycle_callback(self):
         """Timer callback to initiate cycle."""
         self.cycle_timer.cancel()  # Run once automatically
-        self.run_production_cycle()
+        threading.Thread(target=self.run_production_cycle, daemon=True).start()
 
 
 def main(args=None):
+    from rclpy.executors import MultiThreadedExecutor
     rclpy.init(args=args)
     node = IndustrialWorkcellNode()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:

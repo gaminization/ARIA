@@ -153,11 +153,11 @@ class IKNode(Node):
                 self.fallback_count += 1
 
         # Build response
-        response.success = result.success
-        response.joint_angles = result.joint_angles.tolist() if result.success else []
-        response.solver_used = solver_used
-        response.solve_time_ms = result.solve_time_ms
-        response.position_error_mm = result.position_error_m * 1000 if result.success else -1.0
+        response.success = bool(result.success)
+        response.joint_angles = [float(a) for a in result.joint_angles] if result.success else []
+        response.solver_used = str(solver_used)
+        response.solve_time_ms = float(result.solve_time_ms)
+        response.position_error_mm = float(result.position_error_m * 1000) if result.success else -1.0
         response.message = result.message
 
         if result.success:

@@ -13,19 +13,22 @@ __pycache__/
 *.bag.active
 *.mcap
 
-# ── Model weights (tracked by Git LFS) ──────────────────────────
+# ── Model weights (excluded from git due to size) ───────────────
 *.pt
 *.pth
 *.onnx
-*.engine          # TensorRT
-*.plan            # TensorRT
+*.engine
+*.plan
 *.trt
+*.safetensors
+models/
 
 # ── Datasets (tracked by Git LFS, or too large for git at all) ──
 *.hdf5
 *.h5
 arm_learning/datasets/
-arm_planner/data/*.db   # SQLite, regenerated from scratch
+arm_planner/data/*.db
+*.db
 
 # ── Calibration data (COMMIT THESE — they are small and important)
 # arm_ik/config/calibration_offsets.yaml       ← COMMIT

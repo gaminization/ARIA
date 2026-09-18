@@ -21,6 +21,8 @@ find_package(trajectory_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+# Suppress jsoncpp CMake < 3.5 compatibility error on Ubuntu 22.04
+cmake_policy(SET CMP0048 NEW)
 find_package(gazebo_dev REQUIRED)
 find_package(gazebo_ros REQUIRED)
 find_package(arm_interfaces REQUIRED)

@@ -113,29 +113,29 @@ class DepthNode(Node):
 
     def _load_models(self):
         """Load depth estimation models onto GPU."""
-        # ── Depth-Anything v2 (small) ──────────────────────
+        # ── Depth-Anything v2 (small) via transformers ──────
         try:
-            self.da_model = torch.hub.load(
-                'huggingface/depth-anything-v2', 'depth_anything_v2_vits',
-                trust_repo=True
-            )
+            from transformers import AutoImageProcessor, AutoModelForDepthEstimation
+            self.da_processor = AutoImageProcessor.from_pretrained(
+                'depth-anything/Depth-Anything-V2-Small-hf')
+            self.da_model = AutoModelForDepthEstimation.from_pretrained(
+                'depth-anything/Depth-Anything-V2-Small-hf')
             self.da_model.to(self.device)
             self.da_model.eval()
-            self.get_logger().info("Depth-Anything v2 loaded")
+            self.get_logger().info("Depth-Anything v2 loaded via transformers")
         except Exception as e:
-            self.get_logger().warn(f"Depth-Anything v2 load failed: {e}")
-            # Fallback: try loading as generic model
+            self.get_logger().warn(f"Depth-Anything v2 transformers load failed: {e}")
+            # Fallback: try torch.hub
             try:
-                import torchvision.transforms as T
-                self.da_transform = T.Compose([
-                    T.ToPILImage(),
-                    T.Resize(518),
-                    T.CenterCrop(518),
-                    T.ToTensor(),
-                    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-                ])
-            except Exception:
-                pass
+                self.da_model = torch.hub.load(
+                    'huggingface/depth-anything-v2', 'depth_anything_v2_vits',
+                    trust_repo=True
+                )
+                self.da_model.to(self.device)
+                self.da_model.eval()
+                self.get_logger().info("Depth-Anything v2 loaded via torch.hub")
+            except Exception as e2:
+                self.get_logger().warn(f"Depth-Anything v2 torch.hub load failed: {e2}")
 
         # ── MiDaS v3 ──────────────────────────────────────
         if self.run_midas:
@@ -206,9 +206,21 @@ class DepthNode(Node):
             t0 = time.perf_counter()
             try:
                 with torch.no_grad():
-                    depth_raw = self.da_model.infer_image(cv_image)
-                    if isinstance(depth_raw, torch.Tensor):
-                        depth_raw = depth_raw.cpu().numpy()
+                    if hasattr(self, 'da_processor') and self.da_processor is not None:
+                        inputs = self.da_processor(images=cv_image, return_tensors="pt").to(self.device)
+                        outputs = self.da_model(**inputs)
+                        predicted_depth = outputs.predicted_depth
+                        prediction = torch.nn.functional.interpolate(
+                            predicted_depth.unsqueeze(1),
+                            size=(h, w),
+                            mode="bicubic",
+                            align_corners=False,
+                        )
+                        depth_raw = prediction.squeeze().cpu().numpy()
+                    else:
+                        depth_raw = self.da_model.infer_image(cv_image)
+                        if isinstance(depth_raw, torch.Tensor):
+                            depth_raw = depth_raw.cpu().numpy()
 
                 # Normalize to 0-1 range
                 depth_norm = (depth_raw - depth_raw.min()) / (

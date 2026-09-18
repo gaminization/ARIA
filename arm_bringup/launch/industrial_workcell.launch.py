@@ -8,7 +8,7 @@
 import os
 import re
 
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory, get_package_prefix
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -72,12 +72,13 @@ def generate_launch_description():
     models_dir = os.path.join(bringup_pkg, "models")
 
     # ── Gazebo Environment Setup ───────────────────────────
-    install_share = os.path.dirname(desc_pkg)  # .../install/share
-    install_lib = os.path.join(os.path.dirname(install_share), "arm_control", "lib")
+    desc_share = os.path.join(get_package_prefix("arm_description"), "share")
+    bringup_share = os.path.join(get_package_prefix("arm_bringup"), "share")
+    ctrl_lib = os.path.join(get_package_prefix("arm_control"), "lib")
 
-    # GAZEBO_MODEL_PATH: arm_description + bringup models
+    # GAZEBO_MODEL_PATH: arm_description + bringup models + bringup share
     existing_model_path = os.environ.get("GAZEBO_MODEL_PATH", "")
-    new_model_path = f"{install_share}:{models_dir}" + (f":{existing_model_path}" if existing_model_path else "")
+    new_model_path = f"{desc_share}:{models_dir}:{bringup_share}" + (f":{existing_model_path}" if existing_model_path else "")
     set_gazebo_model_path = SetEnvironmentVariable(
         name="GAZEBO_MODEL_PATH",
         value=new_model_path,
@@ -85,15 +86,15 @@ def generate_launch_description():
 
     # GAZEBO_RESOURCE_PATH
     existing_resource_path = os.environ.get("GAZEBO_RESOURCE_PATH", "")
-    new_resource_path = install_share + (f":{existing_resource_path}" if existing_resource_path else "")
+    new_resource_path = f"{desc_share}:{bringup_share}" + (f":{existing_resource_path}" if existing_resource_path else "")
     set_gazebo_resource_path = SetEnvironmentVariable(
         name="GAZEBO_RESOURCE_PATH",
         value=new_resource_path,
     )
 
-    # GAZEBO_PLUGIN_PATH: Ensure libaria_conveyor_plugin.so is discovered
+    # GAZEBO_PLUGIN_PATH: Ensure libaria_conveyor_plugin.so and libaria_gripper_plugin.so are discovered
     existing_plugin_path = os.environ.get("GAZEBO_PLUGIN_PATH", "")
-    new_plugin_path = f"{install_lib}:/opt/ros/humble/lib" + (f":{existing_plugin_path}" if existing_plugin_path else "")
+    new_plugin_path = f"{ctrl_lib}:/opt/ros/humble/lib" + (f":{existing_plugin_path}" if existing_plugin_path else "")
     set_gazebo_plugin_path = SetEnvironmentVariable(
         name="GAZEBO_PLUGIN_PATH",
         value=new_plugin_path,

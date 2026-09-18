@@ -331,9 +331,9 @@
       </link>
     </model>
 
-    <!-- 6. Banana (12 cm long, 2 cm diameter cylinder, 40g — Center-Left) -->
+    <!-- 6. Banana (12 cm long, 2 cm diameter cylinder, 40g — Center-Front Table) -->
     <model name="banana">
-      <pose>0.15 0.03 0.619 0 1.5708 0.3</pose>
+      <pose>0.20 0.00 0.668 0 0 0</pose>
       <link name="body">
         <inertial>
           <mass>0.040</mass>

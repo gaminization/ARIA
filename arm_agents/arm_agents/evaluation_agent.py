@@ -42,6 +42,7 @@ class EvaluationAgent(LifecycleNode):
         self.completed_tasks = 0
         self.failed_tasks = 0
         self.failure_breakdown: Dict[str, int] = {}
+        self._last_logged_task_id = ""
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info("EvaluationAgent: CONFIGURING")
@@ -77,7 +78,8 @@ class EvaluationAgent(LifecycleNode):
 
     def _on_task(self, msg: TaskState):
         """Log task completion/failure."""
-        if msg.task_status in ('COMPLETE', 'FAILED'):
+        if msg.task_status in ('COMPLETE', 'FAILED') and msg.task_id and msg.task_id != self._last_logged_task_id:
+            self._last_logged_task_id = msg.task_id
             self.total_tasks += 1
             if msg.task_status == 'COMPLETE':
                 self.completed_tasks += 1

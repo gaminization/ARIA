@@ -12,7 +12,7 @@ AGENTS = [
     'planning_agent', 'skill_agent', 'control_agent', 'safety_agent',
     'affordance_agent', 'reachability_agent', 'depth_agent', 'tracking_agent',
     'attention_agent', 'memory_agent', 'world_model_agent', 'learning_agent',
-    'evaluation_agent', 'dialogue_agent', 'vision_agent',
+    'evaluation_agent', 'dialogue_agent', 'vision_agent', 'openvla_executor',
     'task_manager', 'memory_manager', 'health_monitor'
 ]
 

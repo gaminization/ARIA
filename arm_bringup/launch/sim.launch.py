@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════
 import os
 
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory, get_package_prefix
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -63,13 +63,15 @@ def generate_launch_description():
     controllers_file = os.path.join(ctrl_pkg, "config", "aria_controllers.yaml")
     rviz_config = os.path.join(bringup_pkg, "config", "aria_rviz.rviz")
 
-    # ── Set GAZEBO_MODEL_PATH and GAZEBO_RESOURCE_PATH ──
-    # Point to install/share AND arm_bringup/models so model://workpiece_* resolves
-    install_share = os.path.dirname(desc_pkg)  # .../install/share
+    # ── Set GAZEBO_MODEL_PATH, GAZEBO_RESOURCE_PATH, and GAZEBO_PLUGIN_PATH ──
+    desc_share = os.path.join(get_package_prefix("arm_description"), "share")
+    bringup_share = os.path.join(get_package_prefix("arm_bringup"), "share")
+    ctrl_lib = os.path.join(get_package_prefix("arm_control"), "lib")
     bringup_models = os.path.join(bringup_pkg, "models")
+
     existing_model_path = os.environ.get("GAZEBO_MODEL_PATH", "")
     new_model_path = (
-        install_share + ":" + bringup_models
+        desc_share + ":" + bringup_models + ":" + bringup_share
         + (":" + existing_model_path if existing_model_path else "")
     )
     set_gazebo_model_path = SetEnvironmentVariable(
@@ -78,10 +80,17 @@ def generate_launch_description():
     )
 
     existing_resource_path = os.environ.get("GAZEBO_RESOURCE_PATH", "")
-    new_resource_path = install_share + (":" + existing_resource_path if existing_resource_path else "")
+    new_resource_path = desc_share + ":" + bringup_share + (":" + existing_resource_path if existing_resource_path else "")
     set_gazebo_resource_path = SetEnvironmentVariable(
         name="GAZEBO_RESOURCE_PATH",
         value=new_resource_path,
+    )
+
+    existing_plugin_path = os.environ.get("GAZEBO_PLUGIN_PATH", "")
+    new_plugin_path = f"{ctrl_lib}:/opt/ros/humble/lib" + (f":{existing_plugin_path}" if existing_plugin_path else "")
+    set_gazebo_plugin_path = SetEnvironmentVariable(
+        name="GAZEBO_PLUGIN_PATH",
+        value=new_plugin_path,
     )
 
     set_display = SetEnvironmentVariable(
@@ -179,6 +188,7 @@ def generate_launch_description():
         set_display,
         set_gazebo_model_path,
         set_gazebo_resource_path,
+        set_gazebo_plugin_path,
         gazebo,
         robot_state_publisher,
         spawn_robot,

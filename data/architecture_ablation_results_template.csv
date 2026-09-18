@@ -1,0 +1,1 @@
+ablation_trial_id,timestamp,git_commit_hash,config_id,config_name,task_id,test_day,block_id,object_color,defect_status,surrogate_type,surrogate_mass_g,outcome,failure_category,end_to_end_latency_ms,p95_latency_ms,fault_recovery_time_ms,vram_mb,dropped_frame_rate_pct,unsafe_plan_intercepted,near_miss_triggered,notes

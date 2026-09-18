@@ -1,0 +1,1 @@
+cycle_id,timestamp,git_commit_hash,belt_speed_mps,workpiece_instance,object_color,defect_status,defect_cue_type,optical_conf,interception_error_mm,velocity_diff_mps,grasp_success,sort_success,cycle_time_s,failure_category,notes

@@ -85,32 +85,52 @@ class SAM2Model:
         self._use_real_model = False
 
     def load(self) -> bool:
-        """Load SAM2-tiny model."""
+        """Load SAM2/SAM2.1 tiny model."""
         if self.loaded:
             return True
 
         try:
-            # Try loading SAM2
             from sam2.build_sam import build_sam2
             from sam2.sam2_image_predictor import SAM2ImagePredictor
+            import os
 
-            checkpoint = "sam2_hiera_tiny.pt"
-            model_cfg = "sam2_hiera_t.yaml"
+            # Prefer SAM2.0 checkpoint + config (exact match)
+            # Fall back to SAM2.1 checkpoint + SAM2.1 config
+            aria_dir = os.path.dirname(os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__))))
 
-            sam2 = build_sam2(
-                model_cfg, checkpoint,
-                device=self.device,
-            )
-            self.predictor = SAM2ImagePredictor(sam2)
+            candidates = [
+                # SAM2.0 (exact version match with sam2_hiera_t.yaml)
+                ("sam2_hiera_t.yaml",
+                 os.path.join(aria_dir, "sam2_hiera_tiny.pt")),
+                # SAM2.1 (use sam2.1 config)
+                ("sam2.1/sam2.1_hiera_t.yaml",
+                 os.path.join(aria_dir, "sam2.1_hiera_tiny.pt")),
+            ]
+
+            loaded = False
+            for cfg, ckpt in candidates:
+                if not os.path.exists(ckpt):
+                    continue
+                try:
+                    sam2_model = build_sam2(cfg, ckpt, device=self.device)
+                    self.predictor = SAM2ImagePredictor(sam2_model)
+                    loaded = True
+                    print(f"[SAM2] Loaded {os.path.basename(ckpt)} with {cfg}")
+                    break
+                except Exception as e:
+                    print(f"[SAM2] {cfg} + {os.path.basename(ckpt)} failed: {e}")
+
             self.loaded = True
-            self._use_real_model = True
+            self._use_real_model = loaded
             return True
 
-        except (ImportError, FileNotFoundError, RuntimeError) as e:
-            # SAM2 not available — use fallback
+        except (ImportError, RuntimeError) as e:
+            # SAM2 not available — use GrabCut fallback
             self.loaded = True
             self._use_real_model = False
             return True
+
 
     def unload(self):
         """Free VRAM."""

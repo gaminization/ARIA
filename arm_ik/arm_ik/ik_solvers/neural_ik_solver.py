@@ -316,7 +316,10 @@ def _load_model(model_path: str) -> bool:
         return False
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    checkpoint = torch.load(model_path, map_location=device)
+    try:
+        checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+    except TypeError:
+        checkpoint = torch.load(model_path, map_location=device)
 
     _model = IKNet().to(device)
     _model.load_state_dict(checkpoint['model_state'])
@@ -363,9 +366,17 @@ def solve_neural(target_position: np.ndarray,
     global _model, _pos_mean, _pos_std
     if _model is None:
         if model_path is None:
-            # Default path
-            pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            model_path = os.path.join(pkg_dir, 'models', 'neural_ik.pt')
+            candidates = [
+                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'models', 'neural_ik.pt'),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'models', 'neural_ik.pt'),
+                '/home/gaminizer/Projects/ARIA/arm_ik/models/neural_ik.pt',
+            ]
+            for c in candidates:
+                if os.path.exists(c):
+                    model_path = c
+                    break
+            if model_path is None:
+                model_path = candidates[0]
 
         if not _load_model(model_path):
             return IKResult(

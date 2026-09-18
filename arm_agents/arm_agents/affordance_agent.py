@@ -25,6 +25,9 @@ DEFAULT_AFFORDANCES: Dict[str, dict] = {
     'ball':        {'grasp': 'top', 'avoid': [], 'approach': 'top_down', 'success_rate': 0.7},
     'box':         {'grasp': 'top', 'avoid': [], 'approach': 'top_down', 'success_rate': 0.85},
     'pen':         {'grasp': 'body', 'avoid': [], 'approach': 'side', 'success_rate': 0.7},
+    'banana':      {'grasp': 'mid-body', 'avoid': ['stem', 'tip'], 'approach': 'top_down', 'success_rate': 0.85},
+    'can':         {'grasp': 'body', 'avoid': ['rim'], 'approach': 'top_down', 'success_rate': 0.85},
+    'dish':        {'grasp': 'rim', 'avoid': ['center'], 'approach': 'top_down', 'success_rate': 0.80},
 }
 
 APPROACH_QUATERNIONS = {

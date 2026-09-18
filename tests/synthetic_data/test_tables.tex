@@ -1,0 +1,84 @@
+\documentclass[journal]{IEEEtran}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{bm}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+
+\begin{document}
+
+\title{Validation Harness for Synthetic Benchmarks}
+\author{Project ARIA Test Harness}
+\maketitle
+
+\section{Introduction}
+Testing synthetic table code generation for the Project ARIA validation campaign.
+
+\begin{table}[!t]
+\centering
+\caption{Manipulation Benchmark Across 10 Standardized Tasks}
+\label{table_vla_benchmark}
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model / Architecture} & \textbf{Params} & \textbf{Eval. Setting} & \textbf{Overall Success (\%), Wilson 95\% CI} & \textbf{Mean Execution (s)} & \textbf{VRAM (GB)} & \textbf{Inference (ms)} \\
+\midrule
+OpenVLA & 7B & Physical (matched) & $68.0\%$ [58.3, 76.4] & $5.1 \pm 1.2$ & $16.5$ & $140$ \\
+LeRobot ACT & 80M & Physical (matched) & $72.0\%$ [62.5, 79.9] & $3.8 \pm 0.6$ & $6.0$ & $35$ \\
+\textbf{Project ARIA (Ours)} & \textbf{--} & \textbf{Physical ($N=20$)} & $\mathbf{85.0\%}$ [64.0, 94.8] & $\mathbf{3.3 \pm 0.5}$ & $\mathbf{7.2}$ & $\mathbf{18}$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[!t]
+\centering
+\caption{Multi-Speed Conveyor Sorting Sweep Across Six Belt Velocities, with Wilson 95\% CIs}
+\label{table_conveyor_results}
+\footnotesize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Belt Speed ($v_{\text{belt}}$)} & \textbf{Cycles} & \textbf{Grasp Succ.} & \textbf{Sort Succ.} & \textbf{Overall Rate (\%)} & \textbf{Wilson 95\% CI} \\
+\midrule
+$0.02$\,m/s & 4 & 4 & 4 & $100.0\%$ & [51.0, 100.0] \\
+$0.04$\,m/s & 4 & 4 & 4 & $100.0\%$ & [51.0, 100.0] \\
+$0.06$\,m/s & 4 & 4 & 4 & $100.0\%$ & [51.0, 100.0] \\
+$0.08$\,m/s & 4 & 3 & 3 & $75.0\%$ & [30.1, 95.4] \\
+$0.10$\,m/s & 4 & 2 & 2 & $50.0\%$ & [15.0, 85.0] \\
+$0.12$\,m/s & 4 & 1 & 1 & $25.0\%$ & [4.6, 69.9] \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table*}[!t]
+\centering
+\caption{Architecture-Level Ablation Study Across Six Modular and Safety Configurations ($N=60$ Trials per Configuration)}
+\label{table_architecture_ablation}
+\footnotesize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Configuration / Pipeline Variant} & \textbf{Trials} & \textbf{Success Rate (\%), Wilson 95\% CI} & \textbf{Mean Latency (ms)} & \textbf{Tail Latency $p95$ (ms)} & \textbf{Recovery Time (ms)} & \textbf{Unsafe Plans Intercepted} \\
+\midrule
+Monolithic Sequential & 4 & $50.0\%$ [15.0, 85.0] & $461.2$ & $510.0$ & -- & -- \\
+Modular Synchronous & 4 & $75.0\%$ [30.1, 95.4] & $307.5$ & $340.0$ & -- & -- \\
+Modular Asynchronous (Full ARIA) & 4 & $100.0\%$ [51.0, 100.0] & $182.5$ & $190.0$ & -- & 4 \\
+ARIA w/o Lifecycle Recovery & 4 & $75.0\%$ [30.1, 95.4] & $199.2$ & $245.0$ & -- & 3 \\
+ARIA w/o ReachabilityAgent & 4 & $50.0\%$ [15.0, 85.0] & $195.8$ & $225.0$ & -- & -- \\
+ARIA w/o SafetyAgent / HITL & 4 & $50.0\%$ [15.0, 85.0] & $187.0$ & $215.0$ & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+The quantitative benchmarks are compiled in Table~\ref{table_vla_benchmark}, Table~\ref{table_conveyor_results}, and Table~\ref{table_architecture_ablation}.
+
+\end{document}

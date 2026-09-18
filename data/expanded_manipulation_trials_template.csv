@@ -1,0 +1,1 @@
+trial_id,timestamp,git_commit_hash,config_id,task_id,task_name,test_day,block_id,run_order,placement_x_mm,placement_y_mm,object_instance,object_color,defect_status,defect_cue_type,is_color_shortcut_probe,ambient_lux,ambient_temp_c,prompt_phrasing,llm_seed,outcome,failure_category,execution_time_s,vram_used_mb,pick_error_mm,notes
