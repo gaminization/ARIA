@@ -140,14 +140,15 @@ class TaskManager(LifecycleNode):
             response.message = "Empty command"
             return response
 
+        # Auto-reset any finished or stuck tasks so personal commands are immediately accepted
         if self.status != TaskStatus.IDLE:
-            response.accepted = False
-            response.task_id = self.current_task_id
-            response.message = (
-                f"Busy — currently {self.status.value}. "
-                f"Use /aria/cancel to abort current task."
-            )
-            return response
+            if self.status in (TaskStatus.COMPLETE, TaskStatus.FAILED):
+                self.get_logger().info(f"Clearing completed/failed task ({self.status.value}) for new command.")
+                self.status = TaskStatus.IDLE
+            else:
+                self.get_logger().info(
+                    f"Overriding active task ({self.status.value}) with new user command: '{command}'")
+                self.status = TaskStatus.IDLE
 
         # Generate task ID
         task_id = f"task_{uuid.uuid4().hex[:8]}"
@@ -363,22 +364,22 @@ class TaskManager(LifecycleNode):
         return response
 
     def _cancel_cb(self, request, response):
-        """Cancel the current task."""
-        if self.status == TaskStatus.IDLE:
-            response.success = False
-            response.message = "No active task"
-            return response
-
+        """Cancel the current task and reset task manager to IDLE."""
         task = self.bus.state.task
         if task:
-            task.task_status = TaskStatus.FAILED.value
-            self.bus.add_chain_of_thought("Task CANCELLED by user.")
+            task.task_status = TaskStatus.IDLE.value
+            task.awaiting_user_approval = False
+            task.action_queue = []
+            task.subgoals = []
+            self.bus.add_chain_of_thought("Task RESET / CANCELLED by user.")
             self.bus.publish_task(task)
 
         self.status = TaskStatus.IDLE
         self.current_task_id = ""
+        self.action_index = 0
         response.success = True
-        response.message = "Task cancelled"
+        response.message = "Task reset to IDLE"
+        self.get_logger().info("Task state cleanly reset to IDLE via /aria/cancel")
         return response
 
     # ═══════════════════════════════════════════════════════

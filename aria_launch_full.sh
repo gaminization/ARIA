@@ -23,7 +23,7 @@ tmux kill-session -t aria_dash 2>/dev/null || true
 # ── Session 1: Simulation + All ROS2 nodes ──────────────
 tmux new-session -d -s aria_sim -x 220 -y 50
 tmux send-keys -t aria_sim "source $ROS_SETUP && source $ARIA_SETUP" Enter
-tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=aria_industrial_workcell.world 2>&1 | tee /tmp/aria_launch.log" Enter
+tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=aria_tester_workspace.world 2>&1 | tee /tmp/aria_launch.log" Enter
 
 echo "✅ Simulation session started (aria_sim)"
 sleep 3

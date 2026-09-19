@@ -7,11 +7,11 @@ import React, { useRef, useEffect, useState } from 'react';
  * YOLO detection bboxes are overlaid directly on the gripper view.
  * Top camera is deliberately omitted (gripper-only mode).
  */
-export default function CameraPanel({ topFrame, wristFrame, detections, health }) {
+export default function CameraPanel({ topFrame, wristFrame, sideFrame, detections, health }) {
   const canvasRef = useRef(null);
   const imgRef = useRef(null);
   const [fps, setFps] = useState(0);
-  const [frameCount, setFrameCount] = useState(0);
+  const [showObserver, setShowObserver] = useState(true);
   const prevFrameRef = useRef(null);
   const fpsCountRef = useRef(0);
   const fpsTimerRef = useRef(null);
@@ -168,6 +168,35 @@ export default function CameraPanel({ topFrame, wristFrame, detections, health }
             <span className="feed-title">Gripper Camera Standby</span>
             <span className="feed-hint">Launch simulation — wrist_camera publishes on /wrist_camera/image_raw</span>
             <code className="feed-cmd">ros2 launch arm_bringup aria_full_u3.launch.py</code>
+          </div>
+        )}
+      </div>
+
+      {/* Ground-Truth Verification Cameras (Side & Top Viewports — Observer Only) */}
+      <div className="observer-verification-bar">
+        <div className="observer-header" onClick={() => setShowObserver(!showObserver)}>
+          <span className="obs-badge">👁 Ground-Truth Verification (Observer Feeds)</span>
+          <span className="obs-hint">Not used in robot decision making · Proves physical task completion</span>
+          <button type="button" className="obs-toggle-btn">{showObserver ? '▼ Hide Verification Views' : '▲ Show Verification Views'}</button>
+        </div>
+        {showObserver && (
+          <div className="observer-feeds-grid">
+            <div className="obs-camera-box">
+              <div className="obs-cam-title">📹 Side Camera (/side_camera/image_raw)</div>
+              {sideFrame ? (
+                <img src={`data:image/jpeg;base64,${sideFrame}`} alt="Side camera" className="obs-img" />
+              ) : (
+                <div className="obs-placeholder">Observer: Waiting for /side_camera/image_raw</div>
+              )}
+            </div>
+            <div className="obs-camera-box">
+              <div className="obs-cam-title">📡 Overhead Camera (/top_camera/image_raw)</div>
+              {topFrame ? (
+                <img src={`data:image/jpeg;base64,${topFrame}`} alt="Overhead camera" className="obs-img" />
+              ) : (
+                <div className="obs-placeholder">Observer: Waiting for /top_camera/image_raw</div>
+              )}
+            </div>
           </div>
         )}
       </div>

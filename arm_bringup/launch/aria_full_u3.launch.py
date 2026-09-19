@@ -38,9 +38,9 @@ def generate_launch_description():
 
     bringup_dir = get_package_share_directory('arm_bringup')
 
-    # ── World override (industrial workcell by default) ────
+    # ── World override (tester workspace by default) ───────
     world = DeclareLaunchArgument(
-        'world', default_value='aria_industrial_workcell.world',
+        'world', default_value='aria_tester_workspace.world',
         description='World file in arm_bringup/worlds')
 
     world_conf = LaunchConfiguration('world')

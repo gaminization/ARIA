@@ -480,17 +480,17 @@ body {
 /* ── Enhanced Dashboard Grid ─────────────────────────── */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  grid-template-rows: auto auto auto;
-  gap: 10px; padding: 10px;
+  grid-template-columns: 1.2fr 1fr;
+  grid-template-rows: auto auto auto auto;
+  gap: 12px; padding: 12px;
   max-height: calc(100vh - 60px); overflow-y: auto;
 }
 .cameras-panel { grid-column: 1; grid-row: 1; }
-.task-panel { grid-column: 2; grid-row: 1 / 3; }
+.task-panel { grid-column: 2; grid-row: 1; }
 .cot-panel { grid-column: 1; grid-row: 2; }
-.world-panel { grid-column: 1; }
-.arm-panel { grid-column: 2; }
-.health-panel { grid-column: 1 / 3; }
+.arm-panel { grid-column: 2; grid-row: 2; }
+.world-panel { grid-column: 1 / 3; grid-row: 3; }
+.health-panel { grid-column: 1 / 3; grid-row: 4; }
 
 /* ── Gripper Camera Panel ────────────────────────────── */
 .camera-container {
@@ -724,3 +724,227 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+
+/* ── Observer Verification Cameras ──────────────────── */
+.observer-verification-bar {
+  margin-top: 10px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.observer-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.obs-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.obs-hint {
+  font-size: 10px;
+  color: #94a3b8;
+  flex: 1;
+}
+.obs-toggle-btn {
+  font-size: 10px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+.observer-feeds-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.obs-camera-box {
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.obs-cam-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #cbd5e1;
+  padding: 4px 8px;
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.obs-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+.obs-placeholder {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #64748b;
+  text-align: center;
+  padding: 10px;
+}
+
+/* ── Task Control Enhancements ──────────────────────── */
+.task-control-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.reset-task-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reset-task-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+.feedback-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.feedback-banner.info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+.feedback-banner.success { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+.feedback-banner.warn { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.feedback-banner.error { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+.feedback-close {
+  background: none; border: none; color: inherit; font-size: 14px; cursor: pointer; padding: 0 4px;
+}
+.command-presets {
+  margin-bottom: 10px;
+}
+.presets-label {
+  font-size: 10px;
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.preset-chip {
+  font-size: 11px;
+  padding: 4px 8px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.preset-chip:hover {
+  background: rgba(99, 102, 241, 0.28);
+}
+
+/* ── World Objects Card Panel ────────────────────────── */
+.world-objects-panel {
+  margin-top: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px;
+  border-radius: 6px;
+}
+.wop-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.world-empty-notice {
+  font-size: 11px;
+  color: #64748b;
+  padding: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.world-sub {
+  font-size: 9px;
+  color: #475569;
+}
+.world-objects-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.world-object-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.woc-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.woc-icon { font-size: 13px; }
+.woc-name { font-size: 12px; font-weight: 700; color: #f1f5f9; flex: 1; }
+.woc-badge {
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+  border-radius: 3px; border: 1px solid;
+  font-family: 'JetBrains Mono', monospace;
+}
+.woc-coords {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #94a3b8;
+  display: flex;
+  gap: 12px;
+}
+.woc-target-btn {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 2px;
+}
+.woc-target-btn:hover {
+  background: rgba(34, 197, 94, 0.3);
+}
+

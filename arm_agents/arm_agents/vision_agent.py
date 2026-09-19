@@ -105,11 +105,15 @@ class VisionAgent(LifecycleNode):
 
             # Class and confidence
             if det.results:
-                obj.class_name = det.results[0].hypothesis.class_id
+                obj.class_name = det.results[0].hypothesis.class_id.lower()
                 obj.confidence = det.results[0].hypothesis.score
             else:
                 obj.class_name = 'unknown'
                 obj.confidence = 0.0
+
+            # Gripper artifact suppression
+            if obj.class_name in {'scissors', 'knife', 'fork', 'spoon', 'remote', 'toilet', 'toothbrush', 'tie'}:
+                continue
 
             # Bounding box
             obj.bbox_x = float(det.bbox.center.position.x)
@@ -117,8 +121,8 @@ class VisionAgent(LifecycleNode):
             obj.bbox_w = float(det.bbox.size_x)
             obj.bbox_h = float(det.bbox.size_y)
 
-            # 3D Coordinates
-            coord = self.transformer.pixel_to_world(int(obj.bbox_x), int(obj.bbox_y))
+            # 3D Coordinates (table surface is at Z = 0.6081m in tester workspace)
+            coord = self.transformer.pixel_to_world(int(obj.bbox_x), int(obj.bbox_y), table_height=0.6081)
             if coord.confidence > 0:
                 obj.pose_3d.header = msg.header
                 obj.pose_3d.header.frame_id = 'world'

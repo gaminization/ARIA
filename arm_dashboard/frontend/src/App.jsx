@@ -47,8 +47,12 @@ function App() {
       ws.onmessage = (e) => {
         try {
           const frames = JSON.parse(e.data);
-          // Only use wrist (gripper) camera — top camera ignored
-          setCameraFrames({ wrist: frames.wrist || null });
+          // Gripper is primary AI camera; top and side are observer ground-truth verification
+          setCameraFrames({
+            wrist: frames.wrist || null,
+            top: frames.top || null,
+            side: frames.side || null,
+          });
         } catch {}
       };
       ws.onclose = () => setTimeout(connect, 2000);
@@ -60,11 +64,25 @@ function App() {
 
   // ── API calls ───────────────────────────────────────────
   const sendCommand = useCallback(async (cmd) => {
-    await fetch(`${API_URL}/api/command`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ command: cmd }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/api/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: cmd }),
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
+  }, []);
+
+  const resetTask = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/reset`, { method: 'POST' });
+      return await res.json();
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
   }, []);
 
   const approve = useCallback(async () => {
@@ -159,8 +177,9 @@ function App() {
           {/* Row 1: Gripper Camera (large) | Task Control */}
           <section className="panel cameras-panel">
             <CameraPanel
-              topFrame={null}            /* Top camera disabled — gripper only */
               wristFrame={cameraFrames.wrist}
+              topFrame={cameraFrames.top}
+              sideFrame={cameraFrames.side}
               detections={vision.detected_objects || []}
               health={health}
             />
@@ -172,6 +191,7 @@ function App() {
               onCommand={sendCommand}
               onApprove={approve}
               onReject={reject}
+              onReset={resetTask}
             />
           </section>
 
@@ -185,6 +205,7 @@ function App() {
             <WorldMap
               objects={memory.known_objects || []}
               relations={memory.spatial_relations || []}
+              onSelectObject={(obj) => sendCommand(`pick up the ${obj.class_name || obj.name}`)}
             />
           </section>
 

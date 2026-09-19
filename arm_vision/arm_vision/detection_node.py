@@ -57,7 +57,7 @@ class DetectionNode(Node):
         self.declare_parameter('model', 'yolov8m.pt')
         self.declare_parameter('confidence_threshold', 0.5)
         self.declare_parameter('device', 'cuda:0')
-        self.declare_parameter('half_precision', True)
+        self.declare_parameter('half_precision', False)
         # ── Gripper-camera-only mode ──────────────────────────────
         # Default: wrist/gripper camera (eye-in-hand). Override with
         # camera_topic:=/top_camera/image_raw for overhead mode.
@@ -184,7 +184,18 @@ class DetectionNode(Node):
                     # Class and confidence
                     cls_id = int(box.cls[0])
                     confidence = float(box.conf[0])
-                    class_name = self.model.names.get(cls_id, f"class_{cls_id}")
+                    class_name = self.model.names.get(cls_id, f"class_{cls_id}").lower()
+
+                    # ── Gripper Self-Detection & Reflection Suppression ──
+                    # The in-hand gripper fingers frequently trigger false positives
+                    # for scissors, knives, forks, or remote controls.
+                    img_h, img_w = cv_image.shape[:2]
+                    is_gripper_artifact = (
+                        class_name in {'scissors', 'knife', 'fork', 'spoon', 'remote', 'toilet', 'toothbrush', 'tie'} or
+                        (y2 > 0.82 * img_h and x1 > 0.15 * img_w and x2 < 0.85 * img_w and class_name not in {'banana', 'cup', 'bottle', 'bird', 'bowl', 'orange', 'apple'})
+                    )
+                    if is_gripper_artifact:
+                        continue
 
                     hyp = ObjectHypothesisWithPose()
                     hyp.hypothesis.class_id = class_name
@@ -200,9 +211,19 @@ class DetectionNode(Node):
 
         self.det_pub.publish(det_array)
 
-        # Publish annotated image
-        if CV2_AVAILABLE and results:
-            annotated = results[0].plot()
+        # Publish annotated image (only for validated non-gripper detections)
+        if CV2_AVAILABLE and cv_image is not None:
+            annotated = cv_image.copy()
+            for d in det_array.detections:
+                x = int(d.bbox.center.position.x - d.bbox.size_x / 2)
+                y = int(d.bbox.center.position.y - d.bbox.size_y / 2)
+                w = int(d.bbox.size_x)
+                h = int(d.bbox.size_y)
+                c_name = d.results[0].hypothesis.class_id if d.results else "obj"
+                conf = d.results[0].hypothesis.score if d.results else 0.0
+                cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(annotated, f"{c_name} {conf:.2f}", (x, max(20, y - 5)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             try:
                 ann_msg = self.bridge.cv2_to_imgmsg(annotated, encoding='bgr8')
                 ann_msg.header = msg.header

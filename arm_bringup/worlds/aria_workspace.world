@@ -115,6 +115,32 @@
       </link>
     </model>
 
+    <!-- ═══ Side Inspection Camera (Verification Only) ═══ -->
+    <model name="side_inspection_rig">
+      <static>true</static>
+      <pose>0.52 -0.42 0.95 0 0.40 2.45</pose>
+      <link name="link">
+        <sensor name="side_camera" type="camera">
+          <always_on>true</always_on>
+          <update_rate>30</update_rate>
+          <visualize>false</visualize>
+          <camera>
+            <horizontal_fov>1.15</horizontal_fov>
+            <image><width>1280</width><height>720</height><format>R8G8B8</format></image>
+            <clip><near>0.01</near><far>10.0</far></clip>
+          </camera>
+          <plugin name="side_camera_driver" filename="libgazebo_ros_camera.so">
+            <ros>
+              <remapping>~/image_raw:=/side_camera/image_raw</remapping>
+              <remapping>~/camera_info:=/side_camera/camera_info</remapping>
+            </ros>
+            <camera_name>side_camera</camera_name>
+            <frame_name>side_camera_link</frame_name>
+          </plugin>
+        </sensor>
+      </link>
+    </model>
+
     <!-- ═══════════════════════════════════════════════════════════
          GROUND / FLOOR — Hardwood workshop floor
          ═══════════════════════════════════════════════════════════ -->

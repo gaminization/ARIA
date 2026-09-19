@@ -47,8 +47,8 @@ class CoordinateTransformer:
     Fusion: weighted average when both are available.
     """
 
-    # Known table surface height in world frame (from SDF)
-    TABLE_HEIGHT_M = 0.76
+    # Known table surface height in world frame (optical table surface)
+    TABLE_HEIGHT_M = 0.6081
 
     def __init__(self,
                  camera_matrix: np.ndarray,

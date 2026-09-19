@@ -21,12 +21,13 @@ import asyncio
 import base64
 import math
 import os
+import sqlite3
 import threading
 import time
 from collections import deque
 from typing import Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -92,9 +93,54 @@ class StateCache:
         self.chain_of_thought: deque = deque(maxlen=1000)
         self.top_camera_jpeg: Optional[bytes] = None
         self.wrist_camera_jpeg: Optional[bytes] = None
+        self.side_camera_jpeg: Optional[bytes] = None
         self.ros_connected = False
 
+    def sync_from_world_model_db(self):
+        db_paths = [
+            '/home/gaminizer/Projects/ARIA/arm_planner/data/world_model.db',
+            '/home/gaminizer/Projects/ARIA/install/arm_agents/lib/python3.10/arm_planner/data/world_model.db',
+            '/home/gaminizer/Projects/ARIA/install/arm_planner/lib/data/world_model.db'
+        ]
+        for db_p in db_paths:
+            if os.path.exists(db_p):
+                try:
+                    conn = sqlite3.connect(db_p)
+                    c = conn.cursor()
+                    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='objects'")
+                    if c.fetchone():
+                        rows = c.execute("SELECT id, name, class_name, px, py, pz, color, material, lifecycle_state FROM objects").fetchall()
+                        if rows:
+                            db_objects = [
+                                {
+                                    "id": r[0] or (i + 1),
+                                    "name": r[1] or "",
+                                    "class_name": r[2] or "",
+                                    "display_name": (r[1] or r[2] or "object").replace("_", " ").title(),
+                                    "pos_x": float(r[3] or 0.0),
+                                    "pos_y": float(r[4] or 0.0),
+                                    "pos_z": float(r[5] or 0.0),
+                                    "color": r[6] or "",
+                                    "material": r[7] or "",
+                                    "lifecycle_state": r[8] or "Detected",
+                                }
+                                for i, r in enumerate(rows)
+                            ]
+                            with self._lock:
+                                if not self.memory_state.get("known_objects"):
+                                    self.memory_state["known_objects"] = db_objects
+                                else:
+                                    existing_names = {o.get("name") for o in self.memory_state["known_objects"]}
+                                    for o in db_objects:
+                                        if o["name"] not in existing_names:
+                                            self.memory_state["known_objects"].append(o)
+                    conn.close()
+                    break
+                except Exception:
+                    pass
+
     def get_full_state(self) -> dict:
+        self.sync_from_world_model_db()
         with self._lock:
             return {
                 "joints": {
@@ -166,6 +212,7 @@ class StateCache:
                         ],
                     }
                     for d in msg.detected_objects
+                    if d.class_name.lower() not in {'scissors', 'knife', 'fork', 'spoon', 'remote', 'toilet', 'toothbrush', 'tie'}
                 ],
                 "tracked_ids": list(msg.tracked_ids),
                 "active_perception": msg.active_perception_mode,
@@ -261,9 +308,10 @@ class DashboardBridge(Node):
         self.create_subscription(HealthState, '/aria/state/health', self._health_cb, qos_state)
         self.create_subscription(JointState, '/joint_states', self._joint_cb, qos_sensor)
 
-        # Camera feeds — top (overhead) + wrist/gripper (eye-in-hand)
+        # Camera feeds — top (overhead) + wrist/gripper (eye-in-hand) + side (ground-truth verification)
         self.create_subscription(Image, '/top_camera/image_raw', self._top_cam_cb, qos_sensor)
         self.create_subscription(Image, '/wrist_camera/image_raw', self._wrist_cam_cb, qos_sensor)
+        self.create_subscription(Image, '/side_camera/image_raw', self._side_cam_cb, qos_sensor)
 
         # Narrated dialogue from DialogueAgent
         self.create_subscription(String, '/aria/dialogue/output', self._dialogue_cb, 10)
@@ -327,12 +375,27 @@ class DashboardBridge(Node):
         except Exception as e:
             self.get_logger().warn(f"Wrist cam cb error: {e}")
 
+    def _side_cam_cb(self, msg):
+        try:
+            import cv2
+            from cv_bridge import CvBridge
+            if not hasattr(self, '_cv_bridge'):
+                self._cv_bridge = CvBridge()
+            cv_img = self._cv_bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+            if msg.encoding == 'rgb8':
+                cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
+            _, jpeg = cv2.imencode('.jpg', cv_img, [cv2.IMWRITE_JPEG_QUALITY, 75])
+            state.side_camera_jpeg = jpeg.tobytes()
+        except Exception as e:
+            pass
+
     def _dialogue_cb(self, msg):
         state.add_cot(f"[DIALOGUE] {msg.data}")
 
     def _connectivity_check(self):
         """Consider ROS 'connected' once task_manager's command service appears."""
         state.ros_connected = bool(self.cmd_client.service_is_ready() or self.cmd_client.wait_for_service(timeout_sec=0.05))
+        state.sync_from_world_model_db()
 
 
 def ros_spin_thread():
@@ -575,6 +638,23 @@ async def get_state():
     return state.get_full_state()
 
 
+@app.get("/api/camera/{cam_name}")
+async def get_camera_snapshot(cam_name: str):
+    """Direct JPEG snapshot endpoint for verification and logging."""
+    cam_lower = cam_name.lower()
+    if cam_lower in ("top", "overhead"):
+        jpeg = state.top_camera_jpeg
+    elif cam_lower in ("wrist", "gripper"):
+        jpeg = state.wrist_camera_jpeg
+    elif cam_lower in ("side", "inspection"):
+        jpeg = state.side_camera_jpeg
+    else:
+        raise HTTPException(status_code=404, detail=f"Unknown camera: {cam_name}")
+    if not jpeg:
+        raise HTTPException(status_code=503, detail=f"No frame received yet for camera {cam_name}")
+    return Response(content=jpeg, media_type="image/jpeg")
+
+
 # ── WebSocket: State Stream (10Hz) ────────────────────────
 
 @app.websocket("/ws/state")
@@ -605,6 +685,8 @@ async def ws_cameras(ws: WebSocket):
                 frame_data["top"] = base64.b64encode(state.top_camera_jpeg).decode("ascii")
             if state.wrist_camera_jpeg:
                 frame_data["wrist"] = base64.b64encode(state.wrist_camera_jpeg).decode("ascii")
+            if state.side_camera_jpeg:
+                frame_data["side"] = base64.b64encode(state.side_camera_jpeg).decode("ascii")
             if frame_data:
                 await ws.send_json(frame_data)
             await asyncio.sleep(0.033)  # ~30fps

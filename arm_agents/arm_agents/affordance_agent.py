@@ -26,6 +26,10 @@ DEFAULT_AFFORDANCES: Dict[str, dict] = {
     'box':         {'grasp': 'top', 'avoid': [], 'approach': 'top_down', 'success_rate': 0.85},
     'pen':         {'grasp': 'body', 'avoid': [], 'approach': 'side', 'success_rate': 0.7},
     'banana':      {'grasp': 'mid-body', 'avoid': ['stem', 'tip'], 'approach': 'top_down', 'success_rate': 0.85},
+    'mug':         {'grasp': 'handle_body', 'avoid': ['liquid'], 'approach': 'top_down', 'success_rate': 0.85},
+    'cup':         {'grasp': 'rim_body', 'avoid': ['liquid'], 'approach': 'top_down', 'success_rate': 0.85},
+    'duck':        {'grasp': 'body', 'avoid': ['beak'], 'approach': 'top_down', 'success_rate': 0.85},
+    'bottle':      {'grasp': 'neck_body', 'avoid': ['cap'], 'approach': 'top_down', 'success_rate': 0.85},
     'can':         {'grasp': 'body', 'avoid': ['rim'], 'approach': 'top_down', 'success_rate': 0.85},
     'dish':        {'grasp': 'rim', 'avoid': ['center'], 'approach': 'top_down', 'success_rate': 0.80},
 }

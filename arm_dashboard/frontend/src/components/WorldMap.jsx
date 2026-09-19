@@ -6,12 +6,11 @@ import React, { useRef, useEffect } from 'react';
  * spatial relations, and lifecycle states in real time.
  */
 
-const TABLE_SIZE = 300; // mm on each side (matches world_model_db.py: ±0.30m)
 const CANVAS_W = 340;
-const CANVAS_H = 280;
-const SCALE = (CANVAS_W - 40) / (TABLE_SIZE * 2 / 1000); // px per meter
-const CX = CANVAS_W / 2; // center x
-const CY = CANVAS_H / 2; // center y
+const CANVAS_H = 260;
+const SCALE = 420; // px per meter
+const CX = CANVAS_W / 2; // robot arm waist origin X (170)
+const CY = CANVAS_H - 45; // robot arm waist origin Y (215)
 
 const LIFECYCLE_COLORS = {
   DETECTED: '#facc15',
@@ -22,18 +21,32 @@ const LIFECYCLE_COLORS = {
   REMOVED: '#6b7280',
 };
 
+const OBJECT_ICONS = {
+  banana: '🍌',
+  mug: '☕',
+  cup: '☕',
+  duck: '🦆',
+  bottle: '🍾',
+  plate: '🍽',
+  orange: '🍊',
+  can: '🥫',
+  bowl: '🥣',
+  box: '📦',
+};
+
 function worldToCanvas(wx, wy) {
-  // wx, wy in meters; table is centered at (0.30, 0.0) in world
-  // Adjust to local coords: subtract table center offset
-  const lx = wx - 0.30;
-  const ly = wy - 0.00;
+  // Top-down view:
+  // Robot base is at (0, 0).
+  // World +X (forward) -> Canvas UP (-Y)
+  // World +Y (left) -> Canvas LEFT (-X)
+  // World -Y (right) -> Canvas RIGHT (+X)
   return {
-    cx: CX + lx * SCALE,
-    cy: CY - ly * SCALE,  // y-up in world → y-down in canvas
+    cx: CX - wy * SCALE,
+    cy: CY - wx * SCALE,
   };
 }
 
-export default function WorldMap({ objects, relations }) {
+export default function WorldMap({ objects, relations, onSelectObject }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -47,7 +60,7 @@ export default function WorldMap({ objects, relations }) {
     ctx.fillStyle = '#0d1117';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-    // Grid
+    // Coordinate Grid
     ctx.strokeStyle = '#1e2d1e';
     ctx.lineWidth = 1;
     for (let i = 0; i <= CANVAS_W; i += 20) {
@@ -57,39 +70,52 @@ export default function WorldMap({ objects, relations }) {
       ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(CANVAS_W, i); ctx.stroke();
     }
 
-    // Table boundary
-    const tableHalfPx = 0.30 * SCALE;
-    ctx.strokeStyle = '#22c55e33';
+    // Table boundary (optical table: X in [0.02, 0.42], Y in [-0.28, +0.28])
+    const tl = worldToCanvas(0.42, 0.28);
+    const br = worldToCanvas(0.02, -0.28);
+    const tableW = br.cx - tl.cx;
+    const tableH = br.cy - tl.cy;
+
+    ctx.strokeStyle = '#22c55e44';
     ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(CX - tableHalfPx, CY - tableHalfPx, tableHalfPx * 2, tableHalfPx * 2);
+    ctx.setLineDash([5, 3]);
+    ctx.strokeRect(tl.cx, tl.cy, tableW, tableH);
     ctx.setLineDash([]);
 
-    // Table label
     ctx.fillStyle = '#22c55e44';
     ctx.font = '10px monospace';
-    ctx.fillText('TABLE WORKSPACE', CX - 55, CY - tableHalfPx + 14);
+    ctx.fillText('OPTICAL TABLE WORKSPACE', tl.cx + 20, tl.cy + 14);
 
-    // Arm base (origin)
+    // Range distance rings from arm base
+    [0.15, 0.25, 0.35].forEach((r) => {
+      ctx.beginPath();
+      ctx.arc(CX, CY, r * SCALE, Math.PI, 0, false);
+      ctx.strokeStyle = '#3b82f622';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#3b82f644';
+      ctx.font = '8px monospace';
+      ctx.fillText(`${(r * 100).toFixed(0)}cm`, CX + r * SCALE - 22, CY - 3);
+    });
+
+    // Robot Arm Base (origin 0,0)
     ctx.beginPath();
-    ctx.arc(CX, CY + 0.10 * SCALE, 10, 0, Math.PI * 2);
+    ctx.arc(CX, CY, 12, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fill();
     ctx.strokeStyle = '#60a5fa';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.fillStyle = '#60a5fa33';
-    ctx.fill();
-    ctx.fillStyle = '#60a5fa';
+
+    ctx.fillStyle = '#93c5fd';
     ctx.font = 'bold 9px monospace';
-    ctx.fillText('ARM', CX - 8, CY + 0.10 * SCALE + 3);
+    ctx.fillText('BASE', CX - 10, CY + 3);
 
     // Spatial relation lines
     if (relations && relations.length > 0) {
-      const nameToObj = {};
-      (objects || []).forEach(o => { nameToObj[o.display_name || o.name] = o; });
-
-      relations.forEach(rel => {
-        const subj = objects.find(o => (o.display_name || o.name) === rel.subject);
-        const obj = objects.find(o => (o.display_name || o.name) === rel.object);
+      relations.forEach((rel) => {
+        const subj = (objects || []).find((o) => (o.display_name || o.name) === rel.subject);
+        const obj = (objects || []).find((o) => (o.display_name || o.name) === rel.object);
         if (!subj || !obj || rel.object === 'table') return;
 
         const p1 = worldToCanvas(subj.pos_x, subj.pos_y);
@@ -104,7 +130,6 @@ export default function WorldMap({ objects, relations }) {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Relation label
         const mx = (p1.cx + p2.cx) / 2;
         const my = (p1.cy + p2.cy) / 2;
         ctx.fillStyle = '#a78bfa';
@@ -113,18 +138,18 @@ export default function WorldMap({ objects, relations }) {
       });
     }
 
-    // Objects
-    (objects || []).forEach((obj, i) => {
+    // Discovered Objects on Canvas
+    (objects || []).forEach((obj) => {
       const { cx, cy } = worldToCanvas(obj.pos_x, obj.pos_y);
       const color = LIFECYCLE_COLORS[obj.lifecycle_state] || '#facc15';
 
-      // Glow
+      // Glow effect
       ctx.shadowColor = color;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 8;
 
-      // Object dot
+      // Object circle
       ctx.beginPath();
-      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 9, 0, Math.PI * 2);
       ctx.fillStyle = color + '44';
       ctx.fill();
       ctx.strokeStyle = color;
@@ -132,32 +157,24 @@ export default function WorldMap({ objects, relations }) {
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Object label
-      const label = (obj.display_name || obj.name || 'obj').slice(0, 12);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 10px monospace';
+      // Object Icon / Label
+      const icon = OBJECT_ICONS[obj.class_name?.toLowerCase()] || '📍';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(icon, cx - 6, cy + 4);
+
+      // Label card
+      const label = (obj.display_name || obj.name || 'obj').slice(0, 14);
+      ctx.font = 'bold 9px monospace';
       const tw = ctx.measureText(label).width;
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillRect(cx - tw / 2 - 2, cy + 10, tw + 4, 13);
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillRect(cx - tw / 2 - 3, cy - 22, tw + 6, 12);
       ctx.fillStyle = color;
-      ctx.fillText(label, cx - tw / 2, cy + 21);
+      ctx.fillText(label, cx - tw / 2, cy - 13);
 
-      // Position
-      ctx.fillStyle = '#666';
+      // Coordinates
+      ctx.fillStyle = '#aaa';
       ctx.font = '8px monospace';
-      ctx.fillText(`(${obj.pos_x.toFixed(2)}, ${obj.pos_y.toFixed(2)})`, cx - 22, cy + 33);
-    });
-
-    // Legend
-    const legendY = CANVAS_H - 40;
-    let lx = 10;
-    Object.entries(LIFECYCLE_COLORS).forEach(([state, color]) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(lx, legendY, 8, 8);
-      ctx.fillStyle = '#888';
-      ctx.font = '8px monospace';
-      ctx.fillText(state, lx + 10, legendY + 8);
-      lx += ctx.measureText(state).width + 22;
+      ctx.fillText(`(${obj.pos_x.toFixed(2)}, ${obj.pos_y.toFixed(2)})`, cx - 22, cy + 18);
     });
 
   }, [objects, relations]);
@@ -166,16 +183,59 @@ export default function WorldMap({ objects, relations }) {
     <div className="world-map-container">
       <div className="panel-header">
         <span className="panel-icon">🌐</span>
-        <span className="panel-title">World Model</span>
+        <span className="panel-title">World Model & Scene Graph</span>
         <span className="panel-badge">{(objects || []).length} objects</span>
       </div>
-      <canvas ref={canvasRef} className="world-canvas" />
-      {(!objects || objects.length === 0) && (
-        <div className="world-empty">
-          <span>No objects in scene yet</span>
-          <span className="world-hint">VLA will discover & track objects via gripper camera</span>
+
+      <div className="world-canvas-wrapper">
+        <canvas ref={canvasRef} className="world-canvas" />
+      </div>
+
+      {/* Discovered Objects Card List */}
+      <div className="world-objects-panel">
+        <div className="wop-header">
+          <span>Active Table Objects (Eye-in-Hand Discovered)</span>
         </div>
-      )}
+        {(!objects || objects.length === 0) ? (
+          <div className="world-empty-notice">
+            <span>No objects registered yet</span>
+            <span className="world-sub">Run active table scan or pick command to discover objects</span>
+          </div>
+        ) : (
+          <div className="world-objects-grid">
+            {objects.map((obj, i) => {
+              const icon = OBJECT_ICONS[obj.class_name?.toLowerCase()] || '📍';
+              const stateColor = LIFECYCLE_COLORS[obj.lifecycle_state] || '#facc15';
+              return (
+                <div key={i} className="world-object-card">
+                  <div className="woc-top">
+                    <span className="woc-icon">{icon}</span>
+                    <span className="woc-name">{obj.display_name || obj.name}</span>
+                    <span className="woc-badge" style={{ color: stateColor, borderColor: stateColor }}>
+                      {obj.lifecycle_state || 'DETECTED'}
+                    </span>
+                  </div>
+                  <div className="woc-coords">
+                    <span>X: {obj.pos_x.toFixed(3)}m</span>
+                    <span>Y: {obj.pos_y.toFixed(3)}m</span>
+                    <span>Z: {obj.pos_z.toFixed(3)}m</span>
+                  </div>
+                  {onSelectObject && (
+                    <button
+                      type="button"
+                      className="woc-target-btn"
+                      onClick={() => onSelectObject(obj)}
+                    >
+                      🎯 Target Object
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {relations && relations.length > 0 && (
         <div className="relations-list">
           {relations.slice(0, 4).map((r, i) => (

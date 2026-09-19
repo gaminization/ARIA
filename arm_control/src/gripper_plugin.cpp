@@ -88,20 +88,24 @@ void AriaGripperPlugin::AttachService(
   gazebo::physics::LinkPtr best_link = nullptr;
 
   for (const auto & m : world_->Models()) {
-    if (!m || m == model_) continue;
+    if (!m || m == model_ || m->IsStatic()) continue;
     const std::string & name = m->GetName();
-    if (name.find("workpiece") != std::string::npos ||
-        name.find("part") != std::string::npos ||
-        name.find("cube") != std::string::npos) {
+    if (name.find("table") != std::string::npos ||
+        name.find("ground") != std::string::npos ||
+        name.find("camera") != std::string::npos ||
+        name.find("rig") != std::string::npos ||
+        name.find("light") != std::string::npos ||
+        name.find("plane") != std::string::npos) {
+      continue;
+    }
 
-      for (const auto & l : m->GetLinks()) {
-        if (!l) continue;
-        double d = (l->WorldPose().Pos() - palm_pos).Length();
-        if (d < min_dist) {
-          min_dist = d;
-          best_model = m;
-          best_link = l;
-        }
+    for (const auto & l : m->GetLinks()) {
+      if (!l) continue;
+      double d = (l->WorldPose().Pos() - palm_pos).Length();
+      if (d < min_dist) {
+        min_dist = d;
+        best_model = m;
+        best_link = l;
       }
     }
   }

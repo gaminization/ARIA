@@ -41,7 +41,8 @@ TASK_TEMPLATES: Dict[str, List[str]] = {
     'pull': ['locate', 'approach', 'grip_light', 'execute_pull', 'verify'],
     'sort': ['locate_all', 'classify', 'pick_each', 'place_in_zone'],
     'inspect': ['locate', 'move_camera_around', 'capture_views', 'report'],
-    'find': ['search_workspace', 'report_position'],
+    'find': ['locate'],
+    'locate': ['locate'],
     'slide': ['locate', 'plan_slide_path', 'execute_slide', 'verify'],
     'sweep': ['identify_area', 'plan_sweep', 'execute_sweep'],
     'roll': ['locate', 'plan_roll', 'execute_roll', 'verify'],
@@ -135,20 +136,9 @@ class PlanningAgent(LifecycleNode):
             actions.append(action)
 
         # ── Step 4: Confidence scoring ─────────────────────
-        # Check if objects exist in memory
-        obj_confidence = 1.0
-        memory = self.bus.state.memory
-        if memory and obj:
-            found = any(
-                wo.name == obj or wo.class_name in obj
-                for wo in memory.known_objects)
-            if not found:
-                obj_confidence = 0.6
-                self.bus.add_chain_of_thought(
-                    f"PLANNING: Object '{obj}' not in world model. "
-                    f"Will need to search.")
-
-        overall_confidence = parse_confidence * obj_confidence
+        # For autonomous manipulation tasks, locate is the initial step that sweeps
+        # the workspace and discovers objects dynamically.
+        overall_confidence = parse_confidence
 
         # ── Step 5: Update TaskState ───────────────────────
         task.current_goal = f"{canonical_verb} {obj}" + \
@@ -157,14 +147,15 @@ class PlanningAgent(LifecycleNode):
         task.action_queue = actions
         task.confidence = overall_confidence
 
-        # Set requires_approval if low confidence
-        if overall_confidence < 0.75:
+        # Personal and system commands with valid parse execute immediately
+        if overall_confidence < 0.60:
             task.awaiting_user_approval = True
             task.task_status = 'PAUSED'
             self.bus.add_chain_of_thought(
-                f"PLANNING: Overall confidence {overall_confidence:.2f} < 0.75. "
+                f"PLANNING: Overall confidence {overall_confidence:.2f} < 0.60. "
                 f"Requesting user approval.")
         else:
+            task.awaiting_user_approval = False
             task.task_status = 'EXECUTING'
 
         self.bus.add_chain_of_thought(
