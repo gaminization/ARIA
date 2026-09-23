@@ -22,6 +22,8 @@ public:
   void Load(gazebo::physics::ModelPtr _model, sdf::ElementPtr _sdf) override;
 
 private:
+  void OnUpdate();
+
   void AttachService(
     const std::shared_ptr<std_srvs::srv::Trigger::Request> req,
     std::shared_ptr<std_srvs::srv::Trigger::Response> res);
@@ -34,6 +36,9 @@ private:
   gazebo::physics::WorldPtr world_;
   gazebo::physics::LinkPtr palm_link_;
   gazebo::physics::JointPtr grasp_joint_;
+  gazebo::physics::JointPtr gripper_joint_;
+  gazebo::physics::JointPtr mimic_joint_;
+  gazebo::event::ConnectionPtr update_connection_;
   std::string attached_model_name_;
 
   gazebo_ros::Node::SharedPtr ros_node_;

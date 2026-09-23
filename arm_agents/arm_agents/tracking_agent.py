@@ -73,34 +73,44 @@ class TrackingAgent(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     def _on_vision(self, msg: VisionState):
-        """Update tracking from VisionState detections."""
+        """Update tracking from VisionState detections with spatial gating."""
         now = time.time()
-        seen_ids = set()
+        seen_tids = set()
 
         for det in msg.detected_objects:
             tid = det.tracking_id
-            if tid < 0:
-                continue
-            seen_ids.add(tid)
             pos = np.array([
                 det.pose_3d.pose.position.x,
                 det.pose_3d.pose.position.y,
                 det.pose_3d.pose.position.z,
             ]) if det.pose_3d.pose.position.x != 0 else np.zeros(3)
 
-            if tid not in self.tracked:
-                self.tracked[tid] = TrackedObject(tid, det.class_name)
-                self.bus.add_chain_of_thought(
-                    f"TRACKING: New object ID={tid} class={det.class_name}")
-            self.tracked[tid].update(pos, now)
+            matched_tid = None
+            if tid >= 0 and tid in self.tracked:
+                matched_tid = tid
+            else:
+                # Spatial gating: match to existing tracked object if within 8cm
+                if np.linalg.norm(pos) > 0.05:
+                    for exist_tid, exist_obj in self.tracked.items():
+                        if len(exist_obj.position_history) > 0:
+                            dist = float(np.linalg.norm(exist_obj.position_history[-1] - pos))
+                            if dist < 0.08:
+                                matched_tid = exist_tid
+                                break
+
+            if matched_tid is None:
+                new_id = tid if tid >= 0 else len(self.tracked) + 1
+                self.tracked[new_id] = TrackedObject(new_id, det.class_name)
+                matched_tid = new_id
+                self.get_logger().info(f"TRACKING: Registered object ID={new_id} ({det.class_name}) at {pos}")
+
+            seen_tids.add(matched_tid)
+            self.tracked[matched_tid].update(pos, now)
 
         # Mark unseen objects
         for tid, obj in self.tracked.items():
-            if tid not in seen_ids:
+            if tid not in seen_tids:
                 obj.mark_unseen()
-                if obj.lifecycle_state == 'Lost' and obj.frames_since_seen == LOST_THRESHOLD_FRAMES + 1:
-                    self.bus.add_chain_of_thought(
-                        f"TRACKING: Object ID={tid} ({obj.class_name}) LOST")
 
     def _tick(self):
         """Publish prediction visualization."""

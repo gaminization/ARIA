@@ -24,7 +24,7 @@ def generate_launch_description():
         'use_sim', default_value='true',
         description='Use Gazebo simulation')
     dashboard_port = DeclareLaunchArgument(
-        'dashboard_port', default_value='8080',
+        'dashboard_port', default_value='8000',
         description='Dashboard server port')
 
     # ── Package paths ──────────────────────────────────────
@@ -53,8 +53,9 @@ def generate_launch_description():
             name='detection_node',
             output='screen',
             parameters=[{
-                'model_path': 'yolov8n.pt',
-                'confidence_threshold': 0.5,
+                'model': 'yolov8n.pt',
+                'confidence_threshold': 0.4,
+                'camera_topic': '/wrist_camera/image_raw',
             }],
         )],
     )
@@ -198,8 +199,20 @@ def generate_launch_description():
         )],
     )
 
+    # Agent Activator (8.5s) — automatically configures and activates all LifecycleNode agents
+    activate_agents = TimerAction(
+        period=8.5,
+        actions=[ExecuteProcess(
+            cmd=['python3', os.path.join(
+                os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'),
+                'arm_bringup', 'scripts', 'activate_agents.py'
+            )],
+            name='activate_agents', output='screen',
+        )],
+    )
+
     startup_msg = TimerAction(
-        period=9.0,
+        period=9.5,
         actions=[LogInfo(msg='\n'
             '═══════════════════════════════════════════════════════\n'
             '  🤖 ARIA FULL SYSTEM ONLINE\n'
@@ -245,6 +258,9 @@ def generate_launch_description():
         task_manager,
         memory_manager,
         health_monitor,
+
+        # Activator
+        activate_agents,
 
         # Dashboard
         dashboard,

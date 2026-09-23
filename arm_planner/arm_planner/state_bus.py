@@ -198,18 +198,22 @@ class StateBus:
     # ── Publishers ─────────────────────────────────────────
     def publish_vision(self, msg: VisionState):
         """Publish vision state update."""
+        self.state.vision = msg
         self._pub_vision.publish(msg)
 
     def publish_memory(self, msg: MemoryState):
         """Publish memory state update."""
+        self.state.memory = msg
         self._pub_memory.publish(msg)
 
     def publish_task(self, msg: TaskState):
         """Publish task state update."""
+        self.state.task = msg
         self._pub_task.publish(msg)
 
     def publish_health(self, msg: HealthState):
         """Publish health state update."""
+        self.state.health = msg
         self._pub_health.publish(msg)
 
     # ── Change callbacks ───────────────────────────────────

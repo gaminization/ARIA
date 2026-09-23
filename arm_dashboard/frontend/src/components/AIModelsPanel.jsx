@@ -1,9 +1,14 @@
 import React from 'react';
+import {
+  Crosshair, Activity, Layers, Scissors, Hand,
+  Cpu, Film, Terminal, Globe, Target
+} from 'lucide-react';
 
 /**
  * AIModelsPanel — Live status of every AI model in the ARIA pipeline.
  * Shows model name, type, current state, inference latency, and
  * which camera feed each model consumes.
+ * 100% industrial status indicators, zero emojis.
  */
 
 const MODEL_CATALOG = [
@@ -16,7 +21,7 @@ const MODEL_CATALOG = [
     camera: '/wrist_camera/image_raw',
     topic: '/detection/objects',
     desc: 'Real-time multi-class object detection. 640px input, 80 COCO classes + industrial objects.',
-    icon: '🎯',
+    Icon: Crosshair,
     color: '#f59e0b',
   },
   {
@@ -28,7 +33,7 @@ const MODEL_CATALOG = [
     camera: '/wrist_camera/image_raw',
     topic: '/depth/image_depth_anything',
     desc: 'Monocular depth estimation at 518px. Outputs metric depth using table-height anchoring. Primary depth source.',
-    icon: '📐',
+    Icon: Activity,
     color: '#06b6d4',
   },
   {
@@ -40,7 +45,7 @@ const MODEL_CATALOG = [
     camera: '/wrist_camera/image_raw',
     topic: '/depth/image_midas',
     desc: 'Secondary depth model. Runs alongside DA-v2 for benchmarking. Inverse depth → metric conversion.',
-    icon: '📏',
+    Icon: Layers,
     color: '#8b5cf6',
   },
   {
@@ -52,7 +57,7 @@ const MODEL_CATALOG = [
     camera: '/wrist_camera/image_raw',
     topic: '/sam2/masks_json',
     desc: 'Segment-Anything v2 for precise object masks. Used by GraspNode v2 for mask-aligned gripper poses.',
-    icon: '✂️',
+    Icon: Scissors,
     color: '#10b981',
   },
   {
@@ -64,7 +69,7 @@ const MODEL_CATALOG = [
     camera: '/wrist_camera/image_raw',
     topic: '/aria/grasp/plan_v2',
     desc: '3-tier grasp: 6D-pose-aware → SAM2-mask-aligned → BBox fallback. Material-specific force/speed scaling.',
-    icon: '🤏',
+    Icon: Hand,
     color: '#f97316',
   },
   {
@@ -76,7 +81,7 @@ const MODEL_CATALOG = [
     camera: '/wrist_camera/image_raw',
     topic: '/aria/vla/action',
     desc: 'Language-conditioned manipulation policy. Takes natural language + gripper image → joint commands. 7B param.',
-    icon: '🧠',
+    Icon: Target,
     color: '#a78bfa',
   },
   {
@@ -88,7 +93,7 @@ const MODEL_CATALOG = [
     camera: '/wrist_camera/image_raw',
     topic: '/aria/vla/action',
     desc: 'Action Chunking Transformer trained on ARIA recorded demonstrations. Outputs 10-step action chunks.',
-    icon: '🎬',
+    Icon: Film,
     color: '#ec4899',
   },
   {
@@ -100,7 +105,7 @@ const MODEL_CATALOG = [
     camera: 'None (text only)',
     topic: '/aria/planning/llm_plan',
     desc: 'Decomposes NL commands into action graphs with full chain-of-thought reasoning. Validates JSON schema.',
-    icon: '💭',
+    Icon: Terminal,
     color: '#38bdf8',
   },
   {
@@ -112,7 +117,7 @@ const MODEL_CATALOG = [
     camera: 'Vision stream input',
     topic: '/aria/state/memory',
     desc: 'SQLite-backed 3D scene model. Lifecycle: DETECTED→TRACKED→LOST→RECOVERED. Spatial relations engine.',
-    icon: '🌍',
+    Icon: Globe,
     color: '#22c55e',
   },
 ];
@@ -124,8 +129,8 @@ export default function AIModelsPanel({ health, vision }) {
   return (
     <div className="ai-models-panel">
       <div className="panel-header">
-        <span className="panel-icon">🤖</span>
-        <span className="panel-title">AI Models Status</span>
+        <Cpu className="w-4 h-4 text-cyan-400" />
+        <span className="panel-title">AI Perception & Policy Models</span>
         <span className="panel-badge">{MODEL_CATALOG.length} models</span>
       </div>
 
@@ -141,6 +146,8 @@ export default function AIModelsPanel({ health, vision }) {
             false
           );
 
+          const ModelIcon = model.Icon || Cpu;
+
           return (
             <div
               key={model.id}
@@ -148,7 +155,9 @@ export default function AIModelsPanel({ health, vision }) {
               style={{ '--model-color': model.color }}
             >
               <div className="ai-model-header">
-                <span className="ai-model-icon">{model.icon}</span>
+                <span className="ai-model-icon flex items-center justify-center p-1 rounded bg-[#182030]/60">
+                  <ModelIcon className="w-4 h-4" style={{ color: model.color }} />
+                </span>
                 <div className="ai-model-title">
                   <span className="ai-model-name">{model.name}</span>
                   <span className="ai-model-type">{model.type}</span>

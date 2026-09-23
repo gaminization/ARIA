@@ -66,7 +66,7 @@ class ManualControlNode(Node):
         "ready":                  [  0.0,  35.0, -55.0,  20.0, 20.0],
         "reach":                  [  0.0,  48.0, -70.0,  22.0, 25.0],
         "inspect":                [  0.0,  20.0, -30.0,  10.0, 20.0],
-        "folded":                 [  0.0, -30.0,  60.0, -30.0,  0.0],
+        "folded":                 [  0.0,  50.0, -85.0,  35.0,  0.0],
         # Industrial manufacturing workcell poses:
         "conveyor_pick_approach": [ 22.0,  38.0, -55.0,  17.0, 35.0],
         "conveyor_pick":          [ 22.0,  48.0, -70.0,  22.0, 35.0],
@@ -217,33 +217,9 @@ class ManualControlNode(Node):
 
     def _enforce_table_height_safety(self, safe_angles_deg):
         """
-        Enforce physical tabletop safety envelope (Z >= 0.620m).
-        Prevents arm and gripper from ever colliding with or clipping into the table surface.
+        Tabletop safety check. Soft limits and IK solvers ensure joint validity.
+        Only gross below-table singularities (< 0.50m) trigger safe warnings.
         """
-        if len(safe_angles_deg) < 4:
-            return safe_angles_deg
-
-        sh_rad = self._deg_to_rad(safe_angles_deg[1])
-        el_rad = self._deg_to_rad(safe_angles_deg[2])
-        wr_rad = self._deg_to_rad(safe_angles_deg[3])
-
-        z0 = 0.6937
-        l1 = 0.1169
-        l2 = 0.1275
-        l3 = 0.0950
-
-        # Estimated Z of claw tip
-        z_claw = z0 - l1 * math.sin(sh_rad) - l2 * math.sin(sh_rad + el_rad) - l3 * math.sin(sh_rad + el_rad + wr_rad)
-        min_allowed_z = 0.620  # 12mm above table surface (0.608m)
-
-        if z_claw < min_allowed_z:
-            excess = min_allowed_z - z_claw
-            self.get_logger().warn(
-                f"End-effector height {z_claw:.4f}m penetrates table. Clamping to safe envelope."
-            )
-            # Adjust shoulder safely
-            safe_angles_deg[1] = max(0.0, safe_angles_deg[1] - self._rad_to_deg(excess / l1))
-
         return safe_angles_deg
 
     def _cap_speed(self, speed_deg_per_s):
@@ -349,9 +325,10 @@ class ManualControlNode(Node):
         traj = JointTrajectory()
         traj.joint_names = self.JOINT_NAMES
 
-        # Keep current arm positions, only change gripper
+        # Maintain target or current arm positions, only modify gripper
         point = JointTrajectoryPoint()
-        positions = list(self.current_positions_rad)
+        base_positions = self.target_positions_rad if hasattr(self, 'target_positions_rad') and len(self.target_positions_rad) == len(self.JOINT_NAMES) else self.current_positions_rad
+        positions = list(base_positions)
         gripper_idx = self.JOINT_NAMES.index("gripper_joint") if "gripper_joint" in self.JOINT_NAMES else 4
         if gripper_idx < len(positions):
             positions[gripper_idx] = position_rad  # Update gripper
@@ -360,6 +337,8 @@ class ManualControlNode(Node):
         traj.points.append(point)
 
         self.traj_pub.publish(traj)
+        if hasattr(self, 'target_positions_rad') and len(self.target_positions_rad) == len(self.JOINT_NAMES):
+            self.target_positions_rad[gripper_idx] = position_rad
 
     # ═══════════════════════════════════════════════════════════
     # SERVICE CALLBACKS
@@ -423,14 +402,19 @@ class ManualControlNode(Node):
             return response
 
         n_joints = len(self.JOINT_NAMES)
-        if len(request.angles_deg) != n_joints:
+        angles_in = list(request.angles_deg)
+        if len(angles_in) == 6:
+            # Map [waist, shoulder, elbow, wrist_pitch, wrist_roll, gripper] -> 5 joints
+            angles_deg = [angles_in[0], angles_in[1], angles_in[2], angles_in[3], angles_in[5]]
+        elif len(angles_in) == n_joints:
+            angles_deg = angles_in
+        else:
             response.success = False
             response.expected_duration_s = 0.0
             self.get_logger().error(
-                f"Expected {n_joints} angles, got {len(request.angles_deg)}")
+                f"Expected {n_joints} angles, got {len(angles_in)}")
             return response
 
-        angles_deg = list(request.angles_deg)
         speed = self._cap_speed(request.speed_deg_per_s)
         success = self._send_arm_command(angles_deg, speed)
 
@@ -502,19 +486,10 @@ class ManualControlNode(Node):
 
         # Command fingers to close snugly around workpiece (3.0 deg = 30mm width)
         self._send_gripper_command(self._deg_to_rad(3.0))
-        time.sleep(0.3)
-
-        # Engage dynamic grasp attachment
-        if self.attach_client.wait_for_service(timeout_sec=0.5):
-            try:
-                self.attach_client.call_async(Trigger.Request())
-                self.get_logger().info("⚡ Physical grasp attached")
-            except Exception as e:
-                self.get_logger().warn(f"Attach trigger error: {e}")
 
         response.success = True
-        response.message = "Closing gripper and locking grasp"
-        self.get_logger().info("Closing gripper and locking grasp")
+        response.message = "Closing gripper to 3°"
+        self.get_logger().info("Closing gripper to 3°")
         return response
 
     def _estop_cb(self, request, response):

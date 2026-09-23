@@ -304,28 +304,43 @@ def benchmark_coordinate_accuracy(transformer: CoordinateTransformer,
 # ═══════════════════════════════════════════════════════════════
 # Factory for ARIA top camera
 # ═══════════════════════════════════════════════════════════════
-def create_top_camera_transformer() -> CoordinateTransformer:
+def create_top_camera_transformer(width: int = 1920, height: int = 1080) -> CoordinateTransformer:
     """
     Create a CoordinateTransformer for the ARIA top camera.
-    Uses intrinsics from camera_node and pose from URDF/TF.
+    Uses calibrated Gazebo SDF parameters:
+      Camera pose: (0.0, 0.0, 1.45) looking straight down at optical table (z=0.6081m).
+      Intrinsics: hfov=1.25 rad.
+      For 1920x1080: fx=fy=1330.59, cx=960.5, cy=540.5.
+      For 1280x720:  fx=fy=887.06, cx=640.0, cy=360.0.
     """
-    # Intrinsics: Logitech C270
+    if width == 1920 and height == 1080:
+        fx = 1330.59
+        fy = 1330.59
+        cx = 960.5
+        cy = 540.5
+    else:
+        # Generalized hfov=1.25 rad
+        fx = (width / 2.0) / math.tan(1.25 / 2.0)
+        fy = fx
+        cx = width / 2.0
+        cy = height / 2.0
+
     K = np.array([
-        [721.0,   0.0, 640.0],
-        [  0.0, 721.0, 360.0],
-        [  0.0,   0.0,   1.0],
+        [ fx,  0.0,  cx],
+        [0.0,   fy,  cy],
+        [0.0,  0.0, 1.0],
     ])
-    dist = np.array([0.15, -0.08, 0.0, 0.0, 0.0])
+    dist = np.zeros(5)
 
-    # Camera position: 0.40m forward, 0.80m above table, pointing down
-    # From SDF: camera stand at (0.40, 0.0, 0.76+0.80=1.56) looking down
-    cam_pos = np.array([0.40, 0.0, 1.56])
+    # Overhead camera position in world frame
+    cam_pos = np.array([0.0, 0.0, 1.45])
 
-    # Camera rotation: pointing straight down (-Z in world = +Z in camera)
-    # Camera X = world -X, Camera Y = world -Y, Camera Z = world -Z
+    # Camera to world rotation (maps image x, y to world -Y, +X):
+    # dx_world = -(v - cy)/fy * dz
+    # dy_world = -(u - cx)/fx * dz
     R_cam_to_world = np.array([
-        [-1.0,  0.0,  0.0],
         [ 0.0, -1.0,  0.0],
+        [-1.0,  0.0,  0.0],
         [ 0.0,  0.0, -1.0],
     ])
 

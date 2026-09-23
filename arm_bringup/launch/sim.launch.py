@@ -14,6 +14,7 @@ from launch.actions import (
     RegisterEventHandler,
     LogInfo,
     SetEnvironmentVariable,
+    TimerAction,
 )
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
@@ -42,6 +43,12 @@ def generate_launch_description():
         description="World file name or path in arm_bringup/worlds"
     )
     world_conf = LaunchConfiguration("world")
+
+    gui_arg = DeclareLaunchArgument(
+        "gui", default_value="false",
+        description="Launch Gazebo Classic GUI (set true for GUI window)"
+    )
+    gui_conf = LaunchConfiguration("gui")
 
     # ── Robot description (URDF via xacro) ──
     xacro_file = os.path.join(desc_pkg, "urdf", "aria_arm.urdf.xacro")
@@ -110,8 +117,8 @@ def generate_launch_description():
         ),
         launch_arguments={
             "world": world_file,
-            "verbose": "true",
-            "gui": "true",
+            "verbose": "false",
+            "gui": gui_conf,
             "server": "true",
         }.items(),
     )
@@ -183,6 +190,7 @@ def generate_launch_description():
     return LaunchDescription([
         use_rviz_arg,
         world_arg,
+        gui_arg,
 
         # Environment & Core launch
         set_display,
@@ -207,15 +215,13 @@ def generate_launch_description():
                 on_exit=[load_jtc],
             )
         ),
-        # Chain: after JTC, start manual control
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=load_jtc,
-                on_exit=[
-                    manual_control,
-                    LogInfo(msg="=== ARIA Simulation ready ==="),
-                ],
-            )
+        # Manual control node (provides /aria/set_all_joints, /aria/close_gripper, /aria/open_gripper, /aria/go_named_pose)
+        TimerAction(
+            period=7.0,
+            actions=[
+                manual_control,
+                LogInfo(msg="=== ARIA Simulation ready ==="),
+            ],
         ),
 
         # Optional RViz

@@ -69,6 +69,7 @@ class SafetyAgent(LifecycleNode):
         self.force_estimates = np.zeros(5)
         self.intervention_count = 0
         self.intervention_log: list = []
+        self._last_log_times = {}
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info("SafetyAgent: CONFIGURING")
@@ -118,16 +119,24 @@ class SafetyAgent(LifecycleNode):
         return response
 
     def _log_intervention(self, check_type: str, reason: str):
-        """Log a safety intervention."""
+        """Log a safety intervention with 2.0s debounce per check type."""
+        now = time.time()
+        last_t = self._last_log_times.get(check_type, 0.0)
+        if now - last_t < 2.0:
+            return
+        self._last_log_times[check_type] = now
+
         self.intervention_count += 1
         entry = {
             'count': self.intervention_count,
             'type': check_type,
             'reason': reason,
-            'time': time.time(),
+            'time': now,
             'joints_rad': self.current_joints.tolist(),
         }
         self.intervention_log.append(entry)
+        if len(self.intervention_log) > 100:
+            self.intervention_log = self.intervention_log[-100:]
         self.bus.add_chain_of_thought(
             f"SAFETY: ⚠ Intervention #{self.intervention_count}: "
             f"{check_type} — {reason}")
@@ -165,10 +174,10 @@ class SafetyAgent(LifecycleNode):
             self._log_intervention("FORCE",
                 f"Excessive force on {JOINT_NAMES[worst]}: {max_force:.2f}N")
 
-        # Check if joints are within limits
+        # Check if joints are within limits (0.04 rad compliance margin for ODE dynamics)
         for i in range(5):
-            if (self.current_joints[i] < JOINT_LIMITS[i, 0] - 0.01 or
-                    self.current_joints[i] > JOINT_LIMITS[i, 1] + 0.01):
+            if (self.current_joints[i] < JOINT_LIMITS[i, 0] - 0.04 or
+                    self.current_joints[i] > JOINT_LIMITS[i, 1] + 0.04):
                 self._log_intervention("JOINT_LIMIT",
                     f"{JOINT_NAMES[i]} OUT OF BOUNDS: "
                     f"{math.degrees(self.current_joints[i]):.1f}°")

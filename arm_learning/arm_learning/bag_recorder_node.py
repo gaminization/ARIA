@@ -36,6 +36,12 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_srvs.srv import Trigger, SetBool
+try:
+    from vision_msgs.msg import Detection2DArray
+    from arm_planner.msg import TaskState
+    TYPES_AVAILABLE = True
+except ImportError:
+    TYPES_AVAILABLE = False
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -137,12 +143,13 @@ class BagRecorderNode(Node):
         self._git_sha = self._get_git_sha()
 
         # ── Subscribers ────────────────────────────────────
-        self.create_subscription(
-            String, '/aria/state/task',
-            self._task_cb, 10)
-        self.create_subscription(
-            String, '/detection/objects',
-            self._detection_cb, 10)
+        if TYPES_AVAILABLE:
+            self.create_subscription(
+                TaskState, '/aria/state/task',
+                self._task_cb, 10)
+            self.create_subscription(
+                Detection2DArray, '/detection/objects',
+                self._detection_cb, 10)
 
         # ── Publishers ─────────────────────────────────────
         self._status_pub = self.create_publisher(
@@ -333,32 +340,40 @@ class BagRecorderNode(Node):
             self.get_logger().error(f"Failure recording failed: {e}")
 
     # ── Callbacks ──────────────────────────────────────────
-    def _task_cb(self, msg: String):
+    def _task_cb(self, msg):
         try:
-            data = json.loads(msg.data)
-            status = data.get('status', '')
-            if status == 'STARTED':
+            status = getattr(msg, 'task_status', '')
+            if not status and hasattr(msg, 'data'):
+                data = json.loads(msg.data)
+                status = data.get('status', '')
+            if status in ('STARTED', 'EXECUTING'):
                 self._task_count += 1
             elif status == 'COMPLETED':
                 self._task_success += 1
             elif status == 'FAILED':
                 self._trigger_failure_recording({
-                    'task': data.get('task_name', 'unknown'),
-                    'failure_reason': data.get('failure_reason', ''),
+                    'task': getattr(msg, 'current_command', 'unknown'),
+                    'failure_reason': 'Task failure reported on state bus',
                 })
-        except (json.JSONDecodeError, AttributeError):
+        except Exception:
             pass
 
-    def _detection_cb(self, msg: String):
+    def _detection_cb(self, msg):
         # Track objects seen during session
         try:
-            if hasattr(msg, 'data'):
+            if hasattr(msg, 'detections'):
+                for det in msg.detections:
+                    for res in det.results:
+                        cls = res.hypothesis.class_id
+                        if cls:
+                            self._detected_objects.add(cls)
+            elif hasattr(msg, 'data'):
                 data = json.loads(msg.data)
                 for obj in data.get('objects', []):
                     cls = obj.get('class_name', '')
                     if cls:
                         self._detected_objects.add(cls)
-        except (json.JSONDecodeError, AttributeError, TypeError):
+        except Exception:
             pass
 
     # ── Service handlers ───────────────────────────────────

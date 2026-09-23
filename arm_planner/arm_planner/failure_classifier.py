@@ -119,3 +119,7 @@ def classify_from_exception(exception: Exception,
         ctx['servo_fault'] = True
 
     return classify(ctx)
+
+
+# Alias for backward/forward compatibility
+classify_failure = classify

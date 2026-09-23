@@ -212,8 +212,8 @@
       <camera>
         <horizontal_fov>1.75</horizontal_fov>  <!-- 100 degrees wide-angle lens -->
         <image>
-          <width>640</width>
-          <height>480</height>
+          <width>1280</width>
+          <height>720</height>
           <format>R8G8B8</format>
         </image>
         <clip>

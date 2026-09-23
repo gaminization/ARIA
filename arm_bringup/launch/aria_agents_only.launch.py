@@ -33,7 +33,7 @@ def generate_launch_description():
 
     # ── Arguments ──────────────────────────────────────────
     dashboard_port = DeclareLaunchArgument(
-        'dashboard_port', default_value='8080',
+        'dashboard_port', default_value='8000',
         description='Dashboard server port')
 
     # ── Robot description ───────────────────────────────────
@@ -116,12 +116,24 @@ def generate_launch_description():
         )],
     )
 
+    # ── Agent Activator (8.5s) ─────────────────────────────
+    activate_agents = TimerAction(
+        period=8.5,
+        actions=[ExecuteProcess(
+            cmd=['python3', os.path.join(
+                os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'),
+                'arm_bringup', 'scripts', 'activate_agents.py'
+            )],
+            name='activate_agents', output='screen',
+        )],
+    )
+
     startup_msg = TimerAction(
         period=10.0,
         actions=[LogInfo(msg='\n'
             '═══════════════════════════════════════════════════════\n'
             '  🤖 ARIA AGENTS ONLINE\n'
-            '  Dashboard:  http://localhost:8080\n'
+            '  Dashboard:  http://localhost:8000\n'
             '  Send cmd:   ros2 service call /aria/command ...\n'
             '═══════════════════════════════════════════════════════\n'
         )],
@@ -139,6 +151,7 @@ def generate_launch_description():
         world_model_agent, learning_agent,
         evaluation_agent, dialogue_agent,
         task_manager, memory_manager, health_monitor,
+        activate_agents,
         bag_recorder,
         dashboard,
         startup_msg,

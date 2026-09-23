@@ -128,7 +128,10 @@ class PlanningAgent(LifecycleNode):
 
             action = Action()
             action.action_type = subgoal['action_type']
-            action.target_object = obj or ''
+            if action_type in {'locate_base', 'locate_target'}:
+                action.target_object = target or obj or ''
+            else:
+                action.target_object = obj or ''
             action.destination = target or ''
             action.confidence = subgoal['confidence']
             action.status = 'PENDING'
@@ -178,7 +181,7 @@ class PlanningAgent(LifecycleNode):
           "sort all objects by color"  → ('sort', 'all objects', None, {'by': 'color'})
         """
         # Remove articles and filler words
-        cleaned = re.sub(r'\b(the|a|an|this|that|please|can you|could you)\b',
+        cleaned = re.sub(r'\b(the|a|an|this|that|please|can you|could you|for)\b',
                          '', command).strip()
         cleaned = re.sub(r'\s+', ' ', cleaned)
 
@@ -230,6 +233,18 @@ class PlanningAgent(LifecycleNode):
         conditions = {}
         if 'by color' in command:
             conditions['by'] = 'color'
+
+        # When stacking without explicit preposition (e.g. "stack the jenga tower"),
+        # automatically decouple into picking the loose block and stacking onto the tower
+        canonical_verb = self._get_canonical_verb(verb) if verb else 'pick'
+        if canonical_verb == 'stack' or verb == 'stack':
+            if target is None:
+                if obj and ('tower' in obj or 'jenga' in obj):
+                    target = 'jenga tower'
+                    obj = 'jenga block'
+                elif obj:
+                    target = f"{obj} tower"
+                    obj = f"{obj} block"
 
         return verb, obj, target, conditions
 

@@ -27,7 +27,7 @@ def generate_launch_description():
         'use_sim', default_value='true',
         description='Use Gazebo simulation')
     dashboard_port = DeclareLaunchArgument(
-        'dashboard_port', default_value='8080',
+        'dashboard_port', default_value='8000',
         description='Dashboard server port')
     bag_mode = DeclareLaunchArgument(
         'bag_mode', default_value='standard',
@@ -62,7 +62,7 @@ def generate_launch_description():
         actions=[Node(
             package='arm_vision', executable='detection_node',
             name='detection_node', output='screen',
-            parameters=[{'camera_topic': '/wrist_camera/image_raw'}],
+            parameters=[{'camera_topic': '/top_camera/image_raw'}],
         )],
     )
 
@@ -276,6 +276,6 @@ def generate_launch_description():
         activate_agents,
         bag_recorder,
         rosbridge,
-        dashboard,
+        # dashboard,  # Managed in aria_dash session for dedicated logging & control
         startup_msg,
     ])

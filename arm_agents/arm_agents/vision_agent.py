@@ -40,6 +40,8 @@ class VisionAgent(LifecycleNode):
         self.active_perception = False
         self.search_mode = False
         self.scene_confidence = 0.0
+        self.img_w = 1920.0
+        self.img_h = 1080.0
         self.frame_count = 0
         self.top_fps = 0.0
         self.wrist_fps = 0.0
@@ -72,6 +74,10 @@ class VisionAgent(LifecycleNode):
 
     def _top_cb(self, msg: Image):
         self._top_frame_count += 1
+        if msg.width > 0 and msg.height > 0 and (msg.width != self.img_w or msg.height != self.img_h):
+            self.img_w = float(msg.width)
+            self.img_h = float(msg.height)
+            self.transformer = create_top_camera_transformer(int(msg.width), int(msg.height))
 
     def _wrist_cb(self, msg: Image):
         self._wrist_frame_count += 1
@@ -130,7 +136,6 @@ class VisionAgent(LifecycleNode):
                 obj.pose_3d.pose.position.y = coord.y
                 obj.pose_3d.pose.position.z = coord.z
 
-
             # Lifecycle state
             obj.lifecycle_state = 'Detected'
             if obj.tracking_id >= 0:
@@ -141,8 +146,9 @@ class VisionAgent(LifecycleNode):
                 low_confidence_count += 1
 
             # Check if near image edge (trigger active perception)
-            img_w, img_h = 1280.0, 720.0
-            edge_margin = 0.1  # 10% of image
+            img_w = self.img_w
+            img_h = self.img_h
+            edge_margin = 0.05  # 5% of image
             near_edge = (
                 obj.bbox_x - obj.bbox_w / 2 < img_w * edge_margin or
                 obj.bbox_x + obj.bbox_w / 2 > img_w * (1 - edge_margin) or

@@ -164,11 +164,14 @@ class DialogueAgent(LifecycleNode):
 
     def _report_progress(self, msg: TaskState):
         """Report action progress during execution."""
+        if not hasattr(self, 'last_executing_idx'):
+            self.last_executing_idx = -1
         for i, action in enumerate(msg.action_queue):
             if action.status == 'COMPLETE' and i > self.last_action_idx:
                 self.last_action_idx = i
                 self._say(f"  ✓ {action.action_type}({action.target_object})")
-            elif action.status == 'EXECUTING' and i > self.last_action_idx:
+            elif action.status == 'EXECUTING' and i > self.last_executing_idx:
+                self.last_executing_idx = i
                 self._say(f"  → {action.action_type}({action.target_object})...")
 
 def main(args=None):

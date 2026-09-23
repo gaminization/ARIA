@@ -24,6 +24,8 @@ from arm_planner.msg import (
     TaskState, Action, FailureEvent, VisionState, MemoryState,
 )
 from arm_planner.state_bus import StateBus
+from arm_planner.recovery_manager import RecoveryManager
+from arm_planner.failure_classifier import classify_failure
 
 
 class TaskStatus(Enum):
@@ -64,6 +66,9 @@ class TaskManager(LifecycleNode):
 
         # State bus
         self.bus = StateBus(self)
+
+        # Autonomous recovery manager
+        self.recovery_manager = RecoveryManager(self.bus)
 
         # Task state
         self.status = TaskStatus.IDLE
@@ -253,13 +258,38 @@ class TaskManager(LifecycleNode):
             )
 
         elif action.status == 'FAILED':
-            # Trigger recovery
+            # Trigger autonomous failure classification & recovery
             self.status = TaskStatus.RECOVERY
             task.task_status = TaskStatus.RECOVERY.value
             self.bus.add_chain_of_thought(
-                f"Action FAILED: {action.action_type}. "
-                f"Initiating recovery..."
+                f"Action FAILED: {action.action_type}. Initiating autonomous AI recovery..."
             )
+            ctx = {
+                'error_source': action.action_type,
+                'action_type': action.action_type,
+                'target_object': action.target_object,
+                'ik_failed': 'ik' in action.action_type.lower() or 'plan' in action.action_type.lower(),
+                'detection_confidence': action.confidence,
+                'expected_contact': action.action_type == 'GRASP',
+                'was_holding': action.action_type in {'LIFT', 'TRANSPORT'},
+            }
+            failure_event = classify_failure(ctx)
+            recovered = self.recovery_manager.attempt_recovery(failure_event, task)
+            if recovered:
+                # Reset action to PENDING so planner resumes seamlessly
+                action.status = 'PENDING'
+                self.status = TaskStatus.EXECUTING
+                task.task_status = TaskStatus.EXECUTING.value
+                task.action_queue[self.action_index] = action
+                self.bus.add_chain_of_thought(
+                    f"RECOVERY: ✓ Autonomous recovery succeeded for {action.action_type}. Resuming execution."
+                )
+            else:
+                self.status = TaskStatus.FAILED
+                task.task_status = TaskStatus.FAILED.value
+                self.bus.add_chain_of_thought(
+                    f"RECOVERY: ✗ Recovery strategies exhausted for {action.action_type}. Mission halted."
+                )
             self.bus.publish_task(task)
 
         elif action.status == 'PENDING':
