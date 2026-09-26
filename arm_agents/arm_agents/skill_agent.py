@@ -73,6 +73,10 @@ class SkillAgent(LifecycleNode):
         self._cached_target_pose: Optional[PoseStamped] = None
         self._cached_grasp_pose: Optional[PoseStamped] = None
         self._cached_approach_pose: Optional[PoseStamped] = None
+        self._cached_stack_pose: Optional[PoseStamped] = None
+        self._cached_stack_approach_pose: Optional[PoseStamped] = None
+        self._held_workpiece: Optional[str] = None
+        self._is_holding_object = False
         self._executing = False
         self._pending_task = None
         self._current_task_id = ""
@@ -172,6 +176,9 @@ class SkillAgent(LifecycleNode):
             self._cached_target_pose = None
             self._cached_grasp_pose = None
             self._cached_approach_pose = None
+            self._cached_stack_pose = None
+            self._cached_stack_approach_pose = None
+            self._held_workpiece = None
             self._is_holding_object = False
             self._call_sync(self.gripper_detach, Trigger.Request(), timeout=2.0)
             self._call_sync(self.open_gripper, Trigger.Request(), timeout=2.0)
@@ -354,12 +361,13 @@ class SkillAgent(LifecycleNode):
             # Clip waist to ±169.0° (±2.95 rad) to maintain a safe 11° buffer from mechanical stops
             clipped_waist = float(np.clip(waist, -2.95, 2.95))
 
-            # Try candidate pitch seeds to find optimal convergence
+            # Try candidate pitch seeds to find optimal convergence biased downward
+            # to keep the table and workpiece centered in the wrist camera FOV
             best_sol = None
             best_err = 999.0
 
-            wp_seeds = [-0.6, -0.4, -0.2, 0.0, 0.2]
-            sh_seeds = [math.radians(40), math.radians(55), math.radians(70)]
+            wp_seeds = [-0.65, -0.45, -0.25, 0.0]
+            sh_seeds = [math.radians(35), math.radians(50), math.radians(65)]
 
             for wp in wp_seeds:
                 for sh in sh_seeds:
@@ -471,9 +479,18 @@ class SkillAgent(LifecycleNode):
         self.bus.add_chain_of_thought(
             "  PICK: Approach → gripper-camera align → descend → close gripper → lift")
 
-        if getattr(self, '_is_holding_object', False):
-            self.bus.add_chain_of_thought("  PICK: ✓ Workpiece is already securely held in gripper")
-            return True
+        requested = (action.target_object or 'workpiece').lower().strip()
+        if self._held_workpiece is not None:
+            if requested and (requested in self._held_workpiece.lower() or self._held_workpiece.lower() in requested):
+                self.bus.add_chain_of_thought(f"  PICK: ✓ Workpiece '{self._held_workpiece}' is already securely held in gripper")
+                return True
+            else:
+                self.bus.add_chain_of_thought(f"  PICK: Gripper holds '{self._held_workpiece}', releasing before picking requested '{requested}'")
+                self._call_sync(self.gripper_detach, Trigger.Request(), timeout=2.0)
+                self._call_sync(self.open_gripper, Trigger.Request(), timeout=2.0)
+                self._held_workpiece = None
+                self._is_holding_object = False
+                time.sleep(0.5)
 
         target_pose = action.target_pose
         # locate_all caches pose in instance var; action.target_pose is always
@@ -505,7 +522,7 @@ class SkillAgent(LifecycleNode):
         if not self._wait_for_arrival(approach_joints, timeout=28.0):
             self.bus.add_chain_of_thought("  PICK: ✗ Approach movement timed out")
             return False
-        self.bus.add_chain_of_thought("  PICK: ✓ Reached approach waypoint (claws open)")
+        self.bus.add_chain_of_thought("  PICK: ✓ Reached approach waypoint (claws open, workpiece framed)")
 
         # ── Step 2: gripper-camera visual servo (fine alignment) ──
         self._run_gripper_camera_servo()
@@ -526,9 +543,11 @@ class SkillAgent(LifecycleNode):
         time.sleep(0.8)
         attach_res = self._call_sync(self.gripper_attach, Trigger.Request(), timeout=16.0)
         if attach_res and attach_res.success:
+            self._held_workpiece = action.target_object or 'workpiece'
             self._is_holding_object = True
             self.bus.add_chain_of_thought(f"  PICK: ✓ Physical grasp locked on workpiece ({attach_res.message})")
         else:
+            self._held_workpiece = None
             self._is_holding_object = False
             msg_detail = attach_res.message if attach_res else "service call timed out"
             self.bus.add_chain_of_thought(f"  PICK: ✗ Physical contact failed — workpiece not gripped ({msg_detail})")
@@ -757,14 +776,39 @@ class SkillAgent(LifecycleNode):
         name = (getattr(obj, 'name', '') or '').lower().strip()
         color = (getattr(obj, 'color', '') or '').lower().strip()
 
+        # Extract color tags from affordance_regions if present
+        aff = getattr(obj, 'affordance_regions', []) or []
+        for a in aff:
+            if isinstance(a, str) and a.startswith('color:'):
+                color = a.split(':', 1)[1].lower().strip()
+
         if not cls and not name:
             return 0.0
 
         # Exact match
-        if t == cls or t == name:
+        composite_name = f"{color} {cls}".strip()
+        if t == composite_name or t == cls or t == name:
             return 100.0
 
+        # Check for color constraints in user target query
+        query_colors = [c for c in ['red', 'blue', 'cyan', 'yellow', 'orange', 'wood', 'white', 'dark'] if c in t]
         score = 0.0
+        if query_colors:
+            if color:
+                matched_color = any(
+                    qc == color or (qc in ['blue', 'cyan'] and color in ['blue', 'cyan'])
+                    for qc in query_colors
+                )
+                if not matched_color:
+                    # Color explicitly requested but candidate object has a conflicting color:
+                    # Disqualify candidate to prevent picking red mug when blue mug was requested!
+                    return 0.0
+                score += 40.0
+            else:
+                # Color explicitly requested but candidate has unknown/empty color:
+                # Strongly penalize candidate so genuine colored candidates always win!
+                score -= 40.0
+
         t_words = t.split()
         for w in t_words:
             if w in cls or w in name:
@@ -777,31 +821,27 @@ class SkillAgent(LifecycleNode):
             score += 45.0
         if any(w in t for w in ['mug', 'cup']) and any(c in cls for c in ['mug', 'cup']):
             score += 40.0
-            # Color distinctions for cups
-            pos_x = obj.last_known_pose.pose.position.x if (hasattr(obj, 'last_known_pose') and obj.last_known_pose) else 0.0
-            pos_y = obj.last_known_pose.pose.position.y if (hasattr(obj, 'last_known_pose') and obj.last_known_pose) else 0.0
-            if 'red' in t and ('red' in color or (abs(pos_y - (-0.06)) < 0.08 and pos_x > 0.10)):
+            if 'mug' in t and cls == 'mug':
                 score += 35.0
-            elif any(b in t for b in ['blue', 'cyan', 'travel']) and ('cyan' in color or 'blue' in color or (abs(pos_y - (-0.22)) < 0.08 and abs(pos_x) < 0.08)):
+            elif 'cup' in t and cls == 'cup':
                 score += 35.0
+            if query_colors and any(qc in color for qc in query_colors):
+                score += 30.0
+
         if any(w in t for w in ['jenga', 'block', 'wood', 'tower']) and any(c in cls for c in ['jenga', 'block', 'wood', 'tower']):
             score += 45.0
-            pos_x = obj.last_known_pose.pose.position.x if (hasattr(obj, 'last_known_pose') and obj.last_known_pose) else 0.0
-            pos_y = obj.last_known_pose.pose.position.y if (hasattr(obj, 'last_known_pose') and obj.last_known_pose) else 0.0
-            is_tower_loc = (pos_x < -0.18 and abs(pos_y) < 0.04)
-            is_loose_loc = (pos_x < -0.16 and abs(pos_y) >= 0.04)
-
+            pz = obj.last_known_pose.pose.position.z if (hasattr(obj, 'last_known_pose') and obj.last_known_pose) else 0.0
+            is_tower = ('tower' in cls or 'tower' in name or pz > 0.64)
             if 'tower' in t:
-                if is_tower_loc or 'tower' in cls or 'tower' in name:
+                if is_tower:
                     score += 40.0
             elif any(w in t for w in ['block', 'piece', 'loose']):
-                if is_loose_loc:
+                if not is_tower:
                     score += 40.0
-                elif not is_tower_loc:
-                    score += 20.0
-            elif 'tower' in cls or 'tower' in name:
-                score += 30.0
-        if 'banana' in t and 'banana' in cls:
+            else:
+                score += 20.0
+
+        if 'banana' in t and 'banana' in cls and color != 'wood':
             score += 50.0
         if 'bottle' in t and 'bottle' in cls:
             score += 50.0
@@ -838,6 +878,9 @@ class SkillAgent(LifecycleNode):
             if memory and memory.known_objects:
                 for obj in memory.known_objects:
                     s = self._match_target_object(target_name, obj)
+                    pz = obj.last_known_pose.pose.position.z if obj.last_known_pose else 0.608
+                    if abs(pz - 0.608) < 0.025 and not ('pedestal' in target_name or 'tower' in target_name):
+                        s += 5.0
                     if s > best_score and s >= 35.0:
                         best_score = s
                         found_pose = obj.last_known_pose
@@ -961,7 +1004,7 @@ class SkillAgent(LifecycleNode):
 
         r_obj = math.sqrt(bx**2 + by**2)
         waist = math.atan2(bx, -by)
-        waist = float(np.clip(waist, -2.95, 2.95))
+        waist = float(np.clip(waist, -3.1415, 3.1415))
         L_grip = 0.055
 
         # Tabletop objects: 25° forward-angled reach positions fingertips safely at
@@ -1043,11 +1086,34 @@ class SkillAgent(LifecycleNode):
         # 4. Lock physical grasp joint in Gazebo
         attach_res = self._call_sync(self.gripper_attach, Trigger.Request(), timeout=16.0)
         if attach_res and attach_res.success:
+            attached_msg = attach_res.message.lower()
+            mismatch = False
+            if 'jenga' in target_name and 'jenga' not in attached_msg:
+                mismatch = True
+            elif 'mug' in target_name and 'mug' not in attached_msg and 'cup' not in attached_msg:
+                mismatch = True
+            elif 'banana' in target_name and 'banana' not in attached_msg:
+                mismatch = True
+            elif 'orange' in target_name and 'orange' not in attached_msg and 'ball' not in attached_msg:
+                mismatch = True
+            elif 'duck' in target_name and 'duck' not in attached_msg:
+                mismatch = True
+
+            if mismatch:
+                self.bus.add_chain_of_thought(f"  GRASP: ✗ Gripped unintended object: {attach_res.message}. Detaching...")
+                self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
+                self._move_joints(grasp_joints, GRIPPER_OPEN_DEG, speed_dps=20.0)
+                self._held_workpiece = None
+                self._is_holding_object = False
+                return False
+
+            self._held_workpiece = target_name
             self._is_holding_object = True
             self.bus.add_chain_of_thought(f"  GRASP: ✓ Gripper securely enclosed and locked on {target_name} ({attach_res.message})")
             self._update_object_lifecycle(target_name, 'Grasped')
             return True
         else:
+            self._held_workpiece = None
             self._is_holding_object = False
             msg_detail = attach_res.message if attach_res else "service call timed out"
             self.bus.add_chain_of_thought(f"  GRASP: ✗ Physical contact failed — {target_name} was not gripped ({msg_detail})")
@@ -1057,7 +1123,7 @@ class SkillAgent(LifecycleNode):
         """Lift the object from the table with contact verification."""
         target_obj = action.target_object or 'workpiece'
         self.bus.add_chain_of_thought(f"  LIFT: Raising arm with {target_obj}...")
-        if not getattr(self, '_is_holding_object', False):
+        if self._held_workpiece is None and not getattr(self, '_is_holding_object', False):
             self.bus.add_chain_of_thought(f"  LIFT: ✗ Aborted lift — gripper is not holding any object")
             return False
 
@@ -1094,8 +1160,9 @@ class SkillAgent(LifecycleNode):
             self.bus.add_chain_of_thought("  VERIFY: Tower stability confirmed — block seated securely on stack")
             return True
         self.bus.add_chain_of_thought(f"  VERIFY: Verifying physical grasp state for {target_name}...")
-        if getattr(self, '_is_holding_object', False):
-            self.bus.add_chain_of_thought(f"  VERIFY: ✓ Verified {target_name} held securely in gripper")
+        if self._held_workpiece is not None or getattr(self, '_is_holding_object', False):
+            held_name = self._held_workpiece or target_name
+            self.bus.add_chain_of_thought(f"  VERIFY: ✓ Verified {held_name} held securely in gripper")
             return True
         else:
             self.bus.add_chain_of_thought(f"  VERIFY: ✗ Verification failed — {target_name} not held")
@@ -1112,8 +1179,11 @@ class SkillAgent(LifecycleNode):
                 self._move_joints(place_joints, GRIPPER_CLOSED_DEG, speed_dps=12.0)
                 self._wait_for_arrival(place_joints, timeout=8.0)
 
+        target_name = self._held_workpiece or action.target_object or 'workpiece'
         self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
         self._call_sync(self.open_gripper, Trigger.Request(), timeout=3.0)
+        self._update_object_lifecycle(target_name, 'Tracked')
+        self._held_workpiece = None
         self._is_holding_object = False
         time.sleep(0.8)
 
@@ -1148,12 +1218,10 @@ class SkillAgent(LifecycleNode):
         self.bus.add_chain_of_thought(
             "  STACK: Aligning workpiece precisely over base tower block...")
 
-        # Base block location in base_link frame:
-        # In tester world, Jenga tower base is at X_world = -0.22, Y_world = 0.00
-        # In base_link (yaw +90°): X_base = 0.00, Y_base = +0.22, Z_base = 0.065m (top of 4th layer)
-        base_x = 0.00
-        base_y = 0.22
-        base_z = 0.065
+        # Dynamically resolve tower position from memory / vision / action
+        base_x = None
+        base_y = None
+        base_z = None
 
         if action.target_pose and (action.target_pose.pose.position.x != 0 or action.target_pose.pose.position.y != 0):
             p = action.target_pose.pose.position
@@ -1161,16 +1229,52 @@ class SkillAgent(LifecycleNode):
             if 'world' in frame or p.z > 0.45:
                 base_x = float(p.y)
                 base_y = float(-p.x)
-                base_z = max(0.065, float(p.z - 0.614 + 0.050))
+                base_z = max(0.065, float(p.z - 0.614 + 0.020))
             else:
                 base_x = float(p.x)
                 base_y = float(p.y)
                 base_z = max(0.065, float(p.z))
 
+        if base_x is None:
+            # Query memory for tower or highest jenga block
+            memory = self.bus.state.memory
+            best_candidate = None
+            highest_z = -999.0
+            if memory and memory.known_objects:
+                for wo in memory.known_objects:
+                    cls_low = (wo.class_name or '').lower()
+                    name_low = (wo.name or '').lower()
+                    if any(k in cls_low or k in name_low for k in ['tower', 'jenga']):
+                        pos_z = float(wo.last_known_pose.pose.position.z)
+                        if 'tower' in cls_low or 'tower' in name_low or pos_z > highest_z:
+                            highest_z = pos_z
+                            best_candidate = wo
+
+            if best_candidate is not None:
+                p = best_candidate.last_known_pose.pose.position
+                frame = (best_candidate.last_known_pose.header.frame_id or '').lower()
+                if 'world' in frame or p.z > 0.45:
+                    base_x = float(p.y)
+                    base_y = float(-p.x)
+                    base_z = max(0.065, float(p.z - 0.614 + 0.020))
+                else:
+                    base_x = float(p.x)
+                    base_y = float(p.y)
+                    base_z = max(0.065, float(p.z))
+                self.bus.add_chain_of_thought(
+                    f"  STACK: Resolved tower target dynamically from '{best_candidate.name or best_candidate.class_name}' at base ({base_x:.3f}, {base_y:.3f}, {base_z:.3f})")
+
+        if base_x is None:
+            # Workcell nominal forward coordinate fallback
+            base_x = 0.00
+            base_y = 0.22
+            base_z = 0.065
+            self.bus.add_chain_of_thought("  STACK: Using nominal workcell stacking coordinate fallback")
+
         r_obj = math.sqrt(base_x**2 + base_y**2)
         waist = math.atan2(base_x, -base_y)
-        waist = float(np.clip(waist, -2.95, 2.95))
-        L_grip = 0.065
+        waist = float(np.clip(waist, -3.1415, 3.1415))
+        L_grip = 0.055
         pitch = math.radians(25)
         r_w = r_obj - L_grip * math.cos(pitch)
 
@@ -1209,8 +1313,11 @@ class SkillAgent(LifecycleNode):
             if place_joints:
                 self._move_joints(place_joints, GRIPPER_CLOSED_DEG, speed_dps=12.0)
                 self._wait_for_arrival(place_joints, timeout=12.0)
+            target_name = self._held_workpiece or action.target_object or 'jenga block'
             self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
             self._call_sync(self.open_gripper, Trigger.Request(), timeout=3.0)
+            self._update_object_lifecycle(target_name, 'Tracked')
+            self._held_workpiece = None
             self._is_holding_object = False
             time.sleep(0.8)
             self._move_joints(align_joints, GRIPPER_OPEN_DEG, speed_dps=20.0)

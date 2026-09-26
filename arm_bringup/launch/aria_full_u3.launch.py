@@ -83,6 +83,16 @@ def generate_launch_description():
         )],
     )
 
+    visual_servo_node = TimerAction(
+        period=2.5,
+        actions=[Node(
+            package='arm_control',
+            executable='visual_servo_node.py',
+            name='visual_servo_node',
+            output='screen',
+        )],
+    )
+
     # ═══════════════════════════════════════════════════════
     # STAGE 3: 15 Agents (5s delay)
     # ═══════════════════════════════════════════════════════
@@ -258,6 +268,7 @@ def generate_launch_description():
         yolo_detection,
         depth_node,
         ik_node,
+        visual_servo_node,
 
         # Stage 3 — agents
         vision_agent, depth_agent, tracking_agent,

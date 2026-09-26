@@ -74,6 +74,11 @@ def generate_launch_description():
         name='ik_node', output='screen',
     )])
 
+    visual_servo_node = TimerAction(period=2.5, actions=[Node(
+        package='arm_control', executable='visual_servo_node.py',
+        name='visual_servo_node', output='screen',
+    )])
+
     # ── Stage 3: 15 Agents (5s) ────────────────────────────
     vision_agent      = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='vision_agent',      name='vision_agent',      output='screen')])
     depth_agent       = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='depth_agent',       name='depth_agent',       output='screen')])
@@ -142,7 +147,7 @@ def generate_launch_description():
     return LaunchDescription([
         dashboard_port,
         robot_state_publisher,
-        detection_node, depth_node, ik_node,
+        detection_node, depth_node, ik_node, visual_servo_node,
         vision_agent, depth_agent, tracking_agent,
         affordance_agent, attention_agent,
         planning_agent, reachability_agent,

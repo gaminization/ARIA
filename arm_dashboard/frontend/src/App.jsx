@@ -603,9 +603,20 @@ export default function App() {
           <span>·</span>
           <span>J6 {jointAngles[5]?.toFixed(1)}°</span>
           <span className="text-[#252a38]">│</span>
-          <span className="text-cyan-400">30 FPS (RAW 1080P)</span>
-          <span>·</span>
-          <span className="text-purple-400">10ms</span>
+          {(() => {
+            const camStats = systemState?.camera_stats || {};
+            const topStats = camStats.top || {};
+            const wristStats = camStats.wrist || {};
+            const fps = topStats.fps > 0 ? topStats.fps : (wristStats.fps > 0 ? wristStats.fps : 30.0);
+            const res = topStats.height ? `${topStats.height}P` : '720P';
+            return (
+              <>
+                <span className="text-cyan-400 font-mono">{fps.toFixed(1)} FPS ({res})</span>
+                <span>·</span>
+                <span className="text-purple-400">10ms</span>
+              </>
+            );
+          })()}
           <span className="text-[#252a38]">│</span>
           <span>CPU 34%</span>
           <span>·</span>
@@ -623,7 +634,7 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2 text-[9px]">
             <span className="flex items-center gap-1 text-emerald-400">● ROS 2</span>
-            <span className="flex items-center gap-1 text-emerald-400">● 1080P FEEDS</span>
+            <span className="flex items-center gap-1 text-emerald-400">● LIVE FEEDS</span>
             <span className="flex items-center gap-1 text-emerald-400">● ARIA ARM</span>
           </div>
         </div>

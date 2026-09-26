@@ -131,6 +131,13 @@ class ARIADashboardState:
         }
 
         self.chain_of_thought: deque = deque(maxlen=1000)
+        self.camera_stats = {
+            "top": {"fps": 0.0, "width": 1280, "height": 720},
+            "wrist": {"fps": 0.0, "width": 1280, "height": 720},
+            "side": {"fps": 0.0, "width": 1280, "height": 720},
+            "annotated": {"fps": 0.0, "width": 1280, "height": 720},
+            "depth": {"fps": 0.0, "width": 1280, "height": 720},
+        }
         self.top_camera_jpeg: Optional[bytes] = None
         self.top_camera_hd_jpeg: Optional[bytes] = None
         self.wrist_camera_jpeg: Optional[bytes] = None
@@ -247,6 +254,7 @@ class ARIADashboardState:
                     "recent_tasks": self.memory_state.get("recent_tasks", []),
                 },
                 "servo": dict(self.servo_state),
+                "camera_stats": dict(self.camera_stats),
                 "cot": list(self.chain_of_thought)[-200:],
                 "ros_connected": self.ros_connected,
                 "timestamp": time.time(),
@@ -457,14 +465,32 @@ if ROS_AVAILABLE:
         def _health_cb(self, msg):
             state.set_health_state(msg)
 
-        def _encode_image(self, msg, cam_name='camera', target_w=640, target_h=360, quality=72):
+        def _encode_image(self, msg, cam_name='camera', target_w=640, target_h=360, quality=75):
             import cv2
             from cv_bridge import CvBridge
+            from collections import defaultdict
             now = time.time()
+            if not hasattr(self, '_cam_times'):
+                self._cam_times = defaultdict(lambda: deque(maxlen=20))
+
+            times = self._cam_times[cam_name]
+            times.append(now)
+            if len(times) >= 2:
+                dt = times[-1] - times[0]
+                fps = (len(times) - 1) / max(dt, 0.001)
+            else:
+                fps = 0.0
+
+            with state._lock:
+                state.camera_stats[cam_name] = {
+                    "fps": round(fps, 1),
+                    "width": int(getattr(msg, 'width', 640)),
+                    "height": int(getattr(msg, 'height', 360)),
+                }
+
             if not hasattr(self, '_last_cam_time'):
                 self._last_cam_time = {}
-            # Rate-limit each camera encoding to 15 FPS to avoid CPU starvation
-            if now - self._last_cam_time.get(cam_name, 0.0) < 0.065:
+            if now - self._last_cam_time.get(cam_name, 0.0) < 0.040:
                 return None
             self._last_cam_time[cam_name] = now
 
@@ -475,8 +501,9 @@ if ROS_AVAILABLE:
             except Exception:
                 return None
 
-            if cv_img.shape[1] != target_w or cv_img.shape[0] != target_h:
-                cv_img = cv2.resize(cv_img, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
+            if target_w and target_h:
+                if cv_img.shape[1] != target_w or cv_img.shape[0] != target_h:
+                    cv_img = cv2.resize(cv_img, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
             ok, grid_jpeg = cv2.imencode('.jpg', cv_img, [cv2.IMWRITE_JPEG_QUALITY, quality])
             return grid_jpeg.tobytes() if ok else None
 
@@ -1097,6 +1124,9 @@ async def ws_cameras(ws: WebSocket):
                 frame_data["annotated"] = base64.b64encode(state.annotated_camera_jpeg).decode("ascii")
 
             if frame_data:
+                frame_data["joint_positions"] = list(state.joint_positions)
+                frame_data["camera_stats"] = dict(state.camera_stats)
+                frame_data["timestamp"] = time.time()
                 await ws.send_json(frame_data)
             await asyncio.sleep(0.033)  # ~30 fps
     except (WebSocketDisconnect, Exception):

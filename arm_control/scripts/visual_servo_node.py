@@ -176,8 +176,12 @@ class VisualServoNode(Node):
                     cx = int(M['m10'] / M['m00'])
                     cy = int(M['m01'] / M['m00'])
 
-                    self.pixel_error_x = float(cx - self.TARGET_PX)
-                    self.pixel_error_y = float(cy - self.TARGET_PY)
+                    h, w = cv_image.shape[:2]
+                    target_x = w / 2.0
+                    target_y = h / 2.0
+                    self.pixel_error_x = float(cx - target_x)
+                    self.pixel_error_y = float(cy - target_y)
+                    self.CONVERGENCE_PX = max(20.0, 0.04 * min(w, h))
                     self.object_detected = True
                     return
 

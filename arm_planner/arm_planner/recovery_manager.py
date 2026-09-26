@@ -162,9 +162,22 @@ class RecoveryManager:
 
     # ── Strategy implementations ───────────────────────────
     def _recovery_re_detect(self, f, t):
-        self.bus.add_chain_of_thought("  → Forcing fresh YOLO detection...")
-        time.sleep(1.0)  # Wait for new detection frame
-        return True  # Assume re-detection works in clean sim
+        self.bus.add_chain_of_thought("  → Waiting for fresh perception frame...")
+        time.sleep(1.0)
+        target = (t.action_queue[0].target_object if t.action_queue else '').lower().strip()
+        vision = self.bus.state.vision
+        if vision and vision.detected_objects:
+            for obj in vision.detected_objects:
+                if target and (target in obj.class_name.lower() or obj.class_name.lower() in target):
+                    self.bus.add_chain_of_thought(f"  → Re-detection confirmed '{obj.class_name}' in workspace.")
+                    return True
+        memory = self.bus.state.memory
+        if memory and memory.known_objects:
+            for obj in memory.known_objects:
+                if target and (target in obj.class_name.lower() or obj.class_name.lower() in target):
+                    return True
+        self.bus.add_chain_of_thought("  → Re-detection: target object not visible in perception frame.")
+        return False
 
     def _recovery_adjust_offset(self, f, t):
         self.bus.add_chain_of_thought("  → Adjusting grasp offset by +2mm...")

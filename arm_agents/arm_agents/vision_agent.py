@@ -109,13 +109,23 @@ class VisionAgent(LifecycleNode):
             if obj.tracking_id >= 0:
                 self.tracked_ids.append(obj.tracking_id)
 
-            # Class and confidence
+            # Class, color, and confidence
+            color = ""
             if det.results:
-                obj.class_name = det.results[0].hypothesis.class_id.lower()
+                raw_cls = det.results[0].hypothesis.class_id.lower()
+                if '|' in raw_cls:
+                    parts = raw_cls.split('|', 1)
+                    obj.class_name = parts[0]
+                    color = parts[1]
+                else:
+                    obj.class_name = raw_cls
                 obj.confidence = det.results[0].hypothesis.score
             else:
                 obj.class_name = 'unknown'
                 obj.confidence = 0.0
+
+            if color:
+                obj.affordance_regions = [f"color:{color}"]
 
             # Gripper artifact suppression
             if obj.class_name in {'scissors', 'knife', 'fork', 'spoon', 'remote', 'toilet', 'toothbrush', 'tie'}:
@@ -128,7 +138,8 @@ class VisionAgent(LifecycleNode):
             obj.bbox_h = float(det.bbox.size_y)
 
             # 3D Coordinates (table surface is at Z = 0.6081m in tester workspace)
-            coord = self.transformer.pixel_to_world(int(obj.bbox_x), int(obj.bbox_y), table_height=0.6081)
+            obj_h = 0.060 if 'tower' in obj.class_name else 0.0
+            coord = self.transformer.pixel_to_world(int(obj.bbox_x), int(obj.bbox_y), object_height=obj_h, table_height=0.6081)
             if coord.confidence > 0:
                 obj.pose_3d.header = msg.header
                 obj.pose_3d.header.frame_id = 'world'

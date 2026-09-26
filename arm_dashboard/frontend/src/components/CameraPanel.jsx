@@ -92,8 +92,13 @@ export default function CameraPanel({
 
   const activeOverlayCount = Object.values(showOverlays).filter(Boolean).length;
 
-  const fpsTop = healthState?.fps_top ? healthState.fps_top.toFixed(1) : '30.0';
-  const fpsWrist = healthState?.fps_wrist ? healthState.fps_wrist.toFixed(1) : '30.0';
+  const camStats = cameraStreams?.camera_stats || {};
+  const fpsTop = camStats?.top?.fps ? camStats.top.fps.toFixed(1) : (healthState?.fps_top ? healthState.fps_top.toFixed(1) : '30.0');
+  const fpsWrist = camStats?.wrist?.fps ? camStats.wrist.fps.toFixed(1) : (healthState?.fps_wrist ? healthState.fps_wrist.toFixed(1) : '30.0');
+  const fpsSide = camStats?.side?.fps ? camStats.side.fps.toFixed(1) : '30.0';
+  const topRes = camStats?.top?.width ? `${camStats.top.width}×${camStats.top.height}` : '720p';
+  const wristRes = camStats?.wrist?.width ? `${camStats.wrist.width}×${camStats.wrist.height}` : '720p';
+  const sideRes = camStats?.side?.width ? `${camStats.side.width}×${camStats.side.height}` : '720p';
   const latency = healthState?.inference_latency_ms ? healthState.inference_latency_ms.toFixed(0) : '12';
 
   const detections = visionState?.detected_objects || [];
@@ -624,7 +629,7 @@ export default function CameraPanel({
             <div className="relative rounded border border-[#252a38] bg-black/60 overflow-hidden flex flex-col group min-h-0">
               <div className="absolute top-1 left-1.5 z-10 flex items-center gap-1 bg-black/85 px-1.5 py-0.5 rounded border border-white/10 text-[9px] font-mono text-purple-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                TOP (OVERHEAD) — RAW 1080P VERIFICATION
+                TOP (OVERHEAD) — LIVE VERIFICATION ({topRes})
               </div>
               <div className="absolute top-1 right-1.5 z-10 flex items-center gap-1.5">
                 <span className="text-[9px] font-mono text-slate-400 bg-black/80 px-1 py-0.5 rounded">{fpsTop} FPS</span>
@@ -653,14 +658,14 @@ export default function CameraPanel({
               </div>
             </div>
 
-            {/* Feed 3: Side Camera (Profile 1080p) */}
+            {/* Feed 3: Side Camera (Profile) */}
             <div className="relative rounded border border-[#252a38] bg-black/60 overflow-hidden flex flex-col group min-h-0">
               <div className="absolute top-1 left-1.5 z-10 flex items-center gap-1 bg-black/85 px-1.5 py-0.5 rounded border border-white/10 text-[9px] font-mono text-amber-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                SIDE (PROFILE) — RAW 1080P VERIFICATION
+                SIDE (PROFILE) — LIVE VERIFICATION ({sideRes})
               </div>
               <div className="absolute top-1 right-1.5 z-10 flex items-center gap-1.5">
-                <span className="text-[9px] font-mono text-amber-400 bg-black/80 px-1 py-0.5 rounded">1080p</span>
+                <span className="text-[9px] font-mono text-amber-400 bg-black/80 px-1 py-0.5 rounded">{fpsSide} FPS</span>
                 <button
                   onClick={() => setActiveTab('side')}
                   className="p-1 bg-black/80 hover:bg-amber-950 text-slate-400 hover:text-amber-300 rounded border border-white/10 transition-colors"
@@ -724,7 +729,7 @@ export default function CameraPanel({
             <div className="h-8 px-3 bg-black/90 border-b border-[#252a38] flex items-center justify-between z-20">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-bold text-cyan-300 uppercase">
-                  {activeTab.toUpperCase()} CAMERA — MAXIMIZED LIVE 1080P VIEW
+                  {activeTab.toUpperCase()} CAMERA — MAXIMIZED LIVE VIEW ({camStats[activeTab]?.width ? `${camStats[activeTab].width}×${camStats[activeTab].height}` : 'LIVE'})
                 </span>
                 {['top', 'side'].includes(activeTab) && (
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-purple-950/80 text-purple-300 border border-purple-700/50">

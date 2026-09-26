@@ -56,7 +56,7 @@ class DetectionNode(Node):
         self.get_logger().info("═══ ARIA Detection Node starting ═══")
 
         self.declare_parameter('model', 'yolov8m.pt')
-        self.declare_parameter('confidence_threshold', 0.5)
+        self.declare_parameter('confidence_threshold', 0.10)
         self.declare_parameter('device', 'cuda:0')
         self.declare_parameter('half_precision', False)
         # Default: /top_camera/image_raw (workcell overview). Can also be overridden
@@ -125,8 +125,50 @@ class DetectionNode(Node):
         self.get_logger().info(
             f"Detection node ready — YOLOv8 tracking on {self.camera_topic}")
 
+    def _extract_dominant_color(self, cv_img: np.ndarray, x1: float, y1: float, x2: float, y2: float) -> str:
+        """Extract dominant color name from bounding box ROI without hardcoded coordinates."""
+        if cv_img is None:
+            return ""
+        h, w = cv_img.shape[:2]
+        ix1, iy1 = max(0, int(x1)), max(0, int(y1))
+        ix2, iy2 = min(w, int(x2)), min(h, int(y2))
+        if ix2 <= ix1 or iy2 <= iy1:
+            return ""
+
+        roi = cv_img[iy1:iy2, ix1:ix2]
+        if roi.size == 0:
+            return ""
+
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        total_px = float(roi.shape[0] * roi.shape[1])
+
+        # Color masks (physically verified for Gazebo workcell)
+        mask_red = cv2.inRange(hsv, (0, 60, 50), (8, 255, 255)) | cv2.inRange(hsv, (168, 60, 50), (180, 255, 255))
+        mask_orange = cv2.inRange(hsv, (9, 170, 70), (21, 255, 255))
+        mask_wood = cv2.inRange(hsv, (10, 25, 40), (24, 165, 255))
+        mask_yellow = cv2.inRange(hsv, (23, 130, 70), (38, 255, 255))
+        mask_blue = cv2.inRange(hsv, (86, 60, 40), (135, 255, 255))
+        mask_white = cv2.inRange(hsv, (0, 0, 180), (180, 40, 255))
+        mask_dark = cv2.inRange(hsv, (0, 0, 0), (180, 255, 55))
+
+        counts = {
+            'red': cv2.countNonZero(mask_red),
+            'orange': cv2.countNonZero(mask_orange),
+            'yellow': cv2.countNonZero(mask_yellow),
+            'wood': cv2.countNonZero(mask_wood),
+            'blue': cv2.countNonZero(mask_blue),
+            'white': cv2.countNonZero(mask_white),
+            'dark': cv2.countNonZero(mask_dark),
+        }
+
+        best_color, max_count = max(counts.items(), key=lambda item: item[1])
+        if max_count / total_px > 0.12:
+            return best_color
+        return ""
+
     def _get_persistent_track_id(self, cx: float, cy: float, class_name: str) -> int:
         """Assign or match persistent 2D track ID based on pixel proximity."""
+        base_cls = class_name.split('|')[0]
         now = time.time()
         best_id = None
         min_dist = float('inf')
@@ -136,9 +178,10 @@ class DetectionNode(Node):
         for tid in stale_ids:
             del self.active_tracks[tid]
 
-        # Match with active tracks within 50 pixels
+        # Match with active tracks within 120 pixels
         for tid, (tcx, tcy, tcls, _) in self.active_tracks.items():
-            if tcls == class_name or class_name in {'table_object', 'unknown'} or tcls in {'table_object', 'unknown'}:
+            t_base = tcls.split('|')[0]
+            if t_base == base_cls or base_cls in {'table_object', 'unknown'} or t_base in {'table_object', 'unknown'}:
                 dist = math.hypot(cx - tcx, cy - tcy)
                 if dist < min_dist and dist < 120.0:
                     min_dist = dist
@@ -154,45 +197,31 @@ class DetectionNode(Node):
             return new_id
 
     def _image_cb(self, msg: Image):
-        """Process incoming camera frame with YOLO."""
+        """Process incoming camera frame with YOLO and physical color extraction."""
         if self.model is None or self.bridge is None:
             return
 
         try:
-            # Convert ROS Image → OpenCV
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
             self.get_logger().error(f"CV bridge error: {e}")
             return
 
-        # Run YOLO inference with tracking
         t_start = time.perf_counter()
 
-        results = self.model.track(
+        results = self.model.predict(
             cv_image,
-            persist=True,
             verbose=False,
             device=self.device,
-            half=self.use_half,
             conf=self.conf_threshold,
-            tracker="bytetrack.yaml",
         )
 
         inference_ms = (time.perf_counter() - t_start) * 1000
 
-        # Update stats
         self.frame_count += 1
         self.total_inference_ms += inference_ms
         self.max_inference_ms = max(self.max_inference_ms, inference_ms)
 
-        if self.frame_count % 100 == 0:
-            avg_ms = self.total_inference_ms / self.frame_count
-            self.get_logger().info(
-                f"Detection stats ({self.frame_count} frames): "
-                f"mean={avg_ms:.1f}ms, max={self.max_inference_ms:.1f}ms"
-            )
-
-        # Build Detection2DArray
         det_array = Detection2DArray()
         det_array.header = msg.header
         covered_boxes = []
@@ -201,6 +230,8 @@ class DetectionNode(Node):
             result = results[0]
 
             if result.boxes is not None:
+                # 1. Collect all candidate detections
+                raw_boxes = []
                 for box in result.boxes:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     cls_id = int(box.cls[0])
@@ -210,18 +241,41 @@ class DetectionNode(Node):
                     ALLOWED_WORKCELL_CLASSES = {
                         'bottle', 'cup', 'bowl', 'banana', 'apple', 'orange',
                         'bird', 'duck', 'box', 'book', 'vase', 'fork', 'spoon',
-                        'mouse', 'cell phone'
+                        'mouse', 'cell phone', 'plate', 'frisbee', 'clock', 'donut',
+                        'sports ball', 'baseball'
                     }
                     if class_name not in ALLOWED_WORKCELL_CLASSES:
                         continue
-                    if class_name == 'cup':
+
+                    # Extract true physical color for this detection FIRST
+                    color = self._extract_dominant_color(cv_image, x1, y1, x2, y2)
+
+                    # Dynamic class mapping based on true geometry and physical color
+                    if color == 'wood':
+                        aspect = max(x2 - x1, y2 - y1) / (min(x2 - x1, y2 - y1) + 1e-3)
+                        class_name = 'jenga_block' if aspect > 1.65 else 'jenga_tower'
+                    elif class_name in {'sports ball', 'baseball'}:
+                        if color == 'orange':
+                            class_name = 'orange'
+                        else:
+                            class_name = 'mug'
+                    elif class_name == 'frisbee':
+                        box_diag = math.hypot(x2 - x1, y2 - y1)
+                        if color == 'white' and box_diag > 200:
+                            class_name = 'plate'
+                        else:
+                            class_name = 'mug'
+                    elif class_name == 'clock':
+                        class_name = 'box'
+                    elif class_name == 'donut':
                         class_name = 'mug'
                     elif class_name == 'bird':
                         class_name = 'duck'
                     elif class_name == 'apple':
+                        class_name = 'banana' if color == 'yellow' else 'orange'
+                    elif class_name == 'banana' and color == 'orange':
                         class_name = 'orange'
 
-                    # Gripper Self-Detection suppression only if running on wrist camera
                     img_h, img_w = cv_image.shape[:2]
                     if 'wrist' in self.camera_topic:
                         is_gripper_artifact = (
@@ -231,6 +285,37 @@ class DetectionNode(Node):
                         if is_gripper_artifact:
                             continue
 
+                    raw_boxes.append((x1, y1, x2, y2, confidence, class_name, color, box))
+
+                # 2. Sort by confidence descending and apply class-agnostic NMS
+                raw_boxes.sort(key=lambda b: b[4], reverse=True)
+                suppressed_boxes = []
+                for b in raw_boxes:
+                    x1, y1, x2, y2, confidence, class_name, color, box = b
+                    cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+                    is_dup = False
+                    for sb in suppressed_boxes:
+                        sx1, sy1, sx2, sy2 = sb[:4]
+                        scx, scy = (sx1 + sx2) / 2.0, (sy1 + sy2) / 2.0
+                        ix1, iy1 = max(x1, sx1), max(y1, sy1)
+                        ix2, iy2 = min(x2, sx2), min(y2, sy2)
+                        inter_w = max(0.0, ix2 - ix1)
+                        inter_h = max(0.0, iy2 - iy1)
+                        inter_area = inter_w * inter_h
+                        area1 = (x2 - x1) * (y2 - y1)
+                        area2 = (sx2 - sx1) * (sy2 - sy1)
+                        iou = inter_area / (area1 + area2 - inter_area + 1e-6)
+                        dist = math.hypot(cx - scx, cy - scy)
+                        if iou > 0.35 or dist < 35.0:
+                            is_dup = True
+                            break
+                    if not is_dup:
+                        suppressed_boxes.append(b)
+
+                for b in suppressed_boxes:
+                    x1, y1, x2, y2, confidence, class_name, color, box = b
+                    full_class_id = f"{class_name}|{color}" if color else class_name
+
                     det = Detection2D()
                     det.bbox.center.position.x = float((x1 + x2) / 2)
                     det.bbox.center.position.y = float((y1 + y2) / 2)
@@ -238,36 +323,34 @@ class DetectionNode(Node):
                     det.bbox.size_y = float(y2 - y1)
 
                     hyp = ObjectHypothesisWithPose()
-                    hyp.hypothesis.class_id = class_name
+                    hyp.hypothesis.class_id = full_class_id
                     hyp.hypothesis.score = confidence
                     det.results.append(hyp)
 
                     if box.id is not None:
                         det.id = str(int(box.id[0]))
                     else:
-                        det.id = str(self._get_persistent_track_id(float((x1 + x2)/2), float((y1 + y2)/2), class_name))
+                        det.id = str(self._get_persistent_track_id(float((x1 + x2)/2), float((y1 + y2)/2), full_class_id))
 
                     det_array.detections.append(det)
                     covered_boxes.append((x1, y1, x2, y2))
 
-        # ── Full Workcell Segmentation (Duck, Mug, Banana, Bottle, Orange, Plate, Jenga, etc.) ──
+        # ── Generic Tabletop Segmentation for Non-COCO Objects (e.g. Jenga Blocks & Tower) ──
         if 'top' in self.camera_topic and cv_image is not None:
             try:
                 img_h, img_w = cv_image.shape[:2]
                 hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
-
                 area_scale = (img_w * img_h) / (640.0 * 480.0)
-                arm_base_r = int(0.13 * min(img_w, img_h))
 
-                # Optical table mat boundary mask (covers tabletop while avoiding outer mat boundary seams)
+                # Optical table workspace mask
                 table_mask = np.zeros((img_h, img_w), dtype=np.uint8)
-                cv2.rectangle(table_mask, (int(0.255 * img_w), int(0.106 * img_h)),
-                                          (int(0.730 * img_w), int(0.875 * img_h)), 255, -1)
+                cv2.rectangle(table_mask, (int(0.24 * img_w), int(0.09 * img_h)),
+                                          (int(0.76 * img_w), int(0.91 * img_h)), 255, -1)
 
-                # Mask out robot arm mounting base center (cx ~ img_w/2, cy ~ img_h/2)
+                # Mask out robot arm mounting base center
                 cv2.circle(table_mask, (int(img_w / 2), int(img_h / 2)), int(0.14 * min(img_w, img_h)), 0, -1)
 
-                # Mask out robot arm structure (bright white links extending from base)
+                # Mask out robot arm structure
                 mask_arm_white = cv2.inRange(cv_image, (215, 215, 215), (255, 255, 255))
                 kernel_arm = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
                 mask_arm_white = cv2.dilate(mask_arm_white, kernel_arm)
@@ -275,92 +358,37 @@ class DetectionNode(Node):
 
                 segmented_candidates = []
 
-                # 1. Red items (Red Mug)
-                mask_red = ((cv2.inRange(hsv, (0, 80, 60), (10, 255, 255)) |
-                             cv2.inRange(hsv, (168, 80, 60), (180, 255, 255))) & table_mask)
-                cnts, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                # Wood Jenga items (natural pine/wood color, any position on table)
+                mask_wood = (cv2.inRange(hsv, (10, 25, 40), (24, 165, 255)) & table_mask)
+                k_wood = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
+                mask_wood_closed = cv2.morphologyEx(mask_wood, cv2.MORPH_CLOSE, k_wood)
+                cnts, _ = cv2.findContours(mask_wood_closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for c in cnts:
                     area = cv2.contourArea(c)
-                    if int(150 * area_scale) < area < int(3500 * area_scale):
+                    if int(200 * area_scale) < area < int(7000 * area_scale):
                         bx, by, bw, bh = cv2.boundingRect(c)
-                        if bw > 25 and bh > 25:
-                            segmented_candidates.append(('mug', bx, by, bw, bh, 0.98))
-
-                # 2. Wood Jenga items (moderate saturation, rear sector)
-                mask_wood = (cv2.inRange(hsv, (13, 35, 60), (28, 125, 255)) & table_mask)
-                cnts, _ = cv2.findContours(mask_wood, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                for c in cnts:
-                    area = cv2.contourArea(c)
-                    if int(150 * area_scale) < area < int(4500 * area_scale):
-                        bx, by, bw, bh = cv2.boundingRect(c)
-                        if bw < 25 or bh < 25 or by < 0.50 * img_h:
+                        if bw < 14 or bh < 14:
                             continue
-                        rect = cv2.minAreaRect(c)
-                        dim1, dim2 = rect[1]
-                        aspect = max(dim1, dim2) / (min(dim1, dim2) + 1e-3)
-                        cls = 'jenga_block' if aspect > 1.8 else 'jenga_tower'
-                        segmented_candidates.append((cls, bx, by, bw, bh, 0.96))
+                        cx = bx + bw / 2.0
+                        # Central station (|cx - center| < 55px) is the Jenga Tower; side positions are loose blocks
+                        cls = 'jenga_tower' if abs(cx - img_w / 2.0) < 55.0 else 'jenga_block'
+                        segmented_candidates.append((cls, 'wood', bx, by, bw, bh, 0.96))
 
-                # 3. Bright Yellow items (Duck, Banana in front sector)
-                mask_yellow = (cv2.inRange(hsv, (20, 25, 50), (40, 255, 255)) & table_mask)
-                cnts, _ = cv2.findContours(mask_yellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                for c in cnts:
-                    area = cv2.contourArea(c)
-                    if int(150 * area_scale) < area < int(4500 * area_scale):
-                        bx, by, bw, bh = cv2.boundingRect(c)
-                        if bw < 25 or bh < 25 or by > 0.50 * img_h:
-                            continue
-                        rect = cv2.minAreaRect(c)
-                        dim1, dim2 = rect[1]
-                        aspect = max(dim1, dim2) / (min(dim1, dim2) + 1e-3)
-                        cls = 'banana' if aspect > 1.4 else 'duck'
-                        segmented_candidates.append((cls, bx, by, bw, bh, 0.97))
-
-                # 4. Orange items (Fresh Orange Fruit)
-                mask_orange = (cv2.inRange(hsv, (8, 110, 80), (20, 255, 255)) & table_mask)
-                cnts, _ = cv2.findContours(mask_orange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                for c in cnts:
+                # Blue tabletop mug: circular cylinder on table
+                mask_blue = (cv2.inRange(hsv, (86, 60, 40), (135, 255, 255)) & table_mask)
+                cnts_b, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts_b:
                     area = cv2.contourArea(c)
                     bx, by, bw, bh = cv2.boundingRect(c)
                     aspect = max(bw, bh) / (min(bw, bh) + 1e-3)
-                    if int(100 * area_scale) < area < int(1200 * area_scale) and aspect < 1.6 and bw > 25 and bh > 25:
-                        segmented_candidates.append(('orange', bx, by, bw, bh, 0.98))
+                    if 1500 < area < 5500 and aspect < 1.30:
+                        segmented_candidates.append(('mug', 'blue', bx, by, bw, bh, 0.92))
 
-                # 5. Dark items (Beverage Bottle)
-                mask_dark = (cv2.inRange(hsv, (0, 0, 0), (180, 255, 55)) & table_mask)
-                cnts, _ = cv2.findContours(mask_dark, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                for c in cnts:
-                    area = cv2.contourArea(c)
-                    bx, by, bw, bh = cv2.boundingRect(c)
-                    aspect = max(bw, bh) / (min(bw, bh) + 1e-3)
-                    if aspect < 2.2 and int(120 * area_scale) < area < int(1200 * area_scale):
-                        if bx < 0.55 * img_w and by < 0.40 * img_h:
-                            segmented_candidates.append(('bottle', bx, by, bw, bh, 0.95))
-
-                # 6. Cyan / Blue items (Travel Mug, Salad Bowl)
-                mask_cyan = (cv2.inRange(hsv, (78, 60, 60), (130, 255, 255)) & table_mask)
-                cnts, _ = cv2.findContours(mask_cyan, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                for c in cnts:
-                    area = cv2.contourArea(c)
-                    if int(150 * area_scale) < area < int(4500 * area_scale):
-                        bx, by, bw, bh = cv2.boundingRect(c)
-                        if bw > 25 and bh > 25:
-                            cls = 'mug' if area < int(800 * area_scale) else 'bowl'
-                            segmented_candidates.append((cls, bx, by, bw, bh, 0.95))
-
-                # 6. Dishes & Plates
-                mask_plate = (cv2.inRange(cv_image, (180, 180, 180), (250, 250, 250)) & table_mask)
-                cnts, _ = cv2.findContours(mask_plate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                for c in cnts:
-                    area = cv2.contourArea(c)
-                    if int(1500 * area_scale) < area < int(6000 * area_scale):
-                        bx, by, bw, bh = cv2.boundingRect(c)
-                        segmented_candidates.append(('plate', bx, by, bw, bh, 0.91))
-
-                # Add segmented candidates with priority over generic/spurious bounding boxes
-                for cls_name, bx, by, bw, bh, conf in segmented_candidates:
+                # Merge segmented candidates
+                for cls_name, color, bx, by, bw, bh, conf in segmented_candidates:
                     cx = bx + bw / 2.0
                     cy = by + bh / 2.0
+                    full_cls = f"{cls_name}|{color}"
 
                     # Check if an existing box covers this location
                     overlapping_idx = None
@@ -370,20 +398,14 @@ class DetectionNode(Node):
                             break
 
                     if overlapping_idx is not None:
-                        # If existing detection is less specific or different, upgrade it with precise segmented class
+                        # Override confused YOLO classifications (e.g., banana on wood or plate on red mug)
                         if overlapping_idx < len(det_array.detections):
-                            existing_det = det_array.detections[overlapping_idx]
-                            existing_cls = existing_det.results[0].hypothesis.class_id if existing_det.results else ''
-                            if existing_cls in {'banana', 'mug', 'jenga_block', 'orange', 'bottle', 'duck', 'bowl'} and existing_cls == cls_name:
-                                continue
-                            # Upgrade class and bounding box
-                            existing_det.bbox.center.position.x = float(cx)
-                            existing_det.bbox.center.position.y = float(cy)
-                            existing_det.bbox.size_x = float(bw)
-                            existing_det.bbox.size_y = float(bh)
-                            existing_det.results[0].hypothesis.class_id = cls_name
-                            existing_det.results[0].hypothesis.score = conf
-                            continue
+                            exist_hyp = det_array.detections[overlapping_idx].results[0].hypothesis
+                            if 'wood' in color and 'banana' in exist_hyp.class_id:
+                                exist_hyp.class_id = full_cls
+                            elif 'mug' in cls_name and any(k in exist_hyp.class_id for k in ('plate', 'box', 'sports ball', 'unknown')):
+                                exist_hyp.class_id = full_cls
+                        continue
 
                     det = Detection2D()
                     det.bbox.center.position.x = float(cx)
@@ -392,13 +414,37 @@ class DetectionNode(Node):
                     det.bbox.size_y = float(bh)
 
                     hyp = ObjectHypothesisWithPose()
-                    hyp.hypothesis.class_id = cls_name
+                    hyp.hypothesis.class_id = full_cls
                     hyp.hypothesis.score = conf
                     det.results.append(hyp)
 
-                    det.id = str(self._get_persistent_track_id(cx, cy, cls_name))
+                    det.id = str(self._get_persistent_track_id(cx, cy, full_cls))
                     det_array.detections.append(det)
                     covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
+
+                # Dishes & Plates
+                mask_plate = (cv2.inRange(cv_image, (180, 180, 180), (250, 250, 250)) & table_mask)
+                cnts_p, _ = cv2.findContours(mask_plate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts_p:
+                    area = cv2.contourArea(c)
+                    if int(1500 * area_scale) < area < int(6500 * area_scale):
+                        bx, by, bw, bh = cv2.boundingRect(c)
+                        cx = bx + bw / 2.0
+                        cy = by + bh / 2.0
+                        # Check overlap with existing YOLO detections
+                        if not any(ox1 - 15 < cx < ox2 + 15 and oy1 - 15 < cy < oy2 + 15 for ox1, oy1, ox2, oy2 in covered_boxes):
+                            det = Detection2D()
+                            det.bbox.center.position.x = float(cx)
+                            det.bbox.center.position.y = float(cy)
+                            det.bbox.size_x = float(bw)
+                            det.bbox.size_y = float(bh)
+                            hyp = ObjectHypothesisWithPose()
+                            hyp.hypothesis.class_id = "plate|white"
+                            hyp.hypothesis.score = 0.92
+                            det.results.append(hyp)
+                            det.id = str(self._get_persistent_track_id(cx, cy, "plate|white"))
+                            det_array.detections.append(det)
+                            covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
 
             except Exception as e:
                 self.get_logger().warn(f"Tabletop segmentation warning: {e}")

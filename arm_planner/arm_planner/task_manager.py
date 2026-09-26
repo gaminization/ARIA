@@ -242,9 +242,16 @@ class TaskManager(LifecycleNode):
         Advance index when current action completes.
         """
         if self.action_index >= len(task.action_queue):
-            # All actions complete
-            self.status = TaskStatus.COMPLETE
-            task.task_status = TaskStatus.COMPLETE.value
+            # Check if any action in queue failed to achieve physical success
+            any_failed = any(a.status == 'FAILED' for a in task.action_queue)
+            if any_failed:
+                self.status = TaskStatus.FAILED
+                task.task_status = TaskStatus.FAILED.value
+                self.bus.add_chain_of_thought("Task FAILED: One or more subgoals failed physical execution.")
+            else:
+                self.status = TaskStatus.COMPLETE
+                task.task_status = TaskStatus.COMPLETE.value
+                self.bus.add_chain_of_thought(f"Task COMPLETE: Successfully accomplished '{task.current_command}'.")
             self.bus.publish_task(task)
             return
 
