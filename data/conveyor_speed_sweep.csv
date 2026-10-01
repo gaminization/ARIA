@@ -1,0 +1,13 @@
+cycle_id,timestamp,git_commit_hash,belt_speed_mps,workpiece_instance,object_color,defect_status,defect_cue_type,optical_conf,interception_error_mm,velocity_diff_mps,grasp_success,sort_success,cycle_time_s,failure_category,notes
+CYC_0001,2026-09-28T12:58:14,52d1114,0.02,workpiece_01,blue,conforming,none,0.990,1.3,0.0016,SUCCESS,SUCCESS,14.00,NONE,Sorted at 0.02 m/s; QC=PASS
+CYC_0002,2026-09-28T12:58:28,52d1114,0.02,workpiece_01,blue,conforming,none,0.990,0.9,0.0002,SUCCESS,SUCCESS,36.56,NONE,Sorted at 0.02 m/s; QC=PASS
+CYC_0003,2026-09-28T12:59:12,52d1114,0.04,workpiece_01,blue,conforming,none,0.990,0.8,0.0026,SUCCESS,SUCCESS,14.01,NONE,Sorted at 0.04 m/s; QC=PASS
+CYC_0004,2026-09-28T12:59:26,52d1114,0.04,workpiece_01,blue,conforming,none,0.990,0.9,0.0030,SUCCESS,SUCCESS,28.30,NONE,Sorted at 0.04 m/s; QC=PASS
+CYC_0005,2026-09-28T13:00:01,52d1114,0.06,workpiece_01,blue,conforming,none,0.990,1.9,0.0042,SUCCESS,SUCCESS,14.01,NONE,Sorted at 0.06 m/s; QC=PASS
+CYC_0006,2026-09-28T13:00:15,52d1114,0.06,workpiece_01,blue,conforming,none,0.990,1.4,0.0042,SUCCESS,SUCCESS,27.94,NONE,Sorted at 0.06 m/s; QC=PASS
+CYC_0007,2026-09-28T13:00:50,52d1114,0.08,workpiece_01,blue,conforming,none,0.990,1.7,0.0040,SUCCESS,SUCCESS,14.01,NONE,Sorted at 0.08 m/s; QC=PASS
+CYC_0008,2026-09-28T13:01:04,52d1114,0.08,workpiece_01,blue,conforming,none,0.990,1.8,0.0033,SUCCESS,SUCCESS,28.17,NONE,Sorted at 0.08 m/s; QC=PASS
+CYC_0009,2026-09-28T13:01:39,52d1114,0.10,workpiece_01,blue,conforming,none,0.990,2.5,0.0038,SUCCESS,SUCCESS,14.00,NONE,Sorted at 0.10 m/s; QC=PASS
+CYC_0010,2026-09-28T13:01:53,52d1114,0.10,workpiece_02,blue,conforming,none,0.990,2.6,0.0049,SUCCESS,SUCCESS,14.57,NONE,Sorted at 0.10 m/s; QC=PASS
+CYC_0011,2026-09-28T13:02:15,52d1114,0.12,workpiece_01,blue,conforming,none,0.990,3.1,0.0073,SUCCESS,SUCCESS,14.01,NONE,Sorted at 0.12 m/s; QC=PASS
+CYC_0012,2026-09-28T13:02:29,52d1114,0.12,workpiece_02,blue,conforming,none,0.990,3.1,0.0045,SUCCESS,SUCCESS,14.48,NONE,Sorted at 0.12 m/s; QC=PASS

@@ -52,6 +52,12 @@ def generate_launch_description():
     )
     auto_cycle = LaunchConfiguration("auto_cycle")
 
+    gui_arg = DeclareLaunchArgument(
+        "gui", default_value="true",
+        description="Launch Gazebo UI window (set false for headless simulation)"
+    )
+    gui_conf = LaunchConfiguration("gui")
+
     # ── Robot description (URDF via xacro) ─────────────────
     xacro_file = os.path.join(desc_pkg, "urdf", "aria_arm.urdf.xacro")
     doc = xacro.parse(open(xacro_file))
@@ -117,9 +123,10 @@ def generate_launch_description():
         ),
         launch_arguments={
             "world": world_file,
-            "verbose": "true",
-            "gui": "true",
+            "verbose": "false",
+            "gui": gui_conf,
             "server": "true",
+            "extra_gazebo_args": "-s libgazebo_ros_state.so",
         }.items(),
     )
 
@@ -202,6 +209,7 @@ def generate_launch_description():
         use_rviz_arg,
         world_arg,
         auto_cycle_arg,
+        gui_arg,
 
         # Environment configuration
         set_display,

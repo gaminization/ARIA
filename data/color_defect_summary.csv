@@ -1,0 +1,7 @@
+condition,base_color,surface_status,is_cross_condition,trials_n,det_accuracy_pct,precision_pct,recall_pct,sort_success_count,sort_success_pct,wilson_ci_lo,wilson_ci_hi
+Blue Conforming (Prior),blue,conforming,False,20,100.0,N/A (Conf),N/A (Conf),20,100.0,83.9,100.0
+Blue Defective (Cross),blue,defective,True,20,85.0,100.0%,85.0%,17,85.0,64.0,94.8
+Red Conforming (Cross),red,conforming,True,20,95.0,0.0%,N/A (Conf),18,90.0,69.9,97.2
+Red Defective (Prior),red,defective,False,20,95.0,100.0%,95.0%,19,95.0,76.4,99.1
+Grey Conforming (Neutral),grey,conforming,False,20,100.0,N/A (Conf),N/A (Conf),20,100.0,83.9,100.0
+Grey Defective (Neutral),grey,defective,False,20,90.0,100.0%,90.0%,17,85.0,64.0,94.8

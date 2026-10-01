@@ -1,0 +1,31 @@
+cycle_id,timestamp,git_commit_hash,belt_speed_mps,workpiece_instance,object_color,defect_status,defect_cue_type,optical_conf,interception_error_mm,velocity_diff_mps,grasp_success,sort_success,cycle_time_s,failure_category,notes
+EXT_0001,2026-09-28T12:00:45,52d1114,0.02,conveyor_block_1,red,conforming,none,0.95,0.99,0.001,SUCCESS,SUCCESS,22.9,NONE,Clean quintic polynomial rendezvous
+EXT_0002,2026-09-28T12:01:31,52d1114,0.02,conveyor_block_2,yellow,defective,surface_scratch,0.94,0.47,0.0037,SUCCESS,SUCCESS,20.54,NONE,Clean quintic polynomial rendezvous
+EXT_0003,2026-09-28T12:02:03,52d1114,0.02,conveyor_block_3,red,conforming,none,0.98,0.96,0.0027,SUCCESS,SUCCESS,14.32,NONE,Clean quintic polynomial rendezvous
+EXT_0004,2026-09-28T12:02:41,52d1114,0.02,conveyor_block_4,blue,defective,surface_scratch,0.98,0.53,0.0014,SUCCESS,SUCCESS,21.07,NONE,Clean quintic polynomial rendezvous
+EXT_0005,2026-09-28T12:03:19,52d1114,0.02,conveyor_block_5,green,conforming,none,0.95,0.7,0.002,SUCCESS,SUCCESS,15.87,NONE,Clean quintic polynomial rendezvous
+EXT_0006,2026-09-28T12:03:55,52d1114,0.04,conveyor_block_0,blue,conforming,none,0.98,0.83,0.0041,SUCCESS,SUCCESS,21.24,NONE,Clean quintic polynomial rendezvous
+EXT_0007,2026-09-28T12:04:32,52d1114,0.04,conveyor_block_1,green,defective,surface_scratch,0.97,0.96,0.0008,SUCCESS,SUCCESS,17.52,NONE,Clean quintic polynomial rendezvous
+EXT_0008,2026-09-28T12:04:58,52d1114,0.04,conveyor_block_2,blue,conforming,none,0.98,1.09,0.0033,SUCCESS,SUCCESS,23.28,NONE,Clean quintic polynomial rendezvous
+EXT_0009,2026-09-28T12:05:35,52d1114,0.04,conveyor_block_3,green,defective,surface_scratch,0.95,0.68,0.0017,SUCCESS,SUCCESS,21.63,NONE,Clean quintic polynomial rendezvous
+EXT_0010,2026-09-28T12:06:21,52d1114,0.04,conveyor_block_4,blue,conforming,none,0.97,0.54,0.0016,SUCCESS,SUCCESS,25.24,NONE,Clean quintic polynomial rendezvous
+EXT_0011,2026-09-28T12:07:09,52d1114,0.06,conveyor_block_5,green,conforming,none,0.99,0.91,0.0016,SUCCESS,SUCCESS,19.55,NONE,Clean quintic polynomial rendezvous
+EXT_0012,2026-09-28T12:07:51,52d1114,0.06,conveyor_block_0,blue,defective,surface_scratch,0.95,0.43,0.0014,SUCCESS,SUCCESS,17.89,NONE,Clean quintic polynomial rendezvous
+EXT_0013,2026-09-28T12:08:26,52d1114,0.06,conveyor_block_1,green,conforming,none,0.95,0.8,0.0022,SUCCESS,SUCCESS,14.79,NONE,Clean quintic polynomial rendezvous
+EXT_0014,2026-09-28T12:09:11,52d1114,0.06,conveyor_block_2,red,defective,surface_scratch,0.98,0.83,0.0025,SUCCESS,SUCCESS,17.18,NONE,Clean quintic polynomial rendezvous
+EXT_0015,2026-09-28T12:09:59,52d1114,0.06,conveyor_block_3,yellow,conforming,none,0.96,1.2,0.003,SUCCESS,SUCCESS,24.77,NONE,Clean quintic polynomial rendezvous
+EXT_0016,2026-09-28T12:10:28,52d1114,0.08,conveyor_block_4,blue,conforming,none,0.98,0.52,0.0027,SUCCESS,SUCCESS,15.09,NONE,Clean quintic polynomial rendezvous
+EXT_0017,2026-09-28T12:10:58,52d1114,0.08,conveyor_block_5,blue,defective,surface_scratch,0.96,0.88,0.0039,SUCCESS,SUCCESS,19.07,NONE,Clean quintic polynomial rendezvous
+EXT_0018,2026-09-28T12:11:37,52d1114,0.08,conveyor_block_0,blue,conforming,none,0.97,0.49,0.0028,SUCCESS,SUCCESS,25.65,NONE,Clean quintic polynomial rendezvous
+EXT_0019,2026-09-28T12:12:19,52d1114,0.08,conveyor_block_1,green,defective,surface_scratch,0.95,0.75,0.0037,SUCCESS,SUCCESS,23.22,NONE,Clean quintic polynomial rendezvous
+EXT_0020,2026-09-28T12:12:58,52d1114,0.08,conveyor_block_2,green,conforming,none,0.99,1.01,0.0005,SUCCESS,SUCCESS,22.67,NONE,Clean quintic polynomial rendezvous
+EXT_0021,2026-09-28T12:13:39,52d1114,0.1,conveyor_block_3,green,conforming,none,0.98,0.81,0.0044,SUCCESS,SUCCESS,24.45,NONE,Clean quintic polynomial rendezvous
+EXT_0022,2026-09-28T12:14:10,52d1114,0.1,conveyor_block_4,blue,defective,surface_scratch,0.97,0.79,0.0012,SUCCESS,SUCCESS,23.15,NONE,Clean quintic polynomial rendezvous
+EXT_0023,2026-09-28T12:14:38,52d1114,0.1,conveyor_block_5,green,conforming,none,0.95,0.59,0.0045,SUCCESS,SUCCESS,24.54,NONE,Clean quintic polynomial rendezvous
+EXT_0024,2026-09-28T12:15:21,52d1114,0.1,conveyor_block_0,yellow,defective,surface_scratch,0.98,1.18,0.0046,SUCCESS,SUCCESS,15.03,NONE,Clean quintic polynomial rendezvous
+EXT_0025,2026-09-28T12:16:03,52d1114,0.1,conveyor_block_1,yellow,conforming,none,0.99,0.53,0.0038,SUCCESS,SUCCESS,15.54,NONE,Clean quintic polynomial rendezvous
+EXT_0026,2026-09-28T12:16:44,52d1114,0.12,conveyor_block_2,red,conforming,none,0.99,1.0,0.0071,SUCCESS,SUCCESS,19.08,NONE,Clean quintic polynomial rendezvous
+EXT_0027,2026-09-28T12:17:31,52d1114,0.12,conveyor_block_3,green,defective,surface_scratch,0.96,0.81,0.0059,SUCCESS,SUCCESS,17.74,NONE,Clean quintic polynomial rendezvous
+EXT_0028,2026-09-28T12:17:59,52d1114,0.12,conveyor_block_4,blue,conforming,none,0.97,0.58,0.0059,SUCCESS,SUCCESS,14.77,NONE,Clean quintic polynomial rendezvous
+EXT_0029,2026-09-28T12:18:31,52d1114,0.12,conveyor_block_5,blue,defective,surface_scratch,0.95,8.57,0.0078,SUCCESS,FAILURE,34.02,Conveyor Speed Jitter,Dynamic slip at high belt velocity
+EXT_0030,2026-09-28T12:19:06,52d1114,0.12,conveyor_block_0,yellow,conforming,none,0.95,5.1,0.0079,FAILURE,FAILURE,30.02,Conveyor Speed Jitter,Dynamic slip at high belt velocity

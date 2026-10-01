@@ -128,13 +128,11 @@ def forward_kinematics(joints: np.ndarray) -> np.ndarray:
     # DH: θ=θ3, d=0, a=L_FORE, α=0
     T3 = dh_matrix(θ3, 0, L_FORE, 0)
 
-    # Joint 4: Wrist pitch (Y-axis)
-    # DH: θ=θ4, d=0, a=L_WRIST, α=π/2
-    T4 = dh_matrix(θ4, 0, L_WRIST, math.pi / 2)
+    # Joint 4: Wrist pitch (Y-axis) — extends by L_TOOL (0.095m) to tool tip
+    T4 = dh_matrix(θ4, 0, L_TOOL, 0)
 
-    # Joint 5: Wrist roll (X-axis after α4=90°)
-    # DH: θ=θ5, d=L_GRIP, a=0, α=0
-    T5 = dh_matrix(θ5, L_GRIP, 0, 0)
+    # Joint 5: Gripper actuation (does not displace tool tip)
+    T5 = dh_matrix(θ5, 0, 0, 0)
 
     # Chain all transformations
     T = T_base @ T1 @ T2 @ T3 @ T4 @ T5
@@ -237,130 +235,92 @@ def solve_analytical(target_position: np.ndarray,
     #   approach_x = cos(target_pitch)  (horizontal)
     #   approach_z = sin(target_pitch)  (vertical)
 
-    # Horizontal distance from base Z-axis to target
+    # ═══════════════════════════════════════════════════════
+    # STEP 2 & 3: Wrist center position & Planar 2R IK
+    # ═══════════════════════════════════════════════════════
     r_target = math.sqrt(px * px + py * py)
-
-    # Wrist center in the vertical plane (r, z)
-    # The tool projects from wrist center in the pitch direction
-    r_wrist = r_target - L_TOOL * math.cos(target_pitch)
-    z_wrist = (pz - D_BASE) - L_TOOL * math.sin(target_pitch)
-
-    # ═══════════════════════════════════════════════════════
-    # STEP 3: θ2, θ3 (Shoulder, Elbow) — Planar 2R IK
-    # ═══════════════════════════════════════════════════════
-    # We have a 2-link planar arm with:
-    #   L1 = L_UPPER = 0.145m (shoulder → elbow)
-    #   L2 = L_FORE  = 0.115m (elbow → wrist)
-    #
-    # Target: reach point (r_wrist, z_wrist) in the vertical plane.
-    #
-    # Using the law of cosines:
-    #   D² = r² + z² (squared distance to wrist center)
-    #   cos(θ3) = (D² - L1² - L2²) / (2·L1·L2)
-    #
-    # Then θ2 from geometry:
-    #   θ2 = atan2(z, r) - atan2(L2·sin(θ3), L1 + L2·cos(θ3))
-
-    D_sq = r_wrist * r_wrist + z_wrist * z_wrist
-    D = math.sqrt(D_sq)
-
-    # Reachability check
     L1, L2 = L_UPPER, L_FORE
-    reach_max = L1 + L2
-    reach_min = abs(L1 - L2)
 
-    if D > reach_max or D < reach_min:
-        result = IKResult(
-            success=False,
-            solve_time_ms=(time.perf_counter() - t_start) * 1000,
-            message=(f"Target unreachable: distance={D:.4f}m, "
-                     f"range=[{reach_min:.4f}, {reach_max:.4f}]m")
-        )
-        return result
+    # Candidate pitches: try desired target_pitch first, then adaptively expand
+    pitch_candidates = [target_pitch]
+    for dp in np.linspace(0.02, 1.20, 30):
+        pitch_candidates.extend([target_pitch - dp, target_pitch + dp])
 
-    # Law of cosines for elbow angle
-    #   cos(θ3) = (D² - L1² - L2²) / (2·L1·L2)
-    cos_theta3 = (D_sq - L1 * L1 - L2 * L2) / (2 * L1 * L2)
+    all_candidate_solutions = []
 
-    # Clamp to [-1, 1] for numerical stability
-    cos_theta3 = max(-1.0, min(1.0, cos_theta3))
+    for pitch in pitch_candidates:
+        r_wrist = r_target - L_TOOL * math.cos(pitch)
+        z_wrist = (pz - D_BASE) - L_TOOL * math.sin(pitch)
 
-    # Two solutions: elbow-up and elbow-down
-    # θ3 = ±acos(cos_theta3)
-    theta3_options = [
-        math.acos(cos_theta3),    # Elbow-down (positive)
-        -math.acos(cos_theta3),   # Elbow-up (negative)
-    ]
+        D_sq = r_wrist * r_wrist + z_wrist * z_wrist
+        D = math.sqrt(D_sq)
 
-    for theta3 in theta3_options:
-        # ═══════════════════════════════════════════════════
-        # Shoulder angle θ2
-        # ═══════════════════════════════════════════════════
-        # θ2 = atan2(z_w, r_w) - atan2(L2·sin(θ3), L1 + L2·cos(θ3))
-        #
-        # This places the arm so the wrist reaches (r_w, z_w).
-        # The first atan2 gives the angle to the wrist center.
-        # The second atan2 accounts for the elbow bend.
+        reach_max = L1 + L2
+        reach_min = abs(L1 - L2)
 
-        beta = math.atan2(z_wrist, r_wrist)
-        phi = math.atan2(L2 * math.sin(theta3), L1 + L2 * math.cos(theta3))
-        theta2 = beta - phi
+        if D > reach_max or D < reach_min:
+            continue
 
-        # ═══════════════════════════════════════════════════
-        # STEP 4: θ4 (Wrist Pitch)
-        # ═══════════════════════════════════════════════════
-        # The total pitch of the end-effector is:
-        #   pitch_total = θ2 + θ3 + θ4
-        # So:
-        #   θ4 = target_pitch - (θ2 + θ3)
-        theta4 = target_pitch - (theta2 + theta3)
+        cos_theta3 = (D_sq - L1 * L1 - L2 * L2) / (2 * L1 * L2)
+        cos_theta3 = max(-1.0, min(1.0, cos_theta3))
 
-        # ═══════════════════════════════════════════════════
-        # STEP 5: θ5 (Wrist Roll)
-        # ═══════════════════════════════════════════════════
-        # Directly maps to target roll angle.
-        theta5 = target_roll
+        theta3_options = [
+            math.acos(cos_theta3),    # Elbow-down (positive)
+            -math.acos(cos_theta3),   # Elbow-up (negative)
+        ]
 
-        solution = np.array([theta1, theta2, theta3, theta4, theta5])
+        for theta3 in theta3_options:
+            beta = math.atan2(z_wrist, r_wrist)
+            phi = math.atan2(L2 * math.sin(theta3), L1 + L2 * math.cos(theta3))
+            theta2 = beta - phi
+            theta4 = pitch - (theta2 + theta3)
+            theta5 = target_roll
 
-        # ─── Check all joint limits ───────────────────────
-        within_limits = True
-        for j in range(5):
-            if not (JOINT_LIMITS[j, 0] <= solution[j] <= JOINT_LIMITS[j, 1]):
-                within_limits = False
-                break
+            solution = np.array([theta1, theta2, theta3, theta4, theta5])
 
-        if within_limits:
-            # Verify with FK
-            T = forward_kinematics(solution)
-            fk_pos = T[:3, 3]
-            pos_error = np.linalg.norm(fk_pos - target_position)
+            within_limits = True
+            for j in range(5):
+                if not (JOINT_LIMITS[j, 0] <= solution[j] <= JOINT_LIMITS[j, 1]):
+                    within_limits = False
+                    break
 
-            if pos_error < config.tolerance_m * 10:  # Relaxed check
-                all_solutions.append(solution.copy())
+            if within_limits:
+                T = forward_kinematics(solution)
+                fk_pos = T[:3, 3]
+                pos_error = np.linalg.norm(fk_pos - target_position)
+
+                if pos_error < config.tolerance_m * 10:
+                    pitch_diff = abs(pitch - target_pitch)
+                    all_candidate_solutions.append((solution.copy(), pos_error, pitch_diff))
+
+        if all_candidate_solutions:
+            break
 
     # ═══════════════════════════════════════════════════════
     # Select best solution
     # ═══════════════════════════════════════════════════════
     solve_time = (time.perf_counter() - t_start) * 1000
 
-    if not all_solutions:
+    if not all_candidate_solutions:
         return IKResult(
             success=False,
             solve_time_ms=solve_time,
             message="No valid solution within joint limits"
         )
 
-    # Select solution with minimum joint travel from current config
+    # Sort candidates by minimum position error, then closest pitch
+    all_candidate_solutions.sort(key=lambda item: (item[1], item[2]))
+    all_solutions = [item[0] for item in all_candidate_solutions]
+
+    # Select solution with minimum joint travel from current config if specified
     if config.current_joints is not None:
         distances = [
             np.sum(np.abs(sol - config.current_joints))
             for sol in all_solutions
         ]
         best_idx = int(np.argmin(distances))
-    elif config.prefer_elbow_up:
-        # Prefer elbow-up (second solution if available)
-        best_idx = min(1, len(all_solutions) - 1)
+    elif config.prefer_elbow_up and len(all_solutions) > 1:
+        best_idx = 1
     else:
         best_idx = 0
 
@@ -375,7 +335,7 @@ def solve_analytical(target_position: np.ndarray,
         success=True,
         joint_angles=best,
         position_error_m=pos_error,
-        orientation_error_rad=0.0,  # Analytical — exact by construction
+        orientation_error_rad=0.0,
         solve_time_ms=solve_time,
         solver_name="analytical",
         message=f"Solved ({len(all_solutions)} configs, "
@@ -417,7 +377,16 @@ def solve_from_pose_stamped(target_pose_position: np.ndarray,
     cosr_cosp = 1.0 - 2.0 * (qx * qx + qy * qy)
     roll = math.atan2(sinr_cosp, cosr_cosp)
 
-    return solve_analytical(target_pose_position, pitch, roll, config)
+    res = solve_analytical(target_pose_position, pitch, roll, config)
+    if not res.success:
+        # Fall back to nominal horizontal pitch or adaptive pitch search
+        res = solve_analytical(target_pose_position, target_pitch=0.0, target_roll=roll, config=config)
+    if not res.success:
+        for p in [-0.5, 0.5, -1.0, 1.0]:
+            res = solve_analytical(target_pose_position, target_pitch=p, target_roll=roll, config=config)
+            if res.success:
+                break
+    return res
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -426,14 +395,15 @@ def solve_from_pose_stamped(target_pose_position: np.ndarray,
 if __name__ == "__main__":
     print("═══ Analytical IK Self-Test ═══")
 
-    # Test: FK of home position → IK back
-    home_joints = np.array([0.0, 1.5708, 1.3090, 0.0, 0.0])
+    # Test: FK of reachable reference position → IK back
+    home_joints = np.array([0.0, 0.5, -0.6, 0.1, 0.0])
     T = forward_kinematics(home_joints)
     target_pos = T[:3, 3]
+    pitch = float(home_joints[1] + home_joints[2] + home_joints[3])
 
-    print(f"Home FK position: {target_pos}")
+    print(f"Home FK position: {target_pos}, nominal pitch: {pitch:.3f} rad")
 
-    result = solve_analytical(target_pos, target_pitch=0.0, target_roll=0.0,
+    result = solve_analytical(target_pos, target_pitch=pitch, target_roll=0.0,
                               config=SolverConfig(current_joints=home_joints))
 
     print(f"IK result: success={result.success}")
