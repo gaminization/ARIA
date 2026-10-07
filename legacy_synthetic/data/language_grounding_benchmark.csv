@@ -1,0 +1,61 @@
+episode_id,category,instruction_text,aria_slot_accuracy,aria_syntax_valid,aria_clarification_accuracy,aria_execution_success,aria_latency_ms,saycan_slot_accuracy,saycan_syntax_valid,saycan_clarification_accuracy,saycan_execution_success,saycan_latency_ms,llm_slot_accuracy,llm_syntax_valid,llm_clarification_accuracy,llm_execution_success,llm_latency_ms
+1,Cat 1: Direct Imperative,Pick up the blue bolt and place it in tray pocket 1.,1,1,1,1,310.1,1,1,1,1,641.5,0,0,1,1,519.4
+2,Cat 1: Direct Imperative,Grasp the red cylinder and transfer it to the assembly fixture.,1,1,1,1,340.2,1,1,1,1,611.2,1,1,1,1,504.1
+3,Cat 1: Direct Imperative,Pick the grey bracket from the table and drop it into bin A.,1,1,1,1,335.8,1,1,1,0,680.6,1,1,1,0,476.6
+4,Cat 1: Direct Imperative,Transfer the blue cube from the pickup zone to the pallet.,1,1,1,1,293.7,1,1,1,1,609.2,1,1,1,1,494.0
+5,Cat 1: Direct Imperative,Move the red hex nut from the feeder to tray pocket 3.,1,1,1,1,305.7,1,1,1,1,634.9,0,1,1,1,503.2
+6,Cat 1: Direct Imperative,Pick the grey spacer and place it into tray pocket 4.,1,1,1,1,320.5,1,1,1,1,697.6,1,1,1,0,444.0
+7,Cat 1: Direct Imperative,Grasp the blue peg and insert it into slot 2.,1,1,1,1,315.0,0,1,1,1,676.5,1,1,1,1,485.5
+8,Cat 1: Direct Imperative,Pick the red washer and place it in the center container.,1,1,1,1,297.2,1,1,1,1,623.2,0,0,1,0,484.4
+9,Cat 1: Direct Imperative,Transfer the grey flange to the inspection turntable.,1,1,1,1,338.5,0,1,1,1,619.8,1,1,1,1,468.2
+10,Cat 1: Direct Imperative,Pick the blue cylinder and place it beside the reference marker.,1,1,1,1,329.5,1,1,1,1,657.5,1,1,1,0,471.4
+11,Cat 2: Attribute-Grounded,Inspect and discard the defective red cylinder with surface scratches.,1,1,1,1,324.4,1,1,1,1,671.3,1,1,1,1,491.3
+12,Cat 2: Attribute-Grounded,Grasp the conforming blue block and palletize it in the conforming tray.,1,1,1,0,320.0,1,1,1,1,634.0,1,1,1,0,451.5
+13,Cat 2: Attribute-Grounded,Locate the scratched grey bracket and route it to the scrap bin.,1,1,1,1,303.0,1,1,1,1,637.5,0,1,1,1,487.5
+14,Cat 2: Attribute-Grounded,Find the smooth red component and move it to the outbound tray.,1,1,1,1,337.2,1,1,1,1,615.8,1,1,1,0,457.0
+15,Cat 2: Attribute-Grounded,Pick the blue workpiece exhibiting edge burrs and place it in quarantine.,1,1,1,0,321.9,1,1,1,0,653.1,1,1,1,0,479.7
+16,Cat 2: Attribute-Grounded,Sort the pristine grey bolt into the conforming assembly bin.,1,1,1,1,343.8,0,1,1,1,693.4,1,1,1,0,453.0
+17,Cat 2: Attribute-Grounded,Grasp the cracked red housing and discard it into the scrap receptacle.,1,1,1,1,329.1,1,1,1,0,669.0,0,1,1,1,503.4
+18,Cat 2: Attribute-Grounded,Pick the defect-free blue cube and place it into tray pocket 2.,1,1,1,1,329.5,0,1,1,0,619.9,1,1,1,1,513.0
+19,Cat 2: Attribute-Grounded,Identify the dented grey cylinder and transfer it to the rework station.,1,1,1,1,340.3,1,1,1,1,636.2,1,1,1,1,445.9
+20,Cat 2: Attribute-Grounded,Sort the unblemished red block into the primary inspection tray.,1,1,1,1,309.8,1,1,1,0,669.5,0,1,1,1,449.2
+21,Cat 3: Spatial-Relational,Move the grey block located to the left of the pallet into the scrap bin.,1,1,1,1,305.3,1,1,1,1,605.7,0,1,1,1,501.4
+22,Cat 3: Spatial-Relational,Pick the blue cylinder positioned behind the red cube and place it in pocket 1.,1,1,1,1,293.1,1,1,1,0,681.1,1,1,1,1,479.7
+23,Cat 3: Spatial-Relational,Grasp the object closest to the base of the robotic arm and lift it.,1,1,1,1,294.0,1,0,1,1,679.5,1,1,1,0,446.4
+24,Cat 3: Spatial-Relational,Transfer the red part on the right side of the conveyor into bin B.,1,1,1,1,291.1,0,1,1,0,614.9,0,1,1,1,496.8
+25,Cat 3: Spatial-Relational,Pick the bracket situated between the two blue cylinders and palletize it.,1,1,1,1,307.9,1,1,1,1,671.4,1,1,1,0,445.0
+26,Cat 3: Spatial-Relational,Move the topmost cube in the stack to the empty tray slot on the left.,1,1,1,1,292.1,1,0,1,1,663.4,1,1,1,0,487.8
+27,Cat 3: Spatial-Relational,Grasp the component nearest to the optical inspection camera marker.,1,1,1,1,342.6,1,0,1,1,678.3,1,1,1,1,458.2
+28,Cat 3: Spatial-Relational,Pick the cylinder placed directly in front of the calibration target.,1,1,1,1,301.1,1,1,1,1,640.5,1,0,1,0,461.5
+29,Cat 3: Spatial-Relational,Transfer the red block adjacent to the defective workpiece into quarantine.,1,1,1,1,341.1,1,1,1,1,624.5,0,1,1,1,443.5
+30,Cat 3: Spatial-Relational,Pick the workpiece positioned furthest along the positive X-axis.,1,1,1,1,309.3,1,1,1,0,645.1,1,0,1,0,472.3
+31,Cat 4: Compound Multi-Step,"Grasp the blue bracket, reorient it 45 degrees via in-hand pivoting, and stack it.",1,1,1,1,335.8,1,0,1,0,667.9,1,0,1,1,484.5
+32,Cat 4: Compound Multi-Step,"Pick the red cylinder, slide it against the fixture edge, and insert it.",1,1,1,1,340.3,1,1,1,0,666.0,1,1,1,0,442.8
+33,Cat 4: Compound Multi-Step,"Lift the grey workpiece, rotate gripper 90 degrees, and palletize in tray 3.",1,1,1,1,341.4,1,1,1,0,658.9,1,1,1,0,441.7
+34,Cat 4: Compound Multi-Step,"Grasp the blue block, tap it on the table to align edges, and stack on red block.",1,1,1,1,328.2,1,1,1,0,651.5,1,1,1,0,497.3
+35,Cat 4: Compound Multi-Step,"Pick the bracket, pivot from horizontal to vertical, and place into groove.",1,1,1,1,311.3,1,1,1,1,658.9,1,1,1,1,454.9
+36,Cat 4: Compound Multi-Step,"Retrieve the red cylinder, perform in-hand reorientation, and place upright.",1,1,1,1,318.1,1,1,1,0,693.6,1,1,1,0,464.2
+37,Cat 4: Compound Multi-Step,"Grasp the grey peg, adjust tilt angle by 30 degrees, and drop into sleeve.",1,1,1,1,318.2,1,1,1,0,627.3,1,1,1,0,498.8
+38,Cat 4: Compound Multi-Step,"Pick the blue component, translate 15 cm along Y, and stack onto tier 2.",1,1,1,1,324.2,1,0,1,0,659.4,0,1,1,0,467.5
+39,Cat 4: Compound Multi-Step,"Lift the red block, pivot 45 degrees, and seat flush against the backstop.",1,1,1,1,341.6,0,0,1,1,677.3,1,1,1,0,509.3
+40,Cat 4: Compound Multi-Step,"Grasp the grey plate, reorient face-down, and slide into storage slot.",1,1,1,1,312.0,1,1,1,1,672.1,1,1,1,0,487.1
+41,Cat 5: Constraint / Dynamic,Intercept the moving workpiece on the conveyor without exceeding velocity limits.,1,1,1,1,290.1,1,1,1,1,632.1,1,1,1,1,444.0
+42,Cat 5: Constraint / Dynamic,Grasp the conveyor block before it reaches the 0.35m workspace boundary.,1,1,1,1,324.0,1,1,1,1,654.5,1,1,1,0,476.9
+43,Cat 5: Constraint / Dynamic,Track and pick the red part at 0.08 m/s while matching velocity within 5 mm/s.,1,1,1,1,336.0,1,1,1,0,665.5,1,1,1,0,462.1
+44,Cat 5: Constraint / Dynamic,Intercept the moving defective cylinder and divert it without arm jerk.,1,1,1,1,319.3,1,1,1,1,700.0,1,1,1,1,494.5
+45,Cat 5: Constraint / Dynamic,Grasp the belt workpiece maintaining end-effector acceleration under 1.5 m/s^2.,0,1,1,1,308.9,1,1,1,0,626.6,1,1,1,0,507.7
+46,Cat 5: Constraint / Dynamic,Pick the conveyor part within a 1.4 second rendezvous execution window.,1,1,1,1,324.6,1,1,1,0,690.6,1,0,1,0,472.9
+47,Cat 5: Constraint / Dynamic,Intercept and sort the blue item moving at 0.10 m/s into tray pocket 4.,0,1,1,1,337.9,0,1,1,1,669.6,1,1,1,0,507.2
+48,Cat 5: Constraint / Dynamic,Execute dynamic rendezvous on the workpiece without tipping adjacent parts.,1,1,1,1,293.7,1,1,1,1,699.8,1,0,1,1,483.2
+49,Cat 5: Constraint / Dynamic,Pick the moving grey cylinder while preserving terminal approach pitch at zero.,0,1,1,1,295.8,1,0,1,1,624.3,0,1,1,1,510.3
+50,Cat 5: Constraint / Dynamic,Intercept the moving part prior to conveyor exit sensor trigger.,1,1,1,1,338.6,1,1,1,0,630.4,1,1,1,0,472.7
+51,Cat 6: Ambiguous / Under-specified,Clear the damaged component from the workcell station.,1,1,1,1,339.2,0,1,0,0,687.8,1,0,0,0,489.7
+52,Cat 6: Ambiguous / Under-specified,Pick up the part and put it away.,1,1,1,1,337.3,1,1,0,0,699.3,0,0,0,0,474.6
+53,Cat 6: Ambiguous / Under-specified,Remove that block from the table immediately.,1,1,1,1,341.8,1,1,0,0,665.8,0,1,0,1,483.8
+54,Cat 6: Ambiguous / Under-specified,Sort the item into the correct container.,1,1,1,1,306.4,0,1,0,0,641.0,0,1,0,0,459.3
+55,Cat 6: Ambiguous / Under-specified,Move the cylinder over there.,1,1,1,1,290.8,1,1,0,0,665.9,0,1,0,0,458.5
+56,Cat 6: Ambiguous / Under-specified,Pick the defective object.,1,1,1,0,304.1,1,1,0,0,687.1,0,1,0,1,490.6
+57,Cat 6: Ambiguous / Under-specified,Take the part off the conveyor.,1,1,1,1,318.5,0,1,0,0,664.7,1,0,0,0,517.9
+58,Cat 6: Ambiguous / Under-specified,Transfer the block to the fixture.,1,1,1,1,340.6,0,1,0,1,628.3,0,1,0,0,454.9
+59,Cat 6: Ambiguous / Under-specified,Clear the station of any obstacles.,1,1,1,1,337.4,0,1,0,0,642.7,1,1,0,0,504.1
+60,Cat 6: Ambiguous / Under-specified,Put the component in the tray.,1,1,1,1,316.1,0,1,0,0,637.2,0,1,0,0,477.6

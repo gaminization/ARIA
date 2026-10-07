@@ -170,7 +170,12 @@ void AriaGripperPlugin::DetachService(
     return;
   }
 
+  std::string j_name = grasp_joint_->GetName();
   grasp_joint_->Detach();
+  if (model_) {
+    model_->RemoveJoint(j_name);
+  }
+  grasp_joint_->Fini();
   grasp_joint_.reset();
 
   RCLCPP_INFO(

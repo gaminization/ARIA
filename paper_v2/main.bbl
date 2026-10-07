@@ -82,6 +82,10 @@ R.~Cadene, S.~Alibert, A.~Soare, Q.~Gallou{\'e}dec, A.~Zouitine, and T.~Wolf,
   ``{LeRobot: State-of-the-Art Machine Learning for Real-World Robotics},''
   \url{https://github.com/huggingface/lerobot}, 2024.
 
+\bibitem{lerobot_so100_2024}
+A.~Koch and R.~Cadene, ``{SO-100: Low-Cost 3D-Printed Manipulator for Imitation
+  Learning},'' \url{https://github.com/TheRobotStudio/SO-ARM100}, 2024.
+
 \bibitem{aria_014_wu_2024_gello}
 P.~Wu, Y.~Hou, R.~Zhou, G.~Shi, and C.~Finn, ``{GELLO: A General, Low-Cost, and
   Intuitive Teleoperation Framework for Robot Manipulators},'' \emph{arXiv
@@ -250,6 +254,23 @@ W.~Huang, F.~Xia, T.~Xiao, H.~Chan, J.~Liang, P.~Florence, A.~Zeng, J.~Tompson,
   S.~Levine, K.~Hausman, and B.~Ichter, ``{Inner Monologue: Embodied Reasoning
   through Planning with Language Models},'' in \emph{Conference on Robot
   Learning (CoRL)}, 2022, pp. 1769--1782.
+
+\bibitem{liang2023code}
+J.~Liang, W.~Huang, F.~Xia, P.~Xu, K.~Hausman, B.~Ichter, P.~Florence, and
+  A.~Zeng, ``{Code as Policies: Language Model Programs for Embodied
+  Control},'' \emph{IEEE Robotics and Automation Letters}, vol.~8, no.~4, pp.
+  2271--2278, 2023.
+
+\bibitem{huang2023voxposer}
+W.~Huang, C.~Wang, R.~Zhang, Y.~Li, J.~Wu, and L.~Fei-Fei, ``{VoxPoser:
+  Composable 3D Value Maps for Robotic Manipulation with Language Models},'' in
+  \emph{Conference on Robot Learning (CoRL)}, 2023.
+
+\bibitem{singh2023progprompt}
+I.~Singh, V.~Blukis, A.~Mousavian, A.~Goyal, D.~Xu, J.~Tremblay, D.~Fox,
+  J.~Thomason, and A.~Garg, ``{ProgPrompt: Generating Situated Robot Task Plans
+  using Large Language Models},'' in \emph{IEEE International Conference on
+  Robotics and Automation (ICRA)}, 2023, pp. 11\,523--11\,530.
 
 \bibitem{aria_080_zhou_2024_language}
 A.~Zhou, K.~Yan, M.~Shlapentokh-Rothman, H.~Wang, and Y.-X. Wang, ``{Language

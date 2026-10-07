@@ -1,0 +1,11 @@
+task_id,task_name,difficulty,trials,successes,success_rate_pct,mean_position_error_mm,mean_joint_2_vel_rad_s,max_joint_2_vel_rad_s,joint_2_limit_rad_s,velocity_saturated_count,mean_execution_time_s
+task_01,Reach & Touch Object,easy,10,2,20.0,111.08,0.220,1.218,1.50,0,0.26
+task_02,Pick & Lift Workpiece,easy,10,0,0.0,13.41,1.270,1.984,1.50,1,5.60
+task_03,Conveyor Dynamic Rendezvous,medium,10,10,100.0,12.41,1.428,1.511,1.50,2,1.26
+task_04,Precision Placement into Tray,medium,10,0,0.0,16.35,2.563,7.269,1.50,3,6.00
+task_05,Obstacle Avoidance Clearance,medium,10,10,100.0,12.62,1.769,3.724,1.50,9,1.30
+task_06,Visual Servoing Feature Alignment,medium,10,10,100.0,12.28,1.041,1.454,1.50,0,1.25
+task_07,Multi-Axis In-Hand Reorientation,hard,10,1,10.0,14.41,14.415,28.032,1.50,9,6.61
+task_08,Articulated Drawer/Slide Interaction,hard,10,10,100.0,10.52,1.044,1.074,1.50,0,1.26
+task_09,Multi-Object Stacking & Sorting,hard,10,0,0.0,13.20,2.058,4.893,1.50,5,5.91
+task_10,Emergency Stop & Safety Recovery,hard,10,10,100.0,11.19,1.345,1.449,1.50,0,1.88

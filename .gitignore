@@ -116,3 +116,12 @@ benchmark_*.csv
 
 # ── Cloned reference repositories ───────────────────────────────
 repos/
+
+# ── Zip Archives ──────────────────────────────────────────────────
+*.zip
+
+# ── Large Raw IK Dumps (>10MB each, summarized in ik_benchmark_summary.csv) ─
+data/real/ik_benchmark_cartesian_100k.csv
+data/real/ik_benchmark_fk_100k.csv
+data/real/ik_benchmark_5d_fk_10k.csv
+data/real/ik_benchmark_5d_cartesian_10k.csv

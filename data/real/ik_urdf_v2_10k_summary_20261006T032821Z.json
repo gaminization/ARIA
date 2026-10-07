@@ -1,0 +1,33 @@
+{
+  "commit_hash": "8d83b97",
+  "seed": 202,
+  "timestamp": "20261006T032821Z",
+  "n_trials": 10000,
+  "urdf_ik_v2": {
+    "success_rate": 0.9924,
+    "n_pass_2mm": 9924,
+    "error_mm": {
+      "max": 9.664408148004659,
+      "mean": 0.10510708395607611,
+      "p95": 0.563320844096136,
+      "p99": 0.9913411044647487
+    },
+    "latency_ms": {
+      "mean": 318.0181985385985,
+      "p99": 371.10165784999083
+    }
+  },
+  "scipy_baseline": {
+    "success_rate": 1.0,
+    "n_pass_2mm": 10000,
+    "error_mm": {
+      "max": 0.0,
+      "mean": 0.0,
+      "p95": 0.0
+    },
+    "latency_ms": {
+      "mean": 66.00166092679903
+    }
+  },
+  "raw_csv": "/home/gaminizer/Projects/ARIA/data/real/ik_urdf_v2_10k_20261006T032821Z.csv"
+}

@@ -17,6 +17,7 @@ from launch.actions import (
     RegisterEventHandler,
     LogInfo,
     SetEnvironmentVariable,
+    TimerAction,
 )
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
@@ -109,6 +110,16 @@ def generate_launch_description():
     set_display = SetEnvironmentVariable(
         name="DISPLAY",
         value=os.environ.get("DISPLAY", ":1"),
+    )
+
+    set_gazebo_ip = SetEnvironmentVariable(
+        name="GAZEBO_IP",
+        value="127.0.0.1",
+    )
+
+    set_gazebo_master = SetEnvironmentVariable(
+        name="GAZEBO_MASTER_URI",
+        value="http://127.0.0.1:11345",
     )
 
     # ═══════════════════════════════════════════════════════
@@ -213,6 +224,8 @@ def generate_launch_description():
 
         # Environment configuration
         set_display,
+        set_gazebo_ip,
+        set_gazebo_master,
         set_gazebo_model_path,
         set_gazebo_resource_path,
         set_gazebo_plugin_path,
@@ -222,11 +235,11 @@ def generate_launch_description():
         robot_state_publisher,
         spawn_robot,
 
-        # Chain: after spawn completes, load JSB
+        # Chain: after spawn completes, load JSB with 2.0s settle for controller_manager
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=spawn_robot,
-                on_exit=[load_jsb],
+                on_exit=[TimerAction(period=2.0, actions=[load_jsb])],
             )
         ),
         # Chain: after JSB, load JTC

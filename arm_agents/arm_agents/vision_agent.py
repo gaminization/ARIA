@@ -31,8 +31,8 @@ class VisionAgent(LifecycleNode):
     Active perception: move wrist camera to 3 viewpoints, fuse.
     """
 
-    def __init__(self):
-        super().__init__('vision_agent')
+    def __init__(self, node_name: str = 'vision_agent'):
+        super().__init__(node_name)
         self.bus = StateBus(self)
         self.transformer = create_top_camera_transformer()
         self.detections: list = []

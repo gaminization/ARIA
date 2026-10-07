@@ -1,0 +1,19 @@
+{
+  "commit_hash": "8d83b97",
+  "seed": 101,
+  "timestamp": "20261005T042407Z",
+  "n_trials": 20,
+  "n_tf_valid": 19,
+  "raw_csv": "/home/gaminizer/Projects/ARIA/data/real/gazebo_tf_20261005T042407Z.csv",
+  "d_gz_urdf_mm": {
+    "max": 23.02256302542259,
+    "mean": 2.0853426257026446,
+    "std": 4.945547759209994,
+    "p95": 3.8820332468142995
+  },
+  "rot_err_deg": {
+    "max": 5.516042355808123,
+    "mean": 0.8893762142577447
+  },
+  "best_match": "URDF_FK"
+}

@@ -30,7 +30,7 @@ JOINT_MAX_ACCEL = np.array([2.0, 2.0, 2.0, 3.0, 3.0])  # rad/s²
 
 JOINT_NAMES = [
     "waist_joint", "shoulder_joint", "elbow_joint",
-    "wrist_pitch_joint", "wrist_roll_joint"
+    "wrist_pitch_joint", "gripper_joint"
 ]
 
 
@@ -163,13 +163,16 @@ class TrajectoryGenerator:
                         max_velocity: Optional[np.ndarray] = None,
                         max_accel: Optional[np.ndarray] = None) -> float:
         """
-        Compute minimum safe duration for multi-joint trajectory.
+        Compute minimum safe duration for multi-joint trajectory with strict
+        time-scaling against velocity and acceleration limits.
 
         Uses the joint requiring the most time (bottleneck joint).
 
         For quintic polynomial, peak velocity occurs at t=T/2:
           v_peak = 15·|Δq| / (8·T)
           → T_vel = 15·|Δq| / (8·v_max)
+        We apply a 1.25x scaling margin to ensure physical peak velocities
+        measured under closed-loop control stay strictly below limits.
 
         Peak acceleration occurs at t≈0.21T and t≈0.79T:
           a_peak = 10·√3·|Δq| / (9·T²)
@@ -178,8 +181,8 @@ class TrajectoryGenerator:
         Args:
             q0: start joint angles [5]
             q1: target joint angles [5]
-            max_velocity: per-joint velocity limits (default: from specs)
-            max_accel: per-joint acceleration limits (default: from specs)
+            max_velocity: per-joint velocity limits (default: JOINT_MAX_VEL)
+            max_accel: per-joint acceleration limits (default: JOINT_MAX_ACCEL)
 
         Returns:
             Minimum safe duration (seconds)
@@ -198,21 +201,19 @@ class TrajectoryGenerator:
             if dq < 1e-6:
                 continue
 
-            # Duration from velocity constraint
-            # Peak velocity in quintic: v_peak = 15·|Δq| / (8·T)
-            T_vel = 15.0 * dq / (8.0 * max_velocity[j])
+            # Duration from velocity constraint (with 1.25 safety factor)
+            T_vel = 1.25 * (15.0 * dq / (8.0 * max_velocity[j]))
 
             # Duration from acceleration constraint
-            # Peak accel: a_peak = 10·√3·|Δq| / (9·T²)
-            T_accel = math.sqrt(10.0 * math.sqrt(3.0) * dq /
-                                (9.0 * max_accel[j]))
+            T_accel = 1.15 * math.sqrt(10.0 * math.sqrt(3.0) * dq /
+                                       (9.0 * max_accel[j]))
 
             durations.append(max(T_vel, T_accel))
 
         if not durations:
             return 0.5  # Default for no motion
 
-        return max(max(durations), 0.2)  # Minimum 0.2s
+        return max(max(durations), 0.25)  # Minimum 0.25s
 
     @classmethod
     def generate_trajectory(cls,
@@ -222,20 +223,22 @@ class TrajectoryGenerator:
                             n_points: int = 50,
                             method: str = 'quintic') -> JointTrajectory:
         """
-        Generate a full multi-joint trajectory as a ROS2 JointTrajectory.
+        Generate a full multi-joint trajectory as a ROS2 JointTrajectory
+        with strict time-scaling enforced against JOINT_MAX_VEL.
 
         Args:
             q0: start joint angles [5] in radians
             q1: target joint angles [5] in radians
-            duration: trajectory duration (auto-computed if None)
+            duration: trajectory duration (auto-computed/time-scaled if None or too small)
             n_points: number of waypoints
             method: 'quintic' or 'cubic'
 
         Returns:
             JointTrajectory message
         """
-        if duration is None:
-            duration = cls.select_duration(q0, q1)
+        min_duration = cls.select_duration(q0, q1)
+        if duration is None or duration < min_duration:
+            duration = min_duration
 
         n_joints = len(q0)
         gen_fn = cls.generate_quintic if method == 'quintic' else cls.generate_cubic

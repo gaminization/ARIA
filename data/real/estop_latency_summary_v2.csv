@@ -1,0 +1,4 @@
+mode,n_trials,cmd_mean_ms,cmd_std_ms,cmd_p50_ms,cmd_p95_ms,cmd_p99_ms,cmd_max_ms,physical_mean_ms,physical_p95_ms,success_rate_pct
+IDLE,50,9.725,5.960,9.234,19.177,19.881,20.046,28.22,37.68,54.0
+LOADED,50,10.048,8.029,9.392,25.564,29.097,29.453,28.55,44.06,52.0
+OVERALL,100,9.886,7.072,9.392,20.821,28.733,29.453,28.39,39.32,53.0

@@ -1,0 +1,38 @@
+{
+  "commit_hash": "8d83b97",
+  "seed_grid": 303,
+  "seed_matrix": 304,
+  "timestamp": "20261006T080221Z",
+  "n_grid": 100000,
+  "n_matrix": 1000,
+  "workspace": {
+    "x_mm": [
+      -261.6795135287787,
+      254.73640338490654
+    ],
+    "y_mm": [
+      -258.2698356449219,
+      258.3379209655169
+    ],
+    "z_mm": [
+      -52.40150159718225,
+      324.40184435988397
+    ],
+    "r_xy_mm": [
+      1.011564322591786,
+      261.814549269675
+    ],
+    "convex_hull_volume_L": 56.98424772237137
+  },
+  "confusion_matrix": {
+    "TP": 73,
+    "FP": 0,
+    "FN": 427,
+    "TN": 500
+  },
+  "precision": 1.0,
+  "recall": 0.146,
+  "f1": 0.2547993019197208,
+  "raw_reach_csv": "/home/gaminizer/Projects/ARIA/data/real/reachability_grid_20261006T080221Z.csv",
+  "raw_matrix_csv": "/home/gaminizer/Projects/ARIA/data/real/ik_confusion_matrix_20261006T080221Z.csv"
+}

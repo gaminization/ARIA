@@ -1,0 +1,2 @@
+n_trials,mean_ms,std_ms,p50_ms,p95_ms,p99_ms,max_ms,success_rate_pct
+50,0.669,0.276,0.696,1.049,1.297,1.400,100.0

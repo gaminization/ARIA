@@ -1,0 +1,4 @@
+method,total_trials,seeds,temperature,syntax_valid_pct,slot_accuracy_pct,clarification_pct,execution_success_pct,latency_mean_ms,latency_p50_ms,latency_p95_ms,model,commit_hash
+ARIA_Dialogue_Planning,180,"[42, 1337, 2026]",0.7,86.67,76.3,13.33,68.89,4480.34,4627.23,5800.81,llama3.1:8b-instruct-q4_K_M,8d83b97
+Direct_LLM,180,"[42, 1337, 2026]",0.7,78.33,55.74,0.56,38.33,3824.59,3808.84,5598.27,llama3.1:8b-instruct-q4_K_M,8d83b97
+SayCan,180,"[42, 1337, 2026]",0.7,100.0,62.22,0.0,73.33,2965.38,2950.27,3236.27,llama3.1:8b-instruct-q4_K_M,8d83b97

@@ -1,0 +1,8 @@
+category,n_episodes,aria_slot_acc_pct,aria_syntax_valid_pct,aria_clarification_acc_pct,aria_success_pct,aria_latency_ms,saycan_slot_acc_pct,saycan_syntax_valid_pct,saycan_clarification_acc_pct,saycan_success_pct,saycan_latency_ms,llm_slot_acc_pct,llm_syntax_valid_pct,llm_clarification_acc_pct,llm_success_pct,llm_latency_ms
+Cat 1: Direct Imperative,10,100.0,100.0,100.0,100.0,318.6,80.0,100.0,100.0,90.0,645.2,70.0,80.0,100.0,60.0,485.1
+Cat 2: Attribute-Grounded,10,100.0,100.0,100.0,80.0,325.9,80.0,100.0,100.0,60.0,650.0,70.0,100.0,100.0,60.0,473.1
+Cat 3: Spatial-Relational,10,100.0,100.0,100.0,100.0,307.8,90.0,70.0,100.0,70.0,650.4,70.0,80.0,100.0,50.0,469.3
+Cat 4: Compound Multi-Step,10,100.0,100.0,100.0,100.0,327.1,90.0,70.0,100.0,30.0,663.3,90.0,90.0,100.0,20.0,474.8
+Cat 5: Constraint / Dynamic,10,70.0,100.0,100.0,100.0,316.9,90.0,90.0,100.0,60.0,659.3,90.0,80.0,100.0,40.0,483.2
+Cat 6: Ambiguous / Under-specified,10,100.0,100.0,100.0,90.0,323.2,40.0,100.0,0.0,10.0,662.0,30.0,70.0,0.0,20.0,481.1
+Overall (N=60),60,95.0,100.0,100.0,95.0,319.9,78.3,88.3,83.3,53.3,655.0,70.0,83.3,83.3,41.7,477.8

@@ -1,0 +1,11 @@
+dataset,solver,language,total_poses,success_count,success_rate_pct,time_mean_ms,time_std_ms,time_p50_ms,time_p95_ms,time_p99_ms,pos_error_mean_mm,pos_error_max_mm,pos_tolerance_mm,ori_tolerance_rad,cpu_pinned
+Set_A_5D_FK_Reachable_10k,ARIA_Analytical,Python,10000,10000,100.00,0.0811,0.0181,0.0808,0.1108,0.1310,0.0000,0.0000,1.0,0.0100,Core 0
+Set_A_5D_FK_Reachable_10k,TRAC_IK,C++,10000,430,4.30,0.3202,0.2545,0.2426,0.7875,1.6076,0.0200,0.1131,1.0,0.0100,Core 0
+Set_A_5D_FK_Reachable_10k,PyKDL,C++,10000,362,3.62,0.1054,0.1497,0.0395,0.4586,0.4963,0.0213,0.1441,1.0,0.0100,Core 0
+Set_A_5D_FK_Reachable_10k,RTB_LM,Python,10000,342,3.42,2.4414,2.9479,1.8555,4.9160,14.4912,0.2563,0.9825,1.0,0.0100,Core 0
+Set_A_5D_FK_Reachable_10k,IKPy,Python,10000,252,2.52,6.1587,2.5226,5.4430,11.0153,14.7946,0.0000,0.0017,1.0,0.0100,Core 0
+Set_B_5D_Cartesian_10k,ARIA_Analytical,Python,10000,5029,50.29,0.0504,0.0320,0.0518,0.1002,0.1203,0.0000,0.0000,1.0,0.0100,Core 0
+Set_B_5D_Cartesian_10k,TRAC_IK,C++,10000,214,2.14,2.6479,2.3890,1.2600,5.1037,5.1361,0.0239,0.1347,1.0,0.0100,Core 0
+Set_B_5D_Cartesian_10k,PyKDL,C++,10000,189,1.89,0.2741,0.2064,0.4345,0.4862,0.5125,0.0237,0.1356,1.0,0.0100,Core 0
+Set_B_5D_Cartesian_10k,RTB_LM,Python,10000,178,1.78,24.1920,22.4230,7.7732,47.8972,49.1712,0.2550,0.9947,1.0,0.0100,Core 0
+Set_B_5D_Cartesian_10k,IKPy,Python,10000,119,1.19,8.6831,5.9271,7.7007,15.6202,29.1874,0.0006,0.0618,1.0,0.0100,Core 0

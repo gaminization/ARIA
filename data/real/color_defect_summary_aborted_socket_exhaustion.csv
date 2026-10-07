@@ -1,0 +1,8 @@
+condition,type,n_episodes,det_accuracy_pct,defect_precision,defect_recall,sort_success_count,sort_success_rate_pct,wilson_ci_95,mean_cycle_time_s
+Blue Conforming (Prior),Prior,20,100.0,--,--,20,100.0,"[83.9, 100.0]%",9.36
+Blue Defective (Cross),Cross,20,90.0,100.0%,90.0%,1,5.0,"[0.9, 23.6]%",13.64
+Red Conforming (Cross),Cross,20,100.0,--,--,0,0.0,"[0.0, 16.1]%",12.60
+Red Defective (Prior),Prior,20,100.0,100.0%,100.0%,0,0.0,"[0.0, 16.1]%",12.29
+Grey Conforming (Neutral),Neutral,20,100.0,--,--,0,0.0,"[0.0, 16.1]%",12.59
+Grey Defective (Neutral),Neutral,20,100.0,100.0%,100.0%,0,0.0,"[0.0, 16.1]%",12.44
+Pooled Overall,Overall,120,98.3,100.0%,96.7%,21,17.5,"[11.7, 25.3]%",12.15

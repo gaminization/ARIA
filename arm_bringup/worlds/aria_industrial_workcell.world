@@ -27,6 +27,14 @@
       </ode>
     </physics>
 
+    <!-- Gazebo ROS State Plugin (Provides /gazebo/get_entity_state and /gazebo/set_entity_state) -->
+    <plugin name="gazebo_ros_state" filename="libgazebo_ros_state.so">
+      <ros>
+        <namespace>/gazebo</namespace>
+      </ros>
+      <update_rate>50.0</update_rate>
+    </plugin>
+
     <!-- ═══ Gravity ═══ -->
     <gravity>0 0 -9.81</gravity>
 

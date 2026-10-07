@@ -1,0 +1,4 @@
+method,n_samples,rmse_full_mm,mae_full_mm,rmse_pregrasp_mm,mae_pregrasp_mm,max_error_mm,rmse_band_low_mm,mae_band_low_mm,rmse_band_mid_mm,mae_band_mid_mm,rmse_band_high_mm,mae_band_high_mm,datums_required,operational_overhead
+"One-Point (Claw Tip Only, Shift Prior)",240,85.80,62.95,62.17,42.76,321.41,55.53,34.84,113.91,104.63,180.37,180.14,"1 (End-effector claw tip, offline shift prior)",Calibrates scale from single datum with offline shift prior; vulnerable to scene-dependent disparity shift
+Two-Point (ARIA Proposed),240,86.57,63.21,58.05,40.88,221.24,47.32,31.50,121.06,110.91,189.04,188.92,2 (Claw tips + Ground plane),Fully object-agnostic; dynamically resolves both affine scale and shift online without CAD priors
+Multi-Reference (3-Point LLS),240,84.35,62.66,53.25,39.96,194.23,38.96,29.73,122.19,112.73,187.86,187.80,3 (Claw + Ground + Target facet),Valid design choice when workpiece CAD geometry is available a priori; requires known part height

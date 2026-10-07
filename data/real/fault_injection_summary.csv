@@ -1,0 +1,5 @@
+modality,n_trials,detection_mean_ms,detection_std_ms,recovery_mean_ms,recovery_std_ms,total_mean_ms,total_p95_ms,success_rate_pct
+Worker Node Crash (SIGKILL VisionAgent),30,200.59,0.30,2001.91,1104.40,2202.50,3073.93,100.0
+Optical Sensor Disconnection (0-byte frames),30,101.28,0.10,0.05,0.01,101.32,101.45,100.0
+LLM Planning Timeout (Hung Socket Fallback),30,2009.34,1.83,0.53,0.41,2009.87,2010.86,100.0
+DDS Network Packet Loss (15% Drop Rate),30,0.00,0.00,2.17,0.08,2.17,2.23,100.0

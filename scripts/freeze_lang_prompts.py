@@ -1,0 +1,1049 @@
+#!/usr/bin/env python3
+"""
+Generate and freeze data/real/lang_prompts.json BEFORE running any benchmarks.
+Contains 60 standardized instructions across 6 categories (10 per category).
+"""
+
+import json
+import os
+
+PROMPTS = [
+    # ── Category 1: Direct Imperative ──────────────────────────────────────────
+    {
+        "episode_id": 1,
+        "prompt_id": "P01",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick up the blue bolt and place it in tray pocket 1.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "blue bolt",
+            "destination": "tray pocket 1",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "blue_bolt",
+            "required_state": "in_tray_pocket_1"
+        }
+    },
+    {
+        "episode_id": 2,
+        "prompt_id": "P02",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Grasp the red cylinder and transfer it to the assembly fixture.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "red cylinder",
+            "destination": "assembly fixture",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "red_cylinder",
+            "required_state": "at_assembly_fixture"
+        }
+    },
+    {
+        "episode_id": 3,
+        "prompt_id": "P03",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick the grey bracket from the table and drop it into bin A.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "grey bracket",
+            "destination": "bin A",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "grey_bracket",
+            "required_state": "in_bin_A"
+        }
+    },
+    {
+        "episode_id": 4,
+        "prompt_id": "P04",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Transfer the blue cube from the pickup zone to the pallet.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "blue cube",
+            "destination": "pallet",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "blue_cube",
+            "required_state": "on_pallet"
+        }
+    },
+    {
+        "episode_id": 5,
+        "prompt_id": "P05",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Move the red hex nut from the feeder to tray pocket 3.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "red hex nut",
+            "destination": "tray pocket 3",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "red_hex_nut",
+            "required_state": "in_tray_pocket_3"
+        }
+    },
+    {
+        "episode_id": 6,
+        "prompt_id": "P06",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick the grey spacer and place it into tray pocket 4.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "grey spacer",
+            "destination": "tray pocket 4",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "grey_spacer",
+            "required_state": "in_tray_pocket_4"
+        }
+    },
+    {
+        "episode_id": 7,
+        "prompt_id": "P07",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Grasp the blue peg and insert it into slot 2.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "blue peg",
+            "destination": "slot 2",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "blue_peg",
+            "required_state": "in_slot_2"
+        }
+    },
+    {
+        "episode_id": 8,
+        "prompt_id": "P08",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick the red washer and place it in the center container.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "red washer",
+            "destination": "center container",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "red_washer",
+            "required_state": "in_center_container"
+        }
+    },
+    {
+        "episode_id": 9,
+        "prompt_id": "P09",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Transfer the grey flange to the inspection turntable.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "grey flange",
+            "destination": "inspection turntable",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "grey_flange",
+            "required_state": "on_turntable"
+        }
+    },
+    {
+        "episode_id": 10,
+        "prompt_id": "P10",
+        "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick the blue cylinder and place it beside the reference marker.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "blue cylinder",
+            "destination": "reference marker",
+            "constraints": []
+        },
+        "checker_criteria": {
+            "target_entity": "blue_cylinder",
+            "required_state": "near_reference_marker"
+        }
+    },
+
+    # ── Category 2: Attribute-Grounded ─────────────────────────────────────────
+    {
+        "episode_id": 11,
+        "prompt_id": "P11",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Inspect and discard the defective red cylinder with surface scratches.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "defective red cylinder",
+            "destination": "scrap bin",
+            "constraints": ["inspect_first", "attribute:defective"]
+        },
+        "checker_criteria": {
+            "target_entity": "defective_red_cylinder",
+            "required_state": "in_reject_bin"
+        }
+    },
+    {
+        "episode_id": 12,
+        "prompt_id": "P12",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Grasp the conforming blue block and palletize it in the conforming tray.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "conforming blue block",
+            "destination": "conforming tray",
+            "constraints": ["attribute:conforming"]
+        },
+        "checker_criteria": {
+            "target_entity": "conforming_blue_block",
+            "required_state": "in_conforming_tray"
+        }
+    },
+    {
+        "episode_id": 13,
+        "prompt_id": "P13",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Locate the scratched grey bracket and route it to the scrap bin.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "scratched grey bracket",
+            "destination": "scrap bin",
+            "constraints": ["attribute:scratched"]
+        },
+        "checker_criteria": {
+            "target_entity": "scratched_grey_bracket",
+            "required_state": "in_scrap_bin"
+        }
+    },
+    {
+        "episode_id": 14,
+        "prompt_id": "P14",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Find the smooth red component and move it to the outbound tray.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "smooth red component",
+            "destination": "outbound tray",
+            "constraints": ["attribute:smooth"]
+        },
+        "checker_criteria": {
+            "target_entity": "smooth_red_component",
+            "required_state": "in_outbound_tray"
+        }
+    },
+    {
+        "episode_id": 15,
+        "prompt_id": "P15",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Pick the blue workpiece exhibiting edge burrs and place it in quarantine.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "blue workpiece with burrs",
+            "destination": "quarantine",
+            "constraints": ["attribute:burrs"]
+        },
+        "checker_criteria": {
+            "target_entity": "burred_blue_workpiece",
+            "required_state": "in_quarantine"
+        }
+    },
+    {
+        "episode_id": 16,
+        "prompt_id": "P16",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Sort the pristine grey bolt into the conforming assembly bin.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "pristine grey bolt",
+            "destination": "conforming assembly bin",
+            "constraints": ["attribute:pristine"]
+        },
+        "checker_criteria": {
+            "target_entity": "pristine_grey_bolt",
+            "required_state": "in_conforming_bin"
+        }
+    },
+    {
+        "episode_id": 17,
+        "prompt_id": "P17",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Grasp the cracked red housing and discard it into the scrap receptacle.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "cracked red housing",
+            "destination": "scrap receptacle",
+            "constraints": ["attribute:cracked"]
+        },
+        "checker_criteria": {
+            "target_entity": "cracked_red_housing",
+            "required_state": "in_scrap_bin"
+        }
+    },
+    {
+        "episode_id": 18,
+        "prompt_id": "P18",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Pick the defect-free blue cube and place it into tray pocket 2.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "defect-free blue cube",
+            "destination": "tray pocket 2",
+            "constraints": ["attribute:defect-free"]
+        },
+        "checker_criteria": {
+            "target_entity": "defect_free_blue_cube",
+            "required_state": "in_tray_pocket_2"
+        }
+    },
+    {
+        "episode_id": 19,
+        "prompt_id": "P19",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Identify the dented grey cylinder and transfer it to the rework station.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "dented grey cylinder",
+            "destination": "rework station",
+            "constraints": ["attribute:dented"]
+        },
+        "checker_criteria": {
+            "target_entity": "dented_grey_cylinder",
+            "required_state": "at_rework_station"
+        }
+    },
+    {
+        "episode_id": 20,
+        "prompt_id": "P20",
+        "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Sort the unblemished red block into the primary inspection tray.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "unblemished red block",
+            "destination": "primary inspection tray",
+            "constraints": ["attribute:unblemished"]
+        },
+        "checker_criteria": {
+            "target_entity": "unblemished_red_block",
+            "required_state": "in_inspection_tray"
+        }
+    },
+
+    # ── Category 3: Spatial-Relational ─────────────────────────────────────────
+    {
+        "episode_id": 21,
+        "prompt_id": "P21",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Move the grey block located to the left of the pallet into the scrap bin.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "grey block left of pallet",
+            "destination": "scrap bin",
+            "constraints": ["spatial:is_left_of(pallet)"]
+        },
+        "checker_criteria": {
+            "target_entity": "grey_block_left",
+            "required_state": "in_scrap_bin"
+        }
+    },
+    {
+        "episode_id": 22,
+        "prompt_id": "P22",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the blue cylinder positioned behind the red cube and place it in pocket 1.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "blue cylinder behind red cube",
+            "destination": "pocket 1",
+            "constraints": ["spatial:is_behind(red_cube)"]
+        },
+        "checker_criteria": {
+            "target_entity": "blue_cylinder_behind",
+            "required_state": "in_tray_pocket_1"
+        }
+    },
+    {
+        "episode_id": 23,
+        "prompt_id": "P23",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Grasp the object closest to the base of the robotic arm and lift it.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "object closest to base",
+            "destination": "lifted",
+            "constraints": ["spatial:min_dist_to_base"]
+        },
+        "checker_criteria": {
+            "target_entity": "closest_object",
+            "required_state": "lifted"
+        }
+    },
+    {
+        "episode_id": 24,
+        "prompt_id": "P24",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Transfer the red part on the right side of the conveyor into bin B.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "red part on right side of conveyor",
+            "destination": "bin B",
+            "constraints": ["spatial:is_right_of(conveyor)"]
+        },
+        "checker_criteria": {
+            "target_entity": "red_part_right",
+            "required_state": "in_bin_B"
+        }
+    },
+    {
+        "episode_id": 25,
+        "prompt_id": "P25",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the bracket situated between the two blue cylinders and palletize it.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "bracket between two blue cylinders",
+            "destination": "pallet",
+            "constraints": ["spatial:between(blue_cyl_1, blue_cyl_2)"]
+        },
+        "checker_criteria": {
+            "target_entity": "bracket_between",
+            "required_state": "on_pallet"
+        }
+    },
+    {
+        "episode_id": 26,
+        "prompt_id": "P26",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Move the topmost cube in the stack to the empty tray slot on the left.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "topmost cube in stack",
+            "destination": "empty tray slot on the left",
+            "constraints": ["spatial:is_top_of_stack"]
+        },
+        "checker_criteria": {
+            "target_entity": "topmost_cube",
+            "required_state": "in_left_slot"
+        }
+    },
+    {
+        "episode_id": 27,
+        "prompt_id": "P27",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Grasp the component nearest to the optical inspection camera marker.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "component nearest to camera marker",
+            "destination": "gripper",
+            "constraints": ["spatial:min_dist_to_marker"]
+        },
+        "checker_criteria": {
+            "target_entity": "nearest_camera_marker",
+            "required_state": "grasped"
+        }
+    },
+    {
+        "episode_id": 28,
+        "prompt_id": "P28",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the cylinder placed directly in front of the calibration target.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "cylinder in front of calibration target",
+            "destination": "gripper",
+            "constraints": ["spatial:in_front_of(calibration_target)"]
+        },
+        "checker_criteria": {
+            "target_entity": "cylinder_front_target",
+            "required_state": "grasped"
+        }
+    },
+    {
+        "episode_id": 29,
+        "prompt_id": "P29",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Transfer the red block adjacent to the defective workpiece into quarantine.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "red block adjacent to defective workpiece",
+            "destination": "quarantine",
+            "constraints": ["spatial:adjacent_to(defective_workpiece)"]
+        },
+        "checker_criteria": {
+            "target_entity": "adjacent_red_block",
+            "required_state": "in_quarantine"
+        }
+    },
+    {
+        "episode_id": 30,
+        "prompt_id": "P30",
+        "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the workpiece positioned furthest along the positive X-axis.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "workpiece furthest along positive X",
+            "destination": "gripper",
+            "constraints": ["spatial:max_x_coordinate"]
+        },
+        "checker_criteria": {
+            "target_entity": "max_x_workpiece",
+            "required_state": "grasped"
+        }
+    },
+
+    # ── Category 4: Compound Multi-Step ────────────────────────────────────────
+    {
+        "episode_id": 31,
+        "prompt_id": "P31",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Grasp the blue bracket, reorient it 45 degrees via in-hand pivoting, and stack it.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "stack",
+            "target_object": "blue bracket",
+            "destination": "stack",
+            "constraints": ["multi_step", "reorient:45deg", "pivot:in_hand"]
+        },
+        "checker_criteria": {
+            "target_entity": "blue_bracket",
+            "required_state": "stacked_reoriented"
+        }
+    },
+    {
+        "episode_id": 32,
+        "prompt_id": "P32",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Pick the red cylinder, slide it against the fixture edge, and insert it.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "slide",
+            "target_object": "red cylinder",
+            "destination": "fixture edge",
+            "constraints": ["multi_step", "slide_edge", "insert"]
+        },
+        "checker_criteria": {
+            "target_entity": "red_cylinder",
+            "required_state": "inserted_in_fixture"
+        }
+    },
+    {
+        "episode_id": 33,
+        "prompt_id": "P33",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Lift the grey workpiece, rotate gripper 90 degrees, and palletize in tray 3.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "grey workpiece",
+            "destination": "tray 3",
+            "constraints": ["multi_step", "rotate:90deg"]
+        },
+        "checker_criteria": {
+            "target_entity": "grey_workpiece",
+            "required_state": "in_tray_pocket_3"
+        }
+    },
+    {
+        "episode_id": 34,
+        "prompt_id": "P34",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Grasp the blue block, tap it on the table to align edges, and stack on red block.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "stack",
+            "target_object": "blue block",
+            "destination": "red block",
+            "constraints": ["multi_step", "align_edges"]
+        },
+        "checker_criteria": {
+            "target_entity": "blue_block",
+            "required_state": "stacked_on_red_block"
+        }
+    },
+    {
+        "episode_id": 35,
+        "prompt_id": "P35",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Pick the bracket, pivot from horizontal to vertical, and place into groove.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "bracket",
+            "destination": "groove",
+            "constraints": ["multi_step", "pivot:horizontal_to_vertical"]
+        },
+        "checker_criteria": {
+            "target_entity": "bracket",
+            "required_state": "placed_vertical_in_groove"
+        }
+    },
+    {
+        "episode_id": 36,
+        "prompt_id": "P36",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Retrieve the red cylinder, perform in-hand reorientation, and place upright.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "red cylinder",
+            "destination": "table upright",
+            "constraints": ["multi_step", "orientation:upright"]
+        },
+        "checker_criteria": {
+            "target_entity": "red_cylinder",
+            "required_state": "upright_on_table"
+        }
+    },
+    {
+        "episode_id": 37,
+        "prompt_id": "P37",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Grasp the grey peg, adjust tilt angle by 30 degrees, and drop into sleeve.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "grey peg",
+            "destination": "sleeve",
+            "constraints": ["multi_step", "tilt:30deg"]
+        },
+        "checker_criteria": {
+            "target_entity": "grey_peg",
+            "required_state": "in_sleeve"
+        }
+    },
+    {
+        "episode_id": 38,
+        "prompt_id": "P38",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Pick the blue component, translate 15 cm along Y, and stack onto tier 2.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "stack",
+            "target_object": "blue component",
+            "destination": "tier 2",
+            "constraints": ["multi_step", "translate_y:0.15m"]
+        },
+        "checker_criteria": {
+            "target_entity": "blue_component",
+            "required_state": "stacked_tier_2"
+        }
+    },
+    {
+        "episode_id": 39,
+        "prompt_id": "P39",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Lift the red block, pivot 45 degrees, and seat flush against the backstop.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "red block",
+            "destination": "backstop",
+            "constraints": ["multi_step", "pivot:45deg", "flush_backstop"]
+        },
+        "checker_criteria": {
+            "target_entity": "red_block",
+            "required_state": "flush_against_backstop"
+        }
+    },
+    {
+        "episode_id": 40,
+        "prompt_id": "P40",
+        "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Grasp the grey plate, reorient face-down, and slide into storage slot.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "slide",
+            "target_object": "grey plate",
+            "destination": "storage slot",
+            "constraints": ["multi_step", "face_down", "slide"]
+        },
+        "checker_criteria": {
+            "target_entity": "grey_plate",
+            "required_state": "in_storage_slot"
+        }
+    },
+
+    # ── Category 5: Constraint / Dynamic ───────────────────────────────────────
+    {
+        "episode_id": 41,
+        "prompt_id": "P41",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Intercept the moving workpiece on the conveyor without exceeding velocity limits.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "moving workpiece on conveyor",
+            "destination": "gripper",
+            "constraints": ["dynamic_conveyor", "velocity_limit"]
+        },
+        "checker_criteria": {
+            "target_entity": "conveyor_workpiece",
+            "required_state": "intercepted_and_grasped"
+        }
+    },
+    {
+        "episode_id": 42,
+        "prompt_id": "P42",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Grasp the conveyor block before it reaches the 0.35m workspace boundary.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "conveyor block",
+            "destination": "gripper",
+            "constraints": ["dynamic_conveyor", "boundary:0.35m"]
+        },
+        "checker_criteria": {
+            "target_entity": "conveyor_block",
+            "required_state": "grasped_within_boundary"
+        }
+    },
+    {
+        "episode_id": 43,
+        "prompt_id": "P43",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Track and pick the red part at 0.08 m/s while matching velocity within 5 mm/s.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "red part on conveyor",
+            "destination": "gripper",
+            "constraints": ["dynamic_tracking", "belt_speed:0.08mps", "vel_matching:5mms"]
+        },
+        "checker_criteria": {
+            "target_entity": "moving_red_part",
+            "required_state": "velocity_matched_and_picked"
+        }
+    },
+    {
+        "episode_id": 44,
+        "prompt_id": "P44",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Intercept the moving defective cylinder and divert it without arm jerk.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "moving defective cylinder",
+            "destination": "divert_bin",
+            "constraints": ["dynamic_conveyor", "smooth_jerk_bounded"]
+        },
+        "checker_criteria": {
+            "target_entity": "moving_defective_cylinder",
+            "required_state": "diverted_to_reject"
+        }
+    },
+    {
+        "episode_id": 45,
+        "prompt_id": "P45",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Grasp the belt workpiece maintaining end-effector acceleration under 1.5 m/s^2.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "belt workpiece",
+            "destination": "gripper",
+            "constraints": ["dynamic_conveyor", "accel_limit:1.5mps2"]
+        },
+        "checker_criteria": {
+            "target_entity": "belt_workpiece",
+            "required_state": "grasped_smoothly"
+        }
+    },
+    {
+        "episode_id": 46,
+        "prompt_id": "P46",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Pick the conveyor part within a 1.4 second rendezvous execution window.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "conveyor part",
+            "destination": "gripper",
+            "constraints": ["dynamic_conveyor", "rendezvous_window:1.4s"]
+        },
+        "checker_criteria": {
+            "target_entity": "conveyor_part",
+            "required_state": "rendezvous_grasped"
+        }
+    },
+    {
+        "episode_id": 47,
+        "prompt_id": "P47",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Intercept and sort the blue item moving at 0.10 m/s into tray pocket 4.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "blue item moving on conveyor",
+            "destination": "tray pocket 4",
+            "constraints": ["dynamic_conveyor", "speed:0.10mps"]
+        },
+        "checker_criteria": {
+            "target_entity": "moving_blue_item",
+            "required_state": "in_tray_pocket_4"
+        }
+    },
+    {
+        "episode_id": 48,
+        "prompt_id": "P48",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Execute dynamic rendezvous on the workpiece without tipping adjacent parts.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "workpiece on belt",
+            "destination": "gripper",
+            "constraints": ["dynamic_conveyor", "collision_avoidance"]
+        },
+        "checker_criteria": {
+            "target_entity": "rendezvous_workpiece",
+            "required_state": "grasped_collision_free"
+        }
+    },
+    {
+        "episode_id": 49,
+        "prompt_id": "P49",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Pick the moving grey cylinder while preserving terminal approach pitch at zero.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "moving grey cylinder",
+            "destination": "gripper",
+            "constraints": ["dynamic_conveyor", "pitch:0deg"]
+        },
+        "checker_criteria": {
+            "target_entity": "moving_grey_cylinder",
+            "required_state": "grasped_zero_pitch"
+        }
+    },
+    {
+        "episode_id": 50,
+        "prompt_id": "P50",
+        "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Intercept the moving part prior to conveyor exit sensor trigger.",
+        "is_ambiguous": False,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "moving part on conveyor",
+            "destination": "gripper",
+            "constraints": ["dynamic_conveyor", "prior_to_exit_sensor"]
+        },
+        "checker_criteria": {
+            "target_entity": "moving_part",
+            "required_state": "intercepted_before_exit"
+        }
+    },
+
+    # ── Category 6: Ambiguous / Under-specified ─────────────────────────────────
+    {
+        "episode_id": 51,
+        "prompt_id": "P51",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Clear the damaged component from the workcell station.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "sweep",
+            "target_object": "damaged component [AMBIGUOUS: which workpiece?]",
+            "destination": "unspecified [AMBIGUOUS: where to clear?]",
+            "constraints": ["underspecified_target", "underspecified_destination"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 52,
+        "prompt_id": "P52",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Pick up the part and put it away.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "the part [AMBIGUOUS: multiple objects exist]",
+            "destination": "away [AMBIGUOUS: destination unknown]",
+            "constraints": ["underspecified_target", "underspecified_destination"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 53,
+        "prompt_id": "P53",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Remove that block from the table immediately.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "that block [AMBIGUOUS: referent unclear]",
+            "destination": "unspecified",
+            "constraints": ["deictic_ambiguity", "underspecified_destination"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 54,
+        "prompt_id": "P54",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Sort the item into the correct container.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "sort",
+            "target_object": "the item [AMBIGUOUS: which item?]",
+            "destination": "the correct container [AMBIGUOUS: which container?]",
+            "constraints": ["underspecified_item", "underspecified_rule"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 55,
+        "prompt_id": "P55",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Move the cylinder over there.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "the cylinder [AMBIGUOUS: which cylinder?]",
+            "destination": "over there [AMBIGUOUS: coordinates missing]",
+            "constraints": ["deictic_destination", "underspecified_target"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 56,
+        "prompt_id": "P56",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Pick the defective object.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "defective object [AMBIGUOUS: defect 1 vs defect 2]",
+            "destination": "unspecified",
+            "constraints": ["multiple_matches"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 57,
+        "prompt_id": "P57",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Take the part off the conveyor.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "pick",
+            "target_object": "the part [AMBIGUOUS: multiple on conveyor]",
+            "destination": "unspecified",
+            "constraints": ["multiple_conveyor_workpieces"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 58,
+        "prompt_id": "P58",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Transfer the block to the fixture.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "the block [AMBIGUOUS: multiple blocks]",
+            "destination": "the fixture [AMBIGUOUS: which slot?]",
+            "constraints": ["underspecified_source_and_slot"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 59,
+        "prompt_id": "P59",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Clear the station of any obstacles.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "sweep",
+            "target_object": "any obstacles [AMBIGUOUS: no specific object]",
+            "destination": "unspecified",
+            "constraints": ["vague_predicate", "unspecified_destination"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    },
+    {
+        "episode_id": 60,
+        "prompt_id": "P60",
+        "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Put the component in the tray.",
+        "is_ambiguous": True,
+        "expected_slots": {
+            "action": "place",
+            "target_object": "the component [AMBIGUOUS: which component?]",
+            "destination": "the tray [AMBIGUOUS: which pocket 1-4?]",
+            "constraints": ["underspecified_item", "underspecified_pocket"]
+        },
+        "checker_criteria": {
+            "target_entity": "unknown",
+            "required_state": "clarification_requested"
+        }
+    }
+]
+
+output_path = "/home/gaminizer/Projects/ARIA/data/real/lang_prompts.json"
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+with open(output_path, "w", encoding="utf-8") as f:
+    json.dump(PROMPTS, f, indent=2)
+
+print(f"Frozen {len(PROMPTS)} language prompts to {output_path}")

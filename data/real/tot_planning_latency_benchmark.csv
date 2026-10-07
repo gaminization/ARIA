@@ -1,0 +1,61 @@
+trial_id,prompt_id,instruction,seed,tot_mode,latency_ms,n_candidates,commit_hash,timestamp
+TOT_TRIAL_0001,P01,Pick up the blue bolt and place it in tray pocket 1.,42,ToT_OFF,5204.44,1,8d83b97,2026-10-03T21:07:45.632824Z
+TOT_TRIAL_0002,P01,Pick up the blue bolt and place it in tray pocket 1.,42,ToT_ON_K3,14895.29,3,8d83b97,2026-10-03T21:08:00.528150Z
+TOT_TRIAL_0003,P01,Pick up the blue bolt and place it in tray pocket 1.,1337,ToT_OFF,4021.91,1,8d83b97,2026-10-03T21:08:04.550268Z
+TOT_TRIAL_0004,P01,Pick up the blue bolt and place it in tray pocket 1.,1337,ToT_ON_K3,15606.94,3,8d83b97,2026-10-03T21:08:20.157244Z
+TOT_TRIAL_0005,P01,Pick up the blue bolt and place it in tray pocket 1.,2026,ToT_OFF,3979.68,1,8d83b97,2026-10-03T21:08:24.137043Z
+TOT_TRIAL_0006,P01,Pick up the blue bolt and place it in tray pocket 1.,2026,ToT_ON_K3,14219.61,3,8d83b97,2026-10-03T21:08:38.356688Z
+TOT_TRIAL_0007,P02,Grasp the red cylinder and transfer it to the assembly fixture.,42,ToT_OFF,5132.75,1,8d83b97,2026-10-03T21:08:43.489572Z
+TOT_TRIAL_0008,P02,Grasp the red cylinder and transfer it to the assembly fixture.,42,ToT_ON_K3,16102.92,3,8d83b97,2026-10-03T21:08:59.592531Z
+TOT_TRIAL_0009,P02,Grasp the red cylinder and transfer it to the assembly fixture.,1337,ToT_OFF,3433.68,1,8d83b97,2026-10-03T21:09:03.026416Z
+TOT_TRIAL_0010,P02,Grasp the red cylinder and transfer it to the assembly fixture.,1337,ToT_ON_K3,16407.84,3,8d83b97,2026-10-03T21:09:19.434293Z
+TOT_TRIAL_0011,P02,Grasp the red cylinder and transfer it to the assembly fixture.,2026,ToT_OFF,4275.16,1,8d83b97,2026-10-03T21:09:23.709620Z
+TOT_TRIAL_0012,P02,Grasp the red cylinder and transfer it to the assembly fixture.,2026,ToT_ON_K3,17308.79,3,8d83b97,2026-10-03T21:09:41.018590Z
+TOT_TRIAL_0013,P03,Pick the grey bracket from the table and drop it into bin A.,42,ToT_OFF,5183.6,1,8d83b97,2026-10-03T21:09:46.202405Z
+TOT_TRIAL_0014,P03,Pick the grey bracket from the table and drop it into bin A.,42,ToT_ON_K3,17053.87,3,8d83b97,2026-10-03T21:10:03.256318Z
+TOT_TRIAL_0015,P03,Pick the grey bracket from the table and drop it into bin A.,1337,ToT_OFF,5266.82,1,8d83b97,2026-10-03T21:10:08.523299Z
+TOT_TRIAL_0016,P03,Pick the grey bracket from the table and drop it into bin A.,1337,ToT_ON_K3,17274.64,3,8d83b97,2026-10-03T21:10:25.798002Z
+TOT_TRIAL_0017,P03,Pick the grey bracket from the table and drop it into bin A.,2026,ToT_OFF,5383.65,1,8d83b97,2026-10-03T21:10:31.181801Z
+TOT_TRIAL_0018,P03,Pick the grey bracket from the table and drop it into bin A.,2026,ToT_ON_K3,12337.37,3,8d83b97,2026-10-03T21:10:43.519212Z
+TOT_TRIAL_0019,P04,Transfer the blue cube from the pickup zone to the pallet.,42,ToT_OFF,4062.34,1,8d83b97,2026-10-03T21:10:47.581703Z
+TOT_TRIAL_0020,P04,Transfer the blue cube from the pickup zone to the pallet.,42,ToT_ON_K3,14431.64,3,8d83b97,2026-10-03T21:11:02.013389Z
+TOT_TRIAL_0021,P04,Transfer the blue cube from the pickup zone to the pallet.,1337,ToT_OFF,3874.24,1,8d83b97,2026-10-03T21:11:05.887793Z
+TOT_TRIAL_0022,P04,Transfer the blue cube from the pickup zone to the pallet.,1337,ToT_ON_K3,15365.89,3,8d83b97,2026-10-03T21:11:21.253745Z
+TOT_TRIAL_0023,P04,Transfer the blue cube from the pickup zone to the pallet.,2026,ToT_OFF,3843.21,1,8d83b97,2026-10-03T21:11:25.097117Z
+TOT_TRIAL_0024,P04,Transfer the blue cube from the pickup zone to the pallet.,2026,ToT_ON_K3,14601.12,3,8d83b97,2026-10-03T21:11:39.698275Z
+TOT_TRIAL_0025,P05,Move the red hex nut from the feeder to tray pocket 3.,42,ToT_OFF,5332.66,1,8d83b97,2026-10-03T21:11:45.031137Z
+TOT_TRIAL_0026,P05,Move the red hex nut from the feeder to tray pocket 3.,42,ToT_ON_K3,17859.99,3,8d83b97,2026-10-03T21:12:02.891182Z
+TOT_TRIAL_0027,P05,Move the red hex nut from the feeder to tray pocket 3.,1337,ToT_OFF,3565.24,1,8d83b97,2026-10-03T21:12:06.456589Z
+TOT_TRIAL_0028,P05,Move the red hex nut from the feeder to tray pocket 3.,1337,ToT_ON_K3,16258.04,3,8d83b97,2026-10-03T21:12:22.714674Z
+TOT_TRIAL_0029,P05,Move the red hex nut from the feeder to tray pocket 3.,2026,ToT_OFF,5207.98,1,8d83b97,2026-10-03T21:12:27.922779Z
+TOT_TRIAL_0030,P05,Move the red hex nut from the feeder to tray pocket 3.,2026,ToT_ON_K3,10419.34,3,8d83b97,2026-10-03T21:12:38.342172Z
+TOT_TRIAL_0031,P06,Pick the grey spacer and place it into tray pocket 4.,42,ToT_OFF,5295.87,1,8d83b97,2026-10-03T21:12:43.638315Z
+TOT_TRIAL_0032,P06,Pick the grey spacer and place it into tray pocket 4.,42,ToT_ON_K3,15764.61,3,8d83b97,2026-10-03T21:12:59.402993Z
+TOT_TRIAL_0033,P06,Pick the grey spacer and place it into tray pocket 4.,1337,ToT_OFF,4380.52,1,8d83b97,2026-10-03T21:13:03.783644Z
+TOT_TRIAL_0034,P06,Pick the grey spacer and place it into tray pocket 4.,1337,ToT_ON_K3,16443.58,3,8d83b97,2026-10-03T21:13:20.227271Z
+TOT_TRIAL_0035,P06,Pick the grey spacer and place it into tray pocket 4.,2026,ToT_OFF,5300.86,1,8d83b97,2026-10-03T21:13:25.528242Z
+TOT_TRIAL_0036,P06,Pick the grey spacer and place it into tray pocket 4.,2026,ToT_ON_K3,14454.47,3,8d83b97,2026-10-03T21:13:39.982757Z
+TOT_TRIAL_0037,P07,Grasp the blue peg and insert it into slot 2.,42,ToT_OFF,4431.5,1,8d83b97,2026-10-03T21:13:44.414396Z
+TOT_TRIAL_0038,P07,Grasp the blue peg and insert it into slot 2.,42,ToT_ON_K3,17188.21,3,8d83b97,2026-10-03T21:14:01.602658Z
+TOT_TRIAL_0039,P07,Grasp the blue peg and insert it into slot 2.,1337,ToT_OFF,5326.7,1,8d83b97,2026-10-03T21:14:06.929530Z
+TOT_TRIAL_0040,P07,Grasp the blue peg and insert it into slot 2.,1337,ToT_ON_K3,17451.33,3,8d83b97,2026-10-03T21:14:24.380909Z
+TOT_TRIAL_0041,P07,Grasp the blue peg and insert it into slot 2.,2026,ToT_OFF,5255.67,1,8d83b97,2026-10-03T21:14:29.636781Z
+TOT_TRIAL_0042,P07,Grasp the blue peg and insert it into slot 2.,2026,ToT_ON_K3,16354.34,3,8d83b97,2026-10-03T21:14:45.991159Z
+TOT_TRIAL_0043,P08,Pick the red washer and place it in the center container.,42,ToT_OFF,2869.92,1,8d83b97,2026-10-03T21:14:48.861240Z
+TOT_TRIAL_0044,P08,Pick the red washer and place it in the center container.,42,ToT_ON_K3,15010.71,3,8d83b97,2026-10-03T21:15:03.872021Z
+TOT_TRIAL_0045,P08,Pick the red washer and place it in the center container.,1337,ToT_OFF,4133.83,1,8d83b97,2026-10-03T21:15:08.005969Z
+TOT_TRIAL_0046,P08,Pick the red washer and place it in the center container.,1337,ToT_ON_K3,17272.01,3,8d83b97,2026-10-03T21:15:25.278035Z
+TOT_TRIAL_0047,P08,Pick the red washer and place it in the center container.,2026,ToT_OFF,3564.32,1,8d83b97,2026-10-03T21:15:28.842519Z
+TOT_TRIAL_0048,P08,Pick the red washer and place it in the center container.,2026,ToT_ON_K3,10118.96,3,8d83b97,2026-10-03T21:15:38.961513Z
+TOT_TRIAL_0049,P09,Transfer the grey flange to the inspection turntable.,42,ToT_OFF,3956.6,1,8d83b97,2026-10-03T21:15:42.918250Z
+TOT_TRIAL_0050,P09,Transfer the grey flange to the inspection turntable.,42,ToT_ON_K3,17430.63,3,8d83b97,2026-10-03T21:16:00.348915Z
+TOT_TRIAL_0051,P09,Transfer the grey flange to the inspection turntable.,1337,ToT_OFF,5339.65,1,8d83b97,2026-10-03T21:16:05.688691Z
+TOT_TRIAL_0052,P09,Transfer the grey flange to the inspection turntable.,1337,ToT_ON_K3,16780.67,3,8d83b97,2026-10-03T21:16:22.469410Z
+TOT_TRIAL_0053,P09,Transfer the grey flange to the inspection turntable.,2026,ToT_OFF,5060.16,1,8d83b97,2026-10-03T21:16:27.529728Z
+TOT_TRIAL_0054,P09,Transfer the grey flange to the inspection turntable.,2026,ToT_ON_K3,10991.43,3,8d83b97,2026-10-03T21:16:38.521210Z
+TOT_TRIAL_0055,P10,Pick the blue cylinder and place it beside the reference marker.,42,ToT_OFF,5311.12,1,8d83b97,2026-10-03T21:16:43.832489Z
+TOT_TRIAL_0056,P10,Pick the blue cylinder and place it beside the reference marker.,42,ToT_ON_K3,18167.52,3,8d83b97,2026-10-03T21:17:02.000062Z
+TOT_TRIAL_0057,P10,Pick the blue cylinder and place it beside the reference marker.,1337,ToT_OFF,4815.53,1,8d83b97,2026-10-03T21:17:06.815714Z
+TOT_TRIAL_0058,P10,Pick the blue cylinder and place it beside the reference marker.,1337,ToT_ON_K3,17196.02,3,8d83b97,2026-10-03T21:17:24.011770Z
+TOT_TRIAL_0059,P10,Pick the blue cylinder and place it beside the reference marker.,2026,ToT_OFF,5263.72,1,8d83b97,2026-10-03T21:17:29.275691Z
+TOT_TRIAL_0060,P10,Pick the blue cylinder and place it beside the reference marker.,2026,ToT_ON_K3,15059.09,3,8d83b97,2026-10-03T21:17:44.334848Z

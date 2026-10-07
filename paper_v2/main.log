@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.9.8)  30 SEP 2026 21:56
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.9.8)  2 OCT 2026 01:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -471,147 +471,139 @@ File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 ) [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
 
 
-] [2] [3]
-<figures//fig2_kinematics_dh.png, id=25, 688.7331pt x 322.5651pt>
+] [2] [3] [4]
+<figures//fig2_kinematics_dh.png, id=29, 688.7331pt x 322.5651pt>
 File: figures//fig2_kinematics_dh.png Graphic file (type png)
 <use figures//fig2_kinematics_dh.png>
-Package pdftex.def Info: figures//fig2_kinematics_dh.png  used on input line 22
-9.
+Package pdftex.def Info: figures//fig2_kinematics_dh.png  used on input line 23
+0.
 (pdftex.def)             Requested size: 252.0pt x 118.02321pt.
- [4] [5 <./figures//fig2_kinematics_dh.png>]
+ [5 <./figures//fig2_kinematics_dh.png>]
 LaTeX Font Info:    Trying to load font information for OMS+ptm on input line 3
-79.
+82.
  (/usr/share/texlive/texmf-dist/tex/latex/psnfss/omsptm.fd
 File: omsptm.fd 
 )
 LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 379.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 382.
  [6]
 <figures//fig1_system_architecture.png, id=52, 860.013pt x 570.933pt>
 File: figures//fig1_system_architecture.png Graphic file (type png)
 <use figures//fig1_system_architecture.png>
 Package pdftex.def Info: figures//fig1_system_architecture.png  used on input l
-ine 414.
+ine 424.
 (pdftex.def)             Requested size: 392.15717pt x 260.34117pt.
-<figures//fig3_perception_pipeline.png, id=53, 819.5418pt x 294.6207pt>
+ [7]
+<figures//fig3_perception_pipeline.png, id=57, 819.5418pt x 294.6207pt>
 File: figures//fig3_perception_pipeline.png Graphic file (type png)
 <use figures//fig3_perception_pipeline.png>
 Package pdftex.def Info: figures//fig3_perception_pipeline.png  used on input l
-ine 500.
+ine 510.
 (pdftex.def)             Requested size: 392.15717pt x 140.97575pt.
- [7]
 
-LaTeX Warning: Text page 8 contains only floats.
+[8 <./figures//fig1_system_architecture.png>]
+Overfull \hbox (22.17139pt too wide) detected at line 585
+[]\OMS/cmsy/m/n/10 j\OML/cmm/m/it/10 ^^NZ[]\OMS/cmsy/m/n/10 j ^^Y \OML/cmm/m/it
+/10 Z[]\OMS/cmsy/m/n/10 j\OML/cmm/m/it/10 ^^N \OMS/cmsy/m/n/10 ^^A \OML/cmm/m/
+it/10 D \OT1/cmr/m/n/10 + \OML/cmm/m/it/10 ^^N^^L\OMS/cmsy/m/n/10 j ^^T \OML/cm
+m/m/it/10 Z[] []
+ []
 
-
-Overfull \vbox (4.58234pt too high) has occurred while \output is active []
-
-
-
-LaTeX Warning: Text page 8 contains only floats.
-
-
-Overfull \vbox (4.58234pt too high) has occurred while \output is active []
-
-
-[8 <./figures//fig1_system_architecture.png> <./figures//fig3_perception_pipeli
-ne.png>]
-<figures//fig4_planning_hitl.png, id=63, 697.8873pt x 310.2792pt>
+[9 <./figures//fig3_perception_pipeline.png>]
+<figures//fig4_planning_hitl.png, id=67, 697.8873pt x 310.2792pt>
 File: figures//fig4_planning_hitl.png Graphic file (type png)
 <use figures//fig4_planning_hitl.png>
-Package pdftex.def Info: figures//fig4_planning_hitl.png  used on input line 59
-4.
+Package pdftex.def Info: figures//fig4_planning_hitl.png  used on input line 61
+1.
 (pdftex.def)             Requested size: 381.84283pt x 169.76874pt.
- [9]
 <figures//fig10_reliability_diagram.png, id=68, 679.0971pt x 281.853pt>
 File: figures//fig10_reliability_diagram.png Graphic file (type png)
 <use figures//fig10_reliability_diagram.png>
 Package pdftex.def Info: figures//fig10_reliability_diagram.png  used on input 
-line 629.
+line 646.
 (pdftex.def)             Requested size: 252.0pt x 104.58932pt.
 <figures//fig5_inhand_manipulation.png, id=69, 787.743pt x 267.399pt>
 File: figures//fig5_inhand_manipulation.png Graphic file (type png)
 <use figures//fig5_inhand_manipulation.png>
 Package pdftex.def Info: figures//fig5_inhand_manipulation.png  used on input l
-ine 661.
+ine 678.
 (pdftex.def)             Requested size: 252.0pt x 85.54086pt.
- [10 <./figures//fig4_planning_hitl.png> <./figures//fig10_reliability_diagram.
-png> <./figures//fig5_inhand_manipulation.png>]
-<figures//fig6_ik_benchmark.png, id=76, 715.2321pt x 236.5638pt>
+ [10] [11 <./figures//fig4_planning_hitl.png> <./figures//fig10_reliability_dia
+gram.png> <./figures//fig5_inhand_manipulation.png>]
+<figures//fig6_ik_benchmark.png, id=80, 715.2321pt x 236.5638pt>
 File: figures//fig6_ik_benchmark.png Graphic file (type png)
 <use figures//fig6_ik_benchmark.png>
-Package pdftex.def Info: figures//fig6_ik_benchmark.png  used on input line 719
+Package pdftex.def Info: figures//fig6_ik_benchmark.png  used on input line 744
 .
 (pdftex.def)             Requested size: 185.76031pt x 61.44016pt.
-<figures//fig7_vla_benchmark.png, id=77, 821.2281pt x 266.6763pt>
+<figures//fig7_vla_benchmark.png, id=81, 821.2281pt x 266.6763pt>
 File: figures//fig7_vla_benchmark.png Graphic file (type png)
 <use figures//fig7_vla_benchmark.png>
-Package pdftex.def Info: figures//fig7_vla_benchmark.png  used on input line 72
-1.
+Package pdftex.def Info: figures//fig7_vla_benchmark.png  used on input line 74
+6.
 (pdftex.def)             Requested size: 309.60315pt x 100.53642pt.
- [11] [12 <./figures//fig6_ik_benchmark.png> <./figures//fig7_vla_benchmark.png
+ [12] [13 <./figures//fig6_ik_benchmark.png> <./figures//fig7_vla_benchmark.png
 >]
-<figures//fig8_conveyor_sorting.png, id=87, 778.5888pt x 379.8993pt>
+<figures//fig8_conveyor_sorting.png, id=92, 778.5888pt x 379.8993pt>
 File: figures//fig8_conveyor_sorting.png Graphic file (type png)
 <use figures//fig8_conveyor_sorting.png>
 Package pdftex.def Info: figures//fig8_conveyor_sorting.png  used on input line
- 829.
+ 910.
 (pdftex.def)             Requested size: 340.56189pt x 166.17654pt.
+ [14]
 LaTeX Font Info:    Font shape `OT1/pcr/m/it' in size <8> not available
-(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 889.
- [13]
-<figures//fig9_dashboard_interface.png, id=93, 1874.00125pt x 964.60374pt>
+(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 968.
+ [15 <./figures//fig8_conveyor_sorting.png>]
+<figures//fig9_dashboard_interface.png, id=101, 1874.00125pt x 964.60374pt>
 File: figures//fig9_dashboard_interface.png Graphic file (type png)
 <use figures//fig9_dashboard_interface.png>
 Package pdftex.def Info: figures//fig9_dashboard_interface.png  used on input l
-ine 1009.
+ine 1088.
 (pdftex.def)             Requested size: 176.39923pt x 90.78462pt.
- [14 <./figures//fig8_conveyor_sorting.png>] [15 <./figures//fig9_dashboard_int
-erface.png>]
-(./main.bbl [16] [17]) [18
-
-] (./main.aux) ) 
+ [16 <./figures//fig9_dashboard_interface.png>] (./main.bbl [17] [18]) [19] (./
+main.aux) ) 
 Here is how much of TeX's memory you used:
- 8263 strings out of 480247
- 135880 string characters out of 5896152
- 494248 words of memory out of 5000000
- 25520 multiletter control sequences out of 15000+600000
- 551273 words of font info for 486 fonts, out of 8000000 for 9000
+ 8318 strings out of 480247
+ 136450 string characters out of 5896152
+ 507616 words of memory out of 5000000
+ 25527 multiletter control sequences out of 15000+600000
+ 553447 words of font info for 518 fonts, out of 8000000 for 9000
  20 hyphenation exceptions out of 8191
- 55i,18n,63p,2240b,631s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</us
-r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/shar
-e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></usr/share/texli
-ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dis
-t/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
-amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
-s/cm/cmmi9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cm
-mib10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cmextra/cm
-mib8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pf
-b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/
-share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/te
-xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/te
-xmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/share/texlive/texmf-dist/fonts/t
-ype1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/p
-ublic/amsfonts/cm/cmsy5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/a
-msfonts/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts
-/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cms
-y8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb>
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb><
-/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></
-usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/tex
-live/texmf-dist/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texlive/texmf-d
-ist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1
-/urw/times/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utm
-r8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on main.pdf (18 pages, 4944459 bytes).
+ 55i,18n,63p,2685b,631s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/sha
+re/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/tex
+live/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></usr/share/texlive/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></usr/share/texlive/texmf-dis
+t/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/font
+s/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type
+1/public/amsfonts/cm/cmmi5.pfb></usr/share/texlive/texmf-dist/fonts/type1/publi
+c/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfo
+nts/cm/cmmi7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/
+cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.p
+fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.pfb></
+usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmmib8.pfb></u
+sr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/shar
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/share/texliv
+e/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-
+dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1
+/public/amsfonts/cm/cmr9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
+amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfon
+ts/cm/cmsy5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
+msy6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pf
+b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr
+/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/share/
+texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/share/t
+exlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/share/te
+xlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texlive/texmf-d
+ist/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texlive/texmf-dist/fonts/ty
+pe1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/u
+tmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></us
+r/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on main.pdf (19 pages, 4969700 bytes).
 PDF statistics:
- 239 PDF objects out of 1000 (max. 8388607)
- 136 compressed objects within 2 object streams
+ 248 PDF objects out of 1000 (max. 8388607)
+ 142 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
  90675 words of extra memory for PDF output out of 106986 (max. 10000000)
 
