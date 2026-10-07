@@ -209,23 +209,28 @@ ARIA/
 
 ---
 
-## 7. Quickstart Guide
+## 7. Quickstart & Reproducibility Guide
 
-### A. Environment Prerequisites
-- **OS:** Ubuntu 22.04 LTS (Jammy)
-- **ROS 2:** ROS 2 Humble Desktop (`ros-humble-desktop`)
-- **Simulation:** Gazebo Classic 11 (`gazebo`, `ros-humble-gazebo-ros-pkgs`)
-- **Python:** Python 3.10 with PyTorch, CUDA 12+, Ultralytics, OpenCV
-- **Edge Compute:** NVIDIA GPU with $\ge 8.0\,\text{GB}$ VRAM (e.g., RTX 5060 Laptop GPU)
+> For complete system setup instructions, Docker guides, and dependency matrices, see [`SETUP.md`](file:///home/gaminizer/Projects/ARIA/SETUP.md) and [`docs/SETUP_AND_DEPENDENCIES.md`](file:///home/gaminizer/Projects/ARIA/docs/SETUP_AND_DEPENDENCIES.md).
 
-### B. Building the Workspace
+### A. Automated One-Command Installation
+From a fresh clone of the repository on Ubuntu 22.04 LTS:
 ```bash
-# Clone the repository
 git clone https://github.com/gaminization/ARIA.git
 cd ARIA
 
-# Install dependencies and build ROS 2 packages
+# Run universal setup script (installs apt packages, pip dependencies, builds workspace)
+chmod +x scripts/setup_environment.sh
+./scripts/setup_environment.sh
+
+# Run comprehensive environment validator
+python3 scripts/check_dependencies.py
+```
+
+### B. Manual Workspace Build
+```bash
 source /opt/ros/humble/setup.bash
+pip install -r requirements.txt
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
 ```

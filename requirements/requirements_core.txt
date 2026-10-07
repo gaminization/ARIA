@@ -1,0 +1,10 @@
+# Core Robotics, Kinematics & Numerics
+numpy>=1.24.0,<2.0.0
+scipy>=1.10.0
+sympy>=1.12
+spatialmath-python>=1.1.0
+roboticstoolbox-python>=1.1.0
+ikpy>=3.3.3
+trimesh>=4.0.0
+pyyaml>=6.0.1
+pyserial>=3.5

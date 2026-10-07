@@ -1,0 +1,2537 @@
+{
+  "arm_ik": [
+    {
+      "file": "arm_ik/setup.py",
+      "ext": ".py",
+      "size": 828,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 27,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/__init__.py",
+      "ext": ".py",
+      "size": 0,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 0,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/ik_benchmark_node.py",
+      "ext": ".py",
+      "size": 14195,
+      "classes": [
+        "IKBenchmarkNode"
+      ],
+      "top_functions": [
+        "generate_benchmark_poses",
+        "save_benchmark_poses",
+        "load_benchmark_poses",
+        "_run_solver",
+        "run_benchmark",
+        "print_benchmark_results",
+        "select_best_solver",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 373,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/ik_node.py",
+      "ext": ".py",
+      "size": 8089,
+      "classes": [
+        "IKNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 221,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/ik_solvers/__init__.py",
+      "ext": ".py",
+      "size": 0,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 0,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/ik_solvers/aria_analytical_ik.py",
+      "ext": ".py",
+      "size": 24195,
+      "classes": [
+        "SolverConfig",
+        "IKResult"
+      ],
+      "top_functions": [
+        "_rpy_to_R",
+        "_make_T",
+        "forward_kinematics",
+        "forward_kinematics_position",
+        "_numerical_jacobian",
+        "solve_analytical",
+        "_gradient_fallback",
+        "solve_from_pose_stamped",
+        "_rotation_matrix_to_quaternion"
+      ],
+      "doc_summary": "arm_ik/arm_ik/ik_solvers/aria_analytical_ik.py",
+      "lines": 551,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/ik_solvers/ikpy_solver.py",
+      "ext": ".py",
+      "size": 7295,
+      "classes": [],
+      "top_functions": [
+        "_build_ikpy_chain",
+        "_get_chain",
+        "solve_ikpy"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 223,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/ik_solvers/neural_ik_solver.py",
+      "ext": ".py",
+      "size": 14966,
+      "classes": [
+        "IKNet"
+      ],
+      "top_functions": [
+        "_rotation_matrix_to_quaternion",
+        "generate_training_data",
+        "train_neural_ik",
+        "_load_model",
+        "solve_neural"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 442,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/ik_solvers/robotics_toolbox_solver.py",
+      "ext": ".py",
+      "size": 6919,
+      "classes": [],
+      "top_functions": [
+        "_build_rtb_robot",
+        "_get_robot",
+        "solve_rtb"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 219,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_ik/arm_ik/ik_solvers/trac_ik_native/trac_ik_pybind.cpp",
+      "ext": ".cpp",
+      "size": 4966
+    },
+    {
+      "file": "arm_ik/config/aria_arm.urdf",
+      "ext": ".urdf",
+      "size": 31305
+    }
+  ],
+  "arm_control": [
+    {
+      "file": "arm_control/include/arm_control/aria_hardware_interface.hpp",
+      "ext": ".hpp",
+      "size": 4185
+    },
+    {
+      "file": "arm_control/include/arm_control/conveyor_belt_plugin.hpp",
+      "ext": ".hpp",
+      "size": 2177
+    },
+    {
+      "file": "arm_control/include/arm_control/gripper_plugin.hpp",
+      "ext": ".hpp",
+      "size": 1533
+    },
+    {
+      "file": "arm_control/src/aria_hardware_interface.cpp",
+      "ext": ".cpp",
+      "size": 14895
+    },
+    {
+      "file": "arm_control/src/conveyor_belt_plugin.cpp",
+      "ext": ".cpp",
+      "size": 10134
+    },
+    {
+      "file": "arm_control/src/gripper_plugin.cpp",
+      "ext": ".cpp",
+      "size": 6570
+    },
+    {
+      "file": "arm_control/scripts/force_estimator_node.py",
+      "ext": ".py",
+      "size": 6629,
+      "classes": [
+        "ForceEstimatorNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 192,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/grasp_executor.py",
+      "ext": ".py",
+      "size": 13035,
+      "classes": [
+        "GraspExecutor"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 341,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/joint_slider_gui.py",
+      "ext": ".py",
+      "size": 17857,
+      "classes": [
+        "JointSliderGUI",
+        "SliderApp"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 467,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/keyboard_control.py",
+      "ext": ".py",
+      "size": 12363,
+      "classes": [
+        "KeyboardControlNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 308,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/kinematic_calibration_node.py",
+      "ext": ".py",
+      "size": 9625,
+      "classes": [
+        "KinematicCalibrationNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 277,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/manual_control_node.py",
+      "ext": ".py",
+      "size": 24957,
+      "classes": [
+        "ManualControlNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 581,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/servo_sync_node.py",
+      "ext": ".py",
+      "size": 18016,
+      "classes": [
+        "ServoSyncNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 406,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/teach_mode_node.py",
+      "ext": ".py",
+      "size": 16348,
+      "classes": [
+        "TeachModeNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 377,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/trajectory_generator.py",
+      "ext": ".py",
+      "size": 14042,
+      "classes": [
+        "TrajectoryGenerator"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 380,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_control/scripts/visual_servo_node.py",
+      "ext": ".py",
+      "size": 11011,
+      "classes": [
+        "VisualServoNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 300,
+      "syntax": "VALID"
+    }
+  ],
+  "arm_vision": [
+    {
+      "file": "arm_vision/setup.py",
+      "ext": ".py",
+      "size": 1433,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 36,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/__init__.py",
+      "ext": ".py",
+      "size": 0,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 0,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/apriltag_calibration_node.py",
+      "ext": ".py",
+      "size": 9968,
+      "classes": [
+        "AprilTagCalibrationNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 280,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/camera_node.py",
+      "ext": ".py",
+      "size": 7495,
+      "classes": [
+        "CameraNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 210,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/coordinate_transformer.py",
+      "ext": ".py",
+      "size": 13554,
+      "classes": [
+        "WorldCoordinate",
+        "CoordinateTransformer"
+      ],
+      "top_functions": [
+        "benchmark_coordinate_accuracy",
+        "create_top_camera_transformer"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 347,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/depth_node.py",
+      "ext": ".py",
+      "size": 12806,
+      "classes": [
+        "DepthNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 324,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/detection_node.py",
+      "ext": ".py",
+      "size": 21725,
+      "classes": [
+        "DetectionNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 488,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/gaussian_splatting_node.py",
+      "ext": ".py",
+      "size": 21967,
+      "classes": [
+        "CapturedView",
+        "SplatModel",
+        "GaussianSplattingEngine",
+        "GaussianSplattingNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 629,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/grasp_node.py",
+      "ext": ".py",
+      "size": 12109,
+      "classes": [
+        "GraspNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 349,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/grasp_node_v2.py",
+      "ext": ".py",
+      "size": 19237,
+      "classes": [
+        "GraspNodeV2"
+      ],
+      "top_functions": [
+        "_euler_to_quaternion",
+        "_quaternion_multiply",
+        "compute_grasp_from_mask",
+        "compute_grasp_from_6d_pose",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 527,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/material_recognition_node.py",
+      "ext": ".py",
+      "size": 21409,
+      "classes": [
+        "MaterialClassifier",
+        "MaterialRecognitionNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 623,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/perception_orchestrator.py",
+      "ext": ".py",
+      "size": 16610,
+      "classes": [
+        "PerceptionMode",
+        "PerceptionOrchestrator"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 449,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/pose_6d_node.py",
+      "ext": ".py",
+      "size": 23921,
+      "classes": [
+        "FoundationPoseModel",
+        "Pose6DNode"
+      ],
+      "top_functions": [
+        "_load_reference_manifest",
+        "_load_reference_images",
+        "_rotation_matrix_to_quaternion",
+        "_se3_to_pose",
+        "_estimate_pose_from_depth_and_mask",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 691,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/sam2_node.py",
+      "ext": ".py",
+      "size": 20119,
+      "classes": [
+        "SAM2Model",
+        "SAM2Node"
+      ],
+      "top_functions": [
+        "compute_mask_properties",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 588,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/arm_vision/transparent_object_node.py",
+      "ext": ".py",
+      "size": 19043,
+      "classes": [
+        "ClearGraspModel",
+        "TransparentObjectNode"
+      ],
+      "top_functions": [
+        "detect_depth_bimodality",
+        "detect_specular_highlights",
+        "correct_depth_plane_fitting",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 539,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vision/scripts/capture_reference_images.py",
+      "ext": ".py",
+      "size": 10899,
+      "classes": [
+        "_CaptureNode"
+      ],
+      "top_functions": [
+        "generate_viewpoints",
+        "capture_from_ros",
+        "capture_from_webcam",
+        "run_capture",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 304,
+      "syntax": "VALID"
+    }
+  ],
+  "arm_planner": [
+    {
+      "file": "arm_planner/arm_planner/__init__.py",
+      "ext": ".py",
+      "size": 201,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 6,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/cause_effect_model.py",
+      "ext": ".py",
+      "size": 7203,
+      "classes": [],
+      "top_functions": [
+        "predict_effects",
+        "check_preconditions",
+        "verify_effects",
+        "_check_precondition"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 192,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/episodic_memory.py",
+      "ext": ".py",
+      "size": 18768,
+      "classes": [
+        "Episode",
+        "EpisodicMemory"
+      ],
+      "top_functions": [
+        "_get_embedding_model",
+        "_compute_embedding",
+        "_cosine_similarity"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 501,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/failure_classifier.py",
+      "ext": ".py",
+      "size": 5138,
+      "classes": [],
+      "top_functions": [
+        "classify",
+        "classify_from_exception"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 125,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/function_calling_orchestrator.py",
+      "ext": ".py",
+      "size": 21410,
+      "classes": [
+        "ToolResult",
+        "ReActStep",
+        "TaskResult",
+        "FunctionCallingOrchestrator"
+      ],
+      "top_functions": [
+        "_build_tool_descriptions"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 570,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/health_monitor.py",
+      "ext": ".py",
+      "size": 7669,
+      "classes": [
+        "HealthMonitor"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 186,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/llm_client.py",
+      "ext": ".py",
+      "size": 22822,
+      "classes": [
+        "OllamaClient"
+      ],
+      "top_functions": [
+        "_load_config"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 577,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/llm_planning_agent.py",
+      "ext": ".py",
+      "size": 28883,
+      "classes": [
+        "LLMPlanningAgent",
+        "_RuleBasedFallback"
+      ],
+      "top_functions": [
+        "_load_prompt",
+        "validate_plan_json",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 727,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/llm_planning_agent_tests.py",
+      "ext": ".py",
+      "size": 16274,
+      "classes": [
+        "TestOllamaClient",
+        "TestPlanValidation",
+        "TestRuleBasedFallback",
+        "TestEpisodicMemory",
+        "TestTreeOfThought",
+        "TestFunctionCallingOrchestrator",
+        "MockAction",
+        "MockTask",
+        "MockBus",
+        "state"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 442,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/memory_manager.py",
+      "ext": ".py",
+      "size": 8173,
+      "classes": [
+        "MemoryManager"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 206,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/object_model_db.py",
+      "ext": ".py",
+      "size": 19915,
+      "classes": [
+        "ObjectModel",
+        "GraspParams",
+        "ObjectModelDB"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 529,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/recovery_manager.py",
+      "ext": ".py",
+      "size": 10363,
+      "classes": [
+        "RecoveryManager"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 245,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/search_behavior.py",
+      "ext": ".py",
+      "size": 8005,
+      "classes": [
+        "SearchBehavior"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 211,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/skill_manager.py",
+      "ext": ".py",
+      "size": 10118,
+      "classes": [
+        "SkillResult",
+        "PerformanceStats",
+        "SkillVersion",
+        "SkillManager"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 299,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/state_bus.py",
+      "ext": ".py",
+      "size": 9958,
+      "classes": [
+        "StateSnapshot",
+        "StateBus"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 270,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/task_manager.py",
+      "ext": ".py",
+      "size": 18501,
+      "classes": [
+        "TaskStatus",
+        "TaskManager"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 448,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/tree_of_thought_planner.py",
+      "ext": ".py",
+      "size": 17612,
+      "classes": [
+        "PlanCandidate",
+        "ToTResult",
+        "TreeOfThoughtPlanner"
+      ],
+      "top_functions": [
+        "should_use_tot"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 454,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/arm_planner/world_model_db.py",
+      "ext": ".py",
+      "size": 24487,
+      "classes": [
+        "WorldModelDB"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 603,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/msg/Action.msg",
+      "ext": ".msg",
+      "size": 313
+    },
+    {
+      "file": "arm_planner/msg/FailureEvent.msg",
+      "ext": ".msg",
+      "size": 228
+    },
+    {
+      "file": "arm_planner/msg/HealthState.msg",
+      "ext": ".msg",
+      "size": 184
+    },
+    {
+      "file": "arm_planner/msg/MemoryState.msg",
+      "ext": ".msg",
+      "size": 137
+    },
+    {
+      "file": "arm_planner/msg/ObjectDetection.msg",
+      "ext": ".msg",
+      "size": 347
+    },
+    {
+      "file": "arm_planner/msg/SemanticRelation.msg",
+      "ext": ".msg",
+      "size": 214
+    },
+    {
+      "file": "arm_planner/msg/ServoHealth.msg",
+      "ext": ".msg",
+      "size": 132
+    },
+    {
+      "file": "arm_planner/msg/TaskState.msg",
+      "ext": ".msg",
+      "size": 333
+    },
+    {
+      "file": "arm_planner/msg/VisionState.msg",
+      "ext": ".msg",
+      "size": 166
+    },
+    {
+      "file": "arm_planner/msg/WorldObject.msg",
+      "ext": ".msg",
+      "size": 332
+    },
+    {
+      "file": "arm_planner/scripts/object_model_cli.py",
+      "ext": ".py",
+      "size": 8821,
+      "classes": [],
+      "top_functions": [
+        "cmd_list",
+        "cmd_show",
+        "cmd_register",
+        "cmd_update",
+        "cmd_stats",
+        "cmd_export",
+        "cmd_import",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 257,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_planner/scripts/upgrade_u1_install.sh",
+      "ext": ".sh",
+      "size": 9089
+    }
+  ],
+  "arm_agents": [
+    {
+      "file": "arm_agents/setup.py",
+      "ext": ".py",
+      "size": 1998,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 45,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/__init__.py",
+      "ext": ".py",
+      "size": 0,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 0,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/affordance_agent.py",
+      "ext": ".py",
+      "size": 8686,
+      "classes": [
+        "AffordanceAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 209,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/affordance_agent_v2.py",
+      "ext": ".py",
+      "size": 18587,
+      "classes": [
+        "AffordanceAgentV2"
+      ],
+      "top_functions": [
+        "locate_handle_in_mask",
+        "material_aware_affordance",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 535,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/attention_agent.py",
+      "ext": ".py",
+      "size": 4763,
+      "classes": [
+        "AttentionAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 127,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/control_agent.py",
+      "ext": ".py",
+      "size": 5660,
+      "classes": [
+        "ControlAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 134,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/depth_agent.py",
+      "ext": ".py",
+      "size": 3805,
+      "classes": [
+        "DepthAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 91,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/dialogue_agent.py",
+      "ext": ".py",
+      "size": 7609,
+      "classes": [
+        "DialogueAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 191,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/evaluation_agent.py",
+      "ext": ".py",
+      "size": 6622,
+      "classes": [
+        "EvaluationAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 160,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/in_hand_manipulation.py",
+      "ext": ".py",
+      "size": 15393,
+      "classes": [
+        "InHandManipulation"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 417,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/learning_agent.py",
+      "ext": ".py",
+      "size": 8553,
+      "classes": [
+        "LearningAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 203,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/llm_dialogue_agent.py",
+      "ext": ".py",
+      "size": 20569,
+      "classes": [
+        "LLMDialogueAgent"
+      ],
+      "top_functions": [
+        "_load_prompt",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 518,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/llm_planning_agent.py",
+      "ext": ".py",
+      "size": 659,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 13,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/memory_agent.py",
+      "ext": ".py",
+      "size": 18753,
+      "classes": [
+        "MemoryAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 406,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/moving_target_handler.py",
+      "ext": ".py",
+      "size": 7661,
+      "classes": [
+        "KalmanFilter2D",
+        "MovingTargetHandler"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 209,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/openvla_executor.py",
+      "ext": ".py",
+      "size": 12977,
+      "classes": [
+        "OpenVLAExecutorNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 332,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/planning_agent.py",
+      "ext": ".py",
+      "size": 14086,
+      "classes": [
+        "PlanningAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 330,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/reachability_agent.py",
+      "ext": ".py",
+      "size": 6642,
+      "classes": [
+        "ReachabilityAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 163,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/safety_agent.py",
+      "ext": ".py",
+      "size": 7589,
+      "classes": [
+        "SafetyAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 199,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/skill_agent.py",
+      "ext": ".py",
+      "size": 67732,
+      "classes": [
+        "SkillRecord",
+        "SkillAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 1459,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/tracking_agent.py",
+      "ext": ".py",
+      "size": 6568,
+      "classes": [
+        "TrackedObject",
+        "TrackingAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 160,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/vision_agent.py",
+      "ext": ".py",
+      "size": 8314,
+      "classes": [
+        "VisionAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 207,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_agents/arm_agents/world_model_agent.py",
+      "ext": ".py",
+      "size": 7797,
+      "classes": [
+        "WorldModelAgent"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 202,
+      "syntax": "VALID"
+    }
+  ],
+  "arm_learning": [
+    {
+      "file": "arm_learning/setup.py",
+      "ext": ".py",
+      "size": 925,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 33,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_learning/arm_learning/__init__.py",
+      "ext": ".py",
+      "size": 75,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 1,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_learning/arm_learning/bag_indexer.py",
+      "ext": ".py",
+      "size": 15807,
+      "classes": [
+        "BagInfo",
+        "BagIndexer"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 402,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_learning/arm_learning/bag_recorder_node.py",
+      "ext": ".py",
+      "size": 17484,
+      "classes": [
+        "RecordingMode",
+        "SessionMetadata",
+        "BagRecorderNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 470,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_learning/arm_learning/bag_to_dataset.py",
+      "ext": ".py",
+      "size": 13768,
+      "classes": [
+        "Episode"
+      ],
+      "top_functions": [
+        "parse_bag_metadata",
+        "extract_episodes_from_bag",
+        "_extract_with_rosbag2",
+        "write_lerobot_hdf5",
+        "convert_bag_to_hdf5",
+        "batch_convert",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 395,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_learning/arm_learning/experiment_tracker.py",
+      "ext": ".py",
+      "size": 18300,
+      "classes": [
+        "IKBenchmarkResults",
+        "SkillResult",
+        "SessionMetrics",
+        "ComparisonReport",
+        "MLflowBackend",
+        "WandbBackend",
+        "NoneBackend",
+        "ExperimentTracker"
+      ],
+      "top_functions": [
+        "load_config",
+        "get_system_config",
+        "get_tracker"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 468,
+      "syntax": "VALID"
+    }
+  ],
+  "arm_dashboard": [
+    {
+      "file": "arm_dashboard/app.py",
+      "ext": ".py",
+      "size": 51927,
+      "classes": [
+        "ARIADashboardState",
+        "CommandRequest",
+        "JointRequest",
+        "AllJointsRequest",
+        "TargetRequest",
+        "SimulationLaunchRequest",
+        "DashboardBridge"
+      ],
+      "top_functions": [
+        "ros_spin_thread",
+        "call_service_sync",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 1172,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_dashboard/launch_dashboard.sh",
+      "ext": ".sh",
+      "size": 1534
+    },
+    {
+      "file": "arm_dashboard/test_dashboard.py",
+      "ext": ".py",
+      "size": 7467,
+      "classes": [
+        "ARIADashboardTest"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 180,
+      "syntax": "VALID"
+    }
+  ],
+  "arm_description": [
+    {
+      "file": "arm_description/meshes/bullet/duck_vhacd.urdf",
+      "ext": ".urdf",
+      "size": 841
+    },
+    {
+      "file": "arm_description/meshes/bullet/jenga.urdf",
+      "ext": ".urdf",
+      "size": 706
+    },
+    {
+      "file": "arm_description/meshes/bullet/lego.urdf",
+      "ext": ".urdf",
+      "size": 848
+    },
+    {
+      "file": "arm_description/meshes/bullet/marble_cube.urdf",
+      "ext": ".urdf",
+      "size": 793
+    },
+    {
+      "file": "arm_description/meshes/bullet/pan_tefal.urdf",
+      "ext": ".urdf",
+      "size": 2143
+    },
+    {
+      "file": "arm_description/meshes/bullet/plate.urdf",
+      "ext": ".urdf",
+      "size": 1669
+    },
+    {
+      "file": "arm_description/meshes/bullet/teddy_large.urdf",
+      "ext": ".urdf",
+      "size": 844
+    },
+    {
+      "file": "arm_description/meshes/bullet/teddy_vhacd.urdf",
+      "ext": ".urdf",
+      "size": 853
+    },
+    {
+      "file": "arm_description/meshes/bullet/tray.urdf",
+      "ext": ".urdf",
+      "size": 837
+    },
+    {
+      "file": "arm_description/meshes/bullet/tray_textured2.urdf",
+      "ext": ".urdf",
+      "size": 659
+    },
+    {
+      "file": "arm_description/meshes/bullet/traybox.urdf",
+      "ext": ".urdf",
+      "size": 1250
+    },
+    {
+      "file": "arm_description/urdf/aria_arm.gazebo.xacro",
+      "ext": ".xacro",
+      "size": 13919
+    },
+    {
+      "file": "arm_description/urdf/aria_arm.urdf.xacro",
+      "ext": ".xacro",
+      "size": 19611
+    }
+  ],
+  "arm_interfaces": [
+    {
+      "file": "arm_interfaces/action/ExecuteGrasp.action",
+      "ext": ".action",
+      "size": 179
+    },
+    {
+      "file": "arm_interfaces/srv/CheckReachability.srv",
+      "ext": ".srv",
+      "size": 183
+    },
+    {
+      "file": "arm_interfaces/srv/ComputeFK.srv",
+      "ext": ".srv",
+      "size": 196
+    },
+    {
+      "file": "arm_interfaces/srv/GetAffordanceGrasp.srv",
+      "ext": ".srv",
+      "size": 243
+    },
+    {
+      "file": "arm_interfaces/srv/GoNamedPose.srv",
+      "ext": ".srv",
+      "size": 144
+    },
+    {
+      "file": "arm_interfaces/srv/PlanGrasp.srv",
+      "ext": ".srv",
+      "size": 506
+    },
+    {
+      "file": "arm_interfaces/srv/SendCommand.srv",
+      "ext": ".srv",
+      "size": 97
+    },
+    {
+      "file": "arm_interfaces/srv/SetAllJoints.srv",
+      "ext": ".srv",
+      "size": 389
+    },
+    {
+      "file": "arm_interfaces/srv/SetConveyorPower.srv",
+      "ext": ".srv",
+      "size": 92
+    },
+    {
+      "file": "arm_interfaces/srv/SetJoint.srv",
+      "ext": ".srv",
+      "size": 494
+    },
+    {
+      "file": "arm_interfaces/srv/SolveIK.srv",
+      "ext": ".srv",
+      "size": 695
+    },
+    {
+      "file": "arm_interfaces/msg/MaterialPredictions.msg",
+      "ext": ".msg",
+      "size": 383
+    },
+    {
+      "file": "arm_interfaces/msg/SAM2Masks.msg",
+      "ext": ".msg",
+      "size": 249
+    },
+    {
+      "file": "arm_interfaces/msg/UnifiedScene.msg",
+      "ext": ".msg",
+      "size": 822
+    }
+  ],
+  "arm_bringup": [
+    {
+      "file": "arm_bringup/scripts/activate_agents.py",
+      "ext": ".py",
+      "size": 2508,
+      "classes": [],
+      "top_functions": [
+        "activate_all"
+      ],
+      "doc_summary": "Activates all ARIA LifecycleNode agents and orchestrators.",
+      "lines": 66,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/aria_cli.py",
+      "ext": ".py",
+      "size": 17219,
+      "classes": [
+        "C"
+      ],
+      "top_functions": [
+        "banner",
+        "run_ros2",
+        "run_service",
+        "cmd_sim_start",
+        "cmd_sim_manual",
+        "cmd_sim_headless",
+        "cmd_sim_tester",
+        "cmd_sim_full",
+        "cmd_hardware_wizard",
+        "cmd_hardware_start",
+        "cmd_hardware_calibrate",
+        "cmd_hardware_verify_sync",
+        "cmd_teach_start",
+        "cmd_teach_waypoint",
+        "cmd_teach_stop",
+        "cmd_teach_replay",
+        "cmd_teach_save",
+        "cmd_command",
+        "cmd_approve",
+        "cmd_reject",
+        "cmd_estop",
+        "cmd_learn_start",
+        "cmd_learn_stop",
+        "cmd_sync_sim_to_real",
+        "cmd_sync_real_to_sim",
+        "cmd_sync_off",
+        "cmd_status",
+        "cmd_benchmark_ik",
+        "cmd_benchmark_perception",
+        "cmd_benchmark_depth",
+        "build_parser",
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 371,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/conveyor_part_spawner.py",
+      "ext": ".py",
+      "size": 3561,
+      "classes": [
+        "ConveyorPartSpawner"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 85,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/hardware_bringup_wizard.py",
+      "ext": ".py",
+      "size": 20401,
+      "classes": [
+        "Colors",
+        "HardwareBringupWizard"
+      ],
+      "top_functions": [
+        "banner",
+        "step_header",
+        "ok",
+        "warn",
+        "fail",
+        "info",
+        "ask_yn",
+        "wait_enter",
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 492,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/industrial_workcell_node.py",
+      "ext": ".py",
+      "size": 15371,
+      "classes": [
+        "IndustrialWorkcellNode"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 368,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/pick_up_red_cup_test.py",
+      "ext": ".py",
+      "size": 12029,
+      "classes": [
+        "PickUpRedCupTest"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 281,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/run_pick_test.sh",
+      "ext": ".sh",
+      "size": 4789
+    },
+    {
+      "file": "arm_bringup/scripts/test_industrial_workcell.py",
+      "ext": ".py",
+      "size": 7151,
+      "classes": [
+        "IndustrialWorkcellTester"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 163,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/test_tester_world.py",
+      "ext": ".py",
+      "size": 5435,
+      "classes": [],
+      "top_functions": [
+        "print_banner",
+        "validate_offline"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 134,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/upgrade_u2_install.sh",
+      "ext": ".sh",
+      "size": 7055
+    },
+    {
+      "file": "arm_bringup/scripts/upgrade_u3_install.sh",
+      "ext": ".sh",
+      "size": 6093
+    },
+    {
+      "file": "arm_bringup/scripts/validate_stage1.py",
+      "ext": ".py",
+      "size": 21165,
+      "classes": [
+        "ValidationResult",
+        "Stage1Validator"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 593,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/validate_stage2.py",
+      "ext": ".py",
+      "size": 14929,
+      "classes": [
+        "ValidationResult",
+        "Stage2Validator"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 406,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/validate_stage3.py",
+      "ext": ".py",
+      "size": 17559,
+      "classes": [
+        "TestResult",
+        "MockPose",
+        "MockPoseStamped",
+        "MockDetection",
+        "Position",
+        "Orientation"
+      ],
+      "top_functions": [
+        "run_test",
+        "test_agents_active",
+        "test_nl_planning",
+        "test_state_bus",
+        "test_world_model_db",
+        "test_skill_manager",
+        "test_failure_classifier",
+        "test_vla_benchmark",
+        "test_dashboard_api",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 444,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/validate_stage4.py",
+      "ext": ".py",
+      "size": 16640,
+      "classes": [
+        "ValidationResult",
+        "Stage4Validator"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 416,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/validate_upgrade_u1.py",
+      "ext": ".py",
+      "size": 14844,
+      "classes": [
+        "Colors",
+        "MockBus",
+        "state"
+      ],
+      "top_functions": [
+        "header",
+        "pass_test",
+        "fail_test",
+        "skip_test",
+        "info",
+        "record",
+        "record_skip",
+        "test_episodic_memory"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 476,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/validate_upgrade_u2.py",
+      "ext": ".py",
+      "size": 20606,
+      "classes": [
+        "_Point",
+        "_Quaternion",
+        "_Pose",
+        "_PoseStamped",
+        "_PoseArray",
+        "TestResult",
+        "_Header",
+        "_Header"
+      ],
+      "top_functions": [
+        "run_test",
+        "test_sam2_masks",
+        "test_6d_pose",
+        "test_transparent_depth",
+        "test_material_recognition",
+        "test_gaussian_splatting",
+        "test_orchestrator",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 547,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/scripts/validate_upgrade_u3.py",
+      "ext": ".py",
+      "size": 19323,
+      "classes": [
+        "TestResult"
+      ],
+      "top_functions": [
+        "run_test",
+        "test_docker_files",
+        "test_docker_available",
+        "test_ci_pipeline",
+        "test_experiment_tracker",
+        "test_bag_indexer",
+        "test_bag_to_dataset",
+        "test_object_model_db",
+        "test_benchmark_comparison",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 496,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/aria_agents_only.launch.py",
+      "ext": ".py",
+      "size": 9215,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 163,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/aria_full.launch.py",
+      "ext": ".py",
+      "size": 10723,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 268,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/aria_full_u1.launch.py",
+      "ext": ".py",
+      "size": 10621,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 246,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/aria_full_u2.launch.py",
+      "ext": ".py",
+      "size": 11620,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 300,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/aria_full_u3.launch.py",
+      "ext": ".py",
+      "size": 12357,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 292,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/full_stage2.launch.py",
+      "ext": ".py",
+      "size": 4658,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 130,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/hardware.launch.py",
+      "ext": ".py",
+      "size": 14701,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 345,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/industrial_workcell.launch.py",
+      "ext": ".py",
+      "size": 12760,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 272,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/manual_control.launch.py",
+      "ext": ".py",
+      "size": 2131,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 57,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/perception.launch.py",
+      "ext": ".py",
+      "size": 3851,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 107,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/sim.launch.py",
+      "ext": ".py",
+      "size": 10132,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 229,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/test_planning.launch.py",
+      "ext": ".py",
+      "size": 593,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 11,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_bringup/launch/tester_sim.launch.py",
+      "ext": ".py",
+      "size": 1963,
+      "classes": [],
+      "top_functions": [
+        "generate_launch_description"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 46,
+      "syntax": "VALID"
+    }
+  ],
+  "arm_vla": [
+    {
+      "file": "arm_vla/setup.py",
+      "ext": ".py",
+      "size": 639,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 25,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vla/arm_vla/__init__.py",
+      "ext": ".py",
+      "size": 0,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "No module docstring",
+      "lines": 0,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vla/arm_vla/vla_benchmark.py",
+      "ext": ".py",
+      "size": 16985,
+      "classes": [
+        "BenchmarkTask",
+        "TaskResult",
+        "BenchmarkReport",
+        "RuleBasedBaseline",
+        "VLATaskExecutor",
+        "VLABenchmark"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 440,
+      "syntax": "VALID"
+    },
+    {
+      "file": "arm_vla/arm_vla/vla_interface.py",
+      "ext": ".py",
+      "size": 24662,
+      "classes": [
+        "VLAInput",
+        "VLAOutput",
+        "VLABackend",
+        "LeRobotBackend",
+        "OpenVLABackend",
+        "Pi0Backend",
+        "Gr00tN1Backend",
+        "VLAInterface"
+      ],
+      "top_functions": [],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 603,
+      "syntax": "VALID"
+    }
+  ],
+  "arm_moveit_config": [
+    {
+      "file": "arm_moveit_config/scripts/cable_scene_updater.py",
+      "ext": ".py",
+      "size": 7602,
+      "classes": [
+        "CableSceneUpdater"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 217,
+      "syntax": "VALID"
+    }
+  ],
+  "scripts": [
+    {
+      "file": "scripts/benchmark_authoritative_kinematics.py",
+      "ext": ".py",
+      "size": 36841,
+      "classes": [],
+      "top_functions": [
+        "get_git_commit",
+        "rpy_to_R",
+        "Rz",
+        "make_T",
+        "fk_urdf",
+        "fk_urdf_base_frame",
+        "dh_matrix",
+        "fk_arm_ik",
+        "craig_mdh_matrix",
+        "fk_craig",
+        "ros2_cmd",
+        "gazebo_is_ready",
+        "publish_joint_state",
+        "read_tf_pose",
+        "read_tf_pose_stamped",
+        "read_joint_states_once",
+        "extract_dh_from_urdf",
+        "main"
+      ],
+      "doc_summary": "scripts/benchmark_authoritative_kinematics.py",
+      "lines": 743,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_color_defect_real.py",
+      "ext": ".py",
+      "size": 27876,
+      "classes": [
+        "ColorDefectExperimentNode"
+      ],
+      "top_functions": [
+        "get_git_commit",
+        "wilson_ci",
+        "create_workpiece_sdf",
+        "run_optical_qc_inspection",
+        "compute_calibration_ece",
+        "run_factorial_experiment",
+        "save_and_summarize_color_defect",
+        "run_confidence_calibration",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 674,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_depth_calibration_real.py",
+      "ext": ".py",
+      "size": 21564,
+      "classes": [
+        "DepthBenchmarkCollector"
+      ],
+      "top_functions": [
+        "get_git_commit",
+        "run_real_depth_benchmark",
+        "compute_metrics",
+        "save_and_summarize",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 497,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_fault_injection_real.py",
+      "ext": ".py",
+      "size": 41206,
+      "classes": [
+        "HighFrequencyArmController",
+        "HighPrecisionCommandMonitor",
+        "MockBus"
+      ],
+      "top_functions": [
+        "np_craig_mdh",
+        "compute_fk",
+        "transition_to_active",
+        "run_sigkill_benchmark",
+        "run_optical_disconnect_benchmark",
+        "run_llm_timeout_benchmark",
+        "run_dds_packet_loss_benchmark",
+        "run_estop_benchmark",
+        "main"
+      ],
+      "doc_summary": "scripts/benchmark_fault_injection_real.py",
+      "lines": 931,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_fault_injection_real_v2.py",
+      "ext": ".py",
+      "size": 48739,
+      "classes": [
+        "JointSafetyMonitor",
+        "MockBus"
+      ],
+      "top_functions": [
+        "np_craig_mdh",
+        "compute_fk",
+        "run_sigkill_benchmark_v2",
+        "run_optical_disconnect_benchmark_v2",
+        "run_llm_timeout_benchmark_v2",
+        "run_dds_packet_loss_benchmark_v2",
+        "run_estop_benchmark_v2",
+        "main"
+      ],
+      "doc_summary": "scripts/benchmark_fault_injection_real_v2.py",
+      "lines": 1124,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_ik_real_100k.py",
+      "ext": ".py",
+      "size": 18890,
+      "classes": [],
+      "top_functions": [
+        "init_worker",
+        "evaluate_single_pose",
+        "run_benchmark_dataset",
+        "generate_fk_poses",
+        "generate_cartesian_poses",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 443,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_ik_real_5d.py",
+      "ext": ".py",
+      "size": 26042,
+      "classes": [],
+      "top_functions": [
+        "get_git_commit",
+        "wrap_angle",
+        "check_5d_convergence",
+        "verify_dense_grid_unreachable",
+        "generate_set_a_poses",
+        "generate_set_b_poses",
+        "evaluate_pose",
+        "run_benchmark",
+        "main"
+      ],
+      "doc_summary": "scripts/benchmark_ik_real_5d.py",
+      "lines": 772,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_ik_urdf_v2_10k.py",
+      "ext": ".py",
+      "size": 12656,
+      "classes": [],
+      "top_functions": [
+        "get_git_commit",
+        "scipy_ik",
+        "main"
+      ],
+      "doc_summary": "scripts/benchmark_ik_urdf_v2_10k.py",
+      "lines": 271,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_language_multiseed_real.py",
+      "ext": ".py",
+      "size": 32008,
+      "classes": [],
+      "top_functions": [
+        "get_git_commit",
+        "call_ollama",
+        "normalize_str",
+        "matches_semantic_entity",
+        "evaluate_slots",
+        "run_aria_trial",
+        "run_direct_llm_trial",
+        "run_saycan_trial",
+        "run_tot_timing_benchmark",
+        "main"
+      ],
+      "doc_summary": "scripts/benchmark_language_multiseed_real.py",
+      "lines": 730,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_language_real_60.py",
+      "ext": ".py",
+      "size": 35502,
+      "classes": [
+        "WorkcellSimClient"
+      ],
+      "top_functions": [
+        "call_ollama",
+        "normalize_str",
+        "matches_semantic_entity",
+        "evaluate_slots",
+        "run_aria_trial",
+        "run_direct_llm_trial",
+        "run_saycan_trial",
+        "run_benchmark"
+      ],
+      "doc_summary": "scripts/benchmark_language_real_60.py",
+      "lines": 820,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_reachability_grid_100k.py",
+      "ext": ".py",
+      "size": 12591,
+      "classes": [],
+      "top_functions": [
+        "get_git_commit",
+        "scipy_ik",
+        "main"
+      ],
+      "doc_summary": "scripts/benchmark_reachability_grid_100k.py",
+      "lines": 287,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_simulation_real.py",
+      "ext": ".py",
+      "size": 42478,
+      "classes": [
+        "ARIADataCollectorNode"
+      ],
+      "top_functions": [
+        "get_git_commit",
+        "run_expanded_manipulation_trials",
+        "run_conveyor_speed_sweep",
+        "generate_summaries",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 904,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/benchmark_simulation_real_v2.py",
+      "ext": ".py",
+      "size": 46148,
+      "classes": [
+        "ARIADataCollectorNodeV2"
+      ],
+      "top_functions": [
+        "get_git_commit",
+        "run_expanded_manipulation_trials",
+        "run_conveyor_speed_sweep",
+        "generate_summaries",
+        "main"
+      ],
+      "doc_summary": "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+      "lines": 967,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/capture_live_test_visuals.py",
+      "ext": ".py",
+      "size": 16877,
+      "classes": [
+        "VisualVerificationCapture"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "Live Visual Verification Capture for Project ARIA.",
+      "lines": 394,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/compare_fk_three_models.py",
+      "ext": ".py",
+      "size": 13122,
+      "classes": [],
+      "top_functions": [
+        "get_git_commit",
+        "rpy_to_matrix",
+        "rot_axis",
+        "joint_transform",
+        "fk_urdf_xacro",
+        "dh_matrix",
+        "fk_arm_ik",
+        "craig_mdh",
+        "fk_craig",
+        "main"
+      ],
+      "doc_summary": "scripts/compare_fk_three_models.py",
+      "lines": 297,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/freeze_lang_prompts.py",
+      "ext": ".py",
+      "size": 37715,
+      "classes": [],
+      "top_functions": [],
+      "doc_summary": "Generate and freeze data/real/lang_prompts.json BEFORE running any benchmarks.",
+      "lines": 1049,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/gazebo_tf_kinematic_validator.py",
+      "ext": ".py",
+      "size": 20282,
+      "classes": [],
+      "top_functions": [
+        "get_git_commit",
+        "rpy_to_R",
+        "Rz",
+        "make_T",
+        "urdf_fk_base",
+        "urdf_fk_world",
+        "shell",
+        "command_joints",
+        "read_joint_states",
+        "read_tf",
+        "gazebo_ready",
+        "main"
+      ],
+      "doc_summary": "scripts/gazebo_tf_kinematic_validator.py",
+      "lines": 412,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/gazebo_tf_kinematic_validator_v2.py",
+      "ext": ".py",
+      "size": 19321,
+      "classes": [],
+      "top_functions": [
+        "get_git_commit",
+        "rpy_to_R",
+        "Rz",
+        "make_T",
+        "urdf_fk_base",
+        "shell",
+        "command_joints",
+        "read_joint_states",
+        "read_tf",
+        "gazebo_ready",
+        "main"
+      ],
+      "doc_summary": "scripts/gazebo_tf_kinematic_validator_v2.py",
+      "lines": 420,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/generate_benchmark_visualizations.py",
+      "ext": ".py",
+      "size": 4774,
+      "classes": [],
+      "top_functions": [
+        "plot_manipulation",
+        "plot_conveyor_sweep"
+      ],
+      "doc_summary": "Generate publication-quality benchmark plots from autonomous test runs.",
+      "lines": 112,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/generate_paper_figures_v2.py",
+      "ext": ".py",
+      "size": 16496,
+      "classes": [],
+      "top_functions": [
+        "generate_fig1_architecture",
+        "generate_fig7_vla_benchmark"
+      ],
+      "doc_summary": "Regenerate Fig 1 (System Architecture) and Fig 7 (Manipulation Benchmark)",
+      "lines": 264,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/manual_sort.py",
+      "ext": ".py",
+      "size": 9117,
+      "classes": [
+        "IndustrialContinuousSorter"
+      ],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "No module docstring",
+      "lines": 222,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/statistical_validator.py",
+      "ext": ".py",
+      "size": 14440,
+      "classes": [],
+      "top_functions": [
+        "wilson_score_interval",
+        "clopper_pearson_interval",
+        "format_pct_ci",
+        "validate_manipulation_csv",
+        "validate_conveyor_csv",
+        "validate_ablation_csv",
+        "generate_latex_vla_row",
+        "generate_latex_conveyor_table",
+        "generate_latex_ablation_table",
+        "main"
+      ],
+      "doc_summary": "Project ARIA: Statistical Validator & Manuscript Table Generator",
+      "lines": 378,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/verify_fk_derivation.py",
+      "ext": ".py",
+      "size": 8124,
+      "classes": [],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "scripts/verify_fk_derivation.py",
+      "lines": 183,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/verify_ik_signed_radius.py",
+      "ext": ".py",
+      "size": 5545,
+      "classes": [],
+      "top_functions": [
+        "forward_kinematics",
+        "solve_ik_signed_radius",
+        "main"
+      ],
+      "doc_summary": "Verification Script for Signed-Radius, Two-Azimuth Analytical IK Solver for ARIA.",
+      "lines": 171,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/verify_quintic_trajectory.py",
+      "ext": ".py",
+      "size": 6688,
+      "classes": [],
+      "top_functions": [
+        "main"
+      ],
+      "doc_summary": "scripts/verify_quintic_trajectory.py",
+      "lines": 150,
+      "syntax": "VALID"
+    },
+    {
+      "file": "scripts/git_setup/apply_branch_protection.sh",
+      "ext": ".sh",
+      "size": 1975
+    },
+    {
+      "file": "scripts/git_setup/complete_stage.sh",
+      "ext": ".sh",
+      "size": 8623
+    },
+    {
+      "file": "scripts/git_setup/create_labels.sh",
+      "ext": ".sh",
+      "size": 3822
+    },
+    {
+      "file": "scripts/git_setup/create_milestones.sh",
+      "ext": ".sh",
+      "size": 1751
+    },
+    {
+      "file": "scripts/git_setup/init_repository.sh",
+      "ext": ".sh",
+      "size": 6373
+    },
+    {
+      "file": "scripts/git_setup/install_commit_template.sh",
+      "ext": ".sh",
+      "size": 180
+    },
+    {
+      "file": "scripts/git_setup/release_to_main.sh",
+      "ext": ".sh",
+      "size": 3115
+    }
+  ],
+  "esp32_firmware": [
+    {
+      "file": "esp32_firmware/src/main.cpp",
+      "ext": ".cpp",
+      "size": 18833
+    },
+    {
+      "file": "esp32_firmware/src/servo_manager.cpp",
+      "ext": ".cpp",
+      "size": 16071
+    },
+    {
+      "file": "esp32_firmware/src/servo_manager.h",
+      "ext": ".h",
+      "size": 5171
+    }
+  ]
+}

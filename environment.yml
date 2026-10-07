@@ -1,0 +1,38 @@
+name: aria
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip=23.3
+  - numpy>=1.24.0,<2.0.0
+  - scipy>=1.10.0
+  - sympy>=1.12
+  - matplotlib>=3.7.0
+  - pandas>=2.0.0
+  - h5py>=3.10.0
+  - pyyaml>=6.0.1
+  - requests>=2.31.0
+  - pytorch>=2.0.0
+  - torchvision>=0.15.0
+  - pytorch-cuda=12.1
+  - pip:
+      - ultralytics>=8.0.0
+      - roboticstoolbox-python>=1.1.0
+      - spatialmath-python>=1.1.0
+      - ikpy>=3.3.3
+      - trimesh>=4.0.0
+      - timm>=0.9.0
+      - transformers>=4.40.0
+      - sentence-transformers>=2.2.0
+      - fastapi>=0.109.0
+      - uvicorn[standard]>=0.27.0
+      - websockets>=12.0
+      - pydantic>=2.0.0
+      - pyserial>=3.5
+      - wandb>=0.16.0
+      - mlflow>=2.10.0
+      - lerobot>=0.1.0
+      - pytest>=7.4.0
