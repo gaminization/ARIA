@@ -20,9 +20,9 @@ plt.rcParams['xtick.direction'] = 'in'
 plt.rcParams['ytick.direction'] = 'in'
 
 OUT_DIRS = [
-    "/home/gaminizer/Projects/ARIA/paper_v2/figures",
-    "/home/gaminizer/Projects/ARIA/paper/figures",
-    "/home/gaminizer/Projects/ARIA/new_paper/figures"
+    "/home/gaminizer/Projects/ARIA/publications/archive_v2/figures",
+    "/home/gaminizer/Projects/ARIA/publications/archive_v1/figures",
+    "/home/gaminizer/Projects/ARIA/publications/ieee_tro_submission/figures"
 ]
 
 def generate_fig1_architecture():

@@ -100,10 +100,14 @@ class SAM2Model:
                 os.path.abspath(__file__))))
 
             candidates = [
-                # SAM2.0 (exact version match with sam2_hiera_t.yaml)
+                # SAM2.0 in models/ or root
+                ("sam2_hiera_t.yaml",
+                 os.path.join(aria_dir, "models", "sam2_hiera_tiny.pt")),
                 ("sam2_hiera_t.yaml",
                  os.path.join(aria_dir, "sam2_hiera_tiny.pt")),
-                # SAM2.1 (use sam2.1 config)
+                # SAM2.1 in models/ or root
+                ("sam2.1/sam2.1_hiera_t.yaml",
+                 os.path.join(aria_dir, "models", "sam2.1_hiera_tiny.pt")),
                 ("sam2.1/sam2.1_hiera_t.yaml",
                  os.path.join(aria_dir, "sam2.1_hiera_tiny.pt")),
             ]

@@ -1,1 +1,0 @@
-scripts/aria_setup_check.sh

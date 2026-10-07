@@ -25,8 +25,8 @@ timm>=0.9.0                   # Required for Depth-Anything v2 backbone
 # ── 3. High-Level AI, Segmentation & Embeddings ───────────────
 transformers>=4.40.0           # HuggingFace model hub & OpenVLA
 sentence-transformers>=2.2.0   # Text embeddings for semantic retrieval
-clip @ git+https://github.com/openai/CLIP.git@a1d071733d7111f9c01bf026fb21f6b95b4e8a27
-sam2 @ git+https://github.com/facebookresearch/segment-anything-2.git@main
+clip @ git+https://github.com/openai/CLIP.git
+sam2 @ git+https://github.com/facebookresearch/segment-anything-2.git
 
 # ── 4. Web Dashboard & Async Telemetry API ────────────────────
 fastapi>=0.109.0

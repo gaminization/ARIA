@@ -7,7 +7,7 @@ This directory houses modular Python requirement definitions for Project ARIA.
 | File | Purpose | Key Libraries |
 | :--- | :--- | :--- |
 | [`requirements.txt`](../requirements.txt) | **Master Unified Requirements** | All production dependencies across all subsystems |
-| [`requirements-dev.txt`](../requirements-dev.txt) | **Developer & Testing Suite** | Pytest, coverage, linters, pre-commit |
+| [`requirements_dev.txt`](./requirements_dev.txt) | **Developer & Testing Suite** | Pytest, coverage, linters, pre-commit |
 | [`requirements_core.txt`](./requirements_core.txt) | Kinematics & Robotics | `numpy`, `scipy`, `spatialmath`, `roboticstoolbox`, `ikpy` |
 | [`requirements_vision.txt`](./requirements_vision.txt) | Computer Vision & Depth | `opencv`, `torch`, `torchvision`, `ultralytics`, `sam2` |
 | [`requirements_vla.txt`](./requirements_vla.txt) | VLA & Autonomous Learning | `transformers`, `lerobot`, `clip`, `wandb`, `mlflow` |

@@ -1,7 +1,7 @@
 # VLA & LLM Reasoning
 transformers>=4.40.0
 sentence-transformers>=2.2.0
-clip @ git+https://github.com/openai/CLIP.git@a1d071733d7111f9c01bf026fb21f6b95b4e8a27
+clip @ git+https://github.com/openai/CLIP.git
 lerobot>=0.1.0
 wandb>=0.16.0
 mlflow>=2.10.0

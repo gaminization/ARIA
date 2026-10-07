@@ -20,7 +20,7 @@ from arm_planner.state_bus import StateBus
 # ═══════════════════════════════════════════════════════════════
 VERB_SYNONYMS = {
     'pick': ['pick', 'grab', 'grasp', 'get', 'take', 'lift'],
-    'place': ['place', 'put', 'set', 'drop', 'lay'],
+    'place': ['place', 'put', 'set', 'drop', 'lay', 'keep', 'keeps', 'store', 'stores'],
     'stack': ['stack', 'pile'],
     'push': ['push', 'shove', 'nudge'],
     'pull': ['pull', 'drag'],
@@ -181,7 +181,7 @@ class PlanningAgent(LifecycleNode):
           "sort all objects by color"  → ('sort', 'all objects', None, {'by': 'color'})
         """
         # Remove articles and filler words
-        cleaned = re.sub(r'\b(the|a|an|this|that|please|can you|could you|for)\b',
+        cleaned = re.sub(r'\b(the|a|an|this|that|please|can you|could you|for|of)\b',
                          '', command).strip()
         cleaned = re.sub(r'\s+', ' ', cleaned)
 

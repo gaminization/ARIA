@@ -69,6 +69,17 @@ class DetectionNode(Node):
         use_half = self.get_parameter('half_precision').value
         self.camera_topic = self.get_parameter('camera_topic').value
 
+        # Resolve model path from models/ directory if needed
+        if not os.path.exists(model_name):
+            cand_models = os.path.join(os.getcwd(), 'models', os.path.basename(model_name))
+            if os.path.exists(cand_models):
+                model_name = cand_models
+            else:
+                aria_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                cand_root = os.path.join(aria_root, 'models', os.path.basename(model_name))
+                if os.path.exists(cand_root):
+                    model_name = cand_root
+
         # Load YOLO model
         self.model = None
         if YOLO_AVAILABLE:

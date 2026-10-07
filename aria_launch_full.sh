@@ -1,1 +1,0 @@
-scripts/aria_launch_full.sh

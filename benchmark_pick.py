@@ -1,1 +1,0 @@
-scripts/benchmark_pick.py

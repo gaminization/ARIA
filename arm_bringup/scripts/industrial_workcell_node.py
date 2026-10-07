@@ -40,13 +40,22 @@ class IndustrialWorkcellNode(Node):
         self.cb_group = ReentrantCallbackGroup()
         self.bridge = CvBridge() if HAS_CV else None
 
+        # ── Parameters ─────────────────────────────────────────
+        self.declare_parameter("blue_item_destination", "red_box")
+        self.declare_parameter("defect_item_destination", "reject_bin")
+        self.declare_parameter("max_cycles", 1)
+
         # ── State ──────────────────────────────────────────────
         self.latest_camera_frame = None
         self.cycle_count = 0
         self.parts_passed = 0
         self.parts_rejected = 0
+        self.blue_items_in_red_box = 0
         self.is_running_cycle = False
         self.part_present = False
+
+        # ── Publishers ─────────────────────────────────────────
+        self.cot_pub = self.create_publisher(String, "/aria/cot/reasoning", 10)
 
         # ── Subscriptions ──────────────────────────────────────
         self.camera_sub = self.create_subscription(
@@ -116,15 +125,14 @@ class IndustrialWorkcellNode(Node):
             (self.named_pose_client, "/aria/go_named_pose"),
             (self.open_gripper_client, "/aria/open_gripper"),
             (self.close_gripper_client, "/aria/close_gripper"),
+            (self.conveyor_client, "/aria/conveyor/set_power"),
+            (self.attach_client, "/aria/gripper/attach"),
+            (self.detach_client, "/aria/gripper/detach"),
         ]
         for client, name in services:
             while not client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info(f"Waiting for {name}...")
-
-        if self.conveyor_client.wait_for_service(timeout_sec=2.0):
-            self.get_logger().info("✅ Connected to Conveyor Service.")
-        else:
-            self.get_logger().warn("⚠️ Conveyor service not yet online. Will retry dynamically.")
+        self.get_logger().info("✅ Connected to all workcell control & gripper services.")
 
     def _camera_cb(self, msg: Image):
         """Cache latest overhead inspection frame."""
@@ -177,25 +185,29 @@ class IndustrialWorkcellNode(Node):
         self.get_logger().info(f"Gripper -> {action_name}")
         req = Trigger.Request()
         try:
-            res = self._call_sync(client, req, timeout=3.0)
-            time.sleep(0.5)
-
-            # Direct physical grasp confirmation with AriaGripperPlugin
-            grasp_success = True
-            if not open_grip and self.attach_client.wait_for_service(timeout_sec=1.0):
-                res_att = self._call_sync(self.attach_client, Trigger.Request(), timeout=2.0)
-                if res_att:
-                    msg = res_att.message
-                    self.get_logger().info(f"⚡ {msg}")
-                    if not res_att.success and "Already holding" not in msg:
-                        grasp_success = False
-            elif open_grip and self.detach_client.wait_for_service(timeout_sec=1.0):
-                res_det = self._call_sync(self.detach_client, Trigger.Request(), timeout=2.0)
-                if res_det:
-                    self.get_logger().info(f"⚡ {res_det.message}")
-
-            time.sleep(0.5)
-            return (res.success if res else False) and grasp_success
+            if open_grip:
+                # When opening to drop/release, detach physical ODE joint first
+                if self.detach_client.wait_for_service(timeout_sec=1.0):
+                    res_det = self._call_sync(self.detach_client, Trigger.Request(), timeout=2.0)
+                    if res_det:
+                        self.get_logger().info(f"⚡ {res_det.message}")
+                res = self._call_sync(client, req, timeout=3.0)
+                time.sleep(0.5)
+                return res.success if res else False
+            else:
+                # When closing to grasp, actuate fingers first, then attach physical joint
+                res = self._call_sync(client, req, timeout=3.0)
+                time.sleep(0.5)
+                grasp_success = True
+                if self.attach_client.wait_for_service(timeout_sec=1.0):
+                    res_att = self._call_sync(self.attach_client, Trigger.Request(), timeout=2.0)
+                    if res_att:
+                        msg = res_att.message
+                        self.get_logger().info(f"⚡ {msg}")
+                        if not res_att.success and "Already holding" not in msg:
+                            grasp_success = False
+                time.sleep(0.5)
+                return (res.success if res else False) and grasp_success
         except Exception as e:
             self.get_logger().error(f"Gripper trigger failed: {e}")
             return False
@@ -253,35 +265,45 @@ class IndustrialWorkcellNode(Node):
             return
         self.is_running_cycle = True
         self.cycle_count += 1
+        def log_cot(step_num: int, message: str):
+            cot_msg = String()
+            cot_msg.data = f"Step {step_num}: {message}"
+            self.cot_pub.publish(cot_msg)
+            self.get_logger().info(f"🧠 [Chain-of-Thought {step_num}] {message}")
+
         self.get_logger().info(f"\n{'='*55}\n▶ STARTING INDUSTRIAL PRODUCTION CYCLE #{self.cycle_count}\n{'='*55}")
+
+        blue_dest = self.get_parameter("blue_item_destination").value.lower()
+        defect_dest = self.get_parameter("defect_item_destination").value.lower()
 
         # Step 1: Arm to ready pose
         self._publish_status("CELL_READY")
+        log_cot(1, "Goal: Process workpiece and execute destination routing. Arm moving to ready stance.")
         self._go_pose("ready")
 
         # Step 2: Feed infeed conveyor until optical presence sensor detects docked part
         self._publish_status("FEEDING_CONVEYOR")
-        self.get_logger().info("Step 1: Advancing infeed conveyor to dock workpiece...")
+        log_cot(2, "Infeed conveyor active (0.138 m/s). Advancing workpiece toward mechanical pick stopper.")
         self._set_conveyor_power(55.0)  # High efficiency feed (0.138 m/s)
         start_t = time.time()
-        # Advance until optical sensor detects part at pick station or timeout
         while not self.part_present and (time.time() - start_t) < 8.0:
             time.sleep(0.1)
         time.sleep(0.4)  # Settle workpiece flush against mechanical stopper
-        self.get_logger().info("Step 2: Workpiece docked at pick stopper. Pausing conveyor.")
+        log_cot(3, "Workpiece docked at pick stopper. Conveyor halted.")
         self._set_conveyor_power(0.0)
         time.sleep(0.5)
 
         # Step 4: Approach and pick
         self._publish_status("PICKING_PART")
-        self.get_logger().info("Step 3: Executing precision pick sequence...")
+        log_cot(4, "Planning precision pick: moving through 'conveyor_pick_approach' to 'conveyor_pick'.")
         self._go_pose("conveyor_pick_approach")
+        self._set_gripper(open_grip=True)
         self._go_pose("conveyor_pick")
         grasped = self._set_gripper(open_grip=False)
         self._go_pose("conveyor_pick_approach")  # Vertical lift away from conveyor belt
 
         if not grasped:
-            self.get_logger().warn("⚠️ No workpiece detected in gripper envelope. Aborting cycle.")
+            log_cot(5, "Failure: Gripper closed but no contact confirmed. Safe retract to ready stance.")
             self._set_gripper(open_grip=True)
             self._go_pose("ready")
             self.is_running_cycle = False
@@ -289,35 +311,50 @@ class IndustrialWorkcellNode(Node):
 
         # Step 5: Lift and present to Quality Inspection Station
         self._publish_status("INSPECTING_PART")
-        self.get_logger().info("Step 4: Lifting to Quality Control Inspection Station...")
+        log_cot(5, "Precision grasp confirmed. Presenting workpiece to Quality Control under overhead camera.")
         self._go_pose("inspect_station")
 
         # Step 6: Visual Quality Check
-        is_good = self._inspect_workpiece_vision()
+        is_blue = self._inspect_workpiece_vision()
 
-        # Step 7: Dual sorting branch
-        if is_good:
-            self._publish_status("SORTING_ASSEMBLY")
-            self.get_logger().info("Step 5: Routing to Finished Goods Assembly Tray...")
-            self._go_pose("assembly_approach")
-            self._go_pose("assembly_place")
-            self._set_gripper(open_grip=True)
-            self._go_pose("assembly_approach")  # Clean vertical retract away from placed workpiece
-            self.parts_passed += 1
-            self.get_logger().info(f"⭐ PART ACCEPTED! (Total Passed: {self.parts_passed})")
+        # Step 7: Agentic Destination Routing
+        # Check whether target for this item class is red box (reject bin) or assembly tray
+        target_destination = blue_dest if is_blue else defect_dest
+        is_routed_to_red_box = any(k in target_destination for k in ["red", "box", "reject", "bin"])
+
+        if is_blue:
+            log_cot(6, f"Perception Result: BLUE workpiece identified. Target Policy: '{blue_dest}'.")
         else:
-            self._publish_status("SORTING_REJECT")
-            self.get_logger().info("Step 5: Routing to Defect Reject Bin...")
+            log_cot(6, f"Perception Result: DEFECT workpiece identified. Target Policy: '{defect_dest}'.")
+
+        if is_routed_to_red_box:
+            self._publish_status("SORTING_RED_BOX")
+            log_cot(7, "Routing to RED BOX (Reject Bin): Navigating trajectory 'reject_approach' -> 'reject_drop'.")
             self._go_pose("reject_approach")
             self._go_pose("reject_drop")
+            log_cot(8, "Over Red Box: Gripper opening. Depositing workpiece flush into Red Box.")
             self._set_gripper(open_grip=True)
-            self._go_pose("reject_approach")
-            self.parts_rejected += 1
-            self.get_logger().warn(f"🗑️ PART SCRAPPED! (Total Rejected: {self.parts_rejected})")
+            self._go_pose("reject_approach")  # Clean vertical retract
+            if is_blue:
+                self.blue_items_in_red_box += 1
+                log_cot(9, f"Success: BLUE item securely placed in RED BOX! (Total Blue in Red Box: {self.blue_items_in_red_box})")
+            else:
+                self.parts_rejected += 1
+                log_cot(9, f"Success: Defective item deposited in reject bin. (Total: {self.parts_rejected})")
+        else:
+            self._publish_status("SORTING_ASSEMBLY")
+            log_cot(7, "Routing to ASSEMBLY TRAY: Navigating trajectory 'assembly_approach' -> 'assembly_place'.")
+            self._go_pose("assembly_approach")
+            self._go_pose("assembly_place")
+            log_cot(8, "Over Assembly Tray: Gripper opening. Placing workpiece into tray pocket.")
+            self._set_gripper(open_grip=True)
+            self._go_pose("assembly_approach")
+            self.parts_passed += 1
+            log_cot(9, f"Success: Part accepted into finished goods tray. (Total: {self.parts_passed})")
 
         # Step 8: Return home / ready
         self._publish_status("CYCLE_COMPLETE")
-        self.get_logger().info("Step 6: Returning arm to ready stance.")
+        log_cot(10, "Cycle complete. Arm returning to ready stance for next task.")
         self._go_pose("ready")
 
         self.get_logger().info(

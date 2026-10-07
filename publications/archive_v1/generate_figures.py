@@ -268,7 +268,9 @@ def gen_fig3():
     ax2_bot = fig.add_subplot(gs2[1])
 
     # ── Panel 1: Overhead Eye-to-Hand Scene Detection & SAM2 Segmentation ──
-    overhead_path = '/home/gaminizer/Projects/ARIA/tmp/top_c270_overhead_framed.png'
+    overhead_path = '/home/gaminizer/Projects/ARIA/data/simulation_captures/top_c270_overhead_framed.png'
+    if not os.path.exists(overhead_path):
+        overhead_path = '/home/gaminizer/Projects/ARIA/tmp/top_c270_overhead_framed.png'
     if os.path.exists(overhead_path):
         raw_top = Image.open(overhead_path)
         top_crop = raw_top.crop((260, 0, 1020, 720)).resize((600, 600))
@@ -302,7 +304,9 @@ def gen_fig3():
 
     # ── Panel 2: Authentic Eye-in-Hand Gripper Camera View ──
     # Directly uses the authentic gripper camera image from /wrist_camera/image_raw
-    grip_path = '/home/gaminizer/Projects/ARIA/tmp/gripper_claws_banana.png'
+    grip_path = '/home/gaminizer/Projects/ARIA/data/simulation_captures/gripper_claws_banana.png'
+    if not os.path.exists(grip_path):
+        grip_path = '/home/gaminizer/Projects/ARIA/tmp/gripper_claws_banana.png'
     raw_grip = Image.open(grip_path).resize((600, 450)) if os.path.exists(grip_path) else Image.new('RGB', (600, 450), color='#1A1A1A')
 
     ax1.imshow(raw_grip)
@@ -338,7 +342,9 @@ def gen_fig3():
     # ── Panel 3: Depth-Anything v2 Monocular Depth on Gripper Camera ──
     ax2_top.set_title('(c) Depth-Anything v2 on Gripper Camera', fontsize=8.5, fontweight='bold')
 
-    depth_npy = '/home/gaminizer/Projects/ARIA/tmp/gripper_depth_metric.npy'
+    depth_npy = '/home/gaminizer/Projects/ARIA/data/simulation_captures/gripper_depth_metric.npy'
+    if not os.path.exists(depth_npy):
+        depth_npy = '/home/gaminizer/Projects/ARIA/tmp/gripper_depth_metric.npy'
     if os.path.exists(depth_npy):
         depth_map = np.load(depth_npy)
     else:

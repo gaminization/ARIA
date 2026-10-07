@@ -51,6 +51,7 @@ lightning_logs/
 # ── Python environment ───────────────────────────────────────────
 .venv/
 venv/
+aria_venv/
 env/
 *.env
 .python-version
@@ -95,9 +96,10 @@ wifi_credentials.h         # ESP32 WiFi password — never commit this
 arm_vision/config/object_references/*/images/
 # arm_vision/config/object_references/*/reference_manifest.yaml  ← COMMIT
 
-# ── Temporary ────────────────────────────────────────────────────
+# ── Temporary & Simulation Captures ─────────────────────────────
 tmp/
 temp/
+data/simulation_captures/
 *.tmp
 *.bak
 *.orig
@@ -115,7 +117,7 @@ benchmark_*.csv
 # benchmark_*.yaml  ← COMMIT these (small, important for tracking)
 
 # ── Cloned reference repositories ───────────────────────────────
-repos/
+third_party/repos/
 
 # ── Zip Archives ──────────────────────────────────────────────────
 *.zip
