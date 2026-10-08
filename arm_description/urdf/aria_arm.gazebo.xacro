@@ -161,7 +161,7 @@
       <always_on>true</always_on>
       <update_rate>50</update_rate>
       <contact>
-        <collision>finger_left_1_link_fixed_joint_lump__Gripper1_Collision_collision</collision>
+        <collision>finger_left_1_link_collision_collision</collision>
       </contact>
       <plugin name="contact_left_controller" filename="libgazebo_ros_bumper.so">
         <ros>
@@ -196,7 +196,7 @@
       <always_on>true</always_on>
       <update_rate>50</update_rate>
       <contact>
-        <collision>finger_right_1_link_fixed_joint_lump__Gripper2_Collision_collision</collision>
+        <collision>finger_right_1_link_collision_collision</collision>
       </contact>
       <plugin name="contact_right_controller" filename="libgazebo_ros_bumper.so">
         <ros>
