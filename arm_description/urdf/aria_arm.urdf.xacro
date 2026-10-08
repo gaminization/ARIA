@@ -279,7 +279,7 @@
       <material name="blue"/>
     </visual>
     <collision name="finger_left_1_link_collision">
-      <origin xyz="0.0012 0.045 -0.003" rpy="0 0 0"/>
+      <origin xyz="0.0012 0.045 -0.003" rpy="-0.3054 0 0"/>
       <geometry>
         <box size="0.024 0.075 0.018"/>
       </geometry>
@@ -313,7 +313,7 @@
       <material name="blue"/>
     </visual>
     <collision name="finger_right_1_link_collision">
-      <origin xyz="-0.0012 -0.045 0.001" rpy="0 0 0"/>
+      <origin xyz="-0.0012 -0.045 0.001" rpy="-0.3054 0 0"/>
       <geometry>
         <box size="0.024 0.075 0.018"/>
       </geometry>
