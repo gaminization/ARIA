@@ -59,6 +59,12 @@ def generate_launch_description():
     )
     gui_conf = LaunchConfiguration("gui")
 
+    with_agents_arg = DeclareLaunchArgument(
+        "with_agents", default_value="true",
+        description="Launch complete ARIA multi-agent stack (15 lifecycle agents, vision, task manager)"
+    )
+    with_agents = LaunchConfiguration("with_agents")
+
     # ── Robot description (URDF via xacro) ─────────────────
     xacro_file = os.path.join(desc_pkg, "urdf", "aria_arm.urdf.xacro")
     doc = xacro.parse(open(xacro_file))
@@ -214,6 +220,64 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
+    # 8. ARIA FULL MULTI-AGENT STACK
+    # ═══════════════════════════════════════════════════════
+    # Stage 2: Perception & IK (2.0s delay after JTC)
+    ik_node = TimerAction(period=2.0, actions=[Node(
+        package='arm_ik', executable='ik_node',
+        name='ik_node', output='screen', condition=IfCondition(with_agents))])
+    detection_node = TimerAction(period=2.0, actions=[Node(
+        package='arm_vision', executable='detection_node',
+        name='detection_node', output='screen',
+        parameters=[{'camera_topic': '/top_camera/image_raw'}], condition=IfCondition(with_agents))])
+    depth_node = TimerAction(period=2.0, actions=[Node(
+        package='arm_vision', executable='depth_node',
+        name='depth_node', output='screen',
+        parameters=[{'camera_topic': '/top_camera/image_raw'}], condition=IfCondition(with_agents))])
+    grasp_node = TimerAction(period=2.0, actions=[Node(
+        package='arm_vision', executable='grasp_node',
+        name='grasp_node', output='screen', condition=IfCondition(with_agents))])
+    visual_servo_node = TimerAction(period=2.5, actions=[Node(
+        package='arm_control', executable='visual_servo_node.py',
+        name='visual_servo_node', output='screen', condition=IfCondition(with_agents))])
+
+    # Stage 3: 15 Lifecycle Agents (4.5s delay after JTC)
+    vision_agent       = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='vision_agent',       name='vision_agent',       output='screen', condition=IfCondition(with_agents))])
+    depth_agent        = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='depth_agent',        name='depth_agent',        output='screen', condition=IfCondition(with_agents))])
+    tracking_agent     = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='tracking_agent',     name='tracking_agent',     output='screen', condition=IfCondition(with_agents))])
+    affordance_agent   = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='affordance_agent',   name='affordance_agent',   output='screen', condition=IfCondition(with_agents))])
+    attention_agent    = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='attention_agent',    name='attention_agent',    output='screen', condition=IfCondition(with_agents))])
+    planning_agent     = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='planning_agent',     name='planning_agent',     output='screen', condition=IfCondition(with_agents))])
+    reachability_agent = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='reachability_agent', name='reachability_agent', output='screen', condition=IfCondition(with_agents))])
+    skill_agent        = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='skill_agent',        name='skill_agent',        output='screen', condition=IfCondition(with_agents))])
+    control_agent      = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='control_agent',      name='control_agent',      output='screen', condition=IfCondition(with_agents))])
+    safety_agent       = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='safety_agent',       name='safety_agent',       output='screen', condition=IfCondition(with_agents))])
+    memory_agent       = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='memory_agent',       name='memory_agent',       output='screen', condition=IfCondition(with_agents))])
+    world_model_agent  = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='world_model_agent',  name='world_model_agent',  output='screen', condition=IfCondition(with_agents))])
+    learning_agent     = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='learning_agent',     name='learning_agent',     output='screen', condition=IfCondition(with_agents))])
+    evaluation_agent   = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='evaluation_agent',   name='evaluation_agent',   output='screen', condition=IfCondition(with_agents))])
+    dialogue_agent     = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='dialogue_agent',     name='dialogue_agent',     output='screen', condition=IfCondition(with_agents))])
+
+    # Stage 4: Orchestrators (6.0s delay after JTC)
+    task_manager   = TimerAction(period=6.0, actions=[Node(package='arm_planner', executable='task_manager',   name='task_manager',   output='screen', condition=IfCondition(with_agents))])
+    memory_manager = TimerAction(period=6.0, actions=[Node(package='arm_planner', executable='memory_manager', name='memory_manager', output='screen', condition=IfCondition(with_agents))])
+    health_monitor = TimerAction(period=6.0, actions=[Node(package='arm_planner', executable='health_monitor', name='health_monitor', output='screen', condition=IfCondition(with_agents))])
+
+    # Stage 5: Lifecycle Activator (8.5s delay)
+    activate_script = os.path.join(
+        os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'),
+        'arm_bringup', 'scripts', 'activate_agents.py'
+    )
+    activate_agents = TimerAction(
+        period=8.5,
+        actions=[ExecuteProcess(
+            cmd=['python3', activate_script],
+            name='activate_agents', output='screen',
+            condition=IfCondition(with_agents),
+        )],
+    )
+
+    # ═══════════════════════════════════════════════════════
     # EVENT CHAIN: spawn -> JSB -> JTC -> manual_control -> ready
     # ═══════════════════════════════════════════════════════
     return LaunchDescription([
@@ -221,6 +285,7 @@ def generate_launch_description():
         world_arg,
         auto_cycle_arg,
         gui_arg,
+        with_agents_arg,
 
         # Environment configuration
         set_display,
@@ -265,6 +330,32 @@ def generate_launch_description():
                 ],
             )
         ),
+
+        # Multi-Agent Stack (Perception, Agents, Orchestration, Activation)
+        ik_node,
+        detection_node,
+        depth_node,
+        grasp_node,
+        visual_servo_node,
+        vision_agent,
+        depth_agent,
+        tracking_agent,
+        affordance_agent,
+        attention_agent,
+        planning_agent,
+        reachability_agent,
+        skill_agent,
+        control_agent,
+        safety_agent,
+        memory_agent,
+        world_model_agent,
+        learning_agent,
+        evaluation_agent,
+        dialogue_agent,
+        task_manager,
+        memory_manager,
+        health_monitor,
+        activate_agents,
 
         # Optional nodes
         industrial_coordinator,

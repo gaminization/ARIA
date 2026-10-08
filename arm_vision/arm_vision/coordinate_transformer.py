@@ -304,15 +304,17 @@ def benchmark_coordinate_accuracy(transformer: CoordinateTransformer,
 # ═══════════════════════════════════════════════════════════════
 # Factory for ARIA top camera
 # ═══════════════════════════════════════════════════════════════
-def create_top_camera_transformer(width: int = 1920, height: int = 1080) -> CoordinateTransformer:
+def create_top_camera_transformer(width: int = 1920, height: int = 1080,
+                                  cam_pos: Optional[np.ndarray] = None) -> CoordinateTransformer:
     """
     Create a CoordinateTransformer for the ARIA top camera.
     Uses calibrated Gazebo SDF parameters:
-      Camera pose: (0.0, 0.0, 1.45) looking straight down at optical table (z=0.6081m).
+      Camera pose: (0.18, 0.03, 1.35) in industrial workcell, or (0.0, 0.0, 1.45) in tester workspace.
       Intrinsics: hfov=1.25 rad.
       For 1920x1080: fx=fy=1330.59, cx=960.5, cy=540.5.
       For 1280x720:  fx=fy=887.06, cx=640.0, cy=360.0.
     """
+    import os
     if width == 1920 and height == 1080:
         fx = 1330.59
         fy = 1330.59
@@ -332,8 +334,12 @@ def create_top_camera_transformer(width: int = 1920, height: int = 1080) -> Coor
     ])
     dist = np.zeros(5)
 
-    # Overhead camera position in world frame
-    cam_pos = np.array([0.0, 0.0, 1.45])
+    # Overhead camera position in world frame (supports industrial workcell & tester workspace)
+    if cam_pos is None:
+        cam_x = float(os.environ.get("ARIA_OVERHEAD_CAM_X", "0.18" if os.environ.get("ARIA_WORKCELL") == "industrial" else "0.0"))
+        cam_y = float(os.environ.get("ARIA_OVERHEAD_CAM_Y", "0.03" if os.environ.get("ARIA_WORKCELL") == "industrial" else "0.0"))
+        cam_z = float(os.environ.get("ARIA_OVERHEAD_CAM_Z", "1.35" if os.environ.get("ARIA_WORKCELL") == "industrial" else "1.45"))
+        cam_pos = np.array([cam_x, cam_y, cam_z])
 
     # Camera to world rotation (maps image x, y to world -Y, +X):
     # dx_world = -(v - cy)/fy * dz
@@ -345,3 +351,4 @@ def create_top_camera_transformer(width: int = 1920, height: int = 1080) -> Coor
     ])
 
     return CoordinateTransformer(K, dist, cam_pos, R_cam_to_world)
+

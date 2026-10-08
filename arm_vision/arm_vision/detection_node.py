@@ -6,6 +6,8 @@ YOLOv8 object detection on GPU (RTX 5060).
 Clean input: no noise preprocessing.
 ═══════════════════════════════════════════════════════════════
 """
+import os
+import sys
 import math
 import time
 from typing import Dict, List, Optional
@@ -71,14 +73,15 @@ class DetectionNode(Node):
 
         # Resolve model path from models/ directory if needed
         if not os.path.exists(model_name):
-            cand_models = os.path.join(os.getcwd(), 'models', os.path.basename(model_name))
-            if os.path.exists(cand_models):
-                model_name = cand_models
-            else:
-                aria_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                cand_root = os.path.join(aria_root, 'models', os.path.basename(model_name))
-                if os.path.exists(cand_root):
-                    model_name = cand_root
+            candidates = [
+                os.path.join(os.getcwd(), 'models', os.path.basename(model_name)),
+                f"/home/gaminizer/Projects/ARIA/arm_vision/models/{os.path.basename(model_name)}",
+                f"/home/gaminizer/Projects/ARIA/models/{os.path.basename(model_name)}",
+            ]
+            for cand in candidates:
+                if os.path.exists(cand):
+                    model_name = cand
+                    break
 
         # Load YOLO model
         self.model = None
@@ -353,13 +356,20 @@ class DetectionNode(Node):
                 hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
                 area_scale = (img_w * img_h) / (640.0 * 480.0)
 
+                is_industrial = os.environ.get("ARIA_WORKCELL", "").lower() == "industrial"
                 # Optical table workspace mask
                 table_mask = np.zeros((img_h, img_w), dtype=np.uint8)
-                cv2.rectangle(table_mask, (int(0.24 * img_w), int(0.09 * img_h)),
-                                          (int(0.76 * img_w), int(0.91 * img_h)), 255, -1)
-
-                # Mask out robot arm mounting base center
-                cv2.circle(table_mask, (int(img_w / 2), int(img_h / 2)), int(0.14 * min(img_w, img_h)), 0, -1)
+                if is_industrial:
+                    # In industrial workcell: conveyor line extends across FOV, table and bins span the scene.
+                    # Arm base is at bottom center (near y=580), not in the middle.
+                    # Use generous active workspace mask with edge margin.
+                    cv2.rectangle(table_mask, (int(0.02 * img_w), int(0.02 * img_h)),
+                                              (int(0.98 * img_w), int(0.98 * img_h)), 255, -1)
+                else:
+                    cv2.rectangle(table_mask, (int(0.24 * img_w), int(0.09 * img_h)),
+                                              (int(0.76 * img_w), int(0.91 * img_h)), 255, -1)
+                    # Mask out robot arm mounting base center (only in center-mounted desktop stage)
+                    cv2.circle(table_mask, (int(img_w / 2), int(img_h / 2)), int(0.14 * min(img_w, img_h)), 0, -1)
 
                 # Mask out robot arm structure
                 mask_arm_white = cv2.inRange(cv_image, (215, 215, 215), (255, 255, 255))
@@ -385,15 +395,29 @@ class DetectionNode(Node):
                         cls = 'jenga_tower' if abs(cx - img_w / 2.0) < 55.0 else 'jenga_block'
                         segmented_candidates.append((cls, 'wood', bx, by, bw, bh, 0.96))
 
-                # Blue tabletop mug: circular cylinder on table
+                # Blue items (conveyor workpieces and tabletop objects)
                 mask_blue = (cv2.inRange(hsv, (86, 60, 40), (135, 255, 255)) & table_mask)
                 cnts_b, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for c in cnts_b:
                     area = cv2.contourArea(c)
                     bx, by, bw, bh = cv2.boundingRect(c)
-                    aspect = max(bw, bh) / (min(bw, bh) + 1e-3)
-                    if 1500 < area < 5500 and aspect < 1.30:
+                    aspect = max(bw, bh) / max(min(bw, bh), 1)
+                    min_dim = min(bw, bh)
+                    min_area = int(220 * area_scale) if is_industrial else 350
+                    if min_area <= area <= 4000 and aspect < 2.2 and min_dim >= 20:
+                        segmented_candidates.append(('workpiece', 'blue', bx, by, bw, bh, 0.95))
+                    elif 4000 <= area < 7500 and not is_industrial:
                         segmented_candidates.append(('mug', 'blue', bx, by, bw, bh, 0.92))
+
+                # Red box / reject bin container
+                mask_red = ((cv2.inRange(hsv, (0, 70, 50), (10, 255, 255)) |
+                             cv2.inRange(hsv, (170, 70, 50), (180, 255, 255))) & table_mask)
+                cnts_r, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts_r:
+                    area = cv2.contourArea(c)
+                    if area > 4000:
+                        bx, by, bw, bh = cv2.boundingRect(c)
+                        segmented_candidates.append(('box', 'red', bx, by, bw, bh, 0.95))
 
                 # Merge segmented candidates
                 for cls_name, color, bx, by, bw, bh, conf in segmented_candidates:

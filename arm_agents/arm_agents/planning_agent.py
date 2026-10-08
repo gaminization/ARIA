@@ -180,7 +180,8 @@ class PlanningAgent(LifecycleNode):
           "stack blue on red"          → ('stack', 'blue', 'red', {})
           "sort all objects by color"  → ('sort', 'all objects', None, {'by': 'color'})
         """
-        # Remove articles and filler words
+        # Normalize to lowercase and remove articles/filler words
+        command = (command or '').lower().strip()
         cleaned = re.sub(r'\b(the|a|an|this|that|please|can you|could you|for|of)\b',
                          '', command).strip()
         cleaned = re.sub(r'\s+', ' ', cleaned)
