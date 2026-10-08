@@ -279,9 +279,9 @@
       <material name="blue"/>
     </visual>
     <collision name="Gripper1_Collision">
-      <origin xyz="0.005 0.020 0.035" rpy="-1.86728 0 0"/>
+      <origin xyz="0.0012 0.045 -0.003" rpy="0 0 0"/>
       <geometry>
-        <box size="0.016 0.030 0.055"/>
+        <box size="0.024 0.075 0.018"/>
       </geometry>
     </collision>
   </link>
@@ -313,9 +313,9 @@
       <material name="blue"/>
     </visual>
     <collision name="Gripper2_Collision">
-      <origin xyz="-0.005 0.020 0.035" rpy="1.25673 0 0"/>
+      <origin xyz="-0.0012 -0.045 0.001" rpy="0 0 0"/>
       <geometry>
-        <box size="0.016 0.030 0.055"/>
+        <box size="0.024 0.075 0.018"/>
       </geometry>
     </collision>
   </link>

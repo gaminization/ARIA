@@ -42,16 +42,6 @@ joint_trajectory_controller:
       stopped_velocity_tolerance: 0.05  # rad/s
       goal_time: 0.0                    # 0 = no timeout
 
-# ── Joint State Broadcaster (all 5 joints) ────────────────────
+# ── Joint State Broadcaster ───────────────────────────────────
 joint_state_broadcaster:
-  ros__parameters:
-    joints:
-      - waist_joint
-      - shoulder_joint
-      - elbow_joint
-      - wrist_pitch_joint
-      - gripper_joint
-
-    interfaces:
-      - position
-      - velocity
+  ros__parameters: {}

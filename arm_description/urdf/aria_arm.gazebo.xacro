@@ -137,13 +137,14 @@
   </gazebo>
 
   <!-- Left finger pair: blue -->
+  <!-- Left finger pair: blue -->
   <gazebo reference="finger_left_1_link">
     <material>Gazebo/Blue</material>
     <self_collide>false</self_collide>
     <mu1>2.5</mu1>
     <mu2>2.5</mu2>
-    <kp>200000.0</kp>
-    <kd>20.0</kd>
+    <kp>1000000.0</kp>
+    <kd>50.0</kd>
     <minDepth>0.001</minDepth>
     <maxVel>0.01</maxVel>
     <torsional>
@@ -156,6 +157,19 @@
       <restitution_coefficient>0.0</restitution_coefficient>
       <threshold>1000000.0</threshold>
     </bounce>
+    <sensor name="gripper_contact_left" type="contact">
+      <always_on>true</always_on>
+      <update_rate>50</update_rate>
+      <contact>
+        <collision>finger_left_1_link_fixed_joint_lump__Gripper1_Collision_collision</collision>
+      </contact>
+      <plugin name="contact_left_controller" filename="libgazebo_ros_bumper.so">
+        <ros>
+          <remapping>bumper_states:=/gripper/contact_left</remapping>
+        </ros>
+        <frame_name>finger_left_1_link</frame_name>
+      </plugin>
+    </sensor>
   </gazebo>
 
   <!-- Right finger pair: blue -->
@@ -164,8 +178,8 @@
     <self_collide>false</self_collide>
     <mu1>2.5</mu1>
     <mu2>2.5</mu2>
-    <kp>200000.0</kp>
-    <kd>20.0</kd>
+    <kp>1000000.0</kp>
+    <kd>50.0</kd>
     <minDepth>0.001</minDepth>
     <maxVel>0.01</maxVel>
     <torsional>
@@ -178,6 +192,19 @@
       <restitution_coefficient>0.0</restitution_coefficient>
       <threshold>1000000.0</threshold>
     </bounce>
+    <sensor name="gripper_contact_right" type="contact">
+      <always_on>true</always_on>
+      <update_rate>50</update_rate>
+      <contact>
+        <collision>finger_right_1_link_fixed_joint_lump__Gripper2_Collision_collision</collision>
+      </contact>
+      <plugin name="contact_right_controller" filename="libgazebo_ros_bumper.so">
+        <ros>
+          <remapping>bumper_states:=/gripper/contact_right</remapping>
+        </ros>
+        <frame_name>finger_right_1_link</frame_name>
+      </plugin>
+    </sensor>
   </gazebo>
 
   <!-- Cameras: dark gray -->
@@ -274,48 +301,6 @@
     </sensor>
   </gazebo>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       CONTACT SENSORS — on gripper fingers
-       Detect objects grasped between finger pairs
-       Uses libgazebo_ros_bumper.so for Gazebo Classic
-       ═══════════════════════════════════════════════════════════ -->
-  <gazebo reference="finger_left_1_link">
-    <sensor name="gripper_contact_left" type="contact">
-      <always_on>true</always_on>
-      <update_rate>30</update_rate>
-      <contact>
-        <collision>finger_left_1_link_fixed_joint_lump__finger_left_1_link_collision_1</collision>
-      </contact>
-      <plugin name="contact_left_controller" filename="libgazebo_ros_bumper.so">
-        <ros>
-          <remapping>~/out:=/gripper/contact_left</remapping>
-        </ros>
-        <frame_name>finger_left_1_link</frame_name>
-      </plugin>
-    </sensor>
-    <!-- Finger surface friction -->
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
-  </gazebo>
-
-  <gazebo reference="finger_right_1_link">
-    <sensor name="gripper_contact_right" type="contact">
-      <always_on>true</always_on>
-      <update_rate>30</update_rate>
-      <contact>
-        <collision>finger_right_1_link_fixed_joint_lump__finger_right_1_link_collision_1</collision>
-      </contact>
-      <plugin name="contact_right_controller" filename="libgazebo_ros_bumper.so">
-        <ros>
-          <remapping>~/out:=/gripper/contact_right</remapping>
-        </ros>
-        <frame_name>finger_right_1_link</frame_name>
-      </plugin>
-    </sensor>
-    <!-- Finger surface friction -->
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
-  </gazebo>
 
   <!-- ═══════════════════════════════════════════════════════════
        JOINT FRICTION — realistic but not overdone for Stage 1
