@@ -1,0 +1,78 @@
+{
+  "timestamp": "20261008T033822Z",
+  "git_commit_hash": "1e8fd01",
+  "total_trials": 100,
+  "total_successes": 41,
+  "overall_success_rate": 0.41,
+  "tasks": {
+    "task_01": {
+      "task_name": "Reach & Touch Object",
+      "trials": 10,
+      "successes": 10,
+      "success_rate": 1.0
+    },
+    "task_02": {
+      "task_name": "Pick & Lift Workpiece",
+      "trials": 10,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_03": {
+      "task_name": "Conveyor Dynamic Rendezvous",
+      "trials": 10,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_04": {
+      "task_name": "Precision Placement into Tray",
+      "trials": 10,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_05": {
+      "task_name": "Obstacle Avoidance Clearance",
+      "trials": 10,
+      "successes": 10,
+      "success_rate": 1.0
+    },
+    "task_06": {
+      "task_name": "Visual Servoing Feature Alignment",
+      "trials": 10,
+      "successes": 10,
+      "success_rate": 1.0
+    },
+    "task_07": {
+      "task_name": "Multi-Axis In-Hand Reorientation",
+      "trials": 10,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_08": {
+      "task_name": "Articulated Drawer/Slide Interaction",
+      "trials": 10,
+      "successes": 1,
+      "success_rate": 0.1
+    },
+    "task_09": {
+      "task_name": "Multi-Object Stacking & Sorting",
+      "trials": 10,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_10": {
+      "task_name": "Emergency Stop & Safety Recovery",
+      "trials": 10,
+      "successes": 10,
+      "success_rate": 1.0
+    }
+  },
+  "perception_comparison": {
+    "config_a_mean_error_mm": 0.0,
+    "config_b_mean_error_mm": 6.367500000000002,
+    "config_c_mean_error_mm": 105.2748,
+    "config_b_max_error_mm": 14.87,
+    "config_c_max_error_mm": 149.14
+  },
+  "raw_manip_csv": "/home/gaminizer/Projects/ARIA/data/real/manipulation_trials_gazebo_20261008T033822Z.csv",
+  "raw_percep_csv": "/home/gaminizer/Projects/ARIA/data/real/perception_comparison_20261008T033822Z.csv"
+}
