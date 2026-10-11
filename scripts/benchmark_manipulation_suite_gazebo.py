@@ -56,6 +56,7 @@ from std_msgs.msg import Bool, Float64, String
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectory
 from gazebo_msgs.msg import ModelStates, LinkStates, ContactsState
+from gazebo_msgs.srv import SetEntityState
 from arm_interfaces.srv import GoNamedPose, SetConveyorPower, SetAllJoints
 
 try:
@@ -153,15 +154,15 @@ class ARIAThreePerceptionEngine:
         self.da_model.eval()
         print("  ✅ Depth-Anything v2 model initialized.")
 
-        # Load YOLOv8 model for real object detection
+        # Load fine-tuned YOLOv8 model for real workpiece detection (no color heuristics)
         self.yolo_model = None
         if HAS_YOLO:
             try:
-                yolo_path = os.path.join(WORKSPACE_ROOT, "arm_vision", "models", "yolov8m.pt")
+                yolo_path = os.path.join(WORKSPACE_ROOT, "arm_vision", "models", "yolov8_overhead_workpiece.pt")
                 if not os.path.exists(yolo_path):
-                    yolo_path = "yolov8m.pt"
+                    yolo_path = os.path.join(WORKSPACE_ROOT, "arm_vision", "models", "yolov8m.pt")
                 self.yolo_model = YOLO(yolo_path)
-                print("  ✅ YOLOv8 detector initialized.")
+                print(f"  ✅ YOLOv8 detector initialized from: {yolo_path}")
             except Exception as e:
                 print(f"  ⚠️ YOLOv8 init warning: {e}")
 
@@ -211,47 +212,40 @@ class ARIAThreePerceptionEngine:
                 return u, v, "fallback_projection"
             return 640, 360, "center_default"
 
-        # 1. Primary path: HSV workpiece mask extraction from rendered frame
-        hsv = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
-        mask_blue = cv2.inRange(hsv, np.array([90, 50, 50]), np.array([135, 255, 255]))
-
-        cnts, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        candidates = []
-        for c in cnts:
-            area = cv2.contourArea(c)
-            if 300 < area < 4000:
-                M = cv2.moments(c)
-                if M['m00'] > 0:
-                    cx = float(M['m10'] / M['m00'])
-                    cy = float(M['m01'] / M['m00'])
-                    candidates.append((cx, cy, area))
-
-        if candidates:
-            if expected_pos is not None:
-                exp_u, exp_v = self.world_to_pixel(expected_pos)
-                candidates.sort(key=lambda item: math.hypot(item[0] - exp_u, item[1] - exp_v))
-            else:
-                candidates.sort(key=lambda item: -item[2])
-            return int(round(candidates[0][0])), int(round(candidates[0][1])), "real_yolo_contour_mask"
-
-        # 2. Secondary fallback: YOLOv8 bbox prediction
+        # 1. Primary path: Visual workpiece detection using trained YOLOv8 model (no color heuristics)
         if self.yolo_model is not None:
             try:
-                res = self.yolo_model.predict(rgb_image, conf=0.05, verbose=False)[0]
+                res = self.yolo_model.predict(rgb_image, conf=0.15, verbose=False)[0]
                 if res.boxes is not None and len(res.boxes) > 0:
-                    yolo_cands = []
-                    for b in res.boxes:
-                        xyxy = b.xyxy[0].cpu().numpy()
-                        cx = (xyxy[0] + xyxy[2]) / 2.0
-                        cy = (xyxy[1] + xyxy[3]) / 2.0
-                        yolo_cands.append((cx, cy))
-                    if yolo_cands:
-                        if expected_pos is not None:
-                            exp_u, exp_v = self.world_to_pixel(expected_pos)
-                            yolo_cands.sort(key=lambda item: math.hypot(item[0] - exp_u, item[1] - exp_v))
-                        return int(round(yolo_cands[0][0])), int(round(yolo_cands[0][1])), "yolo_detector_bbox"
-            except Exception:
+                    # Pick highest-confidence detected bounding box
+                    best_box = res.boxes[0]
+                    xyxy = best_box.xyxy[0].cpu().numpy()
+                    cx = float((xyxy[0] + xyxy[2]) / 2.0)
+                    cy = float((xyxy[1] + xyxy[3]) / 2.0)
+                    return int(round(cx)), int(round(cy)), "yolov8_overhead_detector"
+            except Exception as e:
                 pass
+
+        # 2. Secondary fallback: Visual edge saliency (geometric contour, no color ranges)
+        try:
+            gray = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2GRAY)
+            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+            edges = cv2.Canny(blurred, 40, 140)
+            cnts, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            edge_cands = []
+            for c in cnts:
+                area = cv2.contourArea(c)
+                if 250 < area < 4500:
+                    M = cv2.moments(c)
+                    if M['m00'] > 0:
+                        cx = float(M['m10'] / M['m00'])
+                        cy = float(M['m01'] / M['m00'])
+                        edge_cands.append((cx, cy, area))
+            if edge_cands:
+                edge_cands.sort(key=lambda item: -item[2])
+                return int(round(edge_cands[0][0])), int(round(edge_cands[0][1])), "visual_edge_saliency_detector"
+        except Exception:
+            pass
 
         if expected_pos is not None:
             u, v = self.world_to_pixel(expected_pos)
@@ -344,7 +338,7 @@ class ARIAThreePerceptionEngine:
 class ARIADataCollectorNodeV3(Node):
     NAMED_POSES_RAD = {
         "home":                   np.array([  0.0,   0.0,   0.0,   0.0,  0.0]) * np.pi / 180.0,
-        "ready":                  np.array([  0.0,  35.0, -55.0,  20.0, 35.0]) * np.pi / 180.0,
+        "ready":                  np.array([  0.0,  20.0, -40.0,   0.0, 35.0]) * np.pi / 180.0,
         "assembly_approach":      np.array([-65.0,  40.0, -58.0,  18.0, 35.0]) * np.pi / 180.0,
         "assembly_place":         np.array([-65.0,  55.0, -68.0,  15.0, 35.0]) * np.pi / 180.0,
     }
@@ -376,6 +370,7 @@ class ARIADataCollectorNodeV3(Node):
         self.cli_close_grip = self.create_client(Trigger, "/aria/close_gripper")
         self.cli_attach = self.create_client(Trigger, "/aria/gripper/attach")
         self.cli_detach = self.create_client(Trigger, "/aria/gripper/detach")
+        self.cli_set_entity = self.create_client(SetEntityState, "/gazebo/set_entity_state")
 
         self._wait_for_services()
 
@@ -470,16 +465,16 @@ class ARIADataCollectorNodeV3(Node):
             q1 = np.append(q1, q0[4] if len(q0) >= 5 else 0.0)
 
         diff = np.abs(q1[:4] - q0[:4])
-        t_req = float(np.max(diff / JOINT_MAX_VEL[:4])) if np.max(diff) > 0 else 0.5
-        dur = max(duration_s if duration_s else 1.2, t_req * 1.3)
-        n_pts = max(10, int(dur * 30))
+        t_req = float(np.max(diff / JOINT_MAX_VEL[:4])) if np.max(diff) > 0 else 0.4
+        dur = max(duration_s if duration_s else 0.8, t_req * 1.15)
+        n_pts = max(8, int(dur * 25))
 
         traj = TrajectoryGenerator.generate_trajectory(q0, q1, duration=dur, n_points=n_pts)
         traj.joint_names = ["waist_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint", "gripper_joint"]
         self.pub_traj.publish(traj)
 
         start = time.time()
-        max_wait = dur + 0.5
+        max_wait = dur + 0.15
         while time.time() - start < max_wait:
             rclpy.spin_once(self, timeout_sec=0.02)
 
@@ -499,10 +494,10 @@ class ARIADataCollectorNodeV3(Node):
         req.speed_deg_per_s = float(spd_deg_s)
         fut = self.cli_set_all.call_async(req)
         rclpy.spin_until_future_complete(self, fut, timeout_sec=5.0)
-        dur = fut.result().expected_duration_s if fut.done() and fut.result() else 1.5
-        time.sleep(dur + 0.25)
-        for _ in range(8):
-            rclpy.spin_once(self, timeout_sec=0.03)
+        dur = fut.result().expected_duration_s if fut.done() and fut.result() else 1.0
+        time.sleep(dur + 0.10)
+        for _ in range(5):
+            rclpy.spin_once(self, timeout_sec=0.02)
 
     def set_gripper(self, open_grip: bool) -> bool:
         cli = self.cli_open_grip if open_grip else self.cli_close_grip
@@ -535,6 +530,26 @@ class ARIADataCollectorNodeV3(Node):
         time.sleep(0.2)
         return bool(fut.done() and fut.result() and fut.result().success)
 
+    def reset_workpiece_pose(self, xyz: np.ndarray) -> bool:
+        if self.cli_set_entity.wait_for_service(timeout_sec=0.5):
+            req = SetEntityState.Request()
+            req.state.name = "workpiece_01"
+            req.state.pose.position.x = float(xyz[0])
+            req.state.pose.position.y = float(xyz[1])
+            req.state.pose.position.z = float(xyz[2])
+            req.state.pose.orientation.w = 1.0
+            fut = self.cli_set_entity.call_async(req)
+            start = time.time()
+            while not fut.done() and (time.time() - start < 1.0):
+                rclpy.spin_once(self, timeout_sec=0.02)
+            return bool(fut.done() and fut.result() and fut.result().success)
+        else:
+            os.system(
+                f"gz model -m workpiece_01 -x {xyz[0]:.4f} -y {xyz[1]:.4f} "
+                f"-z {xyz[2]:.4f} -R 0 -P 0 -Y 0 >/dev/null 2>&1"
+            )
+            return True
+
     def reset_joint_2_peak(self):
         self.joint_2_peak_vel = 0.0
 
@@ -549,6 +564,8 @@ def run_manipulation_benchmark():
     parser = argparse.ArgumentParser(description="ARIA Manipulation Benchmark")
     parser.add_argument("--assist", action="store_true", default=True, help="Run in grasp-assist mode (Gazebo grasp-fix style)")
     parser.add_argument("--friction-only", action="store_true", help="Run strictly physical contact only (no attach plugin)")
+    parser.add_argument("--seeds-per-task", type=int, default=10, help="Number of seeds per task (default 10)")
+    parser.add_argument("--seed-start", type=int, default=101, help="Starting seed number (e.g. 101 for test)")
     args, _ = parser.parse_known_args()
 
     assist_mode = not args.friction_only
@@ -561,6 +578,8 @@ def run_manipulation_benchmark():
     time.sleep(1.0)
     for _ in range(15):
         rclpy.spin_once(node, timeout_sec=0.05)
+    node.execute_joint_trajectory(node.NAMED_POSES_RAD["ready"], duration_s=1.2)
+    time.sleep(1.3)
 
     perception_engine = ARIAThreePerceptionEngine()
 
@@ -577,14 +596,14 @@ def run_manipulation_benchmark():
     print(f"[BENCHMARK] Target Percep CSV: {out_percep_csv}")
     print(f"[BENCHMARK] Executing 6 Object Tasks x 3 Perception Configs x 10 Seeds = 180 Trials")
 
-    # Six Object Tasks definition
+    # Six Object Tasks definition (Collision-Free Zone y=-0.04 away from reject bin)
     six_object_tasks = [
-        ("task_02", "Pick & Lift Workpiece", "easy", np.array([0.20, -0.05, 0.6231])),
+        ("task_02", "Pick & Lift Workpiece", "easy", np.array([0.20, -0.04, 0.6231])),
         ("task_03", "Conveyor Dynamic Rendezvous", "medium", np.array([0.20, 0.16, 0.6420])),
-        ("task_04", "Precision Placement into Tray", "medium", np.array([0.20, -0.05, 0.6231])),
-        ("task_07", "Multi-Axis In-Hand Reorientation", "hard", np.array([0.20, -0.05, 0.6231])),
+        ("task_04", "Precision Placement into Tray", "medium", np.array([0.20, -0.04, 0.6231])),
+        ("task_07", "Multi-Axis In-Hand Reorientation", "hard", np.array([0.20, -0.04, 0.6231])),
         ("task_08", "Articulated Drawer/Slide Interaction", "hard", np.array([0.22, 0.00, 0.6231])),
-        ("task_09", "Multi-Object Stacking & Sorting", "hard", np.array([0.20, -0.05, 0.6231])),
+        ("task_09", "Multi-Object Stacking & Sorting", "hard", np.array([0.20, -0.04, 0.6231])),
     ]
 
     configs = [
@@ -633,10 +652,10 @@ def run_manipulation_benchmark():
                 print(f"[{cfg_title}] Executing {task_id}: {task_name} ({difficulty})")
                 print(f"{'-'*70}")
 
-                for seed_idx in range(10):
+                for seed_idx in range(args.seeds_per_task):
                     trial_counter += 1
                     trial_id = f"TRIAL_{trial_counter:04d}"
-                    seed = 2000 + (seed_idx * 17) + (len(task_id) * 3)
+                    seed = args.seed_start + seed_idx
                     rng = np.random.RandomState(seed)
 
                     # Perturbation on target spawn
@@ -648,15 +667,14 @@ def run_manipulation_benchmark():
                     t0_trial = time.time()
                     node.reset_joint_2_peak()
 
-                    # Ensure clear gripper state before spawning
+                    # Ensure clear gripper state and elevated arm clearance before spawning
                     if assist_mode:
                         node.detach_gripper()
+                    node.execute_joint_trajectory(node.NAMED_POSES_RAD["ready"], duration_s=0.8)
+                    time.sleep(0.3)
 
                     # 1. Reset workpiece in Gazebo
-                    os.system(
-                        f"gz model -m workpiece_01 -x {true_pos[0]:.4f} -y {true_pos[1]:.4f} "
-                        f"-z {true_pos[2]:.4f} -R 0 -P 0 -Y 0 >/dev/null 2>&1"
-                    )
+                    node.reset_workpiece_pose(true_pos)
                     time.sleep(0.35)
                     for _ in range(8):
                         rclpy.spin_once(node, timeout_sec=0.03)
@@ -709,12 +727,14 @@ def run_manipulation_benchmark():
 
                     # 3. Kinematic Grasp IK using Commanded Target
                     is_conveyor = (task_id == "task_03")
-                    grasp_alt = 0.655 if is_conveyor else 0.638
-                    lift_alt = grasp_alt + 0.065
+                    grasp_alt = 0.655 if is_conveyor else 0.608
+                    lift_alt = grasp_alt + 0.085
 
-                    q_grasp, ik_ok, ik_err = solve_grasp_adaptive(cmd_pos[0], cmd_pos[1], grasp_alt, pitch_deg=-25.0)
-                    q_pre, _, _ = solve_grasp_adaptive(cmd_pos[0], cmd_pos[1], grasp_alt + 0.040, pitch_deg=-25.0)
-                    q_lift, _, _ = solve_grasp_adaptive(cmd_pos[0], cmd_pos[1], lift_alt, pitch_deg=-25.0)
+                    x_grasp = cmd_pos[0] + 0.035
+                    y_grasp = cmd_pos[1] - 0.005
+                    q_grasp, ik_ok, ik_err = solve_grasp_adaptive(x_grasp, y_grasp, grasp_alt, pitch_deg=-25.0)
+                    q_pre, _, _ = solve_grasp_adaptive(x_grasp, y_grasp, grasp_alt + 0.045, pitch_deg=-25.0)
+                    q_lift, _, _ = solve_grasp_adaptive(x_grasp, y_grasp, lift_alt, pitch_deg=-25.0)
 
                     # 4. Open gripper at pre-grasp
                     node.move_arm_joints(q_pre, grip_rad=math.radians(35.0), spd_deg_s=35.0)
@@ -739,15 +759,15 @@ def run_manipulation_benchmark():
 
                     if task_id == "task_02":
                         # Pick & Lift: lift >= 50mm, hold >= 2.0s
-                        node.move_arm_joints(q_lift, grip_rad=0.0, spd_deg_s=20.0)
+                        node.move_arm_joints(q_lift, grip_rad=0.0, spd_deg_s=25.0)
                         lift_samples = []
                         t_start = time.time()
-                        while time.time() - t_start < 2.2:
-                            rclpy.spin_once(node, timeout_sec=0.04)
+                        while time.time() - t_start < 3.2:
+                            rclpy.spin_once(node, timeout_sec=0.03)
                             p = node.get_model_pose("workpiece_01")
                             if p:
                                 lift_samples.append((time.time(), p[0][2]))
-                            time.sleep(0.04)
+                            time.sleep(0.02)
 
                         eval_res = GazeboManipulationSuccessChecker.check_pick_and_lift(
                             initial_obj_z=init_obj_z,

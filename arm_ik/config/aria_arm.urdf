@@ -128,13 +128,14 @@
     <maxVel>0.05</maxVel>
   </gazebo>
   <!-- Left finger pair: blue -->
+  <!-- Left finger pair: blue -->
   <gazebo reference="finger_left_1_link">
     <material>Gazebo/Blue</material>
     <self_collide>false</self_collide>
     <mu1>2.5</mu1>
     <mu2>2.5</mu2>
-    <kp>200000.0</kp>
-    <kd>20.0</kd>
+    <kp>1000000.0</kp>
+    <kd>50.0</kd>
     <minDepth>0.001</minDepth>
     <maxVel>0.01</maxVel>
     <torsional>
@@ -147,6 +148,19 @@
       <restitution_coefficient>0.0</restitution_coefficient>
       <threshold>1000000.0</threshold>
     </bounce>
+    <sensor name="gripper_contact_left" type="contact">
+      <always_on>true</always_on>
+      <update_rate>50</update_rate>
+      <contact>
+        <collision>finger_left_1_link_collision_collision</collision>
+      </contact>
+      <plugin filename="libgazebo_ros_bumper.so" name="contact_left_controller">
+        <ros>
+          <remapping>bumper_states:=/gripper/contact_left</remapping>
+        </ros>
+        <frame_name>finger_left_1_link</frame_name>
+      </plugin>
+    </sensor>
   </gazebo>
   <!-- Right finger pair: blue -->
   <gazebo reference="finger_right_1_link">
@@ -154,8 +168,8 @@
     <self_collide>false</self_collide>
     <mu1>2.5</mu1>
     <mu2>2.5</mu2>
-    <kp>200000.0</kp>
-    <kd>20.0</kd>
+    <kp>1000000.0</kp>
+    <kd>50.0</kd>
     <minDepth>0.001</minDepth>
     <maxVel>0.01</maxVel>
     <torsional>
@@ -168,6 +182,19 @@
       <restitution_coefficient>0.0</restitution_coefficient>
       <threshold>1000000.0</threshold>
     </bounce>
+    <sensor name="gripper_contact_right" type="contact">
+      <always_on>true</always_on>
+      <update_rate>50</update_rate>
+      <contact>
+        <collision>finger_right_1_link_collision_collision</collision>
+      </contact>
+      <plugin filename="libgazebo_ros_bumper.so" name="contact_right_controller">
+        <ros>
+          <remapping>bumper_states:=/gripper/contact_right</remapping>
+        </ros>
+        <frame_name>finger_right_1_link</frame_name>
+      </plugin>
+    </sensor>
   </gazebo>
   <!-- Cameras: dark gray -->
   <gazebo reference="top_camera_link">
@@ -190,7 +217,7 @@
        CLEAN: noise stddev = 0
        ═══════════════════════════════════════════════════════════ -->
   <gazebo reference="wrist_link">
-    <sensor name="wrist_camera" type="camera">
+    <sensor name="wrist_camera" type="depth">
       <always_on>true</always_on>
       <update_rate>30</update_rate>
       <visualize>false</visualize>
@@ -199,8 +226,8 @@
         <horizontal_fov>1.75</horizontal_fov>
         <!-- 100 degrees wide-angle lens -->
         <image>
-          <width>640</width>
-          <height>480</height>
+          <width>1280</width>
+          <height>720</height>
           <format>R8G8B8</format>
         </image>
         <clip>
@@ -218,9 +245,13 @@
         <ros>
           <remapping>~/image_raw:=/wrist_camera/image_raw</remapping>
           <remapping>~/camera_info:=/wrist_camera/camera_info</remapping>
+          <remapping>~/depth/image_raw:=/wrist_camera/depth/image_raw</remapping>
+          <remapping>~/depth/camera_info:=/wrist_camera/depth/camera_info</remapping>
         </ros>
         <camera_name>wrist_camera</camera_name>
         <frame_name>wrist_camera_link</frame_name>
+        <min_depth>0.01</min_depth>
+        <max_depth>5.0</max_depth>
       </plugin>
     </sensor>
   </gazebo>
@@ -285,47 +316,6 @@
         <initial_orientation_as_reference>false</initial_orientation_as_reference>
       </plugin>
     </sensor>
-  </gazebo>
-  <!-- ═══════════════════════════════════════════════════════════
-       CONTACT SENSORS — on gripper fingers
-       Detect objects grasped between finger pairs
-       Uses libgazebo_ros_bumper.so for Gazebo Classic
-       ═══════════════════════════════════════════════════════════ -->
-  <gazebo reference="finger_left_1_link">
-    <sensor name="gripper_contact_left" type="contact">
-      <always_on>true</always_on>
-      <update_rate>30</update_rate>
-      <contact>
-        <collision>finger_left_1_link_fixed_joint_lump__finger_left_1_link_collision_1</collision>
-      </contact>
-      <plugin filename="libgazebo_ros_bumper.so" name="contact_left_controller">
-        <ros>
-          <remapping>~/out:=/gripper/contact_left</remapping>
-        </ros>
-        <frame_name>finger_left_1_link</frame_name>
-      </plugin>
-    </sensor>
-    <!-- Finger surface friction -->
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
-  </gazebo>
-  <gazebo reference="finger_right_1_link">
-    <sensor name="gripper_contact_right" type="contact">
-      <always_on>true</always_on>
-      <update_rate>30</update_rate>
-      <contact>
-        <collision>finger_right_1_link_fixed_joint_lump__finger_right_1_link_collision_1</collision>
-      </contact>
-      <plugin filename="libgazebo_ros_bumper.so" name="contact_right_controller">
-        <ros>
-          <remapping>~/out:=/gripper/contact_right</remapping>
-        </ros>
-        <frame_name>finger_right_1_link</frame_name>
-      </plugin>
-    </sensor>
-    <!-- Finger surface friction -->
-    <mu1>0.8</mu1>
-    <mu2>0.8</mu2>
   </gazebo>
   <!-- ═══════════════════════════════════════════════════════════
        JOINT FRICTION — realistic but not overdone for Stage 1
@@ -584,10 +574,10 @@
       </geometry>
       <material name="blue"/>
     </visual>
-    <collision name="Gripper1_Collision">
-      <origin rpy="-1.86728 0 0" xyz="0.005 0.020 0.035"/>
+    <collision name="finger_left_1_link_collision">
+      <origin rpy="-0.3054 0 0" xyz="0.0012 0.038 -0.003"/>
       <geometry>
-        <box size="0.016 0.030 0.055"/>
+        <box size="0.022 0.028 0.016"/>
       </geometry>
     </collision>
   </link>
@@ -616,10 +606,10 @@
       </geometry>
       <material name="blue"/>
     </visual>
-    <collision name="Gripper2_Collision">
-      <origin rpy="1.25673 0 0" xyz="-0.005 0.020 0.035"/>
+    <collision name="finger_right_1_link_collision">
+      <origin rpy="-0.3054 0 0" xyz="-0.0012 -0.038 0.001"/>
       <geometry>
-        <box size="0.016 0.030 0.055"/>
+        <box size="0.022 0.028 0.016"/>
       </geometry>
     </collision>
   </link>

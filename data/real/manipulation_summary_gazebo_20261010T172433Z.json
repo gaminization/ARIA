@@ -1,0 +1,79 @@
+{
+  "timestamp": "20261010T172433Z",
+  "git_commit_hash": "a325e02",
+  "grasp_mode": "assisted",
+  "attach_assisted": true,
+  "total_trials": 18,
+  "total_successes": 6,
+  "overall_success_rate": 0.3333333333333333,
+  "configs": {
+    "Config A (GT)": {
+      "trials": 6,
+      "successes": 2,
+      "success_rate": 0.3333333333333333,
+      "mean_estimation_error_mm": 0.0,
+      "max_estimation_error_mm": 0.0
+    },
+    "Config B (YOLOv8 Real)": {
+      "trials": 6,
+      "successes": 1,
+      "success_rate": 0.16666666666666666,
+      "mean_estimation_error_mm": 0.355,
+      "max_estimation_error_mm": 0.41
+    },
+    "Config C (Depth-Anything v2)": {
+      "trials": 6,
+      "successes": 3,
+      "success_rate": 0.5,
+      "mean_estimation_error_mm": 0.355,
+      "max_estimation_error_mm": 0.41
+    }
+  },
+  "tasks": {
+    "task_02": {
+      "task_name": "Pick & Lift Workpiece",
+      "trials": 3,
+      "successes": 1,
+      "success_rate": 0.3333333333333333
+    },
+    "task_03": {
+      "task_name": "Conveyor Dynamic Rendezvous",
+      "trials": 3,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_04": {
+      "task_name": "Precision Placement into Tray",
+      "trials": 3,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_07": {
+      "task_name": "Multi-Axis In-Hand Reorientation",
+      "trials": 3,
+      "successes": 2,
+      "success_rate": 0.6666666666666666
+    },
+    "task_08": {
+      "task_name": "Articulated Drawer/Slide Interaction",
+      "trials": 3,
+      "successes": 3,
+      "success_rate": 1.0
+    },
+    "task_09": {
+      "task_name": "Multi-Object Stacking & Sorting",
+      "trials": 3,
+      "successes": 0,
+      "success_rate": 0.0
+    }
+  },
+  "perception_comparison": {
+    "config_a_mean_error_mm": 0.0,
+    "config_b_mean_error_mm": 0.355,
+    "config_c_mean_error_mm": 0.355,
+    "config_b_max_error_mm": 0.41,
+    "config_c_max_error_mm": 0.41
+  },
+  "raw_manip_csv": "/home/gaminizer/Projects/ARIA/data/real/manipulation_trials_gazebo_20261010T172433Z.csv",
+  "raw_percep_csv": "/home/gaminizer/Projects/ARIA/data/real/perception_comparison_20261010T172433Z.csv"
+}

@@ -1,0 +1,79 @@
+{
+  "timestamp": "20261010T173124Z",
+  "git_commit_hash": "a325e02",
+  "grasp_mode": "assisted",
+  "attach_assisted": true,
+  "total_trials": 180,
+  "total_successes": 57,
+  "overall_success_rate": 0.31666666666666665,
+  "configs": {
+    "Config A (GT)": {
+      "trials": 60,
+      "successes": 25,
+      "success_rate": 0.4166666666666667,
+      "mean_estimation_error_mm": 0.0,
+      "max_estimation_error_mm": 0.0
+    },
+    "Config B (YOLOv8 Real)": {
+      "trials": 60,
+      "successes": 16,
+      "success_rate": 0.26666666666666666,
+      "mean_estimation_error_mm": 100.83216666666667,
+      "max_estimation_error_mm": 542.4
+    },
+    "Config C (Depth-Anything v2)": {
+      "trials": 60,
+      "successes": 16,
+      "success_rate": 0.26666666666666666,
+      "mean_estimation_error_mm": 112.65633333333332,
+      "max_estimation_error_mm": 432.23
+    }
+  },
+  "tasks": {
+    "task_02": {
+      "task_name": "Pick & Lift Workpiece",
+      "trials": 30,
+      "successes": 15,
+      "success_rate": 0.5
+    },
+    "task_03": {
+      "task_name": "Conveyor Dynamic Rendezvous",
+      "trials": 30,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_04": {
+      "task_name": "Precision Placement into Tray",
+      "trials": 30,
+      "successes": 0,
+      "success_rate": 0.0
+    },
+    "task_07": {
+      "task_name": "Multi-Axis In-Hand Reorientation",
+      "trials": 30,
+      "successes": 14,
+      "success_rate": 0.4666666666666667
+    },
+    "task_08": {
+      "task_name": "Articulated Drawer/Slide Interaction",
+      "trials": 30,
+      "successes": 28,
+      "success_rate": 0.9333333333333333
+    },
+    "task_09": {
+      "task_name": "Multi-Object Stacking & Sorting",
+      "trials": 30,
+      "successes": 0,
+      "success_rate": 0.0
+    }
+  },
+  "perception_comparison": {
+    "config_a_mean_error_mm": 0.0,
+    "config_b_mean_error_mm": 112.74566666666668,
+    "config_c_mean_error_mm": 120.09716666666668,
+    "config_b_max_error_mm": 304.85,
+    "config_c_max_error_mm": 299.29
+  },
+  "raw_manip_csv": "/home/gaminizer/Projects/ARIA/data/real/manipulation_trials_gazebo_20261010T173124Z.csv",
+  "raw_percep_csv": "/home/gaminizer/Projects/ARIA/data/real/perception_comparison_20261010T173124Z.csv"
+}

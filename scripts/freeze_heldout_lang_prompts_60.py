@@ -1,0 +1,588 @@
+#!/usr/bin/env python3
+"""
+scripts/freeze_heldout_lang_prompts_60.py
+
+Generates and freezes data/real/lang_prompts_heldout_60.json BEFORE running
+the planner benchmark.
+Contains 60 standardized held-out instructions across 6 categories (10 per category).
+Includes target phrase, scene graph entities, ground-truth match count, and ambiguity label.
+"""
+
+import os
+import json
+
+WORKSPACE_ROOT = "/home/gaminizer/Projects/ARIA"
+DATA_REAL_DIR = os.path.join(WORKSPACE_ROOT, "data", "real")
+os.makedirs(DATA_REAL_DIR, exist_ok=True)
+OUT_JSON = os.path.join(DATA_REAL_DIR, "lang_prompts_heldout_60.json")
+
+PROMPTS = [
+    # ── Category 1: Direct Imperative (10 prompts) ── Unambiguous (1 match)
+    {
+        "episode_id": 1, "prompt_id": "P01", "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick up the blue bolt and place it in tray pocket 1.",
+        "target_phrase": "blue bolt",
+        "scene_entities": [{"id": "obj_01", "name": "blue bolt", "color": "blue", "type": "bolt", "pos": [0.20, -0.05, 0.62]}],
+        "expected_action": "place", "expected_destination": "tray pocket 1"
+    },
+    {
+        "episode_id": 2, "prompt_id": "P02", "category": "Cat 1: Direct Imperative",
+        "instruction": "Grasp the red cylinder and transfer it to the assembly fixture.",
+        "target_phrase": "red cylinder",
+        "scene_entities": [{"id": "obj_02", "name": "red cylinder", "color": "red", "type": "cylinder", "pos": [0.18, 0.05, 0.62]}],
+        "expected_action": "place", "expected_destination": "assembly fixture"
+    },
+    {
+        "episode_id": 3, "prompt_id": "P03", "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick the grey bracket from the table and drop it into bin A.",
+        "target_phrase": "grey bracket",
+        "scene_entities": [{"id": "obj_03", "name": "grey bracket", "color": "grey", "type": "bracket", "pos": [0.22, -0.02, 0.62]}],
+        "expected_action": "place", "expected_destination": "bin A"
+    },
+    {
+        "episode_id": 4, "prompt_id": "P04", "category": "Cat 1: Direct Imperative",
+        "instruction": "Transfer the blue cube from the pickup zone to the pallet.",
+        "target_phrase": "blue cube",
+        "scene_entities": [{"id": "obj_04", "name": "blue cube", "color": "blue", "type": "cube", "pos": [0.20, 0.00, 0.62]}],
+        "expected_action": "place", "expected_destination": "pallet"
+    },
+    {
+        "episode_id": 5, "prompt_id": "P05", "category": "Cat 1: Direct Imperative",
+        "instruction": "Move the red hex nut from the feeder to tray pocket 3.",
+        "target_phrase": "red hex nut",
+        "scene_entities": [{"id": "obj_05", "name": "red hex nut", "color": "red", "type": "hex nut", "pos": [0.19, -0.08, 0.62]}],
+        "expected_action": "place", "expected_destination": "tray pocket 3"
+    },
+    {
+        "episode_id": 6, "prompt_id": "P06", "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick up the yellow spacer and set it on the test stand.",
+        "target_phrase": "yellow spacer",
+        "scene_entities": [{"id": "obj_06", "name": "yellow spacer", "color": "yellow", "type": "spacer", "pos": [0.21, 0.04, 0.62]}],
+        "expected_action": "place", "expected_destination": "test stand"
+    },
+    {
+        "episode_id": 7, "prompt_id": "P07", "category": "Cat 1: Direct Imperative",
+        "instruction": "Lift the brass bushing and place it in the center slot.",
+        "target_phrase": "brass bushing",
+        "scene_entities": [{"id": "obj_07", "name": "brass bushing", "color": "brass", "type": "bushing", "pos": [0.17, -0.01, 0.62]}],
+        "expected_action": "place", "expected_destination": "center slot"
+    },
+    {
+        "episode_id": 8, "prompt_id": "P08", "category": "Cat 1: Direct Imperative",
+        "instruction": "Retrieve the aluminium rod and place it horizontally in tray 2.",
+        "target_phrase": "aluminium rod",
+        "scene_entities": [{"id": "obj_08", "name": "aluminium rod", "color": "aluminium", "type": "rod", "pos": [0.23, 0.06, 0.62]}],
+        "expected_action": "place", "expected_destination": "tray 2"
+    },
+    {
+        "episode_id": 9, "prompt_id": "P09", "category": "Cat 1: Direct Imperative",
+        "instruction": "Pick the steel washer from the staging mat and drop it in bin B.",
+        "target_phrase": "steel washer",
+        "scene_entities": [{"id": "obj_09", "name": "steel washer", "color": "steel", "type": "washer", "pos": [0.19, -0.04, 0.62]}],
+        "expected_action": "place", "expected_destination": "bin B"
+    },
+    {
+        "episode_id": 10, "prompt_id": "P10", "category": "Cat 1: Direct Imperative",
+        "instruction": "Move the black flange into the reject chute.",
+        "target_phrase": "black flange",
+        "scene_entities": [{"id": "obj_10", "name": "black flange", "color": "black", "type": "flange", "pos": [0.20, 0.08, 0.62]}],
+        "expected_action": "place", "expected_destination": "reject chute"
+    },
+
+    # ── Category 2: Attribute-Grounded (10 prompts) ── Unambiguous (1 match with distractors)
+    {
+        "episode_id": 11, "prompt_id": "P11", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Pick the cylindrical workpiece and place it on the scale.",
+        "target_phrase": "cylindrical workpiece",
+        "scene_entities": [
+            {"id": "obj_11", "name": "cylindrical workpiece", "color": "blue", "shape": "cylinder", "type": "workpiece", "pos": [0.20, -0.05, 0.62]},
+            {"id": "obj_12", "name": "square bracket", "color": "blue", "shape": "square", "type": "bracket", "pos": [0.20, 0.05, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "scale"
+    },
+    {
+        "episode_id": 12, "prompt_id": "P12", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Select the metallic block and place it on the inspection pad.",
+        "target_phrase": "metallic block",
+        "scene_entities": [
+            {"id": "obj_13", "name": "metallic block", "material": "metal", "type": "block", "pos": [0.21, 0.00, 0.62]},
+            {"id": "obj_14", "name": "plastic block", "material": "plastic", "type": "block", "pos": [0.17, 0.00, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "inspection pad"
+    },
+    {
+        "episode_id": 13, "prompt_id": "P13", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Pick the defective blue block with the surface scratch and discard it.",
+        "target_phrase": "defective blue block",
+        "scene_entities": [
+            {"id": "obj_15", "name": "defective blue block", "color": "blue", "status": "defective", "pos": [0.19, -0.06, 0.62]},
+            {"id": "obj_16", "name": "pristine blue block", "color": "blue", "status": "good", "pos": [0.19, 0.06, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "discard"
+    },
+    {
+        "episode_id": 14, "prompt_id": "P14", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Grasp the heavy 50g cylinder and place it in the balance fixture.",
+        "target_phrase": "heavy 50g cylinder",
+        "scene_entities": [
+            {"id": "obj_17", "name": "heavy 50g cylinder", "weight": "50g", "shape": "cylinder", "pos": [0.22, 0.02, 0.62]},
+            {"id": "obj_18", "name": "light 10g cylinder", "weight": "10g", "shape": "cylinder", "pos": [0.18, 0.02, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "balance fixture"
+    },
+    {
+        "episode_id": 15, "prompt_id": "P15", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Transfer the threaded rod to the threading station.",
+        "target_phrase": "threaded rod",
+        "scene_entities": [
+            {"id": "obj_19", "name": "threaded rod", "feature": "threaded", "type": "rod", "pos": [0.20, -0.03, 0.62]},
+            {"id": "obj_20", "name": "smooth rod", "feature": "smooth", "type": "rod", "pos": [0.20, 0.07, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "threading station"
+    },
+    {
+        "episode_id": 16, "prompt_id": "P16", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Pick the tall prism and place it in the tall component rack.",
+        "target_phrase": "tall prism",
+        "scene_entities": [
+            {"id": "obj_21", "name": "tall prism", "height": "tall", "type": "prism", "pos": [0.18, -0.05, 0.62]},
+            {"id": "obj_22", "name": "short prism", "height": "short", "type": "prism", "pos": [0.22, -0.05, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "tall component rack"
+    },
+    {
+        "episode_id": 17, "prompt_id": "P17", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Take the anodized red pin and insert it into sleeve A.",
+        "target_phrase": "anodized red pin",
+        "scene_entities": [
+            {"id": "obj_23", "name": "anodized red pin", "finish": "anodized", "color": "red", "type": "pin", "pos": [0.21, 0.05, 0.62]},
+            {"id": "obj_24", "name": "raw steel pin", "finish": "raw", "color": "grey", "type": "pin", "pos": [0.17, 0.05, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "sleeve A"
+    },
+    {
+        "episode_id": 18, "prompt_id": "P18", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Pick up the bevelled gear and store it in pocket 4.",
+        "target_phrase": "bevelled gear",
+        "scene_entities": [
+            {"id": "obj_25", "name": "bevelled gear", "type": "gear", "bevelled": True, "pos": [0.19, -0.01, 0.62]},
+            {"id": "obj_26", "name": "spur gear", "type": "gear", "bevelled": False, "pos": [0.23, -0.01, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "pocket 4"
+    },
+    {
+        "episode_id": 19, "prompt_id": "P19", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Grasp the rubber grommet and set it in the gasket tray.",
+        "target_phrase": "rubber grommet",
+        "scene_entities": [
+            {"id": "obj_27", "name": "rubber grommet", "material": "rubber", "type": "grommet", "pos": [0.20, 0.01, 0.62]},
+            {"id": "obj_28", "name": "plastic ring", "material": "plastic", "type": "ring", "pos": [0.16, 0.01, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "gasket tray"
+    },
+    {
+        "episode_id": 20, "prompt_id": "P20", "category": "Cat 2: Attribute-Grounded",
+        "instruction": "Pick the slotted screw and drop it in tray slot 1.",
+        "target_phrase": "slotted screw",
+        "scene_entities": [
+            {"id": "obj_29", "name": "slotted screw", "drive": "slotted", "type": "screw", "pos": [0.22, -0.04, 0.62]},
+            {"id": "obj_30", "name": "phillips screw", "drive": "phillips", "type": "screw", "pos": [0.18, -0.04, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "tray slot 1"
+    },
+
+    # ── Category 3: Spatial-Relational (10 prompts) ── Unambiguous (1 match with spatial disambiguation)
+    {
+        "episode_id": 21, "prompt_id": "P21", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick up the workpiece on the left side and place it in the center.",
+        "target_phrase": "workpiece on the left side",
+        "scene_entities": [
+            {"id": "obj_31", "name": "workpiece on the left side", "side": "left", "pos": [0.20, -0.12, 0.62]},
+            {"id": "obj_32", "name": "workpiece on the right side", "side": "right", "pos": [0.20, 0.12, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "center"
+    },
+    {
+        "episode_id": 22, "prompt_id": "P22", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Move the item nearest to the robot base to the output area.",
+        "target_phrase": "item nearest to the robot base",
+        "scene_entities": [
+            {"id": "obj_33", "name": "item nearest to the robot base", "dist": "near", "pos": [0.14, 0.00, 0.62]},
+            {"id": "obj_34", "name": "item far from robot base", "dist": "far", "pos": [0.26, 0.00, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "output area"
+    },
+    {
+        "episode_id": 23, "prompt_id": "P23", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the bolt behind the red cylinder and set it beside the tray.",
+        "target_phrase": "bolt behind the red cylinder",
+        "scene_entities": [
+            {"id": "obj_35", "name": "red cylinder", "type": "cylinder", "pos": [0.18, 0.00, 0.62]},
+            {"id": "obj_36", "name": "bolt behind the red cylinder", "type": "bolt", "pos": [0.26, 0.00, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "beside the tray"
+    },
+    {
+        "episode_id": 24, "prompt_id": "P24", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Transfer the cube between the two brackets to the pallet.",
+        "target_phrase": "cube between the two brackets",
+        "scene_entities": [
+            {"id": "obj_37", "name": "bracket left", "pos": [0.20, -0.08, 0.62]},
+            {"id": "obj_38", "name": "cube between the two brackets", "pos": [0.20, 0.00, 0.62]},
+            {"id": "obj_39", "name": "bracket right", "pos": [0.20, 0.08, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "pallet"
+    },
+    {
+        "episode_id": 25, "prompt_id": "P25", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the outermost part on the right rail and deposit it in bin C.",
+        "target_phrase": "outermost part on the right rail",
+        "scene_entities": [
+            {"id": "obj_40", "name": "outermost part on the right rail", "pos": [0.22, 0.15, 0.62]},
+            {"id": "obj_41", "name": "inner part on right rail", "pos": [0.22, 0.05, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "bin C"
+    },
+    {
+        "episode_id": 26, "prompt_id": "P26", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the block located inside the square marker and move it out.",
+        "target_phrase": "block located inside the square marker",
+        "scene_entities": [
+            {"id": "obj_42", "name": "block located inside the square marker", "inside": True, "pos": [0.20, -0.04, 0.62]},
+            {"id": "obj_43", "name": "block outside square marker", "inside": False, "pos": [0.15, -0.10, 0.62]}
+        ],
+        "expected_action": "place", "expected_destination": "out"
+    },
+    {
+        "episode_id": 27, "prompt_id": "P27", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Retrieve the top item from the two-block stack and set it on the table.",
+        "target_phrase": "top item from the two-block stack",
+        "scene_entities": [
+            {"id": "obj_44", "name": "bottom item of stack", "z": 0.62, "pos": [0.20, 0.00, 0.62]},
+            {"id": "obj_45", "name": "top item from the two-block stack", "z": 0.66, "pos": [0.20, 0.00, 0.66]}
+        ],
+        "expected_action": "place", "expected_destination": "table"
+    },
+    {
+        "episode_id": 28, "prompt_id": "P28", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the component in front of the blue fixture and slide it right.",
+        "target_phrase": "component in front of the blue fixture",
+        "scene_entities": [
+            {"id": "obj_46", "name": "blue fixture", "pos": [0.25, 0.05, 0.62]},
+            {"id": "obj_47", "name": "component in front of the blue fixture", "pos": [0.16, 0.05, 0.62]}
+        ],
+        "expected_action": "slide", "expected_destination": "right"
+    },
+    {
+        "episode_id": 29, "prompt_id": "P29", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Grasp the part at the top-left corner of the grid.",
+        "target_phrase": "part at the top-left corner of the grid",
+        "scene_entities": [
+            {"id": "obj_48", "name": "part at the top-left corner of the grid", "pos": [0.24, -0.10, 0.62]},
+            {"id": "obj_49", "name": "part at bottom-right of grid", "pos": [0.16, 0.10, 0.62]}
+        ],
+        "expected_action": "pick", "expected_destination": "in_hand"
+    },
+    {
+        "episode_id": 30, "prompt_id": "P30", "category": "Cat 3: Spatial-Relational",
+        "instruction": "Pick the item adjacent to the green LED indicator.",
+        "target_phrase": "item adjacent to the green LED indicator",
+        "scene_entities": [
+            {"id": "obj_50", "name": "item adjacent to the green LED indicator", "pos": [0.19, -0.02, 0.62]}
+        ],
+        "expected_action": "pick", "expected_destination": "in_hand"
+    },
+
+    # ── Category 4: Compound Multi-Step (10 prompts) ── Unambiguous multi-step sequence
+    {
+        "episode_id": 31, "prompt_id": "P31", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Pick the blue block, inspect it at camera 1, then place it in tray 1.",
+        "target_phrase": "blue block",
+        "scene_entities": [{"id": "obj_51", "name": "blue block", "pos": [0.20, -0.05, 0.62]}],
+        "expected_action": "compound", "expected_destination": "tray 1"
+    },
+    {
+        "episode_id": 32, "prompt_id": "P32", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Clear the table by moving the red block to bin A and the blue block to bin B.",
+        "target_phrase": "red block and blue block",
+        "scene_entities": [
+            {"id": "obj_52", "name": "red block", "pos": [0.18, -0.05, 0.62]},
+            {"id": "obj_53", "name": "blue block", "pos": [0.22, 0.05, 0.62]}
+        ],
+        "expected_action": "compound", "expected_destination": "bin A and bin B"
+    },
+    {
+        "episode_id": 33, "prompt_id": "P33", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Stack the yellow block on top of the green block.",
+        "target_phrase": "yellow block",
+        "scene_entities": [
+            {"id": "obj_54", "name": "yellow block", "pos": [0.19, -0.04, 0.62]},
+            {"id": "obj_55", "name": "green block", "pos": [0.21, 0.04, 0.62]}
+        ],
+        "expected_action": "stack", "expected_destination": "on top of green block"
+    },
+    {
+        "episode_id": 34, "prompt_id": "P34", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Pick the spacer, orient it vertically, and press it into socket 2.",
+        "target_phrase": "spacer",
+        "scene_entities": [{"id": "obj_56", "name": "spacer", "pos": [0.20, 0.00, 0.62]}],
+        "expected_action": "compound", "expected_destination": "socket 2"
+    },
+    {
+        "episode_id": 35, "prompt_id": "P35", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Take the bolt from pocket 1, dip it in lubricant, and deposit in pocket 3.",
+        "target_phrase": "bolt in pocket 1",
+        "scene_entities": [{"id": "obj_57", "name": "bolt in pocket 1", "pos": [0.18, -0.06, 0.62]}],
+        "expected_action": "compound", "expected_destination": "pocket 3"
+    },
+    {
+        "episode_id": 36, "prompt_id": "P36", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Sort all grey brackets to the staging area and all washers to the scrap cup.",
+        "target_phrase": "grey brackets and washers",
+        "scene_entities": [
+            {"id": "obj_58", "name": "grey bracket", "pos": [0.19, -0.02, 0.62]},
+            {"id": "obj_59", "name": "washer", "pos": [0.22, 0.02, 0.62]}
+        ],
+        "expected_action": "compound", "expected_destination": "staging area and scrap cup"
+    },
+    {
+        "episode_id": 37, "prompt_id": "P37", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Pick the test cube, verify weight on the load cell, then store in bin 4.",
+        "target_phrase": "test cube",
+        "scene_entities": [{"id": "obj_60", "name": "test cube", "pos": [0.20, 0.06, 0.62]}],
+        "expected_action": "compound", "expected_destination": "bin 4"
+    },
+    {
+        "episode_id": 38, "prompt_id": "P38", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Rotate the blue cylinder 90 degrees and place it in the cradle.",
+        "target_phrase": "blue cylinder",
+        "scene_entities": [{"id": "obj_61", "name": "blue cylinder", "pos": [0.21, -0.03, 0.62]}],
+        "expected_action": "compound", "expected_destination": "cradle"
+    },
+    {
+        "episode_id": 39, "prompt_id": "P39", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Slide the metal bracket 5 cm left, then pick and place it into slot B.",
+        "target_phrase": "metal bracket",
+        "scene_entities": [{"id": "obj_62", "name": "metal bracket", "pos": [0.19, 0.04, 0.62]}],
+        "expected_action": "compound", "expected_destination": "slot B"
+    },
+    {
+        "episode_id": 40, "prompt_id": "P40", "category": "Cat 4: Compound Multi-Step",
+        "instruction": "Unstack the red block from the yellow block and place both side-by-side.",
+        "target_phrase": "red block",
+        "scene_entities": [
+            {"id": "obj_63", "name": "yellow block", "pos": [0.20, 0.00, 0.62]},
+            {"id": "obj_64", "name": "red block", "pos": [0.20, 0.00, 0.66]}
+        ],
+        "expected_action": "compound", "expected_destination": "side-by-side"
+    },
+
+    # ── Category 5: Constraint / Dynamic (10 prompts) ── Dynamic Conveyor / Obstacle Avoidance
+    {
+        "episode_id": 41, "prompt_id": "P41", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Track and intercept the workpiece arriving on the moving conveyor belt.",
+        "target_phrase": "workpiece arriving on the moving conveyor belt",
+        "scene_entities": [{"id": "obj_65", "name": "workpiece arriving on the moving conveyor belt", "dynamic": True, "pos": [0.20, 0.16, 0.64]}],
+        "expected_action": "rendezvous", "expected_destination": "in_hand"
+    },
+    {
+        "episode_id": 42, "prompt_id": "P42", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Grasp the incoming red block on the belt without exceeding velocity limits.",
+        "target_phrase": "incoming red block on the belt",
+        "scene_entities": [{"id": "obj_66", "name": "incoming red block on the belt", "dynamic": True, "pos": [0.20, 0.16, 0.64]}],
+        "expected_action": "rendezvous", "expected_destination": "in_hand"
+    },
+    {
+        "episode_id": 43, "prompt_id": "P43", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Pick the fragile glass vial with gentle gripper force under 1 Newton.",
+        "target_phrase": "fragile glass vial",
+        "scene_entities": [{"id": "obj_67", "name": "fragile glass vial", "fragile": True, "pos": [0.21, -0.04, 0.62]}],
+        "expected_action": "pick", "expected_destination": "in_hand"
+    },
+    {
+        "episode_id": 44, "prompt_id": "P44", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Transfer the part avoiding collision with the tall obstacle tower.",
+        "target_phrase": "part avoiding collision",
+        "scene_entities": [
+            {"id": "obj_68", "name": "part avoiding collision", "pos": [0.18, -0.08, 0.62]},
+            {"id": "obs_01", "name": "tall obstacle tower", "is_obstacle": True, "pos": [0.20, 0.00, 0.70]}
+        ],
+        "expected_action": "place", "expected_destination": "target zone"
+    },
+    {
+        "episode_id": 45, "prompt_id": "P45", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Intercept the blue package on the belt moving at 0.06 m/s.",
+        "target_phrase": "blue package on the belt",
+        "scene_entities": [{"id": "obj_69", "name": "blue package on the belt", "dynamic": True, "pos": [0.20, 0.16, 0.64]}],
+        "expected_action": "rendezvous", "expected_destination": "in_hand"
+    },
+    {
+        "episode_id": 46, "prompt_id": "P46", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Transport the open container keeping it strictly upright without tilting.",
+        "target_phrase": "open container",
+        "scene_entities": [{"id": "obj_70", "name": "open container", "upright_constraint": True, "pos": [0.20, -0.02, 0.62]}],
+        "expected_action": "place", "expected_destination": "sink"
+    },
+    {
+        "episode_id": 47, "prompt_id": "P47", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Pick the warm heatsink keeping clearance from the thermal sensor.",
+        "target_phrase": "warm heatsink",
+        "scene_entities": [{"id": "obj_71", "name": "warm heatsink", "pos": [0.22, 0.05, 0.62]}],
+        "expected_action": "pick", "expected_destination": "cooling bay"
+    },
+    {
+        "episode_id": 48, "prompt_id": "P48", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Catch the workpiece approaching on the conveyor before it drops off the end.",
+        "target_phrase": "workpiece approaching on the conveyor",
+        "scene_entities": [{"id": "obj_72", "name": "workpiece approaching on the conveyor", "dynamic": True, "pos": [0.20, 0.16, 0.64]}],
+        "expected_action": "rendezvous", "expected_destination": "in_hand"
+    },
+    {
+        "episode_id": 49, "prompt_id": "P49", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Slide the heavy pallet while maintaining constant table contact force.",
+        "target_phrase": "heavy pallet",
+        "scene_entities": [{"id": "obj_73", "name": "heavy pallet", "pos": [0.19, -0.05, 0.62]}],
+        "expected_action": "slide", "expected_destination": "edge"
+    },
+    {
+        "episode_id": 50, "prompt_id": "P50", "category": "Cat 5: Constraint / Dynamic",
+        "instruction": "Transfer the component through the narrow 80 mm gap between side fixtures.",
+        "target_phrase": "component through narrow gap",
+        "scene_entities": [{"id": "obj_74", "name": "component through narrow gap", "pos": [0.18, 0.02, 0.62]}],
+        "expected_action": "place", "expected_destination": "end of gap"
+    },
+
+    # ── Category 6: Ambiguous / Under-specified (10 prompts) ── Ambiguous (0 or >1 matches -> MUST ASK)
+    {
+        "episode_id": 51, "prompt_id": "P51", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Pick up the blue cube.",
+        "target_phrase": "blue cube",
+        "scene_entities": [
+            {"id": "obj_75", "name": "blue cube", "color": "blue", "type": "cube", "pos": [0.18, -0.06, 0.62]},
+            {"id": "obj_76", "name": "blue cube", "color": "blue", "type": "cube", "pos": [0.22, 0.06, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 52, "prompt_id": "P52", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Move the part over there.",
+        "target_phrase": "the part",
+        "scene_entities": [
+            {"id": "obj_77", "name": "bracket A", "type": "part", "pos": [0.17, -0.05, 0.62]},
+            {"id": "obj_78", "name": "cylinder B", "type": "part", "pos": [0.21, 0.05, 0.62]},
+            {"id": "obj_79", "name": "flange C", "type": "part", "pos": [0.24, 0.00, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 53, "prompt_id": "P53", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Pick up the green triangle.",
+        "target_phrase": "green triangle",
+        "scene_entities": [
+            {"id": "obj_80", "name": "blue cube", "color": "blue", "pos": [0.19, -0.04, 0.62]},
+            {"id": "obj_81", "name": "red cylinder", "color": "red", "pos": [0.21, 0.04, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 54, "prompt_id": "P54", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Take the bolt.",
+        "target_phrase": "the bolt",
+        "scene_entities": [
+            {"id": "obj_82", "name": "hex bolt M6", "type": "bolt", "pos": [0.18, -0.08, 0.62]},
+            {"id": "obj_83", "name": "hex bolt M8", "type": "bolt", "pos": [0.20, 0.00, 0.62]},
+            {"id": "obj_84", "name": "carriage bolt M6", "type": "bolt", "pos": [0.22, 0.08, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 55, "prompt_id": "P55", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Put it in the pocket.",
+        "target_phrase": "it",
+        "scene_entities": [
+            {"id": "obj_85", "name": "metal pin", "pos": [0.19, -0.02, 0.62]},
+            {"id": "obj_86", "name": "brass nut", "pos": [0.22, 0.02, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 56, "prompt_id": "P56", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Clear the one on the side.",
+        "target_phrase": "the one on the side",
+        "scene_entities": [
+            {"id": "obj_87", "name": "cube on left side", "pos": [0.20, -0.12, 0.62]},
+            {"id": "obj_88", "name": "cylinder on right side", "pos": [0.20, 0.12, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 57, "prompt_id": "P57", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Discard the defective component.",
+        "target_phrase": "the defective component",
+        "scene_entities": [
+            {"id": "obj_89", "name": "defective bolt", "status": "defective", "pos": [0.18, -0.05, 0.62]},
+            {"id": "obj_90", "name": "defective flange", "status": "defective", "pos": [0.22, 0.05, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 58, "prompt_id": "P58", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Transfer the yellow workpiece to tray pocket 2.",
+        "target_phrase": "yellow workpiece",
+        "scene_entities": [
+            {"id": "obj_91", "name": "blue cube", "color": "blue", "pos": [0.20, -0.04, 0.62]},
+            {"id": "obj_92", "name": "red cylinder", "color": "red", "pos": [0.20, 0.04, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 59, "prompt_id": "P59", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Pick up the nearest object.",
+        "target_phrase": "nearest object",
+        "scene_entities": [
+            {"id": "obj_93", "name": "washer A", "pos": [0.18, -0.05, 0.62]},  # Distance ~0.187m
+            {"id": "obj_94", "name": "nut B", "pos": [0.18, 0.05, 0.62]}      # Distance ~0.187m (identical equidistant)
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    },
+    {
+        "episode_id": 60, "prompt_id": "P60", "category": "Cat 6: Ambiguous / Under-specified",
+        "instruction": "Sort the fastener.",
+        "target_phrase": "the fastener",
+        "scene_entities": [
+            {"id": "obj_95", "name": "bolt A", "category": "fastener", "pos": [0.17, -0.03, 0.62]},
+            {"id": "obj_96", "name": "screw B", "category": "fastener", "pos": [0.20, 0.00, 0.62]},
+            {"id": "obj_97", "name": "rivet C", "category": "fastener", "pos": [0.23, 0.03, 0.62]}
+        ],
+        "expected_action": "clarify", "expected_destination": "ask_user"
+    }
+]
+
+# Compute deterministic scene graph matching counts
+for p in PROMPTS:
+    phrase = p["target_phrase"].lower()
+    entities = p["scene_entities"]
+    matches = 0
+    for e in entities:
+        name = e.get("name", "").lower()
+        color = e.get("color", "").lower()
+        type_ = e.get("type", "").lower()
+        # Direct word overlap matching
+        phrase_words = set(w for w in phrase.split() if w not in {"the", "a", "an", "on", "in", "side", "to", "at"})
+        entity_text = f"{name} {color} {type_}"
+        if all(w in entity_text for w in phrase_words):
+            matches += 1
+    p["num_scene_matches"] = matches
+    p["is_ambiguous"] = bool(matches != 1)
+
+def main():
+    with open(OUT_JSON, "w", encoding="utf-8") as f:
+        json.dump(PROMPTS, f, indent=2)
+    print(f"[SUCCESS] Frozen held-out 60-prompt set saved to {OUT_JSON}")
+    print(f"Total prompts: {len(PROMPTS)}")
+    amb_count = sum(1 for p in PROMPTS if p["is_ambiguous"])
+    unamb_count = len(PROMPTS) - amb_count
+    print(f"Unambiguous: {unamb_count} | Ambiguous: {amb_count}")
+
+if __name__ == "__main__":
+    main()

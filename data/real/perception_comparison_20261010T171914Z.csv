@@ -1,0 +1,3 @@
+trial_id,timestamp,git_commit_hash,task_id,seed,true_x_m,true_y_m,true_z_m,config_a_x_m,config_a_y_m,config_a_z_m,config_a_error_mm,config_b_x_m,config_b_y_m,config_b_z_m,config_b_error_mm,config_c_x_m,config_c_y_m,config_c_z_m,config_c_error_mm,pixel_u,pixel_v,da_depth_m,detection_method
+TRIAL_0001,2026-10-10T17:19:14.547215+00:00,a325e02,task_02,2021,0.2017,-0.0463,0.6231,0.2017,-0.0463,0.6231,0.00,0.2005,0.0956,0.6231,141.83,0.1992,0.0916,0.6675,144.80,560,335,0.6825,visual_edge_saliency_detector
+TRIAL_0002,2026-10-10T17:19:24.867371+00:00,a325e02,task_03,2021,0.2017,0.1637,0.6420,0.2017,0.1637,0.6420,0.00,0.2000,0.3285,0.6420,164.78,0.1992,0.3178,0.6675,156.15,266,335,0.6825,visual_edge_saliency_detector

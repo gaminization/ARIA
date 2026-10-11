@@ -1,0 +1,6 @@
+cup:
+  approach: top_down
+  avoid:
+  - interior
+  grasp: rim_and_body
+  success_rate: 0.891625

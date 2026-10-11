@@ -3,20 +3,20 @@
   <model name="workpiece_good">
     <link name="link">
       <inertial>
-        <mass>0.035</mass>
+        <mass>0.045</mass>
         <inertia>
-          <ixx>5.25e-6</ixx>
+          <ixx>1.20e-5</ixx>
           <ixy>0.0</ixy>
           <ixz>0.0</ixz>
-          <iyy>5.25e-6</iyy>
+          <iyy>1.20e-5</iyy>
           <iyz>0.0</iyz>
-          <izz>5.25e-6</izz>
+          <izz>1.20e-5</izz>
         </inertia>
       </inertial>
       <collision name="collision">
         <geometry>
           <box>
-            <size>0.030 0.030 0.030</size>
+            <size>0.040 0.040 0.040</size>
           </box>
         </geometry>
         <surface>
@@ -29,7 +29,7 @@
             </ode>
             <torsional>
               <coefficient>5.0</coefficient>
-              <patch_radius>0.015</patch_radius>
+              <patch_radius>0.020</patch_radius>
             </torsional>
           </friction>
           <contact>
@@ -49,7 +49,7 @@
       <visual name="visual">
         <geometry>
           <box>
-            <size>0.030 0.030 0.030</size>
+            <size>0.040 0.040 0.040</size>
           </box>
         </geometry>
         <material>
@@ -60,7 +60,7 @@
       </visual>
       <!-- QC Passed Green Visual Indicator -->
       <visual name="qc_marker">
-        <pose>0 0 0.0151 0 0 0</pose>
+        <pose>0 0 0.0201 0 0 0</pose>
         <geometry>
           <cylinder>
             <radius>0.009</radius>

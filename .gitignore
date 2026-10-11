@@ -27,6 +27,8 @@ models/
 *.hdf5
 *.h5
 arm_learning/datasets/
+arm_vision/datasets/
+scratch/
 arm_planner/data/*.db
 *.db
 
