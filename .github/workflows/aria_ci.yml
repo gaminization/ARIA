@@ -95,6 +95,10 @@ jobs:
           path: install/
           key: aria-build-${{ github.sha }}
 
+      - name: Verify No Synthetic Outcomes (Scientific Integrity Linter)
+        run: |
+          python3 scripts/check_no_synthetic_outcomes.py
+
       - name: Run IK tests
         run: |
           source /opt/ros/humble/setup.bash

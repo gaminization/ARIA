@@ -153,7 +153,9 @@ export default function App() {
 
       const host = window.location.hostname || 'localhost';
       const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const port = window.location.port === '5173' ? '8000' : (window.location.port || '8000');
+      // In dev mode (Vite on port 3000 or 5173), connect directly to FastAPI backend on 8000
+      const isDev = window.location.port === '3000' || window.location.port === '5173';
+      const port = isDev ? '8000' : (window.location.port || '8000');
 
       // 1. State WebSocket (/ws/state)
       const stateUrl = `${wsProto}//${host}:${port}/ws/state`;
@@ -301,9 +303,13 @@ export default function App() {
             <span className="text-slate-300 font-semibold">{wsConnected ? 'ARIA ONLINE' : 'DISCONNECTED'}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#13161e] border border-[#252a38]">
-            <span className={`w-2 h-2 rounded-full ${systemState?.ros_connected ? 'bg-emerald-400' : 'bg-cyan-400'}`} />
-            <span className="text-slate-300">ROS 2 CONNECTED</span>
+          <div
+            onClick={() => setCurrentPage('simulation')}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#13161e] border border-[#252a38] cursor-pointer hover:border-cyan-500 transition-colors"
+            title="Click to manage simulation workcell"
+          >
+            <span className={`w-2 h-2 rounded-full ${systemState?.ros_connected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+            <span className="text-slate-300">{systemState?.ros_connected ? 'ROS 2 ONLINE' : 'SIMULATION STANDBY'}</span>
           </div>
 
           <div className="flex items-center gap-1 text-slate-400 px-2 py-0.5 rounded bg-[#13161e] border border-[#252a38]">

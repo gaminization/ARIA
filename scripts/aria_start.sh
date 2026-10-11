@@ -108,7 +108,7 @@ echo "  ✅ 5 workpieces spawned (3 good / 2 defective)"
 
 # ── Step 7: Start dashboard ────────────────────────────────────
 echo ""
-echo "[7/7] Starting dashboard at http://localhost:8080..."
+echo "[7/7] Starting dashboard at http://localhost:8000..."
 cd "$ARIA_DIR/arm_dashboard"
 python3 app.py &
 DASH_PID=$!
@@ -117,7 +117,7 @@ echo "  dashboard PID=$DASH_PID"
 echo ""
 echo "═══════════════════════════════════════════════════════════"
 echo "  ✅ ARIA FULL SYSTEM ONLINE"
-echo "  Dashboard: http://localhost:8080"
+echo "  Dashboard: http://localhost:8000"
 echo "  Gazebo:    DISPLAY=:1 (industrial world + robot + objects)"
 echo "═══════════════════════════════════════════════════════════"
 echo ""

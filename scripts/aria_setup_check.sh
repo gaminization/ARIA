@@ -178,7 +178,7 @@ if [ $FAIL -eq 0 ]; then
   echo "  cd $ARIA_DIR"
   echo "  source /opt/ros/humble/setup.bash && source install/setup.bash"
   echo "  ros2 launch arm_bringup aria_full_u3.launch.py world:=aria_workspace.world"
-  echo "  → Dashboard: http://localhost:8080"
+  echo "  → Dashboard: http://localhost:8000"
 else
   echo "  🔴 FIX $FAIL FAILURES ABOVE BEFORE LAUNCHING"
 fi

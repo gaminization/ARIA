@@ -38,19 +38,24 @@ def generate_launch_description():
 
     bringup_dir = get_package_share_directory('arm_bringup')
 
-    # ── World override (tester workspace by default) ───────
+    # ── World and GUI overrides ─────────────────────────────
     world = DeclareLaunchArgument(
         'world', default_value='aria_tester_workspace.world',
         description='World file in arm_bringup/worlds')
-
     world_conf = LaunchConfiguration('world')
+
+    gui = DeclareLaunchArgument(
+        'gui', default_value='false',
+        description='Launch Gazebo Classic GUI (set true for GUI window)')
+    gui_conf = LaunchConfiguration('gui')
+
     # ═══════════════════════════════════════════════════════
     # STAGE 1: Gazebo + Robot + Controllers (0s)
     # ═══════════════════════════════════════════════════════
     stage1_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(bringup_dir, 'launch', 'sim.launch.py')),
-        launch_arguments={'world': world_conf}.items(),
+        launch_arguments={'world': world_conf, 'gui': gui_conf}.items(),
     )
 
     # ═══════════════════════════════════════════════════════
@@ -260,6 +265,7 @@ def generate_launch_description():
         bag_mode,
         tracking_backend,
         world,   # industrial workcell world arg
+        gui,     # GUI client arg
 
         # Stage 1
         stage1_sim,

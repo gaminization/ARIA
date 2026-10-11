@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Square, RefreshCw, Layers, Monitor, CheckCircle, AlertTriangle, Cpu } from 'lucide-react';
 
+const DEFAULT_WORLDS = [
+  { id: 'aria_tester_workspace.world', name: 'Standard Tester Workspace', description: '80x60cm optical table with colorful benchmark workpieces' },
+  { id: 'aria_industrial_workcell.world', name: 'Industrial Workcell', description: 'Conveyor feeding zone with sorting bins and inspection stands' },
+  { id: 'aria_workspace.world', name: 'Basic Workspace', description: 'Minimal tabletop environment' },
+];
+
 export default function SimulationControlPanel() {
-  const [worlds, setWorlds] = useState([]);
+  const [worlds, setWorlds] = useState(DEFAULT_WORLDS);
   const [selectedWorld, setSelectedWorld] = useState('aria_tester_workspace.world');
   const [launchGui, setLaunchGui] = useState(false);
   const [simStatus, setSimStatus] = useState({ running: false, world: '', uptime_s: 0, pid: null });
@@ -27,7 +33,9 @@ export default function SimulationControlPanel() {
       const res = await fetch('/api/simulation/worlds');
       if (res.ok) {
         const data = await res.json();
-        setWorlds(data.worlds || []);
+        if (data.worlds && data.worlds.length > 0) {
+          setWorlds(data.worlds);
+        }
       }
     } catch (e) {
       // ignore

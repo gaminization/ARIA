@@ -249,7 +249,7 @@ python3 arm_dashboard/app.py
 # Terminal 2: Launch Vite React Dashboard
 cd arm_dashboard/frontend
 npm install && npm run dev
-# Dashboard accessible at http://localhost:5173
+# Dashboard accessible at http://localhost:3000 (Vite) or http://localhost:8000 (FastAPI)
 ```
 
 ### E. Executing Empirical Benchmarks

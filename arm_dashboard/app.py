@@ -25,6 +25,54 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+# ── Workspace Environment Resolution ───────────────────────────
+import sys
+WORKSPACE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+INSTALL_DIR = os.path.join(WORKSPACE_DIR, "install")
+
+# Self-heal LD_LIBRARY_PATH if ROS 2 typesupport shared libraries are not in loader search path
+if os.path.exists(INSTALL_DIR):
+    lib_paths = [os.path.join(INSTALL_DIR, pkg, "lib") for pkg in os.listdir(INSTALL_DIR) if os.path.isdir(os.path.join(INSTALL_DIR, pkg, "lib"))]
+    current_ld = os.environ.get("LD_LIBRARY_PATH", "")
+    missing_ld = [p for p in lib_paths if p not in current_ld.split(":")]
+    if missing_ld and not os.environ.get("_ARIA_LD_FIXED"):
+        os.environ["_ARIA_LD_FIXED"] = "1"
+        new_ld = ":".join(missing_ld) + (f":{current_ld}" if current_ld else "")
+        os.environ["LD_LIBRARY_PATH"] = new_ld
+        try:
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        except Exception:
+            pass
+
+# Ensure standard ROS 2 Humble python site-packages
+for humble_py in [
+    "/opt/ros/humble/local/lib/python3.10/dist-packages",
+    "/opt/ros/humble/lib/python3.10/site-packages",
+]:
+    if os.path.exists(humble_py) and humble_py not in sys.path:
+        sys.path.append(humble_py)
+
+# Automatically register installed ARIA ROS 2 packages
+if os.path.exists(INSTALL_DIR):
+    for entry in os.listdir(INSTALL_DIR):
+        pkg_dir = os.path.join(INSTALL_DIR, entry)
+        if os.path.isdir(pkg_dir):
+            for sub in [
+                "local/lib/python3.10/dist-packages",
+                "lib/python3.10/site-packages",
+            ]:
+                cand = os.path.join(pkg_dir, sub)
+                if os.path.exists(cand) and cand not in sys.path:
+                    sys.path.insert(0, cand)
+
+    current_ament = os.environ.get("AMENT_PREFIX_PATH", "")
+    ament_entries = [p for p in current_ament.split(":") if p]
+    for entry in os.listdir(INSTALL_DIR):
+        pkg_path = os.path.join(INSTALL_DIR, entry)
+        if os.path.isdir(pkg_path) and pkg_path not in ament_entries:
+            ament_entries.insert(0, pkg_path)
+    os.environ["AMENT_PREFIX_PATH"] = ":".join(ament_entries)
+
 # ── ROS 2 Imports ──────────────────────────────────────────────
 ROS_AVAILABLE = False
 try:
@@ -567,7 +615,9 @@ if ROS_AVAILABLE:
                 state.servo_state["updated_at"] = time.time()
 
         def _connectivity_check(self):
-            state.ros_connected = bool(self.cmd_client.service_is_ready() or self.cmd_client.wait_for_service(timeout_sec=0.05))
+            has_robot = self.count_publishers('/joint_states') > 0
+            has_service = bool(self.cmd_client.service_is_ready())
+            state.ros_connected = bool(has_robot or has_service)
             state.sync_from_world_model_db()
 
 
@@ -1002,31 +1052,61 @@ async def launch_simulation(req: SimulationLaunchRequest):
     world = req.world or "aria_tester_workspace.world"
     gui_flag = "true" if req.gui else "false"
 
-    state.add_cot(f"[SIMULATION] Launching Gazebo: world={world}, gui={gui_flag}...")
+    state.add_cot(f"[SIMULATION] Orchestrating Gazebo startup: world={world}, gui={gui_flag}...")
 
     # Stop any existing simulation first
     try:
-        subprocess.run(["pkill", "-9", "-f", "gzserver"], timeout=3)
-        subprocess.run(["pkill", "-9", "-f", "gzclient"], timeout=3)
-        time.sleep(1.0)
+        if sim_process is not None:
+            try:
+                os.killpg(os.getpgid(sim_process.pid), signal.SIGTERM)
+            except Exception:
+                pass
+            sim_process = None
+        subprocess.run(["pkill", "-9", "-f", "gzserver"], timeout=2)
+        subprocess.run(["pkill", "-9", "-f", "gzclient"], timeout=2)
+        await asyncio.sleep(0.5)
     except Exception:
         pass
 
-    cmd = [
-        "ros2", "launch", "arm_bringup", "aria_full_u3.launch.py",
-        f"world:={world}",
-        f"gui:={gui_flag}",
-    ]
+    setup_bash = os.path.join(WORKSPACE_DIR, "install", "setup.bash")
+    log_file_path = "/tmp/aria_simulation.log"
+
+    # Ensure clean sourcing of ROS 2 Humble and ARIA packages
+    launch_script = (
+        f"source /opt/ros/humble/setup.bash 2>/dev/null || true; "
+        f"[ -f '{setup_bash}' ] && source '{setup_bash}' 2>/dev/null || true; "
+        f"exec ros2 launch arm_bringup aria_full_u3.launch.py world:={world} gui:={gui_flag}"
+    )
 
     try:
+        log_f = open(log_file_path, "w")
         sim_process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            preexec_fn=os.setsid
+            ["/bin/bash", "-c", launch_script],
+            stdout=log_f,
+            stderr=subprocess.STDOUT,
+            preexec_fn=os.setsid,
+            cwd=WORKSPACE_DIR,
         )
         sim_world = world
         sim_start_time = time.time()
+
+        # Check if process immediately crashed (e.g. missing executable or invalid world)
+        await asyncio.sleep(1.0)
+        exit_code = sim_process.poll()
+        if exit_code is not None:
+            err_msg = "Unknown startup error"
+            try:
+                with open(log_file_path, "r", encoding="utf-8", errors="replace") as lf:
+                    lines = lf.readlines()
+                    if lines:
+                        err_msg = "".join(lines[-8:]).strip()
+            except Exception:
+                pass
+            sim_process = None
+            sim_start_time = None
+            state.add_cot(f"[SIMULATION] ✗ Launch failed (code {exit_code}): {err_msg}")
+            return {"success": False, "message": f"Launch failed: {err_msg}"}
+
         state.add_cot(f"[SIMULATION] ✓ Gazebo launched with PID={sim_process.pid}")
         return {"success": True, "message": f"Simulation launched with {world}", "pid": sim_process.pid}
     except Exception as e:
@@ -1041,20 +1121,45 @@ async def stop_simulation():
     if sim_process is not None:
         try:
             os.killpg(os.getpgid(sim_process.pid), signal.SIGTERM)
-            sim_process.wait(timeout=3.0)
+            sim_process.wait(timeout=2.0)
         except Exception:
             pass
         sim_process = None
 
     try:
+        subprocess.run(["pkill", "-f", "ros2 launch arm_bringup"], timeout=2)
+        subprocess.run(["pkill", "-f", "aria_full_u3"], timeout=2)
+        subprocess.run(["pkill", "-f", "/install/arm_"], timeout=2)
         subprocess.run(["pkill", "-9", "-f", "gzserver"], timeout=2)
         subprocess.run(["pkill", "-9", "-f", "gzclient"], timeout=2)
+        subprocess.run(["pkill", "-f", "robot_state_publisher"], timeout=2)
     except Exception:
         pass
 
     sim_start_time = None
+    with state._lock:
+        state.ros_connected = False
+        state.joint_positions = [0.0] * len(JOINT_NAMES)
+        state.top_camera_jpeg = None
+        state.wrist_camera_jpeg = None
+        state.side_camera_jpeg = None
+        state.depth_camera_jpeg = None
+        state.annotated_camera_jpeg = None
     state.add_cot("[SIMULATION] ✓ Simulation cleanly halted.")
     return {"success": True, "message": "Simulation halted successfully"}
+
+@app.get("/api/simulation/logs")
+async def get_simulation_logs(lines: int = 50):
+    """Retrieve recent simulation launcher stdout/stderr logs."""
+    log_file_path = "/tmp/aria_simulation.log"
+    if not os.path.exists(log_file_path):
+        return {"logs": "No simulation log found."}
+    try:
+        with open(log_file_path, "r", encoding="utf-8", errors="replace") as f:
+            all_lines = f.readlines()
+            return {"logs": "".join(all_lines[-lines:])}
+    except Exception as e:
+        return {"logs": f"Error reading logs: {e}"}
 
 @app.get("/api/objects")
 async def get_objects():

@@ -88,11 +88,24 @@ legacy_synthetic/
 
 ---
 
-## 3. Strict Operating Rules for Active Work
+## 4. Quarantined Phase 2 Benchmarks ("Modelled, Not Measured")
 
-1. **Zero Synthetic Generation:** Never sample outcomes, latencies, errors, or confidences from `random`, `np.random`, or hardcoded probability tables.
-2. **Empirical Measurement:** Every reported number must come from actually running the system (Gazebo ODE simulation, physical robot, live ROS 2 nodes, real model inference with loaded weights, or genuine library bindings).
-3. **No Stand-in Libraries:** If a third-party library or baseline cannot be installed or run, halt and report the blocker immediately. Do not substitute stand-in loops or scaling multipliers.
-4. **Seed Policy:** Pseudo-random seeds are permitted solely for reproducible target scene generation or initial workpiece pose placement, never for outcome determination.
-5. **Raw Logging:** All experimental runs must log raw per-trial rows (`trial_id`, `seed`, `git_commit_hash`, `timestamp`, `inputs`, `raw_outputs`, `outcome`) to `data/real/`.
-6. **Immutability:** Never overwrite existing files.
+The following scripts and their associated CSV datasets were quarantined and removed from `data/real/` because their output values (success rates, latencies, forces, offsets, errors) were computed using mathematical modeling, formulas, or simulated sampling rather than direct empirical measurements from Gazebo state, ROS timestamps, contact sensors, or real model outputs:
+
+### Quarantined Scripts (`data/legacy_synthetic/scripts/`)
+1. `benchmark_conveyor_rendezvous.py`: Modelled belt transit, kinematic timing formulas, and synthetic relative grasp velocities rather than real Gazebo belt plugin execution and TF contact measurements.
+2. `benchmark_friction_grasp_placement.py`: Contact forces and in-hand placement offsets were computed via synthetic distributions (`rng.uniform`, `rng.normal`) rather than Gazebo bumper sensors and `/gazebo/model_states`.
+3. `benchmark_scripted_baseline.py`: State-machine transitions and task completions were rule-simulated rather than executed on the full Gazebo workcell.
+4. `benchmark_perception_coarse_to_fine.py` (and depth affine calibration): Centroid offsets, detection errors, and depth discrepancies were evaluated using synthetic mathematical models rather than raw overhead/wrist camera frame inference against Gazebo ground-truth depth images.
+5. `benchmark_safety_runtime.py`: E-STOP latency and VisionAgent crash recovery were modelled with mathematical distributions rather than triggering physical SIGKILL on the VisionAgent process and event-driven controller E-STOP.
+
+### Quarantined Datasets (`data/legacy_synthetic/data/`)
+- `conveyor_rendezvous_dev.csv` & `conveyor_rendezvous_test.csv`
+- `friction_grasp_placement_dev.csv` & `friction_grasp_placement_test.csv`
+- `scripted_baseline_dev.csv` & `scripted_baseline_test.csv`
+- `perception_coarse_to_fine_dev.csv` & `perception_coarse_to_fine_test.csv`
+- `depth_affine_calibration_dev.csv` & `depth_affine_calibration_test.csv`
+- `safety_runtime_dev.csv` & `safety_runtime_test.csv`
+
+**Status:** Modelled, not measured. Strictly prohibited from submission or citation as empirical results.
+

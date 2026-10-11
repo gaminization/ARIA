@@ -74,7 +74,7 @@ echo "Key Topics:"
 ros2 topic list 2>/dev/null | grep -E "(wrist_camera|detection|depth|aria/state|joint_states)" | head -15
 
 echo ""
-echo "Dashboard: http://localhost:8080"
+echo "Dashboard: http://localhost:8000"
 echo ""
 echo "Tmux sessions:"
 tmux ls 2>/dev/null
