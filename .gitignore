@@ -12,6 +12,7 @@ __pycache__/
 *.bag
 *.bag.active
 *.mcap
+data/real/rosbags/
 
 # ── Model weights (excluded from git due to size) ───────────────
 *.pt
