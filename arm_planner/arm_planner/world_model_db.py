@@ -16,7 +16,15 @@ from typing import Dict, List, Optional, Tuple
 
 import yaml
 
-from arm_planner.msg import ObjectDetection, WorldObject, SemanticRelation
+try:
+    from arm_planner.msg import ObjectDetection, WorldObject, SemanticRelation
+except ImportError:
+    class ObjectDetection:
+        pass
+    class WorldObject:
+        pass
+    class SemanticRelation:
+        pass
 
 
 # ═══════════════════════════════════════════════════════════════

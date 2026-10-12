@@ -1,16 +1,17 @@
 // ═══════════════════════════════════════════════════════════════
-// ARIA ESP32 Firmware — main.cpp
+// ARIA ESP32 Firmware v1.1.0 — main.cpp
 // micro-ROS node: "aria_esp32"
 //
-// Bridges ROS2 ↔ real servo hardware.
+// Bridges ROS2 ↔ real servo hardware + MPU6050 end-effector IMU.
 // Subscribers: servo commands, gripper, teach mode
-// Publishers:  servo states (50Hz), health, heartbeat (1Hz)
+// Publishers:  servo states (50Hz), imu (100Hz), health, heartbeat (1Hz)
 //
 // Build with PlatformIO:
 //   pio run -e esp32dev --target upload
 // ═══════════════════════════════════════════════════════════════
 
 #include <Arduino.h>
+#include <Wire.h>
 #include <micro_ros_arduino.h>
 
 #include <rcl/rcl.h>
@@ -19,6 +20,7 @@
 #include <rclc/executor.h>
 
 #include <sensor_msgs/msg/joint_state.h>
+#include <sensor_msgs/msg/imu.h>
 #include <std_msgs/msg/bool.h>
 #include <std_msgs/msg/float32.h>
 #include <std_msgs/msg/float32_multi_array.h>
@@ -51,6 +53,11 @@
 #define ADC_WRIST_PITCH_PIN    25
 #define ADC_GRIPPER_PIN        26
 
+// MPU6050 I2C Configuration (End-effector IMU)
+#define MPU6050_I2C_SDA_PIN    21
+#define MPU6050_I2C_SCL_PIN    22
+#define MPU6050_I2C_ADDR       0x68
+
 // Servo calibration (pulse widths in microseconds)
 // CALIBRATE THESE FOR YOUR SPECIFIC SERVOS
 #define MG995_MIN_PULSE  600
@@ -63,6 +70,7 @@
 
 // Timing
 #define SERVO_UPDATE_HZ   50     // Servo state publish rate
+#define IMU_UPDATE_HZ     100    // IMU publish rate (100Hz)
 #define HEARTBEAT_HZ      1      // Heartbeat rate
 #define COMMAND_TIMEOUT_MS 500   // Hold position if no cmd received
 
@@ -88,11 +96,13 @@ rcl_subscription_t   sub_teach_mode;
 
 // Publishers
 rcl_publisher_t      pub_servo_states;
+rcl_publisher_t      pub_imu;
 rcl_publisher_t      pub_health;
 rcl_publisher_t      pub_heartbeat;
 
 // Timers
 rcl_timer_t          timer_servo_states;
+rcl_timer_t          timer_imu;
 rcl_timer_t          timer_heartbeat;
 
 // Messages
@@ -100,11 +110,13 @@ sensor_msgs__msg__JointState msg_servo_commands;
 std_msgs__msg__Float32       msg_gripper_command;
 std_msgs__msg__Bool          msg_teach_mode;
 sensor_msgs__msg__JointState msg_servo_states;
+sensor_msgs__msg__Imu        msg_imu;
 std_msgs__msg__Float32MultiArray msg_health;
 std_msgs__msg__Header        msg_heartbeat;
 
 // State
 bool     teach_mode_active = false;
+bool     mpu6050_available = false;
 uint32_t last_command_time = 0;
 uint32_t loop_start_time = 0;
 uint32_t prev_loop_time = 0;
@@ -130,6 +142,73 @@ void error_loop() {
         // Blink built-in LED rapidly to indicate error
         digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
         delay(100);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MPU6050 SENSOR ROUTINES
+// ═══════════════════════════════════════════════════════════════
+bool init_mpu6050() {
+    Wire.begin(MPU6050_I2C_SDA_PIN, MPU6050_I2C_SCL_PIN, 400000);
+    Wire.beginTransmission(MPU6050_I2C_ADDR);
+    Wire.write(0x6B); // PWR_MGMT_1
+    Wire.write(0x00); // Wake up MPU6050
+    if (Wire.endTransmission() != 0) {
+        Serial.println("[WARN] MPU6050 IMU not detected at I2C address 0x68");
+        return false;
+    }
+
+    // Configure Gyro Full Scale: +/- 500 deg/s
+    Wire.beginTransmission(MPU6050_I2C_ADDR);
+    Wire.write(0x1B); // GYRO_CONFIG
+    Wire.write(0x08);
+    Wire.endTransmission();
+
+    // Configure Accel Full Scale: +/- 4g
+    Wire.beginTransmission(MPU6050_I2C_ADDR);
+    Wire.write(0x1C); // ACCEL_CONFIG
+    Wire.write(0x08);
+    Wire.endTransmission();
+
+    Serial.println("[ARIA] MPU6050 End-Effector IMU initialized (I2C 0x68).");
+    return true;
+}
+
+void read_mpu6050(float &ax, float &ay, float &az, float &gx, float &gy, float &gz) {
+    if (!mpu6050_available) {
+        ax = 0.0f; ay = 0.0f; az = 9.80665f;
+        gx = 0.0f; gy = 0.0f; gz = 0.0f;
+        return;
+    }
+
+    Wire.beginTransmission(MPU6050_I2C_ADDR);
+    Wire.write(0x3B); // Starting at ACCEL_XOUT_H
+    if (Wire.endTransmission(false) != 0) {
+        ax = 0.0f; ay = 0.0f; az = 9.80665f;
+        gx = 0.0f; gy = 0.0f; gz = 0.0f;
+        return;
+    }
+
+    Wire.requestFrom((uint8_t)MPU6050_I2C_ADDR, (size_t)14, true);
+    if (Wire.available() >= 14) {
+        int16_t raw_ax = (Wire.read() << 8) | Wire.read();
+        int16_t raw_ay = (Wire.read() << 8) | Wire.read();
+        int16_t raw_az = (Wire.read() << 8) | Wire.read();
+        Wire.read(); Wire.read(); // Skip temperature (TEMP_OUT_H, TEMP_OUT_L)
+        int16_t raw_gx = (Wire.read() << 8) | Wire.read();
+        int16_t raw_gy = (Wire.read() << 8) | Wire.read();
+        int16_t raw_gz = (Wire.read() << 8) | Wire.read();
+
+        // Convert to SI units:
+        // +/- 4g sensitivity = 8192 LSB/g -> m/s^2
+        ax = (raw_ax / 8192.0f) * 9.80665f;
+        ay = (raw_ay / 8192.0f) * 9.80665f;
+        az = (raw_az / 8192.0f) * 9.80665f;
+
+        // +/- 500 deg/s sensitivity = 65.5 LSB/(deg/s) -> rad/s
+        gx = (raw_gx / 65.5f) * (float)(M_PI / 180.0f);
+        gy = (raw_gy / 65.5f) * (float)(M_PI / 180.0f);
+        gz = (raw_gz / 65.5f) * (float)(M_PI / 180.0f);
     }
 }
 
@@ -216,6 +295,37 @@ void timer_servo_states_callback(rcl_timer_t* timer, int64_t last_call_time) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// TIMER: Publish IMU states at 100Hz
+// ═══════════════════════════════════════════════════════════════
+void timer_imu_callback(rcl_timer_t* timer, int64_t last_call_time) {
+    (void)last_call_time;
+    if (timer == NULL) return;
+
+    float ax = 0.0f, ay = 0.0f, az = 9.80665f;
+    float gx = 0.0f, gy = 0.0f, gz = 0.0f;
+    read_mpu6050(ax, ay, az, gx, gy, gz);
+
+    msg_imu.linear_acceleration.x = ax;
+    msg_imu.linear_acceleration.y = ay;
+    msg_imu.linear_acceleration.z = az;
+
+    msg_imu.angular_velocity.x = gx;
+    msg_imu.angular_velocity.y = gy;
+    msg_imu.angular_velocity.z = gz;
+
+    // Default identity orientation quaternion
+    msg_imu.orientation.w = 1.0;
+    msg_imu.orientation.x = 0.0;
+    msg_imu.orientation.y = 0.0;
+    msg_imu.orientation.z = 0.0;
+
+    msg_imu.header.stamp.sec = (int32_t)(millis() / 1000);
+    msg_imu.header.stamp.nanosec = (uint32_t)((millis() % 1000) * 1000000);
+
+    RCSOFTCHECK(rcl_publish(&pub_imu, &msg_imu, NULL));
+}
+
+// ═══════════════════════════════════════════════════════════════
 // TIMER: Publish heartbeat at 1Hz
 // ═══════════════════════════════════════════════════════════════
 void timer_heartbeat_callback(rcl_timer_t* timer, int64_t last_call_time) {
@@ -228,20 +338,21 @@ void timer_heartbeat_callback(rcl_timer_t* timer, int64_t last_call_time) {
     RCSOFTCHECK(rcl_publish(&pub_heartbeat, &msg_heartbeat, NULL));
 
     // Also publish health data
-    // [uptime_s, vcc_estimate, adc_valid, feedback_mode]
+    // [uptime_s, vcc_estimate, adc_valid, feedback_mode, imu_active]
     float uptime_s = millis() / 1000.0f;
     msg_health.data.data[0] = uptime_s;
-    msg_health.data.data[1] = 5.0f;  // VCC estimate (TODO: actual measurement)
+    msg_health.data.data[1] = 5.0f;  // VCC estimate
     msg_health.data.data[2] = (servo_mgr.get_feedback_mode() == FEEDBACK_ADC) ? 1.0f : 0.0f;
     msg_health.data.data[3] = teach_mode_active ? 1.0f : 0.0f;
 
     RCSOFTCHECK(rcl_publish(&pub_health, &msg_health, NULL));
 
     // Log status
-    Serial.printf("[ARIA] t=%.0fs teach=%d feedback=%s\n",
+    Serial.printf("[ARIA] t=%.0fs teach=%d feedback=%s imu=%s\n",
                   uptime_s,
                   teach_mode_active,
-                  servo_mgr.get_feedback_mode() == FEEDBACK_ADC ? "ADC" : "CMD");
+                  servo_mgr.get_feedback_mode() == FEEDBACK_ADC ? "ADC" : "CMD",
+                  mpu6050_available ? "OK" : "NONE");
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -294,6 +405,18 @@ void allocate_messages() {
     msg_heartbeat.frame_id.data = (char*)frame_id;
     msg_heartbeat.frame_id.size = strlen(frame_id);
     msg_heartbeat.frame_id.capacity = strlen(frame_id) + 1;
+
+    static const char imu_frame_id[] = "end_effector_imu";
+    msg_imu.header.frame_id.data = (char*)imu_frame_id;
+    msg_imu.header.frame_id.size = strlen(imu_frame_id);
+    msg_imu.header.frame_id.capacity = strlen(imu_frame_id) + 1;
+
+    // Standard covariance diagonal
+    for (int i = 0; i < 9; i++) {
+        msg_imu.orientation_covariance[i] = (i % 4 == 0) ? 0.01 : 0.0;
+        msg_imu.angular_velocity_covariance[i] = (i % 4 == 0) ? 0.001 : 0.0;
+        msg_imu.linear_acceleration_covariance[i] = (i % 4 == 0) ? 0.05 : 0.0;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -303,11 +426,15 @@ void setup() {
     Serial.begin(115200);
     delay(500);
     Serial.println("\n═══════════════════════════════════════");
-    Serial.println("  ARIA ESP32 Firmware v1.0.0");
+    Serial.println("  ARIA ESP32 Firmware v1.1.0");
+    Serial.println("  Hardware: SG90/MG995 + MPU6050 IMU");
     Serial.println("═══════════════════════════════════════");
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
+
+    // ── Initialize MPU6050 I2C sensor ──
+    mpu6050_available = init_mpu6050();
 
     // ── Initialize servo manager ──
     servo_mgr.set_feedback_mode(INITIAL_FEEDBACK_MODE);
@@ -356,6 +483,11 @@ void setup() {
         "/aria/servo_states"));
 
     RCCHECK(rclc_publisher_init_default(
+        &pub_imu, &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
+        "/aria/imu"));
+
+    RCCHECK(rclc_publisher_init_default(
         &pub_health, &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
         "/aria/esp32_health"));
@@ -372,13 +504,19 @@ void setup() {
         RCL_MS_TO_NS(servo_period_ms),
         timer_servo_states_callback));
 
+    unsigned int imu_period_ms = 1000 / IMU_UPDATE_HZ;
+    RCCHECK(rclc_timer_init_default(
+        &timer_imu, &support,
+        RCL_MS_TO_NS(imu_period_ms),
+        timer_imu_callback));
+
     RCCHECK(rclc_timer_init_default(
         &timer_heartbeat, &support,
         RCL_MS_TO_NS(1000 / HEARTBEAT_HZ),
         timer_heartbeat_callback));
 
-    // ── Executor (3 subs + 2 timers = 5 handles) ──
-    RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
+    // ── Executor (3 subs + 3 timers = 6 handles) ──
+    RCCHECK(rclc_executor_init(&executor, &support.context, 6, &allocator));
     RCCHECK(rclc_executor_add_subscription(
         &executor, &sub_servo_commands,
         &msg_servo_commands, &servo_commands_callback, ON_NEW_DATA));
@@ -389,6 +527,7 @@ void setup() {
         &executor, &sub_teach_mode,
         &msg_teach_mode, &teach_mode_callback, ON_NEW_DATA));
     RCCHECK(rclc_executor_add_timer(&executor, &timer_servo_states));
+    RCCHECK(rclc_executor_add_timer(&executor, &timer_imu));
     RCCHECK(rclc_executor_add_timer(&executor, &timer_heartbeat));
 
     // Allocate message memory
@@ -397,7 +536,7 @@ void setup() {
     prev_loop_time = millis();
     last_command_time = millis();
 
-    Serial.println("[ARIA] micro-ROS node 'aria_esp32' initialized.");
+    Serial.println("[ARIA] micro-ROS node 'aria_esp32' initialized with MPU6050 IMU.");
     Serial.println("[ARIA] Waiting for commands...");
     digitalWrite(LED_BUILTIN, LOW);
 }
@@ -418,8 +557,7 @@ void loop() {
 
     // ── Command timeout safety ──
     if (!teach_mode_active && (now - last_command_time) > COMMAND_TIMEOUT_MS) {
-        // No commands received — hold current position (already holding,
-        // just don't move further). This is passive safety.
+        // No commands received — hold current position
     }
 
     // ── Loop rate control (~200Hz internal loop) ──

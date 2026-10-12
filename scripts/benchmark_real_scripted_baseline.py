@@ -164,11 +164,15 @@ class ScriptedBaselineNode(Node):
     def get_tf_ee(self) -> np.ndarray:
         try:
             t = self.tf_buffer.lookup_transform("base_link", "wrist_link", rclpy.time.Time())
-            return np.array([
+            pw = np.array([
                 t.transform.translation.x,
                 t.transform.translation.y,
                 t.transform.translation.z
             ])
+            qr = [t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w]
+            from scipy.spatial.transform import Rotation as R_scipy
+            rot = R_scipy.from_quat(qr)
+            return pw + rot.apply(p_tcp_wrist[:3])
         except Exception:
             return np.zeros(3)
 
@@ -238,7 +242,7 @@ def run_scripted_baseline_benchmark():
         ("task_09", "Multi-Object Stacking & Sorting"),
     ]
 
-    seeds = [101, 102, 103, 104, 105]
+    seeds = list(range(101, 131))
     results = []
 
     q_ready = np.array([0.0, 0.61, -0.96, 0.35])
@@ -283,15 +287,16 @@ def run_scripted_baseline_benchmark():
 
             # Deterministic script execution per task
             if task_id == "task_01":
-                # Reach target
-                target_p = np.array([0.220, 0.000, 0.080])
-                q_reach, _ = solve_grasp_adaptive(0.220, 0.000, 0.694, pitch_deg=-25.0)
-                node.send_trajectory(q_reach, q_open, duration=1.5)
-                time.sleep(1.5)
+                # Reach target in world coordinates converted to base_link
+                target_world = np.array([spawn_xyz[0], spawn_xyz[1], spawn_xyz[2] + 0.050])
+                target_base = np.array([target_world[1], -target_world[0], target_world[2] - 0.614])
+                q_reach, _ = solve_grasp_adaptive(target_world[0], target_world[1], target_world[2], pitch_deg=-25.0)
+                node.send_trajectory(q_reach, q_open, duration=1.2)
+                time.sleep(1.2)
                 for _ in range(5):
                     rclpy.spin_once(node, timeout_sec=0.03)
                 tf_ee = node.get_tf_ee()
-                eval_res = GazeboManipulationSuccessChecker.check_reach_touch(tf_ee, target_p)
+                eval_res = GazeboManipulationSuccessChecker.check_reach_touch(tf_ee, target_base)
 
             elif task_id == "task_02":
                 # Pick and lift

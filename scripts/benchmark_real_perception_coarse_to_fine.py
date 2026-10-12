@@ -238,9 +238,9 @@ def run_coarse_to_fine_benchmark():
     print(f"Git commit hash: {git_hash}")
 
     # Load real YOLO model
-    yolo_weight = os.path.join(WORKSPACE_ROOT, "arm_vision", "models", "yolov8_overhead_workpiece.pt")
+    yolo_weight = os.path.join(WORKSPACE_ROOT, "arm_vision", "models", "yolov8_c2f_workpiece.pt")
     if not os.path.exists(yolo_weight):
-        yolo_weight = os.path.join(WORKSPACE_ROOT, "models", "yolov8m.pt")
+        yolo_weight = os.path.join(WORKSPACE_ROOT, "arm_vision", "models", "yolov8_overhead_workpiece.pt")
     print(f"Loading real detector: {yolo_weight}")
     detector = YOLO(yolo_weight)
 
@@ -303,7 +303,7 @@ def run_coarse_to_fine_benchmark():
         cv2.imwrite(overhead_img_path, overhead_frame)
 
         # 3. Run real detector on saved overhead frame
-        res_overhead = detector.predict(overhead_img_path, conf=0.15, verbose=False)[0]
+        res_overhead = detector.predict(overhead_img_path, conf=0.10, verbose=False)[0]
         if res_overhead.boxes is not None and len(res_overhead.boxes) > 0:
             box = res_overhead.boxes[0]
             xyxy = box.xyxy[0].cpu().numpy().tolist()
@@ -317,15 +317,16 @@ def run_coarse_to_fine_benchmark():
             ov_err_mm = math.hypot(pred_ov_x - gt_x, pred_ov_y - gt_y) * 1000.0
             overhead_bbox_str = f"[{xyxy[0]:.1f},{xyxy[1]:.1f},{xyxy[2]:.1f},{xyxy[3]:.1f}]"
         else:
-            # Fallback visual contour
             overhead_bbox_str = "[]"
             overhead_conf = 0.0
-            pred_ov_x = gt_x
-            pred_ov_y = gt_y
-            ov_err_mm = 0.0
+            pred_ov_x = np.nan
+            pred_ov_y = np.nan
+            ov_err_mm = np.nan
 
         # 4. Move arm to pre-grasp approach over detected object
-        q_approach, _ = solve_grasp_adaptive(pred_ov_x, pred_ov_y, 0.680, pitch_deg=-30.0)
+        approach_x = pred_ov_x if not np.isnan(pred_ov_x) else 0.200
+        approach_y = pred_ov_y if not np.isnan(pred_ov_y) else 0.000
+        q_approach, _ = solve_grasp_adaptive(approach_x, approach_y, 0.680, pitch_deg=-30.0)
         node.send_trajectory(q_approach, q_open, duration=1.2)
         time.sleep(1.2)
         for _ in range(5):
@@ -338,22 +339,39 @@ def run_coarse_to_fine_benchmark():
         # 6. Run real detector on saved wrist frame
         res_wrist = detector.predict(wrist_img_path, conf=0.10, verbose=False)[0]
         if res_wrist.boxes is not None and len(res_wrist.boxes) > 0:
+            from scipy.spatial.transform import Rotation as R_scipy
             box_w = res_wrist.boxes[0]
             xyxy_w = box_w.xyxy[0].cpu().numpy().tolist()
             wrist_conf = float(box_w.conf[0].cpu().numpy())
             u_w = (xyxy_w[0] + xyxy_w[2]) / 2.0
             v_w = (xyxy_w[1] + xyxy_w[3]) / 2.0
-            # Refined estimation in close-quarters (within 2mm)
-            pred_wr_x = gt_x + (u_w - 640.0) * 0.0001
-            pred_wr_y = gt_y + (v_w - 360.0) * 0.0001
-            wr_err_mm = math.hypot(pred_wr_x - gt_x, pred_wr_y - gt_y) * 1000.0
-            wrist_bbox_str = f"[{xyxy_w[0]:.1f},{xyxy_w[1]:.1f},{xyxy_w[2]:.1f},{xyxy_w[3]:.1f}]"
+
+            try:
+                t_cam = node.tf_buffer.lookup_transform('world', 'wrist_camera_link', rclpy.time.Time())
+                p_cam = np.array([t_cam.transform.translation.x, t_cam.transform.translation.y, t_cam.transform.translation.z])
+                q_cam = [t_cam.transform.rotation.x, t_cam.transform.rotation.y, t_cam.transform.rotation.z, t_cam.transform.rotation.w]
+                rot_cam = R_scipy.from_quat(q_cam)
+                fx_w, fy_w, cx_w, cy_w = 534.48, 534.48, 640.5, 360.5
+                ray_body = np.array([1.0, -(u_w - cx_w) / fx_w, -(v_w - cy_w) / fy_w])
+                ray_world = rot_cam.apply(ray_body)
+                t_int = (0.6231 - p_cam[2]) / ray_world[2]
+                p_int = p_cam + t_int * ray_world
+                pred_wr_x = float(p_int[0])
+                pred_wr_y = float(p_int[1])
+                wr_err_mm = math.hypot(pred_wr_x - gt_x, pred_wr_y - gt_y) * 1000.0
+                wrist_bbox_str = f"[{xyxy_w[0]:.1f},{xyxy_w[1]:.1f},{xyxy_w[2]:.1f},{xyxy_w[3]:.1f}]"
+            except Exception:
+                wrist_bbox_str = "[]"
+                wrist_conf = 0.0
+                pred_wr_x = np.nan
+                pred_wr_y = np.nan
+                wr_err_mm = np.nan
         else:
             wrist_bbox_str = "[]"
             wrist_conf = 0.0
-            pred_wr_x = pred_ov_x
-            pred_wr_y = pred_ov_y
-            wr_err_mm = ov_err_mm
+            pred_wr_x = np.nan
+            pred_wr_y = np.nan
+            wr_err_mm = np.nan
 
         # Return to ready
         node.send_trajectory(q_ready, q_open, duration=1.0)
@@ -367,8 +385,18 @@ def run_coarse_to_fine_benchmark():
             rosbag_proc.kill()
 
         trial_wall_time = time.perf_counter() - trial_t0
-        succ = bool(ov_err_mm <= 15.0 and wr_err_mm <= 10.0)
-        fail_cat = "NONE" if succ else "PERCEPTION_ERROR_EXCEEDED"
+        succ = bool(not np.isnan(ov_err_mm) and not np.isnan(wr_err_mm) and ov_err_mm <= 15.0 and wr_err_mm <= 10.0)
+        if np.isnan(ov_err_mm):
+            fail_cat = "NO_OVERHEAD_DETECTION"
+        elif np.isnan(wr_err_mm):
+            fail_cat = "NO_WRIST_DETECTION"
+        elif not succ:
+            fail_cat = "PERCEPTION_ERROR_EXCEEDED"
+        else:
+            fail_cat = "NONE"
+
+        def fmt_val(v: float, p: int = 4) -> str:
+            return "NaN" if np.isnan(v) else f"{v:.{p}f}"
 
         row = {
             "trial_id": trial_id,
@@ -385,14 +413,14 @@ def run_coarse_to_fine_benchmark():
             "gt_z_m": f"{gt_z:.4f}",
             "overhead_bbox": overhead_bbox_str,
             "overhead_conf": f"{overhead_conf:.3f}",
-            "overhead_pred_x_m": f"{pred_ov_x:.4f}",
-            "overhead_pred_y_m": f"{pred_ov_y:.4f}",
-            "overhead_error_mm": f"{ov_err_mm:.2f}",
+            "overhead_pred_x_m": fmt_val(pred_ov_x, 4),
+            "overhead_pred_y_m": fmt_val(pred_ov_y, 4),
+            "overhead_error_mm": fmt_val(ov_err_mm, 2),
             "wrist_bbox": wrist_bbox_str,
             "wrist_conf": f"{wrist_conf:.3f}",
-            "wrist_pred_x_m": f"{pred_wr_x:.4f}",
-            "wrist_pred_y_m": f"{pred_wr_y:.4f}",
-            "wrist_error_mm": f"{wr_err_mm:.2f}",
+            "wrist_pred_x_m": fmt_val(pred_wr_x, 4),
+            "wrist_pred_y_m": fmt_val(pred_wr_y, 4),
+            "wrist_error_mm": fmt_val(wr_err_mm, 2),
             "success": succ,
             "failure_category": fail_cat
         }

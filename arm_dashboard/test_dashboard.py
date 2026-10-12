@@ -24,12 +24,33 @@ class ARIADashboardTest(unittest.TestCase):
     BASE_URL = "http://localhost:8000"
     WS_URL = "ws://localhost:8000"
 
+    _server_proc = None
+
     @classmethod
     def setUpClass(cls):
-        # Wait up to 5s for the dashboard server to respond
+        # Check if already running
+        try:
+            with urllib.request.urlopen(f"{cls.BASE_URL}/api/state", timeout=1.0) as resp:
+                if resp.status == 200:
+                    return
+        except Exception:
+            pass
+
+        # Start dashboard server in background
+        import sys, subprocess, os
+        app_path = os.path.join(os.path.dirname(__file__), "app.py")
+        env = os.environ.copy()
+        env["ARIA_DASHBOARD_PORT"] = "8000"
+        cls._server_proc = subprocess.Popen(
+            [sys.executable, app_path],
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
         start = time.time()
         ready = False
-        while time.time() - start < 5.0:
+        while time.time() - start < 10.0:
             try:
                 with urllib.request.urlopen(f"{cls.BASE_URL}/api/state", timeout=1.0) as resp:
                     if resp.status == 200:
@@ -37,6 +58,22 @@ class ARIADashboardTest(unittest.TestCase):
                         break
             except Exception:
                 time.sleep(0.5)
+
+        if not ready:
+            if cls._server_proc:
+                cls._server_proc.terminate()
+                cls._server_proc = None
+            raise RuntimeError("Dashboard server failed to start within 10s")
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._server_proc:
+            try:
+                cls._server_proc.terminate()
+                cls._server_proc.wait(timeout=5)
+            except Exception:
+                pass
+            cls._server_proc = None
 
     def test_01_api_state_schema(self):
         """Verify that all 5 core state fields exist in /api/state payload."""

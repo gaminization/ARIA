@@ -172,13 +172,17 @@ class ConveyorRealNode(Node):
     def get_tf_ee(self) -> Tuple[np.ndarray, float]:
         try:
             t = self.tf_buffer.lookup_transform("base_link", "wrist_link", rclpy.time.Time())
-            pos = np.array([
+            pw = np.array([
                 t.transform.translation.x,
                 t.transform.translation.y,
                 t.transform.translation.z
             ])
+            qr = [t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w]
+            from scipy.spatial.transform import Rotation as R_scipy
+            rot = R_scipy.from_quat(qr)
+            p_tcp = pw + rot.apply(p_tcp_wrist[:3])
             t_sec = t.header.stamp.sec + t.header.stamp.nanosec * 1e-9
-            return pos, t_sec
+            return p_tcp, t_sec
         except Exception:
             return np.zeros(3), time.time()
 
@@ -294,23 +298,60 @@ def run_conveyor_sweep_benchmark():
             for _ in range(5):
                 rclpy.spin_once(node, timeout_sec=0.03)
 
-            # 2. Tracking & intercept
-            # Move arm to rendezvous position matching moving workpiece
-            q_rendezvous, _ = solve_grasp_adaptive(0.200, 0.080, 0.625, pitch_deg=-25.0)
+            # 2. Tracking & intercept along belt moving in -Y (world) / -X (base_link)
+            y_start = 0.120
+            y_contact = 0.080
+            y_end = 0.040
 
-            # Measure TF velocity right at contact
+            q_start, _ = solve_grasp_adaptive(0.200, y_start, 0.648, pitch_deg=-25.0)
+            q_contact, _ = solve_grasp_adaptive(0.200, y_contact, 0.648, pitch_deg=-25.0)
+            q_end, _ = solve_grasp_adaptive(0.200, y_end, 0.648, pitch_deg=-25.0)
+
+            # Move arm to initial tracking waypoint
+            node.send_trajectory(q_start, q_open, duration=1.0)
+            time.sleep(1.0)
+
+            # Trajectory matching belt speed along moving workpiece
+            dt_seg = (y_start - y_contact) / speed
+            traj = JointTrajectory()
+            traj.joint_names = ["waist_joint", "shoulder_joint", "elbow_joint", "wrist_pitch_joint", "gripper_joint"]
+
+            pt_start = JointTrajectoryPoint()
+            pt_start.positions = list(q_start) + [float(q_open)]
+            pt_start.time_from_start.nanosec = 0
+            traj.points.append(pt_start)
+
+            pt_mid = JointTrajectoryPoint()
+            pt_mid.positions = list(q_contact) + [float(q_open)]
+            pt_mid.time_from_start.sec = int(dt_seg)
+            pt_mid.time_from_start.nanosec = int((dt_seg - int(dt_seg)) * 1e9)
+            traj.points.append(pt_mid)
+
+            pt_fin = JointTrajectoryPoint()
+            pt_fin.positions = list(q_end) + [float(q_open)]
+            pt_fin.time_from_start.sec = int(2 * dt_seg)
+            pt_fin.time_from_start.nanosec = int((2 * dt_seg - int(2 * dt_seg)) * 1e9)
+            traj.points.append(pt_fin)
+
+            node.pub_traj.publish(traj)
+
+            # Measure velocity around contact point
+            time.sleep(dt_seg * 0.7)
+            for _ in range(3):
+                rclpy.spin_once(node, timeout_sec=0.01)
             tf_p1, tf_t1 = node.get_tf_ee()
-            node.send_trajectory(q_rendezvous, q_open, duration=1.0)
-            time.sleep(0.8)
+            time.sleep(dt_seg * 0.4)
+            for _ in range(3):
+                rclpy.spin_once(node, timeout_sec=0.01)
             tf_p2, tf_t2 = node.get_tf_ee()
 
             dt_tf = max(tf_t2 - tf_t1, 0.001)
             v_tcp_meas = float(np.linalg.norm(tf_p2 - tf_p1) / dt_tf)
             rel_vel = abs(v_tcp_meas - speed)
 
-            # Close gripper to acquire workpiece
-            node.send_trajectory(q_rendezvous, q_close, duration=0.8)
-            time.sleep(0.8)
+            # Acquire workpiece while velocity matched
+            node.send_trajectory(q_contact, q_close, duration=0.6)
+            time.sleep(0.6)
 
             # 3. Lift & transfer to tray
             q_tray, _ = solve_grasp_adaptive(0.100, -0.170, 0.635, pitch_deg=-30.0)
@@ -347,6 +388,17 @@ def run_conveyor_sweep_benchmark():
                 tf_ee_pos=tf_ee
             )
 
+            # Directive 3: If tracking fails (relative velocity exceeds 25 mm/s), do not call it rendezvous
+            TRACKING_VEL_TOLERANCE = 0.025
+            tracking_ok = bool(rel_vel <= TRACKING_VEL_TOLERANCE)
+            succ = bool(eval_res.success and tracking_ok)
+            if not tracking_ok:
+                fail_cat = "TRACKING_RELATIVE_VELOCITY_EXCEEDED"
+                details = f"Achieved relative velocity: {rel_vel*1000:.1f} mm/s (failed rendezvous tracking)"
+            else:
+                fail_cat = eval_res.failure_category
+                details = f"Rendezvous tracking achieved: rel_vel={rel_vel*1000:.1f} mm/s, details={eval_res.details}"
+
             # Retreat
             node.send_trajectory(q_ready, q_open, duration=1.0)
             time.sleep(1.0)
@@ -377,13 +429,13 @@ def run_conveyor_sweep_benchmark():
                 "release_obj_x_m": f"{obj_pos[0]:.4f}",
                 "release_obj_y_m": f"{obj_pos[1]:.4f}",
                 "release_obj_z_m": f"{obj_pos[2]:.4f}",
-                "success": eval_res.success,
-                "failure_category": eval_res.failure_category,
-                "details": eval_res.details
+                "success": succ,
+                "failure_category": fail_cat,
+                "details": details
             }
             results.append(row)
-            sym = "PASS" if eval_res.success else "FAIL"
-            print(f"  [{trial_id}] Speed {speed:.2f} m/s | Δv: {rel_vel*1000:.1f} mm/s | Obj Pos: ({obj_pos[0]:.2f}, {obj_pos[1]:.2f}) | {sym} ({eval_res.failure_category})")
+            sym = "PASS" if succ else "FAIL"
+            print(f"  [{trial_id}] Speed {speed:.2f} m/s | Δv: {rel_vel*1000:.1f} mm/s | Obj Pos: ({obj_pos[0]:.2f}, {obj_pos[1]:.2f}) | {sym} ({fail_cat})")
 
     # Stop conveyor
     node.set_conveyor_speed(0.0)

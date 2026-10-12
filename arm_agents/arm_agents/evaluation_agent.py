@@ -37,6 +37,8 @@ class EvaluationAgent(LifecycleNode):
             'inference_time_ms': deque(maxlen=100),
             'recovery_success': deque(maxlen=50),
             'ik_error_mm': deque(maxlen=100),
+            'localization_error_mm': deque(maxlen=100),
+            'localisation_error_mm': deque(maxlen=100),  # UK spelling alias
         }
         self.total_tasks = 0
         self.completed_tasks = 0

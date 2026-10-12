@@ -21,7 +21,7 @@ random.*, rng.* or time.sleep in code that assigns an outcome column.
 import os
 import sys
 import ast
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 
 WORKSPACE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SCRIPTS_DIR = os.path.join(WORKSPACE_ROOT, "scripts")
@@ -33,6 +33,10 @@ OUTCOME_KEYWORDS = {
     "f_left", "f_right", "lift_success", "capture_success", "rebound",
     "uncomp_offset_mm", "comp_offset_mm", "pos_err_mm", "rot_err_rad"
 }
+
+PRED_KEYWORDS = {"pred", "estimate", "prediction"}
+GT_KEYWORDS = {"gt", "ground_truth", "gt_x", "gt_y", "gt_z", "true_x", "true_y", "true_z"}
+ERROR_KEYWORDS = {"err", "error", "diff", "residual", "loss"}
 
 RANDOM_METHODS = {
     "random", "randint", "uniform", "normal", "choice", "choices",
@@ -49,6 +53,26 @@ class SyntheticOutcomeVisitor(ast.NodeVisitor):
     def is_outcome_name(self, name: str) -> bool:
         lower = name.lower()
         return any(k in lower for k in OUTCOME_KEYWORDS)
+
+    def is_pred_name(self, name: str) -> bool:
+        lower = name.lower()
+        has_pred = any(k in lower for k in PRED_KEYWORDS)
+        has_err = any(k in lower for k in ERROR_KEYWORDS)
+        return has_pred and not has_err
+
+    def is_gt_name(self, name: str) -> bool:
+        lower = name.lower()
+        return any(k in lower for k in GT_KEYWORDS)
+
+    def contains_gt_reference(self, node: ast.AST) -> Optional[str]:
+        for child in ast.walk(node):
+            if isinstance(child, ast.Name) and self.is_gt_name(child.id):
+                return child.id
+        return None
+
+    def is_detection_test(self, test_node: ast.AST) -> bool:
+        test_str = ast.unparse(test_node).lower()
+        return any(k in test_str for k in ["boxes", "detector", "detect", "conf", "bbox"])
 
     def is_random_call(self, node: ast.AST) -> bool:
         """Detects calls to np.random.*, random.*, rng.*"""
@@ -103,6 +127,23 @@ class SyntheticOutcomeVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         self.current_function = prev_fn
 
+    def visit_If(self, node: ast.If):
+        # Visit the test and body normally
+        self.visit(node.test)
+        for stmt in node.body:
+            self.visit(stmt)
+
+        # If the if condition was testing for detection presence, inspect orelse for illicit fallbacks
+        if self.is_detection_test(node.test) and node.orelse:
+            prev_fallback = getattr(self, "in_detection_fallback", False)
+            self.in_detection_fallback = True
+            for stmt in node.orelse:
+                self.visit(stmt)
+            self.in_detection_fallback = prev_fallback
+        else:
+            for stmt in node.orelse:
+                self.visit(stmt)
+
     def visit_Assign(self, node: ast.Assign):
         # Extract target variable names
         assigned_names = []
@@ -113,7 +154,51 @@ class SyntheticOutcomeVisitor(ast.NodeVisitor):
                 if isinstance(target.slice.value, str):
                     assigned_names.append(target.slice.value)
 
-        # Check if right-hand side contains random calls or time.sleep in outcome assignments
+        # Rule 1: Prediction variable assigned from ground-truth source
+        for name in assigned_names:
+            if self.is_pred_name(name):
+                gt_ref = self.contains_gt_reference(node.value)
+                if gt_ref:
+                    self.violations.append((
+                        node.lineno,
+                        f"Prediction variable '{name}' assigned from ground-truth source '{gt_ref}': {ast.unparse(node.value)}"
+                    ))
+                    break
+
+        # Rule 2: Illicit fallback on failed detection (assigning error=0 or non-NaN pred)
+        if getattr(self, "in_detection_fallback", False):
+            for name in assigned_names:
+                lower = name.lower()
+                # If error is assigned to 0 or 0.0 in detection fallback
+                if any(k in lower for k in ERROR_KEYWORDS):
+                    if isinstance(node.value, ast.Constant) and node.value.value in (0, 0.0):
+                        self.violations.append((
+                            node.lineno,
+                            f"Detection failure fallback sets error to zero instead of NaN: {ast.unparse(node.value)}"
+                        ))
+                # If prediction is assigned in detection fallback to something other than nan/none
+                if self.is_pred_name(name):
+                    val_str = ast.unparse(node.value).lower()
+                    if "nan" not in val_str and "none" not in val_str:
+                        self.violations.append((
+                            node.lineno,
+                            f"Detection failure fallback assigns synthetic non-NaN prediction '{name}': {ast.unparse(node.value)}"
+                        ))
+
+        # Rule 3: Success flag ignoring failed detection (in perception/vision scripts)
+        if getattr(self, "has_detector_in_file", False):
+            for name in assigned_names:
+                if name.lower() in {"success", "succ"}:
+                    val_str = ast.unparse(node.value).lower()
+                    if "err" in val_str and ("<=" in val_str or "<" in val_str):
+                        has_det_check = any(k in val_str for k in ["detect", "box", "conf", "isnan", "is not none", "valid"])
+                        if not has_det_check:
+                            self.violations.append((
+                                node.lineno,
+                                f"Success flag ignores detection status (evaluates error without requiring positive detection or checking NaN): {ast.unparse(node.value)}"
+                            ))
+
+        # Rule 4: Check if right-hand side contains random calls or time.sleep in outcome assignments
         for child in ast.walk(node.value):
             if self.is_random_call(child):
                 # If outside sample_initial_conditions and assigns an outcome variable
@@ -141,6 +226,16 @@ class SyntheticOutcomeVisitor(ast.NodeVisitor):
         for k, v in zip(node.keys, node.values):
             if k is not None and isinstance(k, ast.Constant) and isinstance(k.value, str):
                 key_name = k.value
+
+                # Rule 1 in Dict: prediction column assigned from ground truth
+                if self.is_pred_name(key_name):
+                    gt_ref = self.contains_gt_reference(v)
+                    if gt_ref:
+                        self.violations.append((
+                            node.lineno,
+                            f"CSV prediction column '{key_name}' assigned from ground-truth source '{gt_ref}': {ast.unparse(v)}"
+                        ))
+
                 if self.is_outcome_name(key_name):
                     for child in ast.walk(v):
                         if self.is_random_call(child):
@@ -171,6 +266,10 @@ def checks_script(filepath: str) -> List[Tuple[int, str]]:
         return [(e.lineno or 0, f"SyntaxError parsing file: {e}")]
 
     visitor = SyntheticOutcomeVisitor(filepath)
+    c_lower = content.lower()
+    visitor.has_detector_in_file = bool(
+        "detector" in c_lower or "boxes" in c_lower or "yolo" in c_lower or "predict" in c_lower
+    )
     visitor.visit(tree)
     return visitor.violations
 

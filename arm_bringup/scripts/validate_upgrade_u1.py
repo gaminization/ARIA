@@ -203,8 +203,18 @@ async def test_complex_plan() -> bool:
         'Respond with ONLY valid JSON matching the planning schema.'
     )
 
+    # Load prompt template
+    prompt_path = os.path.join(
+        ARIA_DIR, 'arm_planner', 'prompts',
+        'system_prompt_planner.txt')
+    system_prompt = ""
+    if os.path.exists(prompt_path):
+        with open(prompt_path, 'r') as f:
+            system_prompt = f.read()
+
     response, success = await client.generate(
         prompt=prompt,
+        system_prompt=system_prompt,
         response_format="json",
         temperature=0.1,
         timeout_s=90.0,
@@ -292,8 +302,18 @@ async def test_ambiguity_detection() -> bool:
         'Respond with ONLY valid JSON matching the planning schema.'
     )
 
+    # Load prompt template
+    prompt_path = os.path.join(
+        ARIA_DIR, 'arm_planner', 'prompts',
+        'system_prompt_planner.txt')
+    system_prompt = ""
+    if os.path.exists(prompt_path):
+        with open(prompt_path, 'r') as f:
+            system_prompt = f.read()
+
     response, success = await client.generate(
         prompt=prompt,
+        system_prompt=system_prompt,
         response_format="json",
         temperature=0.1,
         timeout_s=60.0,

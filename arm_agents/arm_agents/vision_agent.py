@@ -6,6 +6,7 @@ Manages cameras. Triggers active perception when needed.
 Publishes VisionState to state bus.
 ═══════════════════════════════════════════════════════════════
 """
+import os
 import time
 import numpy as np
 import rclpy
@@ -51,7 +52,18 @@ class VisionAgent(LifecycleNode):
         self._wrist_frame_count = 0
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info("VisionAgent: CONFIGURING")
+        self.get_logger().info("VisionAgent: CONFIGURING (Loading perception model...)")
+        # Load vision model during configure lifecycle phase
+        try:
+            from ultralytics import YOLO
+            model_path = "/home/gaminizer/Projects/ARIA/arm_vision/models/yolov8_overhead_workpiece.pt"
+            if not os.path.exists(model_path):
+                model_path = "yolov8n.pt"
+            self.detector_model = YOLO(model_path)
+            self.get_logger().info(f"VisionAgent: Model loaded from {model_path}")
+        except Exception as e:
+            self.get_logger().warn(f"VisionAgent: Model load error (fallback): {e}")
+
         qos = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT,
                          durability=DurabilityPolicy.VOLATILE, depth=5)
         self.det_sub = self.create_subscription(

@@ -151,6 +151,21 @@ class OllamaClient:
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
             return []
 
+    async def get_running_models(self) -> List[str]:
+        """List models currently loaded in memory via Ollama /api/ps."""
+        try:
+            session = await self._get_session()
+            async with session.get(
+                f"{self.base_url}/api/ps",
+                timeout=aiohttp.ClientTimeout(total=5.0),
+            ) as resp:
+                if resp.status != 200:
+                    return []
+                data = await resp.json()
+                return [m.get('name', '') for m in data.get('models', [])]
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
+            return []
+
     # ── VRAM Management ────────────────────────────────────
     async def get_vram_usage(self) -> Dict[str, float]:
         """
@@ -192,6 +207,11 @@ class OllamaClient:
         Check if there is enough VRAM headroom to load a model.
         Returns True if safe to proceed.
         """
+        # If model is already loaded in Ollama, no extra VRAM is needed
+        running = await self.get_running_models()
+        if any(model_name in r or r in model_name for r in running):
+            return True
+
         model_info = SUPPORTED_MODELS.get(model_name)
         if not model_info:
             logger.warning(f"Unknown model '{model_name}', skipping VRAM check")
@@ -233,6 +253,13 @@ class OllamaClient:
         async with self._load_lock:
             if self._loaded_model == model_name:
                 logger.info(f"Model '{model_name}' already loaded")
+                return True
+
+            # If model is already active in Ollama, record it and succeed
+            running = await self.get_running_models()
+            if any(model_name in r or r in model_name for r in running):
+                self._loaded_model = model_name
+                logger.info(f"Model '{model_name}' already active in Ollama VRAM")
                 return True
 
             # Check VRAM

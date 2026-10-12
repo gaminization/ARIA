@@ -47,6 +47,8 @@ os.makedirs(DATA_REAL_DIR, exist_ok=True)
 os.makedirs(ROSBAGS_DIR, exist_ok=True)
 os.makedirs(TELEMETRY_DIR, exist_ok=True)
 
+sys.path.insert(0, os.path.join(WORKSPACE_ROOT, "arm_agents"))
+
 def get_git_commit() -> str:
     try:
         out = subprocess.check_output(
@@ -75,6 +77,7 @@ class SafetyBenchmarkNode(Node):
         super().__init__("safety_benchmark_node")
         self.joint_positions: Dict[str, float] = {}
         self.joint_velocities: Dict[str, float] = {}
+        self.prev_time: float = 0.0
         self.model_poses: Dict[str, Any] = {}
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -88,9 +91,18 @@ class SafetyBenchmarkNode(Node):
         self.cli_release_estop = self.create_client(Trigger, "/aria/release_estop")
 
     def _joint_cb(self, msg: JointState):
-        for name, pos, vel in zip(msg.name, msg.position, msg.velocity):
-            self.joint_positions[name] = pos
-            self.joint_velocities[name] = vel
+        t_now = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+        if self.prev_time > 0 and t_now > self.prev_time:
+            dt = t_now - self.prev_time
+            for name, pos in zip(msg.name, msg.position):
+                if name in self.joint_positions:
+                    self.joint_velocities[name] = (pos - self.joint_positions[name]) / dt
+                self.joint_positions[name] = pos
+            self.prev_time = t_now
+        else:
+            for name, pos in zip(msg.name, msg.position):
+                self.joint_positions[name] = pos
+            self.prev_time = t_now
 
     def _model_cb(self, msg: ModelStates):
         for name, pose in zip(msg.name, msg.pose):
@@ -215,39 +227,56 @@ def run_safety_benchmark():
         trial_t0 = time.perf_counter()
         t_iso_ns = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f") + f"{int(time.time_ns() % 1000):03d}Z"
 
-        # Spawn a real worker process
+        # Spawn real VisionAgent worker process with model loaded in memory
+        worker_code = f"""
+import sys, os, time, rclpy
+sys.path.insert(0, '{os.path.join(WORKSPACE_ROOT, "arm_agents")}')
+from arm_agents.vision_agent import VisionAgent
+rclpy.init()
+node = VisionAgent('vision_agent_worker')
+node.trigger_configure()
+node.trigger_activate()
+sys.stdout.write('ONLINE_WITH_MODEL_LOADED\\n')
+sys.stdout.flush()
+try:
+    rclpy.spin(node)
+except Exception:
+    pass
+"""
         t_spawn_start = time.perf_counter()
         worker_proc = subprocess.Popen(
-            [sys.executable, "-c", "import time, sys; sys.stdout.write('ONLINE\\n'); sys.stdout.flush(); time.sleep(60)"],
+            [sys.executable, "-c", worker_code],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
         )
-        # Read spawn handshake
+        # Read spawn handshake confirming model is loaded
         _ = worker_proc.stdout.readline()
         t_spawn_end = time.perf_counter()
         spawn_ms = (t_spawn_end - t_spawn_start) * 1000.0
 
-        # Execute SIGKILL
+        # Execute SIGKILL on the live VisionAgent process
         pid_killed = worker_proc.pid
         os.kill(pid_killed, signal.SIGKILL)
         worker_proc.wait()
 
-        # Measure lifecycle recovery: discovery, configure, activate
-        t_disc_start = time.perf_counter()
-        # Mock discovery via ROS topic verification
-        rclpy.spin_once(node, timeout_sec=0.02)
-        disc_ms = (time.perf_counter() - t_disc_start) * 1000.0
+        # Measure lifecycle recovery: re-instantiate, configure (model load), activate
+        t_reinit_start = time.perf_counter()
+        from arm_agents.vision_agent import VisionAgent
+        re_node = VisionAgent(f"vision_agent_recovered_{seed}")
 
         t_conf_start = time.perf_counter()
-        # Configure step
-        rclpy.spin_once(node, timeout_sec=0.02)
-        conf_ms = (time.perf_counter() - t_conf_start) * 1000.0
+        re_node.trigger_configure()
+        t_conf_end = time.perf_counter()
+        conf_ms = (t_conf_end - t_conf_start) * 1000.0
 
         t_act_start = time.perf_counter()
-        # Activate step
-        rclpy.spin_once(node, timeout_sec=0.01)
-        act_ms = (time.perf_counter() - t_act_start) * 1000.0
+        re_node.trigger_activate()
+        t_act_end = time.perf_counter()
+        act_ms = (t_act_end - t_act_start) * 1000.0
 
+        t_total_end = time.perf_counter()
+        disc_ms = max(0.2, (t_total_end - t_reinit_start) * 1000.0 - (conf_ms + act_ms))
         total_rec_ms = spawn_ms + disc_ms + conf_ms + act_ms
+        re_node.destroy_node()
 
         telemetry.stop()
         rosbag_proc.terminate()
@@ -276,9 +305,10 @@ def run_safety_benchmark():
             "estop_call_latency_ms": "0.00",
             "physical_arrest_ms": "0.00",
             "safety_held": True,
-            "success": bool(total_rec_ms < 500.0)
+            "success": bool(total_rec_ms < 3000.0)
         }
         results.append(row_kill)
+        print(f"  [{trial_id_kill}] PID={pid_killed} | Spawn: {spawn_ms:.1f} ms | Conf(Model): {conf_ms:.1f} ms | Act: {act_ms:.1f} ms | Total: {total_rec_ms:.1f} ms")
 
         # ── Test 2: Real E-STOP Through Controller ──
         trial_id_estop = f"SAFETY_ESTOP_{seed}"
@@ -295,25 +325,30 @@ def run_safety_benchmark():
         trial_t0 = time.perf_counter()
         t_iso_ns = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f") + f"{int(time.time_ns() % 1000):03d}Z"
 
-        # Start motion
+        # Start dynamic motion
         node.release_estop()
         node.send_trajectory(q_target, 0.55, duration=2.0)
         time.sleep(0.3)
         for _ in range(5):
             rclpy.spin_once(node, timeout_sec=0.02)
 
-        # Trigger E-STOP
+        # Trigger E-STOP through real controller
         estop_ok, estop_lat_ms = node.trigger_estop()
 
-        # Measure physical arrest time until velocity drops near zero
+        # Measure physical arrest time until maximum joint velocity < 0.01 rad/s
         t_arrest_start = time.perf_counter()
         arrested = False
-        while time.perf_counter() - t_arrest_start < 0.20:
-            rclpy.spin_once(node, timeout_sec=0.01)
-            v_max = max(abs(v) for v in node.joint_velocities.values()) if node.joint_velocities else 0.0
-            if v_max < 0.05:
-                arrested = True
-                break
+        v_final = 1.0
+        while time.perf_counter() - t_arrest_start < 0.50:
+            rclpy.spin_once(node, timeout_sec=0.005)
+            arm_vels = [abs(v) for k, v in node.joint_velocities.items() if k in ['waist_joint', 'shoulder_joint', 'elbow_joint', 'wrist_pitch_joint', 'gripper_joint']]
+            if arm_vels:
+                v_max = max(arm_vels)
+                v_final = v_max
+                if v_max < 0.01:
+                    arrested = True
+                    break
+            time.sleep(0.01)
         arrest_ms = (time.perf_counter() - t_arrest_start) * 1000.0
 
         node.release_estop()
@@ -327,7 +362,9 @@ def run_safety_benchmark():
             rosbag_proc.kill()
 
         trial_wall_time = time.perf_counter() - trial_t0
-        succ = bool(estop_ok and estop_lat_ms < 10.0)
+        # Physical arrest must achieve joint velocity < 0.01 rad/s within stated threshold of 250.0 ms
+        PHYSICAL_ARREST_THRESHOLD_MS = 250.0
+        succ = bool(estop_ok and arrested and (arrest_ms <= PHYSICAL_ARREST_THRESHOLD_MS))
 
         row_estop = {
             "trial_id": trial_id_estop,

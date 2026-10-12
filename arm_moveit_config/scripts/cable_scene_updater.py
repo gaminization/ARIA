@@ -18,7 +18,14 @@ from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 from shape_msgs.msg import SolidPrimitive
-from moveit_msgs.msg import CollisionObject, PlanningScene
+try:
+    from moveit_msgs.msg import CollisionObject, PlanningScene
+except ImportError:
+    class CollisionObject:
+        ADD = 0
+        REMOVE = 1
+    class PlanningScene:
+        pass
 from std_msgs.msg import Header
 
 

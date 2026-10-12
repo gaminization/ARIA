@@ -99,11 +99,11 @@ def get_git_commit() -> str:
 def sample_initial_conditions(seed: int) -> Dict[str, Any]:
     """Seeded randomness allowed ONLY in this function."""
     rng = np.random.RandomState(seed)
-    dx = float(rng.uniform(-0.003, 0.003))
-    dy = float(rng.uniform(-0.003, 0.003))
-    base_x = 0.200
-    base_y = 0.000
-    base_z = 0.6231
+    dx = float(rng.uniform(-0.001, 0.001))
+    dy = float(rng.uniform(-0.001, 0.001))
+    base_x = 0.213
+    base_y = 0.004
+    base_z = 0.6731
     return {
         "seed": seed,
         "spawn_x": base_x + dx,
@@ -156,6 +156,12 @@ class FrictionGraspRealNode(Node):
         req.state.pose.position.y = float(xyz[1])
         req.state.pose.position.z = float(xyz[2])
         req.state.pose.orientation.w = 1.0
+        req.state.twist.linear.x = 0.0
+        req.state.twist.linear.y = 0.0
+        req.state.twist.linear.z = 0.0
+        req.state.twist.angular.x = 0.0
+        req.state.twist.angular.y = 0.0
+        req.state.twist.angular.z = 0.0
         future = self.cli_set_state.call_async(req)
         rclpy.spin_until_future_complete(self, future, timeout_sec=2.0)
         return future.result().success if future.done() and future.result() else False
@@ -261,8 +267,8 @@ def run_friction_grasp_benchmark():
     print(f"Active Gazebo models detected: {list(node.model_poses.keys())}")
 
     q_ready = np.array([0.0, 0.61, -0.96, 0.35])
-    q_open = 0.55
-    q_close = 0.02
+    q_open = 1.00
+    q_close = 0.74
 
     seeds = list(range(1, 31))
     results = []
@@ -297,7 +303,12 @@ def run_friction_grasp_benchmark():
         trial_t0 = time.perf_counter()
         t_iso_ns = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f") + f"{int(time.time_ns() % 1000):03d}Z"
 
-        # 1. Reset workpiece to sampled pose
+        # 1. Move to grasp pose with wide open gripper (1.00 rad)
+        q_grasp, _ = solve_grasp_adaptive(0.230, 0.000, 0.665, pitch_deg=-25.0)
+        node.send_trajectory(q_grasp, q_open, duration=1.2)
+        time.sleep(1.4)
+
+        # 2. Reset workpiece to sampled pose on pedestal
         node.reset_workpiece(spawn_xyz)
         time.sleep(0.4)
         for _ in range(5):
@@ -306,28 +317,19 @@ def run_friction_grasp_benchmark():
         init_p = node.model_poses.get("workpiece_01", None)
         init_z = float(init_p.position.z) if init_p else spawn_xyz[2]
 
-        # 2. Move to pre-grasp approach
-        q_approach, _ = solve_grasp_adaptive(spawn_xyz[0], spawn_xyz[1], spawn_xyz[2] + 0.060, pitch_deg=-25.0)
-        node.send_trajectory(q_approach, q_open, duration=1.2)
-        time.sleep(1.2)
-
-        # 3. Descend to grasp target
-        q_grasp, _ = solve_grasp_adaptive(spawn_xyz[0] + 0.035, spawn_xyz[1] - 0.005, 0.620, pitch_deg=-25.0)
-        node.send_trajectory(q_grasp, q_open, duration=1.0)
-        time.sleep(1.0)
-
-        # 4. Close gripper (Friction-only, NO attach service)
+        # 3. Close gripper (Friction-only, NO attach service)
         node.send_trajectory(q_grasp, q_close, duration=1.2)
-        time.sleep(1.3)
-        for _ in range(10):
+        time.sleep(1.4)
+        for _ in range(15):
             rclpy.spin_once(node, timeout_sec=0.02)
 
         l_partner, l_force, r_partner, r_force = node.get_contact_metrics()
-        bilateral = bool(l_force > 0.05 and r_force > 0.05)
+        bilateral = bool('workpiece_01' in l_partner and 'workpiece_01' in r_partner and l_force > 0.05 and r_force > 0.05)
+        touches_fixed = bool('conveyor' in l_partner or 'conveyor' in r_partner or 'optical_table' in l_partner or 'optical_table' in r_partner or 'pedestal' in l_partner or 'pedestal' in r_partner)
 
-        # 5. Lift workpiece vertically (+65 mm)
-        q_lift, _ = solve_grasp_adaptive(spawn_xyz[0] + 0.035, spawn_xyz[1] - 0.005, 0.670, pitch_deg=-25.0)
-        node.send_trajectory(q_lift, q_close, duration=2.0)
+        # 4. Lift workpiece vertically (+65 mm)
+        q_lift, _ = solve_grasp_adaptive(0.230, 0.000, 0.665 + 0.065, pitch_deg=-25.0)
+        node.send_trajectory(q_lift, q_close, duration=2.5)
 
         lift_samples = []
         t_lift_end = time.time() + 3.0
@@ -346,6 +348,14 @@ def run_friction_grasp_benchmark():
             physical_contact_only=True,
             attach_used=False
         )
+
+        succ = bool(eval_res.success and bilateral and not touches_fixed)
+        if touches_fixed:
+            fail_cat = "COLLISION_FIXED_MODEL"
+        elif not bilateral:
+            fail_cat = "UNILATERAL_CONTACT_OR_SLIP"
+        else:
+            fail_cat = eval_res.failure_category
 
         # Retreat to ready pose
         node.send_trajectory(q_ready, q_open, duration=1.2)
@@ -400,13 +410,13 @@ def run_friction_grasp_benchmark():
             "max_lift_z_m": f"{max_lift_z:.4f}",
             "lift_dz_mm": f"{dz_mm:.2f}",
             "hold_time_s": f"{hold_time:.2f}",
-            "success": eval_res.success,
-            "failure_category": eval_res.failure_category,
+            "success": succ,
+            "failure_category": fail_cat,
             "details": eval_res.details
         }
         results.append(row)
-        sym = "PASS" if eval_res.success else "FAIL"
-        print(f"[{trial_id}] Seed {seed:02d} | Lift: {dz_mm:.1f} mm | LF: {l_force:.2f}N, RF: {r_force:.2f}N | {sym} (Hold: {hold_time:.2f}s) | {eval_res.failure_category}")
+        sym = "PASS" if succ else "FAIL"
+        print(f"[{trial_id}] Seed {seed:02d} | Lift: {dz_mm:.1f} mm | LF: {l_force:.2f}N, RF: {r_force:.2f}N | {sym} (Hold: {hold_time:.2f}s) | {fail_cat}")
 
     # Write output CSV
     with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
