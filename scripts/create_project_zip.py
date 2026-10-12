@@ -43,6 +43,7 @@ EXCLUDE_REL_PREFIXES = [
     'third_party/repos',
     'docs/literature/external_papers',
     'arm_dashboard/frontend/node_modules',
+    'data/real/rosbags',
 ]
 
 EXCLUDE_FILES = {
@@ -109,17 +110,18 @@ def build_zip():
     print(f"  Compressed size:   {compressed_size / (1024*1024):.2f} MB")
     print(f"  Time taken:        {elapsed:.2f} s")
     
-    # Also update/create link or copy at workspace root
-    if os.path.exists(ROOT_LINK_ZIP):
+    # Also update/create link or copy at workspace root and for Claude export
+    for target in [ROOT_LINK_ZIP, os.path.join(DIST_DIR, "aria_project_for_claude.zip")]:
+        if os.path.exists(target):
+            try:
+                os.remove(target)
+            except OSError:
+                pass
         try:
-            os.remove(ROOT_LINK_ZIP)
+            os.link(OUTPUT_ZIP, target)
+            print(f"  Hardlink created:  {target}")
         except OSError:
             pass
-    try:
-        os.link(OUTPUT_ZIP, ROOT_LINK_ZIP)
-        print(f"  Hardlink created:  {ROOT_LINK_ZIP}")
-    except OSError:
-        pass
 
 if __name__ == "__main__":
     build_zip()
