@@ -468,6 +468,10 @@ def main():
             and conveyor_motion_m >= 0.01
             and reasoning_available
         )
+        # Debug: print verification component breakdown when failing
+        if not verified:
+            print("    VERIFICATION DEBUG: Maneuver 7 failed checks:")
+            print(f"      task_complete={task_complete}, evidence.passed={getattr(evidence, 'passed', None)}, in_bin={in_bin}, conveyor_motion_m={conveyor_motion_m:.4f}, reasoning_available={reasoning_available}")
         node.spin_for(1.5)
 
         hud_7 = node.create_hud_composite(
