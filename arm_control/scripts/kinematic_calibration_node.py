@@ -39,16 +39,16 @@ class KinematicCalibrationNode(Node):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint"
+        "wrist_pitch_joint"
     ]
 
     # Calibration poses: diverse configurations for good observability
     CALIBRATION_POSES_RAD = [
-        [0.0, 1.5708, 1.3090, 0.0, 0.0],       # home
-        [0.5, 0.8, 2.0, -0.3, 0.0],             # left-extended
-        [-0.5, 0.8, 2.0, 0.3, 0.0],             # right-extended
-        [0.0, 1.2, 0.8, 0.0, 0.5],              # upright-rolled
-        [0.3, 1.8, 0.5, -0.5, -0.3],            # tucked-tilted
+        [0.0, 0.0, 0.0, 0.0],       # home
+        [0.5, 0.4, -0.5, -0.3],     # left-extended
+        [-0.5, 0.4, -0.5, 0.3],     # right-extended
+        [0.0, 0.5, -0.8, 0.0],      # upright
+        [0.3, 0.6, -0.5, -0.5],     # tucked-tilted
     ]
 
     def __init__(self):
@@ -56,9 +56,9 @@ class KinematicCalibrationNode(Node):
         self.get_logger().info("═══ ARIA Kinematic Calibration Node ═══")
 
         # State
-        self.current_joints = np.zeros(5)
+        self.current_joints = np.zeros(len(self.JOINT_NAMES))
         self.task_count = 0
-        self.calibration_offsets = np.zeros(5)
+        self.calibration_offsets = np.zeros(len(self.JOINT_NAMES))
         self.link_length_corrections = np.zeros(3)  # upper, fore, wrist
 
         # Config path
@@ -115,7 +115,17 @@ class KinematicCalibrationNode(Node):
                 with open(self.offsets_path, 'r') as f:
                     data = yaml.safe_load(f)
                 if data and 'joint_offsets' in data:
-                    self.calibration_offsets = np.array(data['joint_offsets'])
+                    offsets = np.asarray(data['joint_offsets'], dtype=float)
+                    if offsets.shape == (len(self.JOINT_NAMES) + 1,):
+                        self.get_logger().warning(
+                            "Dropping legacy wrist-roll calibration offset; "
+                            "the arm has four kinematic joints")
+                        offsets = offsets[:len(self.JOINT_NAMES)]
+                    if offsets.shape != (len(self.JOINT_NAMES),):
+                        raise ValueError(
+                            "Calibration offsets must contain exactly four "
+                            "arm joint values")
+                    self.calibration_offsets = offsets
                 if data and 'link_corrections' in data:
                     self.link_length_corrections = np.array(
                         data['link_corrections']

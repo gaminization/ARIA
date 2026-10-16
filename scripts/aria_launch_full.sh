@@ -1,83 +1,295 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-# ARIA Full System Launcher — Industrial Workcell + Dashboard
-# Uses tmux for persistent sessions. Run once.
+# ARIA Full System Launcher — Autonomous Multi-Agent Stack + Dashboard
 # ═══════════════════════════════════════════════════════════════
-
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+ARIA_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$ARIA_ROOT"
 
 ROS_SETUP="/opt/ros/humble/setup.bash"
-ARIA_SETUP="$SCRIPT_DIR/install/setup.bash"
+ARIA_SETUP="$ARIA_ROOT/install/setup.bash"
+FASTDDS_PROFILE="$ARIA_ROOT/arm_bringup/config/fastdds_udp.xml"
+export FASTRTPS_DEFAULT_PROFILES_FILE="$FASTDDS_PROFILE"
 
-echo "╔═══════════════════════════════════════════════════════╗"
-echo "║   ARIA Industrial Workcell Full System Launcher       ║"
-echo "╚═══════════════════════════════════════════════════════╝"
+# Default configuration
+WORLD_NAME="aria_tester_workspace.world"
+ENABLE_GUI="false"
+LAUNCH_DASHBOARD=true
+DASHBOARD_PORT=8000
+USE_TMUX=true
 
-WORLD_ARG="${1:-aria_tester_workspace.world}"
+print_usage() {
+    cat << 'EOF'
+Usage: ./scripts/aria_launch_full.sh [OPTIONS]
 
-# Kill existing tmux sessions & lingering processes
-tmux kill-session -t aria_sim 2>/dev/null || true
-tmux kill-session -t aria_dash 2>/dev/null || true
-pkill -9 -f gzserver 2>/dev/null || true
-pkill -9 -f gzclient 2>/dev/null || true
-pkill -9 -f "arm_dashboard/app.py" 2>/dev/null || true
-pkill -9 -f "arm_agents" 2>/dev/null || true
-pkill -9 -f "arm_vision" 2>/dev/null || true
-pkill -9 -f "arm_control" 2>/dev/null || true
-rm -f /dev/shm/fastrtps* /dev/shm/sem.fastrtps*
-sleep 1
+Options:
+  -g, --gui              Launch Gazebo Classic 3D GUI (default: headless simulation)
+  -w, --world <NAME>     World selection: 'tester' (default), 'industrial', 'workspace',
+                         or filename (e.g. 'aria_tester_workspace.world')
+  -p, --port <PORT>      Dashboard web port (default: 8000)
+  --no-dashboard         Launch simulation & multi-agent stack without dashboard
+  --no-tmux              Launch directly in foreground/subshell (without tmux)
+  --status               Show health and status of active ARIA nodes and services
+  --stop                 Cleanly stop all running ARIA, Gazebo, and dashboard processes
+  -h, --help             Show this help message
 
-# ── Session 1: Simulation + All ROS2 nodes ──────────────
-tmux start-server
-sleep 0.5
-tmux new-session -d -s aria_sim -x 220 -y 50
-tmux send-keys -t aria_sim "source $ROS_SETUP && source $ARIA_SETUP" Enter
-tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=$WORLD_ARG 2>&1 | tee /tmp/aria_launch.log" Enter
+Examples:
+  ./scripts/aria_launch_full.sh                    # Headless sim + 15 agents + dashboard
+  ./scripts/aria_launch_full.sh --gui              # Launch with Gazebo 3D GUI window
+  ./scripts/aria_launch_full.sh -w industrial -g  # Industrial workcell with GUI
+  ./scripts/aria_launch_full.sh --status           # Check running nodes & topics
+  ./scripts/aria_launch_full.sh --stop             # Shut down all processes
+EOF
+}
 
-echo "✅ Simulation session started (aria_sim)"
-sleep 3
+stop_all() {
+    echo "Stopping Project ARIA processes..."
+    if command -v tmux >/dev/null 2>&1; then
+        tmux kill-session -t aria_sim 2>/dev/null || true
+        tmux kill-session -t aria_dash 2>/dev/null || true
+    fi
+    pkill -9 -f "gzserver" 2>/dev/null || true
+    pkill -9 -f "gzclient" 2>/dev/null || true
+    pkill -9 -f "aria_full_u3.launch.py" 2>/dev/null || true
+    pkill -9 -f "arm_dashboard/app.py" 2>/dev/null || true
+    pkill -9 -f "arm_agents" 2>/dev/null || true
+    pkill -9 -f "arm_vision" 2>/dev/null || true
+    pkill -9 -f "arm_control" 2>/dev/null || true
+    pkill -9 -f "arm_ik" 2>/dev/null || true
+    pkill -9 -f "arm_planner" 2>/dev/null || true
+    pkill -9 -f "arm_learning" 2>/dev/null || true
+    rm -f /dev/shm/fastrtps* /dev/shm/sem.fastrtps* 2>/dev/null || true
+    echo "✅ All ARIA processes stopped and shared memory cleaned."
+}
 
-# ── Session 2: Dashboard ────────────────────────────────
-tmux new-session -d -s aria_dash -x 220 -y 50
-tmux send-keys -t aria_dash "source $ROS_SETUP && source $ARIA_SETUP" Enter
-tmux send-keys -t aria_dash "sleep 12 && cd $SCRIPT_DIR && python3 arm_dashboard/app.py 2>&1 | tee /tmp/aria_dashboard.log" Enter
+check_status() {
+    echo "═══════════════════════════════════════════════════════"
+    echo "  🤖 Project ARIA: System Status"
+    echo "═══════════════════════════════════════════════════════"
+    if [ -f "$ROS_SETUP" ]; then
+        source "$ROS_SETUP"
+    fi
+    if [ -f "$ARIA_SETUP" ]; then
+        source "$ARIA_SETUP"
+    fi
 
-echo "✅ Dashboard session started (aria_dash)"
+    echo ""
+    echo "── Tmux Sessions ───────────────────────────────────────"
+    if command -v tmux >/dev/null 2>&1; then
+        tmux ls 2>/dev/null || echo "  (no active tmux sessions)"
+    else
+        echo "  tmux not installed"
+    fi
 
-echo ""
-echo "╔═══════════════════════════════════════════════════════╗"
-echo "║   Waiting for system to initialize...                 ║"
-echo "╚═══════════════════════════════════════════════════════╝"
+    echo ""
+    echo "── Core Processes ──────────────────────────────────────"
+    for proc in gzserver gzclient uvicorn app.py detection_node vision_agent; do
+        if pgrep -f "$proc" >/dev/null 2>&1; then
+            echo "  ✅ $proc is RUNNING (PID $(pgrep -f "$proc" | head -1))"
+        else
+            echo "  ⚪ $proc is not running"
+        fi
+    done
 
-sleep 15
+    echo ""
+    echo "── ROS 2 Controllers ───────────────────────────────────"
+    if command -v ros2 >/dev/null 2>&1; then
+        timeout 2s ros2 control list_controllers 2>/dev/null || echo "  (controller manager not active)"
+    fi
 
-echo ""
-echo "╔═══════════════════════════════════════════════════════╗"
-echo "║   System Status                                       ║"
-echo "╚═══════════════════════════════════════════════════════╝"
-source "$ROS_SETUP" && source "$ARIA_SETUP"
+    echo ""
+    echo "── Key Active Topics ───────────────────────────────────"
+    if command -v ros2 >/dev/null 2>&1; then
+        timeout 2s ros2 topic list 2>/dev/null | grep -E "(wrist_camera|top_camera|detection|depth|aria/state|joint_states|joint_trajectory)" | head -15 || echo "  (no active topics)"
+    fi
 
-# Ensure joint_trajectory_controller is actively running
-if ! ros2 control list_controllers 2>/dev/null | grep -q "joint_trajectory_controller.*active"; then
-    ros2 control unload_controller joint_trajectory_controller 2>/dev/null || true
-    ros2 control load_controller --set-state active joint_trajectory_controller 2>/dev/null || true
+    echo ""
+    echo "── Dashboard Endpoint ──────────────────────────────────"
+    if curl -s http://localhost:8000/api/health >/dev/null 2>&1; then
+        echo "  ✅ Dashboard online: http://localhost:8000"
+    else
+        echo "  ⚪ Dashboard not responding on http://localhost:8000"
+    fi
+    echo "═══════════════════════════════════════════════════════"
+}
+
+# Parse CLI arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -g|--gui)
+            ENABLE_GUI="true"
+            shift
+            ;;
+        -w|--world)
+            case "$2" in
+                tester)
+                    WORLD_NAME="aria_tester_workspace.world"
+                    ;;
+                industrial)
+                    WORLD_NAME="aria_industrial_workcell.world"
+                    ;;
+                workspace)
+                    WORLD_NAME="aria_workspace.world"
+                    ;;
+                *)
+                    WORLD_NAME="$2"
+                    ;;
+            esac
+            shift 2
+            ;;
+        -p|--port)
+            DASHBOARD_PORT="$2"
+            shift 2
+            ;;
+        --no-dashboard)
+            LAUNCH_DASHBOARD=false
+            shift
+            ;;
+        --no-tmux)
+            USE_TMUX=false
+            shift
+            ;;
+        --status)
+            check_status
+            exit 0
+            ;;
+        --stop)
+            stop_all
+            exit 0
+            ;;
+        -h|--help)
+            print_usage
+            exit 0
+            ;;
+        *)
+            # Backward compatibility: if single argument is a world file name
+            if [[ "$1" == *.world ]]; then
+                WORLD_NAME="$1"
+                shift
+            else
+                echo "Unknown option: $1"
+                print_usage
+                exit 1
+            fi
+            ;;
+    esac
+done
+
+# Prerequisites validation
+if [ ! -f "$ROS_SETUP" ]; then
+    echo "❌ Error: ROS 2 Humble setup not found at $ROS_SETUP"
+    exit 1
 fi
 
-echo "ROS2 Nodes:"
-ros2 node list 2>/dev/null | head -40 || echo "  (waiting for nodes...)"
+if [ ! -f "$ARIA_SETUP" ]; then
+    echo "❌ Error: ARIA workspace build not found at $ARIA_SETUP"
+    echo "   Please build the workspace first with: colcon build --symlink-install"
+    exit 1
+fi
 
-echo ""
-echo "Key Topics:"
-ros2 topic list 2>/dev/null | grep -E "(wrist_camera|detection|depth|aria/state|joint_states)" | head -15
+if ! command -v tmux >/dev/null 2>&1; then
+    USE_TMUX=false
+fi
 
-echo ""
-echo "Dashboard: http://localhost:8000"
-echo ""
-echo "Tmux sessions:"
-tmux ls 2>/dev/null
+echo "╔═══════════════════════════════════════════════════════╗"
+echo "║   🤖 ARIA Full System Launcher                       ║"
+echo "╚═══════════════════════════════════════════════════════╝"
+echo "  Workspace Root: $ARIA_ROOT"
+echo "  Target World:   $WORLD_NAME"
+echo "  Gazebo 3D GUI:  $ENABLE_GUI"
+echo "  Dashboard:      $([ "$LAUNCH_DASHBOARD" = true ] && echo "port $DASHBOARD_PORT" || echo "disabled")"
+echo "  Mode:           $([ "$USE_TMUX" = true ] && echo "tmux background sessions" || echo "direct subshell")"
+echo "─────────────────────────────────────────────────────────"
 
-echo ""
-echo "To attach: tmux attach -t aria_sim  OR  tmux attach -t aria_dash"
+# Clean previous sessions
+stop_all >/dev/null 2>&1 || true
+sleep 1
+
+if [ "$USE_TMUX" = true ]; then
+    # ── Session 1: Simulation + ROS 2 Multi-Agent Stack ──────
+    tmux start-server
+    sleep 0.5
+    tmux new-session -d -s aria_sim -x 220 -y 50
+    tmux send-keys -t aria_sim "cd \"$ARIA_ROOT\" && export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
+    tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=\"$WORLD_NAME\" gui:=\"$ENABLE_GUI\" 2>&1 | tee /tmp/aria_launch.log" Enter
+
+    echo "✅ Simulation + multi-agent stack started in tmux session 'aria_sim'"
+
+    # ── Session 2: Web Dashboard Backend ─────────────────────
+    if [ "$LAUNCH_DASHBOARD" = true ]; then
+        tmux new-session -d -s aria_dash -x 220 -y 50
+        tmux send-keys -t aria_dash "cd \"$ARIA_ROOT\" && export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
+        tmux send-keys -t aria_dash "sleep 12 && export ARIA_DASHBOARD_PORT=$DASHBOARD_PORT && python3 arm_dashboard/app.py 2>&1 | tee /tmp/aria_dashboard.log" Enter
+        echo "✅ Dashboard backend initialized in tmux session 'aria_dash'"
+    fi
+
+    echo ""
+    echo "Waiting for system initialization (15s)..."
+    sleep 15
+
+    # Check and activate joint_state_broadcaster and joint_trajectory_controller if needed
+    source "$ROS_SETUP" && source "$ARIA_SETUP"
+    if ! ros2 control list_controllers 2>/dev/null | grep -q "joint_state_broadcaster.*active"; then
+        ros2 control unload_controller joint_state_broadcaster 2>/dev/null || true
+        ros2 control load_controller --set-state active joint_state_broadcaster 2>/dev/null || true
+    fi
+    if ! ros2 control list_controllers 2>/dev/null | grep -q "joint_trajectory_controller.*active"; then
+        ros2 control unload_controller joint_trajectory_controller 2>/dev/null || true
+        ros2 control load_controller --set-state active joint_trajectory_controller 2>/dev/null || true
+    fi
+
+    echo ""
+    echo "═══════════════════════════════════════════════════════"
+    echo "  🚀 ARIA FULL SYSTEM IS ONLINE"
+    echo "═══════════════════════════════════════════════════════"
+    if [ "$LAUNCH_DASHBOARD" = true ]; then
+        echo "  Web Dashboard:  http://localhost:$DASHBOARD_PORT"
+        echo "  REST API Docs:  http://localhost:$DASHBOARD_PORT/docs"
+        echo "  State Stream:   ws://localhost:$DASHBOARD_PORT/ws/state"
+        echo "  Camera Stream:  ws://localhost:$DASHBOARD_PORT/ws/cameras"
+    fi
+    echo ""
+    echo "  Attach Commands:"
+    echo "    tmux attach -t aria_sim   (Simulation & agent logs)"
+    if [ "$LAUNCH_DASHBOARD" = true ]; then
+        echo "    tmux attach -t aria_dash  (Web dashboard server logs)"
+    fi
+    echo ""
+    echo "  Management Commands:"
+    echo "    ./scripts/aria_launch_full.sh --status"
+    echo "    ./scripts/aria_launch_full.sh --stop"
+    echo "═══════════════════════════════════════════════════════"
+
+else
+    # ── Direct Non-tmux Mode ──────────────────────────────────
+    source "$ROS_SETUP"
+    source "$ARIA_SETUP"
+
+    cleanup() {
+        echo ""
+        echo "Shutting down ARIA..."
+        stop_all
+        exit 0
+    }
+    trap cleanup SIGINT SIGTERM EXIT
+
+    echo "Starting simulation & multi-agent stack..."
+    ros2 launch arm_bringup aria_full_u3.launch.py world:="$WORLD_NAME" gui:="$ENABLE_GUI" 2>&1 | tee /tmp/aria_launch.log &
+    SIM_PID=$!
+
+    if [ "$LAUNCH_DASHBOARD" = true ]; then
+        echo "Starting dashboard on port $DASHBOARD_PORT..."
+        (sleep 12 && export ARIA_DASHBOARD_PORT=$DASHBOARD_PORT && python3 arm_dashboard/app.py 2>&1 | tee /tmp/aria_dashboard.log) &
+        DASH_PID=$!
+    fi
+
+    echo ""
+    echo "═══════════════════════════════════════════════════════"
+    echo "  🚀 ARIA IS RUNNING IN FOREGROUND (Press Ctrl+C to stop)"
+    echo "  Dashboard: http://localhost:$DASHBOARD_PORT"
+    echo "═══════════════════════════════════════════════════════"
+
+    wait $SIM_PID
+fi

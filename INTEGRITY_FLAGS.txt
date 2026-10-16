@@ -1,0 +1,2452 @@
+================================================================================
+PROJECT ARIA: DATA INTEGRITY AUDIT FLAGS (FACTS ONLY - NO INTERPRETATION)
+================================================================================
+
+PART 1: CSV COLUMNS WITH A SINGLE UNIQUE VALUE ACROSS ALL ROWS
+--------------------------------------------------------------------------------
+Total CSV files evaluated: 576
+CSVs containing single-unique-value (constant) columns: 122
+CSVs with 0 rows (empty/template): 3
+
+EMPTY CSV FILES (0 rows):
+  - data/legacy_synthetic/data/architecture_ablation_results_template.csv
+  - data/legacy_synthetic/data/conveyor_speed_sweep_template.csv
+  - data/legacy_synthetic/data/expanded_manipulation_trials_template.csv
+
+File: data/legacy_synthetic/data/color_defect_summary.csv (Total Rows: 6)
+Constant Columns (1):
+  - Column: "trials_n" -> Unique Value: np.int64(20)
+
+File: data/legacy_synthetic/data/conveyor_extended_sweep_30.csv (Total Rows: 30)
+Constant Columns (1):
+  - Column: "git_commit_hash" -> Unique Value: '52d1114'
+
+File: data/legacy_synthetic/data/conveyor_rendezvous_dev.csv (Total Rows: 70)
+Constant Columns (5):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:19:48.032314+00:00'
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "tau_s" -> Unique Value: np.float64(1.25)
+  - Column: "camera_latency_ms" -> Unique Value: np.float64(40.6)
+  - Column: "velocity_saturated" -> Unique Value: np.False_
+
+File: data/legacy_synthetic/data/conveyor_rendezvous_test.csv (Total Rows: 210)
+Constant Columns (5):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:25:23.092515+00:00'
+  - Column: "git_commit_hash" -> Unique Value: '1fe98bc'
+  - Column: "tau_s" -> Unique Value: np.float64(1.25)
+  - Column: "camera_latency_ms" -> Unique Value: np.float64(40.6)
+  - Column: "velocity_saturated" -> Unique Value: np.False_
+
+File: data/legacy_synthetic/data/conveyor_speed_sweep.csv (Total Rows: 12)
+Constant Columns (8):
+  - Column: "git_commit_hash" -> Unique Value: '52d1114'
+  - Column: "object_color" -> Unique Value: 'blue'
+  - Column: "defect_status" -> Unique Value: 'conforming'
+  - Column: "defect_cue_type" -> Unique Value: 'none'
+  - Column: "optical_conf" -> Unique Value: np.float64(0.99)
+  - Column: "grasp_success" -> Unique Value: 'SUCCESS'
+  - Column: "sort_success" -> Unique Value: 'SUCCESS'
+  - Column: "failure_category" -> Unique Value: 'NONE'
+
+File: data/legacy_synthetic/data/depth_affine_calibration_dev.csv (Total Rows: 50)
+Constant Columns (2):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:22:24.198301+00:00'
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+
+File: data/legacy_synthetic/data/depth_affine_calibration_test.csv (Total Rows: 180)
+Constant Columns (2):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:26:18.234022+00:00'
+  - Column: "git_commit_hash" -> Unique Value: '1fe98bc'
+
+File: data/legacy_synthetic/data/estop_latency_benchmark.csv (Total Rows: 50)
+Constant Columns (2):
+  - Column: "halt_success" -> Unique Value: 'SUCCESS'
+  - Column: "within_10ms_margin" -> Unique Value: 'YES'
+
+File: data/legacy_synthetic/data/expanded_manipulation_trials.csv (Total Rows: 30)
+Constant Columns (8):
+  - Column: "git_commit_hash" -> Unique Value: '52d1114'
+  - Column: "config_id" -> Unique Value: 'config_c_full_aria'
+  - Column: "block_id" -> Unique Value: 'BLK_01'
+  - Column: "defect_status" -> Unique Value: 'conforming'
+  - Column: "defect_cue_type" -> Unique Value: 'none'
+  - Column: "outcome" -> Unique Value: 'SUCCESS'
+  - Column: "failure_category" -> Unique Value: 'NONE'
+  - Column: "vram_used_mb" -> Unique Value: np.int64(7180)
+
+File: data/legacy_synthetic/data/expanded_stress_suite_100.csv (Total Rows: 100)
+Constant Columns (5):
+  - Column: "git_commit_hash" -> Unique Value: '52d1114'
+  - Column: "config_id" -> Unique Value: 'config_c_full_aria'
+  - Column: "block_id" -> Unique Value: 'BLK_EXP'
+  - Column: "defect_cue_type" -> Unique Value: 'none'
+  - Column: "vram_used_mb" -> Unique Value: np.int64(7180)
+
+File: data/legacy_synthetic/data/fault_injection_benchmark.csv (Total Rows: 120)
+Constant Columns (2):
+  - Column: "outcome" -> Unique Value: 'SUCCESS'
+  - Column: "safety_held" -> Unique Value: 'YES'
+
+File: data/legacy_synthetic/data/friction_grasp_placement_dev.csv (Total Rows: 60)
+Constant Columns (8):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:21:22.766762+00:00'
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "pad_length_mm" -> Unique Value: np.float64(28.0)
+  - Column: "workpiece_size_mm" -> Unique Value: np.float64(40.0)
+  - Column: "bilateral_contact_verified" -> Unique Value: np.True_
+  - Column: "friction_only_lift_success" -> Unique Value: np.True_
+  - Column: "placement_compensated" -> Unique Value: np.True_
+  - Column: "slow_final_descent_v_m_s" -> Unique Value: np.float64(0.015)
+
+File: data/legacy_synthetic/data/friction_grasp_placement_test.csv (Total Rows: 180)
+Constant Columns (8):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:25:52.904035+00:00'
+  - Column: "git_commit_hash" -> Unique Value: '1fe98bc'
+  - Column: "pad_length_mm" -> Unique Value: np.float64(28.0)
+  - Column: "workpiece_size_mm" -> Unique Value: np.float64(40.0)
+  - Column: "bilateral_contact_verified" -> Unique Value: np.True_
+  - Column: "friction_only_lift_success" -> Unique Value: np.True_
+  - Column: "placement_compensated" -> Unique Value: np.True_
+  - Column: "slow_final_descent_v_m_s" -> Unique Value: np.float64(0.015)
+
+File: data/legacy_synthetic/data/ik_solver_benchmark_100k.csv (Total Rows: 10000)
+Constant Columns (3):
+  - Column: "stratum" -> Unique Value: 'interior'
+  - Column: "fk_residual_mm" -> Unique Value: np.float64(0.0)
+  - Column: "success" -> Unique Value: np.int64(1)
+
+File: data/legacy_synthetic/data/language_grounding_benchmark.csv (Total Rows: 60)
+Constant Columns (2):
+  - Column: "aria_syntax_valid" -> Unique Value: np.int64(1)
+  - Column: "aria_clarification_accuracy" -> Unique Value: np.int64(1)
+
+File: data/legacy_synthetic/data/language_grounding_summary.csv (Total Rows: 7)
+Constant Columns (2):
+  - Column: "aria_syntax_valid_pct" -> Unique Value: np.float64(100.0)
+  - Column: "aria_clarification_acc_pct" -> Unique Value: np.float64(100.0)
+
+File: data/legacy_synthetic/data/perception_coarse_to_fine_dev.csv (Total Rows: 200)
+Constant Columns (3):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:22:24.188873+00:00'
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "true_z_m" -> Unique Value: np.float64(0.6231)
+
+File: data/legacy_synthetic/data/perception_coarse_to_fine_test.csv (Total Rows: 990)
+Constant Columns (3):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:26:18.205510+00:00'
+  - Column: "git_commit_hash" -> Unique Value: '1fe98bc'
+  - Column: "true_z_m" -> Unique Value: np.float64(0.6231)
+
+File: data/legacy_synthetic/data/safety_runtime_dev.csv (Total Rows: 30)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "safety_held" -> Unique Value: 'YES'
+
+File: data/legacy_synthetic/data/safety_runtime_test.csv (Total Rows: 180)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: '1fe98bc'
+  - Column: "safety_held" -> Unique Value: 'YES'
+
+File: data/legacy_synthetic/data/scripted_baseline_dev.csv (Total Rows: 180)
+Constant Columns (7):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:22:52.368958+00:00'
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "pipeline" -> Unique Value: 'Scripted_Deterministic'
+  - Column: "has_llm" -> Unique Value: np.False_
+  - Column: "has_agents" -> Unique Value: np.False_
+  - Column: "planning_latency_ms" -> Unique Value: np.float64(0.05)
+  - Column: "success" -> Unique Value: np.True_
+
+File: data/legacy_synthetic/data/scripted_baseline_test.csv (Total Rows: 540)
+Constant Columns (7):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:26:02.625242+00:00'
+  - Column: "git_commit_hash" -> Unique Value: '1fe98bc'
+  - Column: "pipeline" -> Unique Value: 'Scripted_Deterministic'
+  - Column: "has_llm" -> Unique Value: np.False_
+  - Column: "has_agents" -> Unique Value: np.False_
+  - Column: "planning_latency_ms" -> Unique Value: np.float64(0.05)
+  - Column: "success" -> Unique Value: np.True_
+
+File: data/real/collision_free_friction_trials.csv (Total Rows: 30)
+Constant Columns (12):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "spawn_z_m" -> Unique Value: np.float64(0.6231)
+  - Column: "grasp_mode" -> Unique Value: 'friction_only'
+  - Column: "workpiece_width_mm" -> Unique Value: np.float64(30.0)
+  - Column: "left_pad_partner" -> Unique Value: 'optical_table::table_link::collision'
+  - Column: "left_pad_force_N" -> Unique Value: np.float64(0.0)
+  - Column: "bilateral_contact" -> Unique Value: np.False_
+  - Column: "outcome" -> Unique Value: 'FAILURE'
+  - Column: "failure_category" -> Unique Value: 'B_GRASP_SLIP'
+  - Column: "friction_mu" -> Unique Value: np.float64(2.5)
+  - Column: "effort_limit_Nm" -> Unique Value: np.float64(0.245)
+  - Column: "contact_kp" -> Unique Value: np.float64(1000000.0)
+
+File: data/real/color_defect_cross_experiment.csv (Total Rows: 120)
+Constant Columns (4):
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+  - Column: "detector_confidence" -> Unique Value: np.float64(0.99)
+  - Column: "detection_correct" -> Unique Value: np.True_
+  - Column: "interception_success" -> Unique Value: np.True_
+
+File: data/real/color_defect_cross_experiment_aborted_socket_exhaustion.csv (Total Rows: 120)
+Constant Columns (1):
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/color_defect_summary.csv (Total Rows: 7)
+Constant Columns (1):
+  - Column: "det_accuracy_pct" -> Unique Value: np.float64(100.0)
+
+File: data/real/confidence_calibration_summary.csv (Total Rows: 10)
+Constant Columns (2):
+  - Column: "ece_perc_pct" -> Unique Value: np.float64(1.0)
+  - Column: "ece_plan_pct" -> Unique Value: np.float64(34.7)
+
+File: data/real/confidence_calibration_summary_aborted_socket_exhaustion.csv (Total Rows: 10)
+Constant Columns (2):
+  - Column: "ece_perc_pct" -> Unique Value: np.float64(2.45)
+  - Column: "ece_plan_pct" -> Unique Value: np.float64(34.7)
+
+File: data/real/conveyor_speed_summary.csv (Total Rows: 7)
+Constant Columns (7):
+  - Column: "total_cycles" -> Unique Value: np.int64(20)
+  - Column: "grasp_successes" -> Unique Value: np.int64(20)
+  - Column: "grasp_success_rate_pct" -> Unique Value: np.float64(100.0)
+  - Column: "sort_successes" -> Unique Value: np.int64(0)
+  - Column: "sort_success_rate_pct" -> Unique Value: np.float64(0.0)
+  - Column: "joint_2_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated_count" -> Unique Value: np.int64(20)
+
+File: data/real/conveyor_speed_sweep.csv (Total Rows: 140)
+Constant Columns (6):
+  - Column: "git_commit_hash" -> Unique Value: '8d83b97'
+  - Column: "grasp_success" -> Unique Value: 'SUCCESS'
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated" -> Unique Value: np.True_
+  - Column: "outcome" -> Unique Value: 'FAILURE'
+  - Column: "failure_category" -> Unique Value: 'D_TRACKING_VELOCITY_LIMIT'
+
+File: data/real/conveyor_speed_sweep_v2.csv (Total Rows: 29)
+Constant Columns (15):
+  - Column: "git_commit_hash" -> Unique Value: '8d83b97'
+  - Column: "workpiece_instance" -> Unique Value: 'workpiece_01'
+  - Column: "ground_truth_color" -> Unique Value: 'blue'
+  - Column: "ground_truth_defect" -> Unique Value: 'conforming'
+  - Column: "optical_pred_conforming" -> Unique Value: np.True_
+  - Column: "optical_conf" -> Unique Value: np.float64(0.99)
+  - Column: "red_pixels" -> Unique Value: np.int64(0)
+  - Column: "grasp_success" -> Unique Value: 'SUCCESS'
+  - Column: "attached_model_name" -> Unique Value: 'workpiece_01'
+  - Column: "tipped" -> Unique Value: np.False_
+  - Column: "correct_sort_location" -> Unique Value: np.True_
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated" -> Unique Value: np.True_
+  - Column: "outcome" -> Unique Value: 'SUCCESS'
+  - Column: "failure_category" -> Unique Value: 'NONE'
+
+File: data/real/conveyor_sweep_real.csv (Total Rows: 140)
+Constant Columns (3):
+  - Column: "git_commit_hash" -> Unique Value: 'e0d4bbe'
+  - Column: "measured_tcp_vel_m_s" -> Unique Value: np.float64(0.0)
+  - Column: "success" -> Unique Value: np.False_
+
+File: data/real/depth_anything_real.csv (Total Rows: 30)
+Constant Columns (4):
+  - Column: "git_commit_hash" -> Unique Value: 'e0d4bbe'
+  - Column: "spawn_z_m" -> Unique Value: np.float64(0.6231)
+  - Column: "success" -> Unique Value: np.False_
+  - Column: "failure_category" -> Unique Value: 'DEPTH_RMSE_EXCEEDED'
+
+File: data/real/depth_calibration_comparison.csv (Total Rows: 240)
+Constant Columns (1):
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/depth_calibration_summary.csv (Total Rows: 3)
+Constant Columns (1):
+  - Column: "n_samples" -> Unique Value: np.int64(240)
+
+File: data/real/estop_latency_benchmark.csv (Total Rows: 50)
+Constant Columns (5):
+  - Column: "commit_hash" -> Unique Value: '8d83b97cd88a99745195bb6a10cf689a27ab4987'
+  - Column: "inputs" -> Unique Value: '{"command_topic": "/arm_controller/joint_cmd", "estop_topic": "/aria/estop", "control_rate_hz": 1000.0, "nominal_joint_velocity_rad_s": [1.2, 0.8, 1.0, 0.5, 0.2]}'
+  - Column: "outcome" -> Unique Value: 'SUCCESS'
+  - Column: "halt_success" -> Unique Value: 'SUCCESS'
+  - Column: "within_10ms_margin" -> Unique Value: 'YES'
+
+File: data/real/estop_latency_benchmark_v2.csv (Total Rows: 100)
+Constant Columns (1):
+  - Column: "commit_hash" -> Unique Value: '8d83b97cd88a99745195bb6a10cf689a27ab4987'
+
+File: data/real/estop_latency_summary.csv (Total Rows: 1)
+Constant Columns (8):
+  - Column: "n_trials" -> Unique Value: np.int64(50)
+  - Column: "mean_ms" -> Unique Value: np.float64(0.669)
+  - Column: "std_ms" -> Unique Value: np.float64(0.276)
+  - Column: "p50_ms" -> Unique Value: np.float64(0.696)
+  - Column: "p95_ms" -> Unique Value: np.float64(1.049)
+  - Column: "p99_ms" -> Unique Value: np.float64(1.297)
+  - Column: "max_ms" -> Unique Value: np.float64(1.4)
+  - Column: "success_rate_pct" -> Unique Value: np.float64(100.0)
+
+File: data/real/expanded_manipulation_summary.csv (Total Rows: 10)
+Constant Columns (2):
+  - Column: "trials" -> Unique Value: np.int64(10)
+  - Column: "joint_2_limit_rad_s" -> Unique Value: np.float64(1.5)
+
+File: data/real/expanded_manipulation_trials.csv (Total Rows: 100)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: '8d83b97'
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+
+File: data/real/expanded_manipulation_trials_v2.csv (Total Rows: 100)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: '8d83b97'
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+
+File: data/real/fault_injection_benchmark.csv (Total Rows: 120)
+Constant Columns (3):
+  - Column: "commit_hash" -> Unique Value: '8d83b97cd88a99745195bb6a10cf689a27ab4987'
+  - Column: "outcome" -> Unique Value: 'SUCCESS'
+  - Column: "safety_held" -> Unique Value: 'YES'
+
+File: data/real/fault_injection_benchmark_v2.csv (Total Rows: 120)
+Constant Columns (3):
+  - Column: "commit_hash" -> Unique Value: '8d83b97cd88a99745195bb6a10cf689a27ab4987'
+  - Column: "outcome" -> Unique Value: 'SUCCESS'
+  - Column: "safety_held" -> Unique Value: 'NO'
+
+File: data/real/fault_injection_summary.csv (Total Rows: 4)
+Constant Columns (2):
+  - Column: "n_trials" -> Unique Value: np.int64(30)
+  - Column: "success_rate_pct" -> Unique Value: np.float64(100.0)
+
+File: data/real/fault_injection_summary_v2.csv (Total Rows: 4)
+Constant Columns (3):
+  - Column: "n_trials" -> Unique Value: np.int64(30)
+  - Column: "success_rate_pct" -> Unique Value: np.float64(100.0)
+  - Column: "safety_held_pct" -> Unique Value: np.float64(0.0)
+
+File: data/real/fk_comparison_10k.csv (Total Rows: 10000)
+Constant Columns (2):
+  - Column: "seed" -> Unique Value: np.int64(42)
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/friction_grasp_real_30seeds.csv (Total Rows: 30)
+Constant Columns (16):
+  - Column: "git_commit_hash" -> Unique Value: 'b4556b2'
+  - Column: "spawn_z_m" -> Unique Value: np.float64(0.6731)
+  - Column: "grasp_mode" -> Unique Value: 'friction_only'
+  - Column: "pad_size_mm" -> Unique Value: np.float64(28.0)
+  - Column: "cube_size_mm" -> Unique Value: np.float64(40.0)
+  - Column: "right_pad_partner" -> Unique Value: 'workpiece_01::link::collision'
+  - Column: "gripper_joint_pos_rad" -> Unique Value: np.float64(0.74)
+  - Column: "finger_mimic_joint_pos_rad" -> Unique Value: np.float64(0.74)
+  - Column: "gripper_joint_effort_Nm" -> Unique Value: np.float64(0.245)
+  - Column: "finger_mimic_joint_effort_Nm" -> Unique Value: np.float64(0.0)
+  - Column: "closing_asymmetry_rad" -> Unique Value: np.float64(0.0)
+  - Column: "friction_mu" -> Unique Value: np.float64(2.5)
+  - Column: "effort_limit_Nm" -> Unique Value: np.float64(0.245)
+  - Column: "contact_kp" -> Unique Value: np.float64(1000000.0)
+  - Column: "hold_time_s" -> Unique Value: np.float64(0.0)
+  - Column: "success" -> Unique Value: np.False_
+
+File: data/real/gazebo_tf_20261005T042407Z.csv (Total Rows: 20)
+Constant Columns (2):
+  - Column: "seed" -> Unique Value: np.int64(101)
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/grasp_diagnosis_timeseries_3trials.csv (Total Rows: 1279)
+Constant Columns (1):
+  - Column: "workpiece_width_mm" -> Unique Value: np.float64(30.0)
+
+File: data/real/ik_benchmark_5d_cartesian_10k.csv (Total Rows: 50000)
+Constant Columns (2):
+  - Column: "dataset" -> Unique Value: 'Set_B_5D_Cartesian_10k'
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/ik_benchmark_5d_fk_10k.csv (Total Rows: 50000)
+Constant Columns (3):
+  - Column: "dataset" -> Unique Value: 'Set_A_5D_FK_Reachable_10k'
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+  - Column: "gt_reachable" -> Unique Value: np.True_
+
+File: data/real/ik_benchmark_5d_summary.csv (Total Rows: 10)
+Constant Columns (4):
+  - Column: "total_poses" -> Unique Value: np.int64(10000)
+  - Column: "pos_tolerance_mm" -> Unique Value: np.float64(1.0)
+  - Column: "ori_tolerance_rad" -> Unique Value: np.float64(0.01)
+  - Column: "cpu_pinned" -> Unique Value: 'Core 0'
+
+File: data/real/ik_benchmark_cartesian_100k.csv (Total Rows: 500000)
+Constant Columns (2):
+  - Column: "dataset_type" -> Unique Value: 'Set_B_Cartesian_Random_100k'
+  - Column: "git_commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/ik_benchmark_dev_seeds_1_10.csv (Total Rows: 100)
+Constant Columns (5):
+  - Column: "timestamp" -> Unique Value: '2026-10-12T09:12:50.595885+00:00'
+  - Column: "git_commit_hash" -> Unique Value: 'b4556b2'
+  - Column: "cpu_model" -> Unique Value: '13th Gen Intel(R) Core(TM) i7-13700HX'
+  - Column: "pos_tolerance_mm" -> Unique Value: np.float64(1.0)
+  - Column: "rot_tolerance_rad" -> Unique Value: np.float64(0.01)
+
+File: data/real/ik_benchmark_fk_100k.csv (Total Rows: 500000)
+Constant Columns (3):
+  - Column: "dataset_type" -> Unique Value: 'Set_A_FK_Reachable_100k'
+  - Column: "git_commit_hash" -> Unique Value: '8d83b97'
+  - Column: "gt_reachable" -> Unique Value: np.True_
+
+File: data/real/ik_benchmark_summary.csv (Total Rows: 10)
+Constant Columns (1):
+  - Column: "total_poses" -> Unique Value: np.int64(100000)
+
+File: data/real/ik_benchmark_test_seeds_101_130.csv (Total Rows: 1500)
+Constant Columns (5):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:25:10.062017+00:00'
+  - Column: "git_commit_hash" -> Unique Value: '1fe98bc'
+  - Column: "cpu_model" -> Unique Value: '13th Gen Intel(R) Core(TM) i7-13700HX'
+  - Column: "pos_tolerance_mm" -> Unique Value: np.float64(1.0)
+  - Column: "rot_tolerance_rad" -> Unique Value: np.float64(0.01)
+
+File: data/real/ik_confusion_matrix_20261006T080221Z.csv (Total Rows: 1000)
+Constant Columns (2):
+  - Column: "seed" -> Unique Value: np.int64(304)
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/ik_confusion_matrix_20261007T144445Z.csv (Total Rows: 1000)
+Constant Columns (2):
+  - Column: "seed" -> Unique Value: np.int64(304)
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/ik_confusion_matrix_20261012T063154Z.csv (Total Rows: 1000)
+Constant Columns (2):
+  - Column: "seed" -> Unique Value: np.int64(304)
+  - Column: "commit_hash" -> Unique Value: 'b4556b2'
+
+File: data/real/ik_urdf_v2_10k_20261006T032821Z.csv (Total Rows: 10000)
+Constant Columns (5):
+  - Column: "seed" -> Unique Value: np.int64(202)
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+  - Column: "urdf_ik_success" -> Unique Value: np.True_
+  - Column: "scipy_ik_success" -> Unique Value: np.True_
+  - Column: "scipy_ik_err_m" -> Unique Value: np.float64(0.0)
+
+File: data/real/language_grounding_multiseed_summary.csv (Total Rows: 3)
+Constant Columns (5):
+  - Column: "total_trials" -> Unique Value: np.int64(180)
+  - Column: "seeds" -> Unique Value: '[42, 1337, 2026]'
+  - Column: "temperature" -> Unique Value: np.float64(0.7)
+  - Column: "model" -> Unique Value: 'llama3.1:8b-instruct-q4_K_M'
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/language_grounding_multiseed_trials.csv (Total Rows: 540)
+Constant Columns (3):
+  - Column: "temperature" -> Unique Value: np.float64(0.7)
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+  - Column: "threshold_value" -> Unique Value: np.float64(0.7)
+
+File: data/real/language_grounding_raw_trials.csv (Total Rows: 180)
+Constant Columns (3):
+  - Column: "git_commit_hash" -> Unique Value: '8d83b97'
+  - Column: "seed" -> Unique Value: np.int64(42)
+  - Column: "threshold_value" -> Unique Value: np.float64(0.7)
+
+File: data/real/language_grounding_summary.csv (Total Rows: 7)
+Constant Columns (6):
+  - Column: "llm_success_pct" -> Unique Value: np.float64(0.0)
+  - Column: "llm_slot_acc_pct" -> Unique Value: np.float64(66.7)
+  - Column: "llm_syntax_valid_pct" -> Unique Value: np.float64(0.0)
+  - Column: "llm_clarification_pct" -> Unique Value: np.float64(0.0)
+  - Column: "saycan_syntax_valid_pct" -> Unique Value: np.float64(100.0)
+  - Column: "saycan_clarification_pct" -> Unique Value: np.float64(0.0)
+
+File: data/real/manipulation_trials_gazebo_20261008T033822Z.csv (Total Rows: 100)
+Constant Columns (7):
+  - Column: "git_commit_hash" -> Unique Value: '1e8fd01'
+  - Column: "ik_success" -> Unique Value: np.True_
+  - Column: "ik_pitch_rad" -> Unique Value: np.float64(-1.55)
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated" -> Unique Value: np.True_
+  - Column: "physical_contact_only_held" -> Unique Value: np.False_
+  - Column: "attach_assisted" -> Unique Value: np.False_
+
+File: data/real/manipulation_trials_gazebo_20261008T160109Z.csv (Total Rows: 180)
+Constant Columns (6):
+  - Column: "git_commit_hash" -> Unique Value: '9ce122e'
+  - Column: "ik_success" -> Unique Value: np.True_
+  - Column: "tf_ee_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "physical_contact_only_held" -> Unique Value: np.False_
+  - Column: "attach_assisted" -> Unique Value: np.False_
+
+File: data/real/manipulation_trials_gazebo_20261010T161856Z.csv (Total Rows: 80)
+Constant Columns (6):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "grasp_mode" -> Unique Value: 'assisted'
+  - Column: "ik_success" -> Unique Value: np.True_
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "physical_contact_only_held" -> Unique Value: np.False_
+  - Column: "attach_assisted" -> Unique Value: np.True_
+
+File: data/real/manipulation_trials_gazebo_20261010T171914Z.csv (Total Rows: 2)
+Constant Columns (15):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "perception_config" -> Unique Value: 'config_a'
+  - Column: "grasp_mode" -> Unique Value: 'assisted'
+  - Column: "seed" -> Unique Value: np.int64(2021)
+  - Column: "true_x_m" -> Unique Value: np.float64(0.2017)
+  - Column: "cmd_x_m" -> Unique Value: np.float64(0.2017)
+  - Column: "estimation_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "pixel_v" -> Unique Value: np.int64(335)
+  - Column: "ik_success" -> Unique Value: np.True_
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated" -> Unique Value: np.True_
+  - Column: "physical_contact_only_held" -> Unique Value: np.False_
+  - Column: "attach_assisted" -> Unique Value: np.True_
+  - Column: "outcome" -> Unique Value: 'FAILURE'
+  - Column: "failure_category" -> Unique Value: 'B_GRASP_SLIP'
+
+File: data/real/manipulation_trials_gazebo_20261010T172203Z.csv (Total Rows: 18)
+Constant Columns (8):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "grasp_mode" -> Unique Value: 'assisted'
+  - Column: "seed" -> Unique Value: np.int64(2021)
+  - Column: "ik_success" -> Unique Value: np.True_
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated" -> Unique Value: np.True_
+  - Column: "physical_contact_only_held" -> Unique Value: np.False_
+  - Column: "attach_assisted" -> Unique Value: np.True_
+
+File: data/real/manipulation_trials_gazebo_20261010T172433Z.csv (Total Rows: 18)
+Constant Columns (8):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "grasp_mode" -> Unique Value: 'assisted'
+  - Column: "seed" -> Unique Value: np.int64(2021)
+  - Column: "ik_success" -> Unique Value: np.True_
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated" -> Unique Value: np.True_
+  - Column: "physical_contact_only_held" -> Unique Value: np.False_
+  - Column: "attach_assisted" -> Unique Value: np.True_
+
+File: data/real/manipulation_trials_gazebo_20261010T172615Z.csv (Total Rows: 17)
+Constant Columns (9):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "perception_config" -> Unique Value: 'config_a'
+  - Column: "grasp_mode" -> Unique Value: 'assisted'
+  - Column: "estimation_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "ik_success" -> Unique Value: np.True_
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated" -> Unique Value: np.True_
+  - Column: "physical_contact_only_held" -> Unique Value: np.False_
+  - Column: "attach_assisted" -> Unique Value: np.True_
+
+File: data/real/manipulation_trials_gazebo_20261010T173124Z.csv (Total Rows: 180)
+Constant Columns (6):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "grasp_mode" -> Unique Value: 'assisted'
+  - Column: "joint_2_vel_limit_rad_s" -> Unique Value: np.float64(1.5)
+  - Column: "velocity_saturated" -> Unique Value: np.True_
+  - Column: "physical_contact_only_held" -> Unique Value: np.False_
+  - Column: "attach_assisted" -> Unique Value: np.True_
+
+File: data/real/perception_coarse_to_fine_real.csv (Total Rows: 30)
+Constant Columns (13):
+  - Column: "git_commit_hash" -> Unique Value: 'b4556b2'
+  - Column: "overhead_bbox" -> Unique Value: '[]'
+  - Column: "overhead_conf" -> Unique Value: np.float64(0.0)
+  - Column: "overhead_pred_x_m" -> Unique Value: np.float64(nan)
+  - Column: "overhead_pred_y_m" -> Unique Value: np.float64(nan)
+  - Column: "overhead_error_mm" -> Unique Value: np.float64(nan)
+  - Column: "wrist_bbox" -> Unique Value: '[]'
+  - Column: "wrist_conf" -> Unique Value: np.float64(0.0)
+  - Column: "wrist_pred_x_m" -> Unique Value: np.float64(nan)
+  - Column: "wrist_pred_y_m" -> Unique Value: np.float64(nan)
+  - Column: "wrist_error_mm" -> Unique Value: np.float64(nan)
+  - Column: "success" -> Unique Value: np.False_
+  - Column: "failure_category" -> Unique Value: 'NO_OVERHEAD_DETECTION'
+
+File: data/real/perception_comparison_20261008T033822Z.csv (Total Rows: 100)
+Constant Columns (3):
+  - Column: "git_commit_hash" -> Unique Value: '1e8fd01'
+  - Column: "config_a_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "config_b_z_m" -> Unique Value: np.float64(0.6231)
+
+File: data/real/perception_comparison_20261008T160109Z.csv (Total Rows: 60)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: '9ce122e'
+  - Column: "config_a_error_mm" -> Unique Value: np.float64(0.0)
+
+File: data/real/perception_comparison_20261010T161856Z.csv (Total Rows: 60)
+Constant Columns (3):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "config_a_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "detection_method" -> Unique Value: 'real_yolo_contour_mask'
+
+File: data/real/perception_comparison_20261010T171914Z.csv (Total Rows: 2)
+Constant Columns (10):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "seed" -> Unique Value: np.int64(2021)
+  - Column: "true_x_m" -> Unique Value: np.float64(0.2017)
+  - Column: "config_a_x_m" -> Unique Value: np.float64(0.2017)
+  - Column: "config_a_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "config_c_x_m" -> Unique Value: np.float64(0.1992)
+  - Column: "config_c_z_m" -> Unique Value: np.float64(0.6675)
+  - Column: "pixel_v" -> Unique Value: np.int64(335)
+  - Column: "da_depth_m" -> Unique Value: np.float64(0.6825)
+  - Column: "detection_method" -> Unique Value: 'visual_edge_saliency_detector'
+
+File: data/real/perception_comparison_20261010T172203Z.csv (Total Rows: 6)
+Constant Columns (4):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "seed" -> Unique Value: np.int64(2021)
+  - Column: "config_a_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "detection_method" -> Unique Value: 'fallback_projection'
+
+File: data/real/perception_comparison_20261010T172433Z.csv (Total Rows: 6)
+Constant Columns (4):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "seed" -> Unique Value: np.int64(2021)
+  - Column: "config_a_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "detection_method" -> Unique Value: 'fallback_projection'
+
+File: data/real/perception_comparison_20261010T172615Z.csv (Total Rows: 18)
+Constant Columns (3):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "config_a_error_mm" -> Unique Value: np.float64(0.0)
+  - Column: "detection_method" -> Unique Value: 'fallback_projection'
+
+File: data/real/perception_comparison_20261010T173124Z.csv (Total Rows: 60)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: 'a325e02'
+  - Column: "config_a_error_mm" -> Unique Value: np.float64(0.0)
+
+File: data/real/planner_benchmark_dev_seeds_1_3.csv (Total Rows: 120)
+Constant Columns (3):
+  - Column: "timestamp" -> Unique Value: '2026-10-12T06:31:20.580060+00:00'
+  - Column: "git_commit_hash" -> Unique Value: 'b4556b2'
+  - Column: "tot_enabled" -> Unique Value: np.False_
+
+File: data/real/planner_benchmark_test_heldout_60.csv (Total Rows: 720)
+Constant Columns (3):
+  - Column: "timestamp" -> Unique Value: '2026-10-11T13:26:30.876941+00:00'
+  - Column: "git_commit_hash" -> Unique Value: '1fe98bc'
+  - Column: "tot_enabled" -> Unique Value: np.False_
+
+File: data/real/reachability_grid_20261006T080221Z.csv (Total Rows: 5000)
+Constant Columns (2):
+  - Column: "seed" -> Unique Value: np.int64(303)
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/reachability_grid_20261007T144445Z.csv (Total Rows: 5000)
+Constant Columns (2):
+  - Column: "seed" -> Unique Value: np.int64(303)
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: data/real/reachability_grid_20261012T063154Z.csv (Total Rows: 5000)
+Constant Columns (2):
+  - Column: "seed" -> Unique Value: np.int64(303)
+  - Column: "commit_hash" -> Unique Value: 'b4556b2'
+
+File: data/real/safety_runtime_real.csv (Total Rows: 60)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: 'b4556b2'
+  - Column: "safety_held" -> Unique Value: np.True_
+
+File: data/real/scripted_baseline_real.csv (Total Rows: 180)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: 'b4556b2'
+  - Column: "spawn_z_m" -> Unique Value: np.float64(0.6231)
+
+File: data/real/scripted_baseline_real_180trials.csv (Total Rows: 180)
+Constant Columns (2):
+  - Column: "git_commit_hash" -> Unique Value: 'b4556b2'
+  - Column: "spawn_z_m" -> Unique Value: np.float64(0.6231)
+
+File: data/real/telemetry/SAFETY_SIGKILL_401_telemetry.csv (Total Rows: 104)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0217479169530156)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1680309425902112)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2043035392497259)
+  - Column: "j0_vel" -> Unique Value: np.float64(4.502172959704668)
+  - Column: "j1_vel" -> Unique Value: np.float64(8.50445495758427)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.968673834239189)
+
+File: data/real/telemetry/SAFETY_SIGKILL_402_telemetry.csv (Total Rows: 80)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.021389604568897)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1665915631435501)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2080016537101452)
+  - Column: "j0_vel" -> Unique Value: np.float64(-4.645946497481907)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.523184763771605)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.96801955245309)
+
+File: data/real/telemetry/SAFETY_SIGKILL_403_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0097492702531067)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1664147220083518)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2095756899102632)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.034145577843344)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.079412188643703)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.724457245014499)
+
+File: data/real/telemetry/SAFETY_SIGKILL_404_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0030632850575092)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1668392569614552)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2110708539025549)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.255736612327109)
+  - Column: "j1_vel" -> Unique Value: np.float64(-7.807409915936574)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.5965647206071285)
+
+File: data/real/telemetry/SAFETY_SIGKILL_405_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0052345925115969)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1655450526078606)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2156942865101623)
+  - Column: "j0_vel" -> Unique Value: np.float64(5.343617365540137)
+  - Column: "j1_vel" -> Unique Value: np.float64(7.938503416250557)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.676664407809128)
+
+File: data/real/telemetry/SAFETY_SIGKILL_406_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0070439263166654)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1647632224082992)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.215499155072374)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.328396694381604)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.007788817939248)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.692747891752976)
+
+File: data/real/telemetry/SAFETY_SIGKILL_407_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0121787443483944)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1654563635528118)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2143044289658701)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.165473771490815)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.194100601168017)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.793552504214759)
+
+File: data/real/telemetry/SAFETY_SIGKILL_408_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0138131579583634)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1643739443099436)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2141103431551038)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.029566679280701)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.30522943501954)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.848026486180389)
+
+File: data/real/telemetry/SAFETY_SIGKILL_409_telemetry.csv (Total Rows: 65)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0112380620936704)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1656986566831056)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2157548776935445)
+  - Column: "j0_vel" -> Unique Value: np.float64(5.104430274408234)
+  - Column: "j1_vel" -> Unique Value: np.float64(8.210595406611708)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.838437686199465)
+
+File: data/real/telemetry/SAFETY_SIGKILL_410_telemetry.csv (Total Rows: 63)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0053011939634937)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1696453920908016)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2090711709763064)
+  - Column: "j0_vel" -> Unique Value: np.float64(5.13923825574454)
+  - Column: "j1_vel" -> Unique Value: np.float64(7.84830289063794)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.649680978513076)
+
+File: data/real/telemetry/SAFETY_SIGKILL_411_telemetry.csv (Total Rows: 63)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0098573763667922)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1686454504967635)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2128211719851097)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.048933762829598)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.097967850799392)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.806225783288341)
+
+File: data/real/telemetry/SAFETY_SIGKILL_412_telemetry.csv (Total Rows: 63)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0144290519665876)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.170079968631248)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2097634134087979)
+  - Column: "j0_vel" -> Unique Value: np.float64(-4.843477017239153)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.237672442020845)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.887742008842127)
+
+File: data/real/telemetry/SAFETY_SIGKILL_413_telemetry.csv (Total Rows: 80)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0191171481164979)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1720246609043983)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2041629890296995)
+  - Column: "j0_vel" -> Unique Value: np.float64(4.562983560676845)
+  - Column: "j1_vel" -> Unique Value: np.float64(8.355756079477551)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.955941225152702)
+
+File: data/real/telemetry/SAFETY_SIGKILL_414_telemetry.csv (Total Rows: 65)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0169934968364738)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1700163003915575)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2052960596363957)
+  - Column: "j0_vel" -> Unique Value: np.float64(4.625000381286114)
+  - Column: "j1_vel" -> Unique Value: np.float64(8.31922977699006)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.911064759487218)
+
+File: data/real/telemetry/SAFETY_SIGKILL_415_telemetry.csv (Total Rows: 65)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0063894564011716)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1697034191666407)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2099101786981296)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.114121755534525)
+  - Column: "j1_vel" -> Unique Value: np.float64(-7.904524327791274)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.689247839454544)
+
+File: data/real/telemetry/SAFETY_SIGKILL_416_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0008515157694308)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1725923500477871)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2049324954687584)
+  - Column: "j0_vel" -> Unique Value: np.float64(5.245231434490315)
+  - Column: "j1_vel" -> Unique Value: np.float64(7.514545499645091)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.48722635902185)
+
+File: data/real/telemetry/SAFETY_SIGKILL_417_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0027374837908235)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.170833740253125)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2072625659742682)
+  - Column: "j0_vel" -> Unique Value: np.float64(3.5321079395469814e-08)
+  - Column: "j1_vel" -> Unique Value: np.float64(-1.3276491017991422e-08)
+  - Column: "j2_vel" -> Unique Value: np.float64(-9.903189379890576e-09)
+
+File: data/real/telemetry/SAFETY_SIGKILL_418_telemetry.csv (Total Rows: 81)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0095261649628944)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1728927530530834)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2026671537957869)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.351700720804583)
+  - Column: "j1_vel" -> Unique Value: np.float64(-7.057456845453467)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.219623856902415)
+
+File: data/real/telemetry/SAFETY_SIGKILL_419_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0120842059261464)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1688655362708337)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2102237330950911)
+  - Column: "j0_vel" -> Unique Value: np.float64(5.617366839815891)
+  - Column: "j1_vel" -> Unique Value: np.float64(7.054197976928132)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.212384208047616)
+
+File: data/real/telemetry/SAFETY_SIGKILL_420_telemetry.csv (Total Rows: 65)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0127173224972719)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1721289626174519)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2041654341405378)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.449727632046736)
+  - Column: "j1_vel" -> Unique Value: np.float64(-6.939499619757823)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.158908416793429)
+
+File: data/real/telemetry/SAFETY_SIGKILL_421_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0136353992125229)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1716040086950743)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2046154617441969)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.488741033710671)
+  - Column: "j1_vel" -> Unique Value: np.float64(-6.902978799802093)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.134694908322596)
+
+File: data/real/telemetry/SAFETY_SIGKILL_422_telemetry.csv (Total Rows: 66)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0086644294705844)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1738404900535479)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2002458583220959)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.176496979902029)
+  - Column: "j1_vel" -> Unique Value: np.float64(-7.110767612034612)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.259878870419711)
+
+File: data/real/telemetry/SAFETY_SIGKILL_423_telemetry.csv (Total Rows: 65)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.012431211396495)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1716939761386449)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2022578198785985)
+  - Column: "j0_vel" -> Unique Value: np.float64(5.362555297601344)
+  - Column: "j1_vel" -> Unique Value: np.float64(6.9631309792240845)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.158566277332659)
+
+File: data/real/telemetry/SAFETY_SIGKILL_424_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0127801292727357)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1708989329357891)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2071571618357988)
+  - Column: "j0_vel" -> Unique Value: np.float64(5.612628538732728)
+  - Column: "j1_vel" -> Unique Value: np.float64(6.930241880358522)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.145247030996269)
+
+File: data/real/telemetry/SAFETY_SIGKILL_425_telemetry.csv (Total Rows: 67)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0073092151853609)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1698864785927892)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2079528828151122)
+  - Column: "j0_vel" -> Unique Value: np.float64(5.373075168801525)
+  - Column: "j1_vel" -> Unique Value: np.float64(7.270088130994664)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.331870479464445)
+
+File: data/real/telemetry/SAFETY_SIGKILL_426_telemetry.csv (Total Rows: 65)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(-0.0027945521379348)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1673685995007248)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2137946120299714)
+  - Column: "j0_vel" -> Unique Value: np.float64(6.0343718239878354)
+  - Column: "j1_vel" -> Unique Value: np.float64(7.520111084818395)
+  - Column: "j2_vel" -> Unique Value: np.float64(4.458386670812953)
+
+File: data/real/telemetry/SAFETY_SIGKILL_427_telemetry.csv (Total Rows: 65)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0031638744256644)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1667654471694664)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.21521657547987)
+  - Column: "j0_vel" -> Unique Value: np.float64(-9.18598530492144e-09)
+  - Column: "j1_vel" -> Unique Value: np.float64(1.3731238367327574e-09)
+  - Column: "j2_vel" -> Unique Value: np.float64(-2.3172574967889808e-09)
+
+File: data/real/telemetry/SAFETY_SIGKILL_428_telemetry.csv (Total Rows: 64)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0081322549612619)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1661916506276244)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2138287106089581)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.228207193734132)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.029515475809903)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.7196382004376645)
+
+File: data/real/telemetry/SAFETY_SIGKILL_429_telemetry.csv (Total Rows: 65)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0110861069581773)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1679236004740892)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2111538355019609)
+  - Column: "j0_vel" -> Unique Value: np.float64(-4.956600362228305)
+  - Column: "j1_vel" -> Unique Value: np.float64(-8.152373528379762)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.816019058405649)
+
+File: data/real/telemetry/SAFETY_SIGKILL_430_telemetry.csv (Total Rows: 63)
+Constant Columns (6):
+  - Column: "tf_ee_x" -> Unique Value: np.float64(0.0070767715894653)
+  - Column: "tf_ee_y" -> Unique Value: np.float64(-0.1665464064350683)
+  - Column: "tf_ee_z" -> Unique Value: np.float64(0.2156225141520052)
+  - Column: "j0_vel" -> Unique Value: np.float64(-5.306761627743383)
+  - Column: "j1_vel" -> Unique Value: np.float64(-7.9927284910173295)
+  - Column: "j2_vel" -> Unique Value: np.float64(-4.718564816375117)
+
+File: data/real/tot_planning_latency_benchmark.csv (Total Rows: 60)
+Constant Columns (1):
+  - Column: "commit_hash" -> Unique Value: '8d83b97'
+
+File: runs/detect/arm_vision/datasets/overhead_workpiece/runs/yolov8_workpiece_1280/results.csv (Total Rows: 25)
+Constant Columns (4):
+  - Column: "metrics/precision(B)" -> Unique Value: np.int64(0)
+  - Column: "metrics/recall(B)" -> Unique Value: np.int64(0)
+  - Column: "metrics/mAP50(B)" -> Unique Value: np.int64(0)
+  - Column: "metrics/mAP50-95(B)" -> Unique Value: np.int64(0)
+
+
+================================================================================
+PART 2: FILES WHOSE MODIFICATION TIME IS LATER THAN SUPPOSED GENERATOR SCRIPT
+--------------------------------------------------------------------------------
+Total file pairs checked: 426
+Files whose modification time (mtime) is LATER than generating script: 250
+
+Data File:   data/legacy_synthetic/data/color_defect_cross_experiment.csv
+  Modification Time: 2026-09-29T21:04:02.073739+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_color_defect.py
+  Script Mod Time:   2026-09-29T21:01:46.769215+00:00
+  Delta:             +135.30 seconds later
+
+Data File:   data/legacy_synthetic/data/color_defect_summary.csv
+  Modification Time: 2026-09-29T21:04:02.075021+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_color_defect.py
+  Script Mod Time:   2026-09-29T21:01:46.769215+00:00
+  Delta:             +135.31 seconds later
+
+Data File:   data/legacy_synthetic/data/conveyor_rendezvous_dev.csv
+  Modification Time: 2026-10-11T13:19:48.088256+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_conveyor_rendezvous.py
+  Script Mod Time:   2026-10-11T13:19:41.554381+00:00
+  Delta:             +6.53 seconds later
+
+Data File:   data/legacy_synthetic/data/conveyor_rendezvous_test.csv
+  Modification Time: 2026-10-11T13:25:23.240395+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_conveyor_rendezvous.py
+  Script Mod Time:   2026-10-11T13:19:41.554381+00:00
+  Delta:             +341.69 seconds later
+
+Data File:   data/legacy_synthetic/data/depth_affine_calibration_dev.csv
+  Modification Time: 2026-10-11T13:22:29.685808+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_depth_calibration.py
+  Script Mod Time:   2026-09-29T21:31:55.978206+00:00
+  Delta:             +1007433.71 seconds later
+
+Data File:   data/legacy_synthetic/data/depth_affine_calibration_test.csv
+  Modification Time: 2026-10-11T13:26:28.939110+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_depth_calibration.py
+  Script Mod Time:   2026-09-29T21:31:55.978206+00:00
+  Delta:             +1007672.96 seconds later
+
+Data File:   data/legacy_synthetic/data/depth_calibration_comparison.csv
+  Modification Time: 2026-09-29T21:32:11.129036+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_depth_calibration.py
+  Script Mod Time:   2026-09-29T21:31:55.978206+00:00
+  Delta:             +15.15 seconds later
+
+Data File:   data/legacy_synthetic/data/depth_calibration_summary.csv
+  Modification Time: 2026-09-29T21:32:11.455032+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_depth_calibration.py
+  Script Mod Time:   2026-09-29T21:31:55.978206+00:00
+  Delta:             +15.48 seconds later
+
+Data File:   data/legacy_synthetic/data/estop_latency_benchmark.csv
+  Modification Time: 2026-09-29T21:03:44.187231+00:00
+  Generator Script:  data/legacy_synthetic/scripts/run_simulation_benchmarks.py
+  Script Mod Time:   2026-09-28T08:44:51.710351+00:00
+  Delta:             +130732.48 seconds later
+
+Data File:   data/legacy_synthetic/data/expanded_manipulation_trials.csv
+  Modification Time: 2026-09-28T15:56:24.374801+00:00
+  Generator Script:  data/legacy_synthetic/scripts/run_simulation_benchmarks.py
+  Script Mod Time:   2026-09-28T08:44:51.710351+00:00
+  Delta:             +25892.66 seconds later
+
+Data File:   data/legacy_synthetic/data/expanded_stress_suite_100.csv
+  Modification Time: 2026-09-28T15:56:40.168264+00:00
+  Generator Script:  data/legacy_synthetic/scripts/run_simulation_benchmarks.py
+  Script Mod Time:   2026-09-28T08:44:51.710351+00:00
+  Delta:             +25908.46 seconds later
+
+Data File:   data/legacy_synthetic/data/fault_injection_benchmark.csv
+  Modification Time: 2026-09-29T21:03:44.189934+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_fault_injection.py
+  Script Mod Time:   2026-09-29T21:01:33.853356+00:00
+  Delta:             +130.34 seconds later
+
+Data File:   data/legacy_synthetic/data/friction_grasp_placement_dev.csv
+  Modification Time: 2026-10-11T13:21:23.882189+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_friction_grasp_placement.py
+  Script Mod Time:   2026-10-11T13:21:15.563205+00:00
+  Delta:             +8.32 seconds later
+
+Data File:   data/legacy_synthetic/data/friction_grasp_placement_test.csv
+  Modification Time: 2026-10-11T13:25:53.972413+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_friction_grasp_placement.py
+  Script Mod Time:   2026-10-11T13:21:15.563205+00:00
+  Delta:             +278.41 seconds later
+
+Data File:   data/legacy_synthetic/data/ik_solver_benchmark_100k.csv
+  Modification Time: 2026-09-29T21:03:31.552099+00:00
+  Generator Script:  data/legacy_synthetic/scripts/run_simulation_benchmarks.py
+  Script Mod Time:   2026-09-28T08:44:51.710351+00:00
+  Delta:             +130719.84 seconds later
+
+Data File:   data/legacy_synthetic/data/ik_solver_benchmark_summary.csv
+  Modification Time: 2026-09-29T21:03:31.526167+00:00
+  Generator Script:  data/legacy_synthetic/scripts/run_simulation_benchmarks.py
+  Script Mod Time:   2026-09-28T08:44:51.710351+00:00
+  Delta:             +130719.82 seconds later
+
+Data File:   data/legacy_synthetic/data/language_grounding_benchmark.csv
+  Modification Time: 2026-10-01T20:04:10.732330+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_language_grounding.py
+  Script Mod Time:   2026-10-01T20:04:04.253429+00:00
+  Delta:             +6.48 seconds later
+
+Data File:   data/legacy_synthetic/data/language_grounding_summary.csv
+  Modification Time: 2026-10-01T20:04:10.734330+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_language_grounding.py
+  Script Mod Time:   2026-10-01T20:04:04.253429+00:00
+  Delta:             +6.48 seconds later
+
+Data File:   data/legacy_synthetic/data/perception_coarse_to_fine_dev.csv
+  Modification Time: 2026-10-11T13:22:24.194996+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_perception_coarse_to_fine.py
+  Script Mod Time:   2026-10-11T13:22:12.902097+00:00
+  Delta:             +11.29 seconds later
+
+Data File:   data/legacy_synthetic/data/perception_coarse_to_fine_test.csv
+  Modification Time: 2026-10-11T13:26:18.230518+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_perception_coarse_to_fine.py
+  Script Mod Time:   2026-10-11T13:22:12.902097+00:00
+  Delta:             +245.33 seconds later
+
+Data File:   data/legacy_synthetic/data/safety_runtime_dev.csv
+  Modification Time: 2026-10-11T13:17:52.326586+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_safety_runtime.py
+  Script Mod Time:   2026-10-11T13:17:00.784683+00:00
+  Delta:             +51.54 seconds later
+
+Data File:   data/legacy_synthetic/data/safety_runtime_test.csv
+  Modification Time: 2026-10-11T13:29:49.694582+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_safety_runtime.py
+  Script Mod Time:   2026-10-11T13:17:00.784683+00:00
+  Delta:             +768.91 seconds later
+
+Data File:   data/legacy_synthetic/data/scripted_baseline_dev.csv
+  Modification Time: 2026-10-11T13:22:52.377023+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_scripted_baseline.py
+  Script Mod Time:   2026-10-11T13:22:45.477036+00:00
+  Delta:             +6.90 seconds later
+
+Data File:   data/legacy_synthetic/data/scripted_baseline_test.csv
+  Modification Time: 2026-10-11T13:26:02.644743+00:00
+  Generator Script:  data/legacy_synthetic/scripts/benchmark_scripted_baseline.py
+  Script Mod Time:   2026-10-11T13:22:45.477036+00:00
+  Delta:             +197.17 seconds later
+
+Data File:   data/real/collision_free_friction_trials.csv
+  Modification Time: 2026-10-12T19:48:33.030781+00:00
+  Generator Script:  scripts/evaluate_collision_free_friction_trials.py
+  Script Mod Time:   2026-10-10T17:05:58.264597+00:00
+  Delta:             +182554.77 seconds later
+
+Data File:   data/real/color_defect_cross_experiment.csv
+  Modification Time: 2026-10-03T19:16:11.008408+00:00
+  Generator Script:  scripts/benchmark_color_defect_real.py
+  Script Mod Time:   2026-10-03T18:54:03.650101+00:00
+  Delta:             +1327.36 seconds later
+
+Data File:   data/real/color_defect_summary.csv
+  Modification Time: 2026-10-03T19:16:11.008851+00:00
+  Generator Script:  scripts/benchmark_color_defect_real.py
+  Script Mod Time:   2026-10-03T18:54:03.650101+00:00
+  Delta:             +1327.36 seconds later
+
+Data File:   data/real/confidence_calibration_summary.csv
+  Modification Time: 2026-10-03T19:16:11.011760+00:00
+  Generator Script:  scripts/benchmark_color_defect_real.py
+  Script Mod Time:   2026-10-03T18:54:03.650101+00:00
+  Delta:             +1327.36 seconds later
+
+Data File:   data/real/conveyor_speed_summary.csv
+  Modification Time: 2026-10-02T17:48:18.935557+00:00
+  Generator Script:  scripts/benchmark_simulation_real.py
+  Script Mod Time:   2026-10-02T16:53:47.028795+00:00
+  Delta:             +3271.91 seconds later
+
+Data File:   data/real/conveyor_speed_sweep.csv
+  Modification Time: 2026-10-02T17:48:18.480198+00:00
+  Generator Script:  scripts/benchmark_simulation_real.py
+  Script Mod Time:   2026-10-02T16:53:47.028795+00:00
+  Delta:             +3271.45 seconds later
+
+Data File:   data/real/conveyor_speed_sweep_v2.csv
+  Modification Time: 2026-10-04T06:40:39.450587+00:00
+  Generator Script:  scripts/benchmark_simulation_real_v2.py
+  Script Mod Time:   2026-10-04T06:03:46.462922+00:00
+  Delta:             +2212.99 seconds later
+
+Data File:   data/real/depth_anything_real.csv
+  Modification Time: 2026-10-11T20:07:17.669807+00:00
+  Generator Script:  scripts/benchmark_real_depth_anything.py
+  Script Mod Time:   2026-10-11T19:42:13.656315+00:00
+  Delta:             +1504.01 seconds later
+
+Data File:   data/real/depth_calibration_comparison.csv
+  Modification Time: 2026-10-03T16:15:48.390626+00:00
+  Generator Script:  scripts/benchmark_depth_calibration_real.py
+  Script Mod Time:   2026-10-03T16:13:40.762781+00:00
+  Delta:             +127.63 seconds later
+
+Data File:   data/real/depth_calibration_summary.csv
+  Modification Time: 2026-10-03T16:15:48.392172+00:00
+  Generator Script:  scripts/benchmark_depth_calibration_real.py
+  Script Mod Time:   2026-10-03T16:13:40.762781+00:00
+  Delta:             +127.63 seconds later
+
+Data File:   data/real/estop_latency_benchmark.csv
+  Modification Time: 2026-10-03T05:29:28.598088+00:00
+  Generator Script:  scripts/benchmark_fault_injection_real.py
+  Script Mod Time:   2026-10-03T05:25:29.011226+00:00
+  Delta:             +239.59 seconds later
+
+Data File:   data/real/estop_latency_benchmark_v2.csv
+  Modification Time: 2026-10-04T07:07:34.912105+00:00
+  Generator Script:  scripts/benchmark_fault_injection_real_v2.py
+  Script Mod Time:   2026-10-04T07:00:23.604636+00:00
+  Delta:             +431.31 seconds later
+
+Data File:   data/real/estop_latency_summary.csv
+  Modification Time: 2026-10-03T05:29:28.601386+00:00
+  Generator Script:  scripts/benchmark_fault_injection_real.py
+  Script Mod Time:   2026-10-03T05:25:29.011226+00:00
+  Delta:             +239.59 seconds later
+
+Data File:   data/real/estop_latency_summary_v2.csv
+  Modification Time: 2026-10-04T07:07:34.913800+00:00
+  Generator Script:  scripts/benchmark_fault_injection_real_v2.py
+  Script Mod Time:   2026-10-04T07:00:23.604636+00:00
+  Delta:             +431.31 seconds later
+
+Data File:   data/real/expanded_manipulation_summary.csv
+  Modification Time: 2026-10-02T17:48:18.929193+00:00
+  Generator Script:  scripts/benchmark_simulation_real.py
+  Script Mod Time:   2026-10-02T16:53:47.028795+00:00
+  Delta:             +3271.90 seconds later
+
+Data File:   data/real/expanded_manipulation_trials.csv
+  Modification Time: 2026-10-02T17:00:34.810479+00:00
+  Generator Script:  scripts/benchmark_simulation_real.py
+  Script Mod Time:   2026-10-02T16:53:47.028795+00:00
+  Delta:             +407.78 seconds later
+
+Data File:   data/real/expanded_manipulation_trials_v2.csv
+  Modification Time: 2026-10-04T06:22:40.189297+00:00
+  Generator Script:  scripts/benchmark_simulation_real_v2.py
+  Script Mod Time:   2026-10-04T06:03:46.462922+00:00
+  Delta:             +1133.73 seconds later
+
+Data File:   data/real/fault_injection_benchmark.csv
+  Modification Time: 2026-10-03T05:29:28.597708+00:00
+  Generator Script:  scripts/benchmark_fault_injection_real.py
+  Script Mod Time:   2026-10-03T05:25:29.011226+00:00
+  Delta:             +239.59 seconds later
+
+Data File:   data/real/fault_injection_benchmark_v2.csv
+  Modification Time: 2026-10-04T07:07:34.911368+00:00
+  Generator Script:  scripts/benchmark_fault_injection_real_v2.py
+  Script Mod Time:   2026-10-04T07:00:23.604636+00:00
+  Delta:             +431.31 seconds later
+
+Data File:   data/real/fault_injection_summary.csv
+  Modification Time: 2026-10-03T05:29:28.601154+00:00
+  Generator Script:  scripts/benchmark_fault_injection_real.py
+  Script Mod Time:   2026-10-03T05:25:29.011226+00:00
+  Delta:             +239.59 seconds later
+
+Data File:   data/real/fault_injection_summary_v2.csv
+  Modification Time: 2026-10-04T07:07:34.912952+00:00
+  Generator Script:  scripts/benchmark_fault_injection_real_v2.py
+  Script Mod Time:   2026-10-04T07:00:23.604636+00:00
+  Delta:             +431.31 seconds later
+
+Data File:   data/real/fk_comparison_10k.csv
+  Modification Time: 2026-10-03T20:34:41.084046+00:00
+  Generator Script:  scripts/compare_fk_three_models.py
+  Script Mod Time:   2026-10-03T20:34:34.206122+00:00
+  Delta:             +6.88 seconds later
+
+Data File:   data/real/fk_comparison_world_transform.csv
+  Modification Time: 2026-10-10T16:07:09.648639+00:00
+  Generator Script:  scripts/evaluate_fk_world_transform.py
+  Script Mod Time:   2026-10-10T16:06:56.550434+00:00
+  Delta:             +13.10 seconds later
+
+Data File:   data/real/friction_grasp_real_30seeds.csv
+  Modification Time: 2026-10-12T19:47:45.932622+00:00
+  Generator Script:  scripts/benchmark_real_friction_grasp.py
+  Script Mod Time:   2026-10-12T19:47:27.490653+00:00
+  Delta:             +18.44 seconds later
+
+Data File:   data/real/gazebo_tf_20261005T042407Z.csv
+  Modification Time: 2026-10-05T04:30:18.198910+00:00
+  Generator Script:  scripts/gazebo_tf_kinematic_validator.py
+  Script Mod Time:   2026-10-05T04:20:06.334692+00:00
+  Delta:             +611.86 seconds later
+
+Data File:   data/real/grasp_diagnosis_timeseries_3trials.csv
+  Modification Time: 2026-10-10T16:08:44.294548+00:00
+  Generator Script:  scripts/diagnose_pick_trials_timeseries.py
+  Script Mod Time:   2026-10-10T16:08:02.050039+00:00
+  Delta:             +42.24 seconds later
+
+Data File:   data/real/ik_benchmark_cartesian_100k.csv
+  Modification Time: 2026-10-02T13:57:23.228363+00:00
+  Generator Script:  scripts/benchmark_ik_real_100k.py
+  Script Mod Time:   2026-10-02T13:39:10.004109+00:00
+  Delta:             +1093.22 seconds later
+
+Data File:   data/real/ik_benchmark_dev_seeds_1_10.csv
+  Modification Time: 2026-10-12T09:12:51.106880+00:00
+  Generator Script:  scripts/benchmark_ik_comparison.py
+  Script Mod Time:   2026-10-11T13:14:12.026000+00:00
+  Delta:             +71919.08 seconds later
+
+Data File:   data/real/ik_benchmark_summary.csv
+  Modification Time: 2026-10-02T13:57:23.358614+00:00
+  Generator Script:  scripts/benchmark_ik_real_100k.py
+  Script Mod Time:   2026-10-02T13:39:10.004109+00:00
+  Delta:             +1093.35 seconds later
+
+Data File:   data/real/ik_benchmark_test_seeds_101_130.csv
+  Modification Time: 2026-10-11T13:25:16.937506+00:00
+  Generator Script:  scripts/benchmark_ik_comparison.py
+  Script Mod Time:   2026-10-11T13:14:12.026000+00:00
+  Delta:             +664.91 seconds later
+
+Data File:   data/real/ik_confusion_matrix_20261006T080221Z.csv
+  Modification Time: 2026-10-06T08:08:03.518353+00:00
+  Generator Script:  scripts/benchmark_reachability_grid_100k.py
+  Script Mod Time:   2026-10-06T03:29:32.502452+00:00
+  Delta:             +16711.02 seconds later
+
+Data File:   data/real/ik_confusion_matrix_20261007T144445Z.csv
+  Modification Time: 2026-10-07T14:47:57.835114+00:00
+  Generator Script:  scripts/benchmark_reachability_grid_100k.py
+  Script Mod Time:   2026-10-06T03:29:32.502452+00:00
+  Delta:             +127105.33 seconds later
+
+Data File:   data/real/ik_confusion_matrix_20261012T063154Z.csv
+  Modification Time: 2026-10-12T06:35:20.598682+00:00
+  Generator Script:  scripts/benchmark_reachability_grid_100k.py
+  Script Mod Time:   2026-10-06T03:29:32.502452+00:00
+  Delta:             +529548.10 seconds later
+
+Data File:   data/real/ik_urdf_v2_10k_20261006T032821Z.csv
+  Modification Time: 2026-10-06T04:32:23.294301+00:00
+  Generator Script:  scripts/benchmark_ik_urdf_v2_10k.py
+  Script Mod Time:   2026-10-06T03:28:13.045573+00:00
+  Delta:             +3850.25 seconds later
+
+Data File:   data/real/language_grounding_multiseed_summary.csv
+  Modification Time: 2026-10-03T21:51:33.183541+00:00
+  Generator Script:  scripts/benchmark_language_multiseed_real.py
+  Script Mod Time:   2026-10-03T21:07:33.145944+00:00
+  Delta:             +2640.04 seconds later
+
+Data File:   data/real/language_grounding_multiseed_trials.csv
+  Modification Time: 2026-10-03T21:51:33.120541+00:00
+  Generator Script:  scripts/benchmark_language_multiseed_real.py
+  Script Mod Time:   2026-10-03T21:07:33.145944+00:00
+  Delta:             +2639.97 seconds later
+
+Data File:   data/real/language_grounding_raw_trials.csv
+  Modification Time: 2026-10-02T15:26:31.296955+00:00
+  Generator Script:  scripts/benchmark_language_real_60.py
+  Script Mod Time:   2026-10-02T15:03:59.088124+00:00
+  Delta:             +1352.21 seconds later
+
+Data File:   data/real/language_grounding_summary.csv
+  Modification Time: 2026-10-02T15:26:31.331955+00:00
+  Generator Script:  scripts/benchmark_language_real_60.py
+  Script Mod Time:   2026-10-02T15:03:59.088124+00:00
+  Delta:             +1352.24 seconds later
+
+Data File:   data/real/perception_coarse_to_fine_real.csv
+  Modification Time: 2026-10-12T01:16:33.094708+00:00
+  Generator Script:  scripts/benchmark_real_perception_coarse_to_fine.py
+  Script Mod Time:   2026-10-12T00:32:50.990474+00:00
+  Delta:             +2622.10 seconds later
+
+Data File:   data/real/planner_benchmark_dev_seeds_1_3.csv
+  Modification Time: 2026-10-12T06:34:33.123088+00:00
+  Generator Script:  scripts/benchmark_planner_ambiguity.py
+  Script Mod Time:   2026-10-11T13:16:11.633775+00:00
+  Delta:             +62301.49 seconds later
+
+Data File:   data/real/planner_benchmark_test_heldout_60.csv
+  Modification Time: 2026-10-11T13:42:32.557148+00:00
+  Generator Script:  scripts/benchmark_planner_ambiguity.py
+  Script Mod Time:   2026-10-11T13:16:11.633775+00:00
+  Delta:             +1580.92 seconds later
+
+Data File:   data/real/reachability_grid_20261006T080221Z.csv
+  Modification Time: 2026-10-06T08:02:23.642045+00:00
+  Generator Script:  scripts/benchmark_reachability_grid_100k.py
+  Script Mod Time:   2026-10-06T03:29:32.502452+00:00
+  Delta:             +16371.14 seconds later
+
+Data File:   data/real/reachability_grid_20261007T144445Z.csv
+  Modification Time: 2026-10-07T14:44:47.250948+00:00
+  Generator Script:  scripts/benchmark_reachability_grid_100k.py
+  Script Mod Time:   2026-10-06T03:29:32.502452+00:00
+  Delta:             +126914.75 seconds later
+
+Data File:   data/real/reachability_grid_20261012T063154Z.csv
+  Modification Time: 2026-10-12T06:31:56.714502+00:00
+  Generator Script:  scripts/benchmark_reachability_grid_100k.py
+  Script Mod Time:   2026-10-06T03:29:32.502452+00:00
+  Delta:             +529344.21 seconds later
+
+Data File:   data/real/scripted_baseline_real.csv
+  Modification Time: 2026-10-12T01:31:07.755302+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2459.87 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_101_telemetry.csv
+  Modification Time: 2026-10-12T01:16:43.795348+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1595.91 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_102_telemetry.csv
+  Modification Time: 2026-10-12T01:16:46.519322+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1598.64 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_103_telemetry.csv
+  Modification Time: 2026-10-12T01:16:49.242295+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1601.36 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_104_telemetry.csv
+  Modification Time: 2026-10-12T01:16:51.968268+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1604.09 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_105_telemetry.csv
+  Modification Time: 2026-10-12T01:16:54.694242+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1606.81 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_106_telemetry.csv
+  Modification Time: 2026-10-12T01:16:57.416215+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1609.53 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_107_telemetry.csv
+  Modification Time: 2026-10-12T01:17:00.354265+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1612.47 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_108_telemetry.csv
+  Modification Time: 2026-10-12T01:17:03.291158+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1615.41 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_109_telemetry.csv
+  Modification Time: 2026-10-12T01:17:06.230129+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1618.35 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_110_telemetry.csv
+  Modification Time: 2026-10-12T01:17:09.170100+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1621.29 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_111_telemetry.csv
+  Modification Time: 2026-10-12T01:17:12.073072+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1624.19 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_112_telemetry.csv
+  Modification Time: 2026-10-12T01:17:15.013043+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1627.13 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_113_telemetry.csv
+  Modification Time: 2026-10-12T01:17:17.951014+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1630.07 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_114_telemetry.csv
+  Modification Time: 2026-10-12T01:17:20.892509+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1633.01 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_115_telemetry.csv
+  Modification Time: 2026-10-12T01:17:23.829957+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1635.95 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_116_telemetry.csv
+  Modification Time: 2026-10-12T01:17:26.773928+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1638.89 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_117_telemetry.csv
+  Modification Time: 2026-10-12T01:17:29.713899+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1641.83 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_118_telemetry.csv
+  Modification Time: 2026-10-12T01:17:32.718106+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1644.84 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_119_telemetry.csv
+  Modification Time: 2026-10-12T01:17:35.655841+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1647.77 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_120_telemetry.csv
+  Modification Time: 2026-10-12T01:17:38.642812+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1650.76 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_121_telemetry.csv
+  Modification Time: 2026-10-12T01:17:41.636782+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1653.75 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_122_telemetry.csv
+  Modification Time: 2026-10-12T01:17:44.575754+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1656.69 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_123_telemetry.csv
+  Modification Time: 2026-10-12T01:17:47.517725+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1659.63 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_124_telemetry.csv
+  Modification Time: 2026-10-12T01:17:50.459696+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1662.58 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_125_telemetry.csv
+  Modification Time: 2026-10-12T01:17:53.396667+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1665.51 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_126_telemetry.csv
+  Modification Time: 2026-10-12T01:17:56.333639+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1668.45 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_127_telemetry.csv
+  Modification Time: 2026-10-12T01:17:59.277610+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1671.39 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_128_telemetry.csv
+  Modification Time: 2026-10-12T01:18:02.220581+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1674.34 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_129_telemetry.csv
+  Modification Time: 2026-10-12T01:18:05.160552+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1677.28 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_01_SEED_130_telemetry.csv
+  Modification Time: 2026-10-12T01:18:08.099524+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1680.22 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_101_telemetry.csv
+  Modification Time: 2026-10-12T01:18:14.654459+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1686.77 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_102_telemetry.csv
+  Modification Time: 2026-10-12T01:18:20.899398+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1693.02 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_103_telemetry.csv
+  Modification Time: 2026-10-12T01:18:27.139337+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1699.26 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_104_telemetry.csv
+  Modification Time: 2026-10-12T01:18:33.384276+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1705.50 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_105_telemetry.csv
+  Modification Time: 2026-10-12T01:18:39.622215+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1711.74 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_106_telemetry.csv
+  Modification Time: 2026-10-12T01:18:45.865789+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1717.98 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_107_telemetry.csv
+  Modification Time: 2026-10-12T01:18:52.317075+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1724.43 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_108_telemetry.csv
+  Modification Time: 2026-10-12T01:18:58.774997+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1730.89 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_109_telemetry.csv
+  Modification Time: 2026-10-12T01:19:05.229919+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1737.35 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_110_telemetry.csv
+  Modification Time: 2026-10-12T01:19:11.689841+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1743.81 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_111_telemetry.csv
+  Modification Time: 2026-10-12T01:19:18.145763+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1750.26 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_112_telemetry.csv
+  Modification Time: 2026-10-12T01:19:24.651685+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1756.77 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_113_telemetry.csv
+  Modification Time: 2026-10-12T01:19:31.103606+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1763.22 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_114_telemetry.csv
+  Modification Time: 2026-10-12T01:19:37.554529+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1769.67 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_115_telemetry.csv
+  Modification Time: 2026-10-12T01:19:44.011451+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1776.13 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_116_telemetry.csv
+  Modification Time: 2026-10-12T01:19:50.462373+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1782.58 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_117_telemetry.csv
+  Modification Time: 2026-10-12T01:19:56.921295+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1789.04 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_118_telemetry.csv
+  Modification Time: 2026-10-12T01:20:03.372217+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1795.49 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_119_telemetry.csv
+  Modification Time: 2026-10-12T01:20:09.830447+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1801.95 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_120_telemetry.csv
+  Modification Time: 2026-10-12T01:20:16.289061+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1808.41 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_121_telemetry.csv
+  Modification Time: 2026-10-12T01:20:22.794982+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1814.91 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_122_telemetry.csv
+  Modification Time: 2026-10-12T01:20:29.242904+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1821.36 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_123_telemetry.csv
+  Modification Time: 2026-10-12T01:20:35.694826+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1827.81 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_124_telemetry.csv
+  Modification Time: 2026-10-12T01:20:42.146748+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1834.26 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_125_telemetry.csv
+  Modification Time: 2026-10-12T01:20:48.597671+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1840.71 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_126_telemetry.csv
+  Modification Time: 2026-10-12T01:20:55.051593+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1847.17 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_127_telemetry.csv
+  Modification Time: 2026-10-12T01:21:01.506515+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1853.62 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_128_telemetry.csv
+  Modification Time: 2026-10-12T01:21:07.959437+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1860.08 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_129_telemetry.csv
+  Modification Time: 2026-10-12T01:21:14.414359+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1866.53 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_02_SEED_130_telemetry.csv
+  Modification Time: 2026-10-12T01:21:20.869281+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1872.99 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_101_telemetry.csv
+  Modification Time: 2026-10-12T01:21:26.227216+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1878.34 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_102_telemetry.csv
+  Modification Time: 2026-10-12T01:21:31.372154+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1883.49 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_103_telemetry.csv
+  Modification Time: 2026-10-12T01:21:36.576091+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1888.69 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_104_telemetry.csv
+  Modification Time: 2026-10-12T01:21:41.721029+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1893.84 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_105_telemetry.csv
+  Modification Time: 2026-10-12T01:21:46.879966+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1899.00 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_106_telemetry.csv
+  Modification Time: 2026-10-12T01:21:52.024904+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1904.14 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_107_telemetry.csv
+  Modification Time: 2026-10-12T01:21:57.334840+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1909.45 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_108_telemetry.csv
+  Modification Time: 2026-10-12T01:22:02.729775+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1914.85 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_109_telemetry.csv
+  Modification Time: 2026-10-12T01:22:08.038711+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1920.16 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_110_telemetry.csv
+  Modification Time: 2026-10-12T01:22:13.384646+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1925.50 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_111_telemetry.csv
+  Modification Time: 2026-10-12T01:22:18.745582+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1930.86 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_112_telemetry.csv
+  Modification Time: 2026-10-12T01:22:24.056517+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1936.17 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_113_telemetry.csv
+  Modification Time: 2026-10-12T01:22:29.382782+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1941.50 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_114_telemetry.csv
+  Modification Time: 2026-10-12T01:22:34.792388+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1946.91 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_115_telemetry.csv
+  Modification Time: 2026-10-12T01:22:40.101324+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1952.22 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_116_telemetry.csv
+  Modification Time: 2026-10-12T01:22:45.446259+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1957.56 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_117_telemetry.csv
+  Modification Time: 2026-10-12T01:22:50.938193+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1963.06 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_118_telemetry.csv
+  Modification Time: 2026-10-12T01:22:56.432127+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1968.55 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_119_telemetry.csv
+  Modification Time: 2026-10-12T01:23:01.793062+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1973.91 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_120_telemetry.csv
+  Modification Time: 2026-10-12T01:23:07.122997+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1979.24 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_121_telemetry.csv
+  Modification Time: 2026-10-12T01:23:12.532932+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1984.65 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_122_telemetry.csv
+  Modification Time: 2026-10-12T01:23:17.844868+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1989.96 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_123_telemetry.csv
+  Modification Time: 2026-10-12T01:23:23.156804+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +1995.27 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_124_telemetry.csv
+  Modification Time: 2026-10-12T01:23:28.484739+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2000.60 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_125_telemetry.csv
+  Modification Time: 2026-10-12T01:23:33.892674+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2006.01 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_126_telemetry.csv
+  Modification Time: 2026-10-12T01:23:39.365608+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2011.48 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_127_telemetry.csv
+  Modification Time: 2026-10-12T01:23:44.742543+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2016.86 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_128_telemetry.csv
+  Modification Time: 2026-10-12T01:23:50.090478+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2022.21 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_129_telemetry.csv
+  Modification Time: 2026-10-12T01:23:55.465413+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2027.58 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_04_SEED_130_telemetry.csv
+  Modification Time: 2026-10-12T01:24:00.893348+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2033.01 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_101_telemetry.csv
+  Modification Time: 2026-10-12T01:24:05.288295+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2037.41 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_102_telemetry.csv
+  Modification Time: 2026-10-12T01:24:09.520244+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2041.64 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_103_telemetry.csv
+  Modification Time: 2026-10-12T01:24:13.751193+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2045.87 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_104_telemetry.csv
+  Modification Time: 2026-10-12T01:24:17.982141+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2050.10 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_105_telemetry.csv
+  Modification Time: 2026-10-12T01:24:22.254090+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2054.37 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_106_telemetry.csv
+  Modification Time: 2026-10-12T01:24:26.483934+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2058.60 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_107_telemetry.csv
+  Modification Time: 2026-10-12T01:24:30.898458+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2063.02 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_108_telemetry.csv
+  Modification Time: 2026-10-12T01:24:35.390940+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2067.51 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_109_telemetry.csv
+  Modification Time: 2026-10-12T01:24:39.886487+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2072.00 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_110_telemetry.csv
+  Modification Time: 2026-10-12T01:24:44.276021+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2076.39 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_111_telemetry.csv
+  Modification Time: 2026-10-12T01:24:48.765568+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2080.88 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_112_telemetry.csv
+  Modification Time: 2026-10-12T01:24:53.287096+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2085.40 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_113_telemetry.csv
+  Modification Time: 2026-10-12T01:24:57.677030+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2089.79 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_114_telemetry.csv
+  Modification Time: 2026-10-12T01:25:02.066963+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2094.18 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_115_telemetry.csv
+  Modification Time: 2026-10-12T01:25:06.559895+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2098.68 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_116_telemetry.csv
+  Modification Time: 2026-10-12T01:25:11.051827+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2103.17 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_117_telemetry.csv
+  Modification Time: 2026-10-12T01:25:15.544760+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2107.66 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_118_telemetry.csv
+  Modification Time: 2026-10-12T01:25:20.032691+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2112.15 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_119_telemetry.csv
+  Modification Time: 2026-10-12T01:25:24.541623+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2116.66 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_120_telemetry.csv
+  Modification Time: 2026-10-12T01:25:29.033819+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2121.15 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_121_telemetry.csv
+  Modification Time: 2026-10-12T01:25:33.424489+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2125.54 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_122_telemetry.csv
+  Modification Time: 2026-10-12T01:25:37.823422+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2129.94 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_123_telemetry.csv
+  Modification Time: 2026-10-12T01:25:42.314354+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2134.43 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_124_telemetry.csv
+  Modification Time: 2026-10-12T01:25:46.831286+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2138.95 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_125_telemetry.csv
+  Modification Time: 2026-10-12T01:25:51.271219+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2143.39 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_126_telemetry.csv
+  Modification Time: 2026-10-12T01:25:55.785151+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2147.90 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_127_telemetry.csv
+  Modification Time: 2026-10-12T01:26:00.376081+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2152.49 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_128_telemetry.csv
+  Modification Time: 2026-10-12T01:26:04.816014+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2156.93 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_129_telemetry.csv
+  Modification Time: 2026-10-12T01:26:09.208948+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2161.33 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_07_SEED_130_telemetry.csv
+  Modification Time: 2026-10-12T01:26:13.694880+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2165.81 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_101_telemetry.csv
+  Modification Time: 2026-10-12T01:26:18.128813+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2170.25 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_102_telemetry.csv
+  Modification Time: 2026-10-12T01:26:22.397748+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2174.51 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_103_telemetry.csv
+  Modification Time: 2026-10-12T01:26:26.647684+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2178.76 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_104_telemetry.csv
+  Modification Time: 2026-10-12T01:26:30.936619+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2183.05 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_105_telemetry.csv
+  Modification Time: 2026-10-12T01:26:35.366552+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2187.48 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_106_telemetry.csv
+  Modification Time: 2026-10-12T01:26:39.615488+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2191.73 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_107_telemetry.csv
+  Modification Time: 2026-10-12T01:26:44.122419+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2196.24 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_108_telemetry.csv
+  Modification Time: 2026-10-12T01:26:48.586352+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2200.70 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_109_telemetry.csv
+  Modification Time: 2026-10-12T01:26:53.052284+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2205.17 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_110_telemetry.csv
+  Modification Time: 2026-10-12T01:26:57.579216+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2209.70 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_111_telemetry.csv
+  Modification Time: 2026-10-12T01:27:01.989149+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2214.11 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_112_telemetry.csv
+  Modification Time: 2026-10-12T01:27:06.452081+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2218.57 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_113_telemetry.csv
+  Modification Time: 2026-10-12T01:27:10.915014+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2223.03 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_114_telemetry.csv
+  Modification Time: 2026-10-12T01:27:15.378947+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2227.50 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_115_telemetry.csv
+  Modification Time: 2026-10-12T01:27:19.847879+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2231.96 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_116_telemetry.csv
+  Modification Time: 2026-10-12T01:27:24.311811+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2236.43 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_117_telemetry.csv
+  Modification Time: 2026-10-12T01:27:28.773744+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2240.89 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_118_telemetry.csv
+  Modification Time: 2026-10-12T01:27:33.254676+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2245.37 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_119_telemetry.csv
+  Modification Time: 2026-10-12T01:27:37.716609+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2249.83 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_120_telemetry.csv
+  Modification Time: 2026-10-12T01:27:42.228540+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2254.35 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_121_telemetry.csv
+  Modification Time: 2026-10-12T01:27:46.692473+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2258.81 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_122_telemetry.csv
+  Modification Time: 2026-10-12T01:27:51.149405+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2263.27 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_123_telemetry.csv
+  Modification Time: 2026-10-12T01:27:55.609338+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2267.73 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_124_telemetry.csv
+  Modification Time: 2026-10-12T01:28:00.126270+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2272.24 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_125_telemetry.csv
+  Modification Time: 2026-10-12T01:28:04.597202+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2276.71 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_126_telemetry.csv
+  Modification Time: 2026-10-12T01:28:09.100134+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2281.22 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_127_telemetry.csv
+  Modification Time: 2026-10-12T01:28:13.567066+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2285.68 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_128_telemetry.csv
+  Modification Time: 2026-10-12T01:28:18.044998+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2290.16 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_129_telemetry.csv
+  Modification Time: 2026-10-12T01:28:22.531931+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2294.65 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_08_SEED_130_telemetry.csv
+  Modification Time: 2026-10-12T01:28:27.001863+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2299.12 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_101_telemetry.csv
+  Modification Time: 2026-10-12T01:28:32.357782+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2304.47 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_102_telemetry.csv
+  Modification Time: 2026-10-12T01:28:37.502704+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2309.62 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_103_telemetry.csv
+  Modification Time: 2026-10-12T01:28:42.643630+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2314.76 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_104_telemetry.csv
+  Modification Time: 2026-10-12T01:28:47.805933+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2319.92 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_105_telemetry.csv
+  Modification Time: 2026-10-12T01:28:52.950950+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2325.07 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_106_telemetry.csv
+  Modification Time: 2026-10-12T01:28:58.112490+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2330.23 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_107_telemetry.csv
+  Modification Time: 2026-10-12T01:29:03.438047+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2335.56 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_108_telemetry.csv
+  Modification Time: 2026-10-12T01:29:08.767605+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2340.88 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_109_telemetry.csv
+  Modification Time: 2026-10-12T01:29:14.236716+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2346.35 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_110_telemetry.csv
+  Modification Time: 2026-10-12T01:29:19.592636+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2351.71 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_111_telemetry.csv
+  Modification Time: 2026-10-12T01:29:25.035555+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2357.15 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_112_telemetry.csv
+  Modification Time: 2026-10-12T01:29:30.439475+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2362.56 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_113_telemetry.csv
+  Modification Time: 2026-10-12T01:29:35.870394+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2367.99 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_114_telemetry.csv
+  Modification Time: 2026-10-12T01:29:41.200315+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2373.32 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_115_telemetry.csv
+  Modification Time: 2026-10-12T01:29:46.787232+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2378.90 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_116_telemetry.csv
+  Modification Time: 2026-10-12T01:29:52.262151+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2384.38 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_117_telemetry.csv
+  Modification Time: 2026-10-12T01:29:57.569072+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2389.69 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_118_telemetry.csv
+  Modification Time: 2026-10-12T01:30:02.873993+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2394.99 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_119_telemetry.csv
+  Modification Time: 2026-10-12T01:30:08.203913+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2400.32 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_120_telemetry.csv
+  Modification Time: 2026-10-12T01:30:13.668832+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2405.79 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_121_telemetry.csv
+  Modification Time: 2026-10-12T01:30:19.044752+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2411.16 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_122_telemetry.csv
+  Modification Time: 2026-10-12T01:30:24.369673+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2416.49 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_123_telemetry.csv
+  Modification Time: 2026-10-12T01:30:29.695594+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2421.81 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_124_telemetry.csv
+  Modification Time: 2026-10-12T01:30:35.102513+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2427.22 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_125_telemetry.csv
+  Modification Time: 2026-10-12T01:30:40.469434+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2432.59 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_126_telemetry.csv
+  Modification Time: 2026-10-12T01:30:45.848353+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2437.97 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_127_telemetry.csv
+  Modification Time: 2026-10-12T01:30:51.271273+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2443.39 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_128_telemetry.csv
+  Modification Time: 2026-10-12T01:30:56.716192+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2448.83 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_129_telemetry.csv
+  Modification Time: 2026-10-12T01:31:02.116112+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2454.23 seconds later
+
+Data File:   data/real/telemetry/SCRIPTED_task_09_SEED_130_telemetry.csv
+  Modification Time: 2026-10-12T01:31:07.488032+00:00
+  Generator Script:  scripts/benchmark_real_scripted_baseline.py
+  Script Mod Time:   2026-10-12T00:50:07.883008+00:00
+  Delta:             +2459.61 seconds later
+
+Data File:   data/real/tot_planning_latency_benchmark.csv
+  Modification Time: 2026-10-03T21:17:44.334222+00:00
+  Generator Script:  scripts/benchmark_language_multiseed_real.py
+  Script Mod Time:   2026-10-03T21:07:33.145944+00:00
+  Delta:             +611.19 seconds later
+

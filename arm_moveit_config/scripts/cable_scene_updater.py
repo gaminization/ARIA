@@ -34,7 +34,7 @@ class CableSceneUpdater(Node):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint"
+        "wrist_pitch_joint"
     ]
 
     def __init__(self):

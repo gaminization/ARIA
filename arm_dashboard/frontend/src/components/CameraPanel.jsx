@@ -93,20 +93,32 @@ export default function CameraPanel({
   const activeOverlayCount = Object.values(showOverlays).filter(Boolean).length;
 
   const camStats = cameraStreams?.camera_stats || {};
-  const fpsTop = camStats?.top?.fps ? camStats.top.fps.toFixed(1) : (healthState?.fps_top ? healthState.fps_top.toFixed(1) : '30.0');
-  const fpsWrist = camStats?.wrist?.fps ? camStats.wrist.fps.toFixed(1) : (healthState?.fps_wrist ? healthState.fps_wrist.toFixed(1) : '30.0');
-  const fpsSide = camStats?.side?.fps ? camStats.side.fps.toFixed(1) : '30.0';
-  const topRes = camStats?.top?.width ? `${camStats.top.width}×${camStats.top.height}` : '720p';
-  const wristRes = camStats?.wrist?.width ? `${camStats.wrist.width}×${camStats.wrist.height}` : '720p';
-  const sideRes = camStats?.side?.width ? `${camStats.side.width}×${camStats.side.height}` : '720p';
-  const latency = healthState?.inference_latency_ms ? healthState.inference_latency_ms.toFixed(0) : '12';
+  const formatMetric = (value, digits = 1) =>
+    Number.isFinite(value) && value > 0 ? value.toFixed(digits) : 'N/A';
+  const cameraFps = (camera, fallback) =>
+    formatMetric(camStats?.[camera]?.fps ?? healthState?.[fallback]);
+  const cameraResolution = (camera) => {
+    const stats = camStats?.[camera];
+    return stats?.width > 0 && stats?.height > 0
+      ? `${stats.width}×${stats.height}`
+      : 'N/A';
+  };
+  const fpsTop = cameraFps('top', 'fps_top');
+  const fpsWrist = cameraFps('wrist', 'fps_wrist');
+  const fpsSide = cameraFps('side', 'fps_side');
+  const topRes = cameraResolution('top');
+  const wristRes = cameraResolution('wrist');
+  const sideRes = cameraResolution('side');
+  const latency = formatMetric(healthState?.inference_latency_ms, 0);
 
   const detections = visionState?.detected_objects || [];
   const primaryTarget = detections[0] || null;
 
   const servoActive = servoState?.active || false;
-  const servoErrorX = servoState?.error_x ?? -4.0;
-  const servoErrorY = servoState?.error_y ?? 2.5;
+  const servoErrorX = Number.isFinite(servoState?.error_x) ? servoState.error_x : null;
+  const servoErrorY = Number.isFinite(servoState?.error_y) ? servoState.error_y : null;
+  const formatPixelError = (value) =>
+    Number.isFinite(value) ? value.toFixed(1) : 'N/A';
   const servoConverged = servoState?.converged || false;
 
   // Stream mapping helper
@@ -158,9 +170,9 @@ export default function CameraPanel({
             <div className="flex items-center gap-1.5">
               <span className={`w-1.5 h-1.5 rounded-full ${servoActive ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500'}`} />
               <span>VLA SERVO:</span>
-              <span>ΔX: {servoErrorX.toFixed(1)}px</span>
+              <span>ΔX: {formatPixelError(servoErrorX)}px</span>
               <span>·</span>
-              <span>ΔY: {servoErrorY.toFixed(1)}px</span>
+              <span>ΔY: {formatPixelError(servoErrorY)}px</span>
             </div>
             <span className="text-emerald-400 font-semibold uppercase">
               {servoConverged ? 'ALIGNED [CONVERGED]' : (servoActive ? 'CLOSED-LOOP SERVOING' : 'SEMANTIC GROUNDED')}
@@ -558,7 +570,7 @@ export default function CameraPanel({
                 Task: {taskState?.current_command || 'Autonomous physical pick'}
               </div>
               <div className="text-emerald-200 mt-1 space-y-0.5 text-[9px]">
-                <div>Pixel Error: ΔX={servoErrorX.toFixed(1)}px · ΔY={servoErrorY.toFixed(1)}px</div>
+                <div>Pixel Error: ΔX={formatPixelError(servoErrorX)}px · ΔY={formatPixelError(servoErrorY)}px</div>
                 <div>Alignment status: {servoConverged ? 'Centroid converged (<15px)' : 'Closed-loop trimming'}</div>
                 <div className="text-slate-400">Cross-entropy verification: Target semantic class verified authentic.</div>
               </div>
@@ -573,7 +585,7 @@ export default function CameraPanel({
               <div className="space-y-1 text-slate-400">
                 <div className="flex items-start gap-1">
                   <span className="text-emerald-400 font-semibold shrink-0">[VLA → OperatingAgent]:</span>
-                  <span>Dispatched Δx={servoErrorX.toFixed(1)}px, Δy={servoErrorY.toFixed(1)}px correction.</span>
+                  <span>Dispatched Δx={formatPixelError(servoErrorX)}px, Δy={formatPixelError(servoErrorY)}px correction.</span>
                 </div>
                 <div className="flex items-start gap-1">
                   <span className="text-cyan-400 font-semibold shrink-0">[OperatingAgent → Controller]:</span>
@@ -629,7 +641,7 @@ export default function CameraPanel({
             <div className="relative rounded border border-[#252a38] bg-black/60 overflow-hidden flex flex-col group min-h-0">
               <div className="absolute top-1 left-1.5 z-10 flex items-center gap-1 bg-black/85 px-1.5 py-0.5 rounded border border-white/10 text-[9px] font-mono text-purple-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                TOP (OVERHEAD) — LIVE VERIFICATION ({topRes})
+                TOP (OVERHEAD) — CAMERA FEED ({topRes})
               </div>
               <div className="absolute top-1 right-1.5 z-10 flex items-center gap-1.5">
                 <span className="text-[9px] font-mono text-slate-400 bg-black/80 px-1 py-0.5 rounded">{fpsTop} FPS</span>
@@ -662,7 +674,7 @@ export default function CameraPanel({
             <div className="relative rounded border border-[#252a38] bg-black/60 overflow-hidden flex flex-col group min-h-0">
               <div className="absolute top-1 left-1.5 z-10 flex items-center gap-1 bg-black/85 px-1.5 py-0.5 rounded border border-white/10 text-[9px] font-mono text-amber-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                SIDE (PROFILE) — LIVE VERIFICATION ({sideRes})
+                SIDE (PROFILE) — CAMERA FEED ({sideRes})
               </div>
               <div className="absolute top-1 right-1.5 z-10 flex items-center gap-1.5">
                 <span className="text-[9px] font-mono text-amber-400 bg-black/80 px-1 py-0.5 rounded">{fpsSide} FPS</span>

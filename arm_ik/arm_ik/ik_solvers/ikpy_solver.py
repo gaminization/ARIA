@@ -72,15 +72,6 @@ def _build_ikpy_chain() -> 'ikpy.chain.Chain':
             bounds=(JOINT_LIMITS[3, 0], JOINT_LIMITS[3, 1]),
         ),
 
-        # Joint 5: Wrist roll — X rotation, 0.055m along wrist
-        ikpy.link.URDFLink(
-            name="wrist_roll",
-            origin_translation=[0, 0, 0.055],
-            origin_orientation=[0, 0, 0],
-            rotation=[1, 0, 0],  # X-axis
-            bounds=(JOINT_LIMITS[4, 0], JOINT_LIMITS[4, 1]),
-        ),
-
         # Tool frame (fixed, 0.040m gripper offset)
         ikpy.link.URDFLink(
             name="tool",
@@ -93,7 +84,7 @@ def _build_ikpy_chain() -> 'ikpy.chain.Chain':
     return ikpy.chain.Chain(
         name="aria_arm",
         links=links,
-        active_links_mask=[False, True, True, True, True, True, False],
+        active_links_mask=[False, True, True, True, True, False],
     )
 
 
@@ -120,7 +111,7 @@ def solve_ikpy(target_position: np.ndarray,
         target_position: [x, y, z] target in base_link frame (meters)
         target_orientation: 3×3 rotation matrix (optional, ikpy can solve
                            position-only if None)
-        initial_position: initial joint angles [5] for warm start
+        initial_position: initial arm joint angles [4] for warm start
         config: solver configuration
 
     Returns:
@@ -139,14 +130,25 @@ def solve_ikpy(target_position: np.ndarray,
     t_start = time.perf_counter()
     chain = _get_chain()
 
-    # Build initial position vector (ikpy includes fixed links)
-    # Format: [fixed, j1, j2, j3, j4, j5, fixed] = 7 values
+    # Build initial position vector (base and tool links are fixed).
     if initial_position is not None:
+        if np.asarray(initial_position).shape != (4,):
+            return IKResult(
+                success=False,
+                solver_name="ikpy",
+                message="initial_position must contain four arm joint angles",
+            )
         init_pos = [0.0] + list(initial_position) + [0.0]
     elif config.current_joints is not None:
+        if np.asarray(config.current_joints).shape != (4,):
+            return IKResult(
+                success=False,
+                solver_name="ikpy",
+                message="current_joints must contain four arm joint angles",
+            )
         init_pos = [0.0] + list(config.current_joints) + [0.0]
     else:
-        init_pos = [0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0]
+        init_pos = [0.0, 0.0, 1.0, 0.5, 0.0, 0.0]
 
     try:
         # Build target frame (4×4 homogeneous)
@@ -172,10 +174,10 @@ def solve_ikpy(target_position: np.ndarray,
             )
 
         # Extract active joint angles (skip fixed links)
-        joint_angles = np.array(ik_result[1:6])
+        joint_angles = np.array(ik_result[1:5])
 
         # Clamp to joint limits
-        for j in range(5):
+        for j in range(4):
             joint_angles[j] = np.clip(
                 joint_angles[j], JOINT_LIMITS[j, 0], JOINT_LIMITS[j, 1]
             )

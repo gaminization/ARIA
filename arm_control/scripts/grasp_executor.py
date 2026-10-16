@@ -48,7 +48,7 @@ class GraspExecutor(Node):
         self.cb_group = ReentrantCallbackGroup()
 
         # Current state
-        self.current_joints = np.zeros(5)
+        self.current_joints = np.zeros(4)
         self.gripper_position = 0.0
 
         # Joint state subscriber
@@ -92,7 +92,7 @@ class GraspExecutor(Node):
         """Update current joint positions."""
         joint_names = [
             "waist_joint", "shoulder_joint", "elbow_joint",
-            "wrist_pitch_joint", "wrist_roll_joint"
+            "wrist_pitch_joint"
         ]
         for i, name in enumerate(joint_names):
             if name in msg.name:

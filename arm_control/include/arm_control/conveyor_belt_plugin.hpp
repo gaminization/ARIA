@@ -64,6 +64,7 @@ private:
 
   rclcpp::Time last_publish_time_;
   int update_interval_ns_{50000000};  // 20 Hz
+  double last_diagnostic_time_{-1.0};
 };
 
 }  // namespace gazebo_ros

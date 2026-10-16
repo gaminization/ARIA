@@ -88,6 +88,22 @@ def generate_launch_description():
         )],
     )
 
+    grasp_node = TimerAction(
+        period=2.0,
+        actions=[Node(
+            package='arm_vision', executable='grasp_node',
+            name='grasp_node', output='screen',
+        )],
+    )
+
+    sam2_node = TimerAction(
+        period=2.0,
+        actions=[Node(
+            package='arm_vision', executable='sam2_node',
+            name='sam2_node', output='screen',
+        )],
+    )
+
     visual_servo_node = TimerAction(
         period=2.5,
         actions=[Node(
@@ -122,8 +138,8 @@ def generate_launch_description():
         name='attention_agent', output='screen')])
 
     planning_agent = TimerAction(period=5.5, actions=[Node(
-        package='arm_agents', executable='planning_agent',
-        name='planning_agent', output='screen')])
+        package='arm_agents', executable='llm_planning_agent',
+        name='llm_planning_agent', output='screen')])
 
     reachability_agent = TimerAction(period=5.5, actions=[Node(
         package='arm_agents', executable='reachability_agent',
@@ -274,6 +290,8 @@ def generate_launch_description():
         yolo_detection,
         depth_node,
         ik_node,
+        grasp_node,
+        sam2_node,
         visual_servo_node,
 
         # Stage 3 — agents

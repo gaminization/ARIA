@@ -235,21 +235,43 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
 ```
 
-### C. Launching the Simulation Workcell
+### C. Launching the Full ARIA System
+
+ARIA features a unified, one-command launcher that initializes Gazebo simulation, the 15 ROS 2 lifecycle agents, controllers, vision/depth grounding pipelines, and the telemetry dashboard:
+
 ```bash
-# Launch Gazebo Classic 11 with the ARIA industrial workcell, 5-DoF arm, and ROS 2 controllers
-ros2 launch arm_bringup industrial_workcell.launch.py
+# 1. Standard full-system launch (headless simulation + dashboard):
+./launch.sh
+
+# 2. Launch with Gazebo Classic 3D GUI window:
+./launch.sh --gui
+
+# 3. Launch specific simulation worlds:
+./launch.sh -w tester --gui      # Tester workspace (default)
+./launch.sh -w industrial --gui  # Industrial manufacturing workcell with active conveyor
+./launch.sh -w workspace --gui   # Tabletop workspace
+
+# 4. Check active system status:
+./launch.sh --status
+
+# 5. Cleanly stop all running services:
+./launch.sh --stop
 ```
 
-### D. Starting the Telemetry Dashboard
-```bash
-# Terminal 1: Launch FastAPI Telemetry Backend
-python3 arm_dashboard/app.py
+*(Alternatively, use `./scripts/aria_launch_full.sh` directly with identical arguments).*
 
-# Terminal 2: Launch Vite React Dashboard
-cd arm_dashboard/frontend
-npm install && npm run dev
-# Dashboard accessible at http://localhost:3000 (Vite) or http://localhost:8000 (FastAPI)
+### D. Accessing the Telemetry Dashboard
+
+Once launched, the ARIA Control Center provides real-time multi-agent observability and human-in-the-loop task dispatch:
+* **Interactive Web Console:** [http://localhost:8000](http://localhost:8000) (Production FastAPI + built React UI)
+* **REST API Documentation:** [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
+* **Real-time State Bus:** `ws://localhost:8000/ws/state` (10 Hz JSON telemetry)
+* **Live Camera Streams:** `ws://localhost:8000/ws/cameras` (30 FPS dual overhead + wrist feeds)
+
+To run the Vite React frontend in development mode with hot-reloading:
+```bash
+cd arm_dashboard/frontend && npm run dev
+# Accessible at http://localhost:5173
 ```
 
 ### E. Executing Empirical Benchmarks

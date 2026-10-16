@@ -43,6 +43,14 @@ try:
 except ImportError:
     CV2_AVAILABLE = False
 
+try:
+    from arm_vision.sys_config import sys_config
+except ImportError:
+    from sys_config import sys_config
+
+
+MAX_TRACK_MATCH_DISTANCE_PX = 45.0
+
 
 class DetectionNode(Node):
     """
@@ -104,8 +112,9 @@ class DetectionNode(Node):
             self.get_logger().warn("ultralytics not installed")
 
         self.device = device
-        self.use_half = use_half
+        self.use_half = use_half or (sys_config.use_half_precision and 'cuda' in device)
         self.bridge = CvBridge() if CV_BRIDGE else None
+        self._processing = False
 
         # Tracking state
         self.track_id_map: Dict[int, int] = {}  # YOLO ID → persistent ID
@@ -180,7 +189,10 @@ class DetectionNode(Node):
             return best_color
         return ""
 
-    def _get_persistent_track_id(self, cx: float, cy: float, class_name: str) -> int:
+    def _get_persistent_track_id(
+        self, cx: float, cy: float, class_name: str,
+        used_track_ids: Optional[set[int]] = None,
+    ) -> int:
         """Assign or match persistent 2D track ID based on pixel proximity."""
         base_cls = class_name.split('|')[0]
         now = time.time()
@@ -192,12 +204,14 @@ class DetectionNode(Node):
         for tid in stale_ids:
             del self.active_tracks[tid]
 
-        # Match with active tracks within 120 pixels
+        # Keep the match radius below the spacing of adjacent conveyor objects.
         for tid, (tcx, tcy, tcls, _) in self.active_tracks.items():
+            if used_track_ids and tid in used_track_ids:
+                continue
             t_base = tcls.split('|')[0]
             if t_base == base_cls or base_cls in {'table_object', 'unknown'} or t_base in {'table_object', 'unknown'}:
                 dist = math.hypot(cx - tcx, cy - tcy)
-                if dist < min_dist and dist < 120.0:
+                if dist < min_dist and dist < MAX_TRACK_MATCH_DISTANCE_PX:
                     min_dist = dist
                     best_id = tid
 
@@ -205,30 +219,104 @@ class DetectionNode(Node):
             self.active_tracks[best_id] = (cx, cy, class_name, now)
             return best_id
         else:
+            while self.next_track_id in self.active_tracks or (
+                used_track_ids and self.next_track_id in used_track_ids
+            ):
+                self.next_track_id += 1
             new_id = self.next_track_id
             self.next_track_id += 1
             self.active_tracks[new_id] = (cx, cy, class_name, now)
             return new_id
+
+    def _assign_frame_track_id(
+        self,
+        cx: float,
+        cy: float,
+        class_name: str,
+        preferred_id: Optional[int],
+        used_track_ids: set[int],
+    ) -> int:
+        """Assign an ID without allowing two detections in one frame to share it."""
+        now = time.time()
+        if preferred_id is not None and preferred_id >= 0 and preferred_id not in used_track_ids:
+            track_id = preferred_id
+            self.active_tracks[track_id] = (cx, cy, class_name, now)
+            self.next_track_id = max(self.next_track_id, track_id + 1)
+        else:
+            track_id = self._get_persistent_track_id(cx, cy, class_name, used_track_ids)
+        used_track_ids.add(track_id)
+        return track_id
+
+    @staticmethod
+    def _suppress_duplicate_boxes(raw_boxes: list) -> list:
+        """Suppress overlapping boxes while preserving nearby distinct objects."""
+        raw_boxes.sort(key=lambda box: box[4], reverse=True)
+        kept = []
+        for box in raw_boxes:
+            x1, y1, x2, y2 = box[:4]
+            is_duplicate = False
+            for existing in kept:
+                sx1, sy1, sx2, sy2 = existing[:4]
+                ix1, iy1 = max(x1, sx1), max(y1, sy1)
+                ix2, iy2 = min(x2, sx2), min(y2, sy2)
+                intersection = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+                area = (x2 - x1) * (y2 - y1)
+                existing_area = (sx2 - sx1) * (sy2 - sy1)
+                iou = intersection / (area + existing_area - intersection + 1e-6)
+                if iou > 0.35:
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                kept.append(box)
+        return kept
+
+    def _robot_self_mask(self, cv_image: np.ndarray):
+        """Mask of the arm: the near-white connected component that touches the
+        mounting plate at the image centre (top-down camera is centred on the base)."""
+        try:
+            h, w = cv_image.shape[:2]
+            white = cv2.inRange(cv_image, (170, 170, 170), (255, 255, 255))
+            white = cv2.dilate(white, np.ones((5, 5), np.uint8))
+            n, labels = cv2.connectedComponents(white)
+            patch = labels[int(h * 0.5) - 20:int(h * 0.5) + 20, int(w * 0.5) - 20:int(w * 0.5) + 20]
+            ids = [i for i in np.unique(patch) if i != 0]
+            if not ids:
+                return None
+            mask = np.isin(labels, ids).astype(np.uint8) * 255
+            return cv2.dilate(mask, np.ones((9, 9), np.uint8))
+        except Exception:
+            return None
 
     def _image_cb(self, msg: Image):
         """Process incoming camera frame with YOLO and physical color extraction."""
         if self.model is None or self.bridge is None:
             return
 
+        if self._processing or not sys_config.should_process('detection_node', sys_config.detection_max_rate_hz):
+            return
+
+        self._processing = True
         try:
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
             self.get_logger().error(f"CV bridge error: {e}")
+            self._processing = False
             return
 
-        t_start = time.perf_counter()
+        try:
+            t_start = time.perf_counter()
 
-        results = self.model.predict(
-            cv_image,
-            verbose=False,
-            device=self.device,
-            conf=self.conf_threshold,
-        )
+            results = self.model.predict(
+                cv_image,
+                verbose=False,
+                device=self.device,
+                conf=self.conf_threshold,
+            )
+        except Exception as e:
+            self.get_logger().error(f"YOLO inference error: {e}")
+            sys_config.periodic_cache_clear()
+            self._processing = False
+            return
 
         inference_ms = (time.perf_counter() - t_start) * 1000
 
@@ -238,6 +326,7 @@ class DetectionNode(Node):
 
         det_array = Detection2DArray()
         det_array.header = msg.header
+        frame_track_ids: set[int] = set()
         covered_boxes = []
 
         if results and len(results) > 0:
@@ -301,30 +390,21 @@ class DetectionNode(Node):
 
                     raw_boxes.append((x1, y1, x2, y2, confidence, class_name, color, box))
 
-                # 2. Sort by confidence descending and apply class-agnostic NMS
-                raw_boxes.sort(key=lambda b: b[4], reverse=True)
-                suppressed_boxes = []
-                for b in raw_boxes:
-                    x1, y1, x2, y2, confidence, class_name, color, box = b
-                    cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
-                    is_dup = False
-                    for sb in suppressed_boxes:
-                        sx1, sy1, sx2, sy2 = sb[:4]
-                        scx, scy = (sx1 + sx2) / 2.0, (sy1 + sy2) / 2.0
-                        ix1, iy1 = max(x1, sx1), max(y1, sy1)
-                        ix2, iy2 = min(x2, sx2), min(y2, sy2)
-                        inter_w = max(0.0, ix2 - ix1)
-                        inter_h = max(0.0, iy2 - iy1)
-                        inter_area = inter_w * inter_h
-                        area1 = (x2 - x1) * (y2 - y1)
-                        area2 = (sx2 - sx1) * (sy2 - sy1)
-                        iou = inter_area / (area1 + area2 - inter_area + 1e-6)
-                        dist = math.hypot(cx - scx, cy - scy)
-                        if iou > 0.35 or dist < 35.0:
-                            is_dup = True
-                            break
-                    if not is_dup:
-                        suppressed_boxes.append(b)
+                # 1b. Self-mask: drop detections that sit on the robot's own structure
+                if 'top' in self.camera_topic:
+                    arm_mask = self._robot_self_mask(cv_image)
+                    if arm_mask is not None:
+                        kept = []
+                        for b in raw_boxes:
+                            bx1, by1, bx2, by2 = [int(max(0, v)) for v in b[:4]]
+                            roi = arm_mask[by1:by2, bx1:bx2]
+                            frac = float(roi.mean()) / 255.0 if roi.size else 0.0
+                            if frac > 0.45:
+                                continue
+                            kept.append(b)
+                        raw_boxes = kept
+
+                suppressed_boxes = self._suppress_duplicate_boxes(raw_boxes)
 
                 for b in suppressed_boxes:
                     x1, y1, x2, y2, confidence, class_name, color, box = b
@@ -341,10 +421,14 @@ class DetectionNode(Node):
                     hyp.hypothesis.score = confidence
                     det.results.append(hyp)
 
-                    if box.id is not None:
-                        det.id = str(int(box.id[0]))
-                    else:
-                        det.id = str(self._get_persistent_track_id(float((x1 + x2)/2), float((y1 + y2)/2), full_class_id))
+                    preferred_id = int(box.id[0]) if box.id is not None else None
+                    det.id = str(self._assign_frame_track_id(
+                        float((x1 + x2) / 2),
+                        float((y1 + y2) / 2),
+                        full_class_id,
+                        preferred_id,
+                        frame_track_ids,
+                    ))
 
                     det_array.detections.append(det)
                     covered_boxes.append((x1, y1, x2, y2))
@@ -404,20 +488,45 @@ class DetectionNode(Node):
                     aspect = max(bw, bh) / max(min(bw, bh), 1)
                     min_dim = min(bw, bh)
                     min_area = int(220 * area_scale) if is_industrial else 350
-                    if min_area <= area <= 4000 and aspect < 2.2 and min_dim >= 20:
+                    if min_area <= area <= 4000 and aspect < 2.2 and min_dim >= 18:
                         segmented_candidates.append(('workpiece', 'blue', bx, by, bw, bh, 0.95))
+                        segmented_candidates.append(('cylinder', 'blue', bx, by, bw, bh, 0.94))
                     elif 4000 <= area < 7500 and not is_industrial:
                         segmented_candidates.append(('mug', 'blue', bx, by, bw, bh, 0.92))
 
-                # Red box / reject bin container
+                # Red box / reject bin container AND red cube / tabletop objects
                 mask_red = ((cv2.inRange(hsv, (0, 70, 50), (10, 255, 255)) |
                              cv2.inRange(hsv, (170, 70, 50), (180, 255, 255))) & table_mask)
                 cnts_r, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for c in cnts_r:
                     area = cv2.contourArea(c)
+                    bx, by, bw, bh = cv2.boundingRect(c)
                     if area > 4000:
-                        bx, by, bw, bh = cv2.boundingRect(c)
                         segmented_candidates.append(('box', 'red', bx, by, bw, bh, 0.95))
+                    elif int(180 * area_scale) <= area <= 4000 and min(bw, bh) >= 16:
+                        segmented_candidates.append(('cube', 'red', bx, by, bw, bh, 0.95))
+                        segmented_candidates.append(('block', 'red', bx, by, bw, bh, 0.94))
+
+                # Yellow items (yellow block, banana, cube)
+                mask_yellow = (cv2.inRange(hsv, (20, 70, 60), (38, 255, 255)) & table_mask)
+                cnts_y, _ = cv2.findContours(mask_yellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts_y:
+                    area = cv2.contourArea(c)
+                    bx, by, bw, bh = cv2.boundingRect(c)
+                    if (int(180 * area_scale) <= area <= 5000 and min(bw, bh) >= 16
+                            and max(bw, bh) / min(bw, bh) <= 2.2):
+                        segmented_candidates.append(('block', 'yellow', bx, by, bw, bh, 0.95))
+                        segmented_candidates.append(('cube', 'yellow', bx, by, bw, bh, 0.94))
+
+                # Green items (green block / sphere)
+                mask_green = (cv2.inRange(hsv, (38, 60, 40), (82, 255, 255)) & table_mask)
+                cnts_g, _ = cv2.findContours(mask_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts_g:
+                    area = cv2.contourArea(c)
+                    bx, by, bw, bh = cv2.boundingRect(c)
+                    if (int(180 * area_scale) <= area <= 5000 and min(bw, bh) >= 16
+                            and max(bw, bh) / min(bw, bh) <= 2.2):
+                        segmented_candidates.append(('block', 'green', bx, by, bw, bh, 0.95))
 
                 # Merge segmented candidates
                 for cls_name, color, bx, by, bw, bh, conf in segmented_candidates:
@@ -453,7 +562,9 @@ class DetectionNode(Node):
                     hyp.hypothesis.score = conf
                     det.results.append(hyp)
 
-                    det.id = str(self._get_persistent_track_id(cx, cy, full_cls))
+                    det.id = str(self._assign_frame_track_id(
+                        cx, cy, full_cls, None, frame_track_ids,
+                    ))
                     det_array.detections.append(det)
                     covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
 
@@ -477,7 +588,9 @@ class DetectionNode(Node):
                             hyp.hypothesis.class_id = "plate|white"
                             hyp.hypothesis.score = 0.92
                             det.results.append(hyp)
-                            det.id = str(self._get_persistent_track_id(cx, cy, "plate|white"))
+                            det.id = str(self._assign_frame_track_id(
+                                cx, cy, "plate|white", None, frame_track_ids,
+                            ))
                             det_array.detections.append(det)
                             covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
 
@@ -503,8 +616,11 @@ class DetectionNode(Node):
                 ann_msg = self.bridge.cv2_to_imgmsg(annotated, encoding='bgr8')
                 ann_msg.header = msg.header
                 self.annotated_pub.publish(ann_msg)
-            except Exception:
-                pass
+            except Exception as e:
+                self.get_logger().warn(f"Annotated image publish warning: {e}")
+        sys_config.periodic_cache_clear()
+        self._processing = False
+
 
 
 def main(args=None):

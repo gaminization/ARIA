@@ -38,7 +38,7 @@ class ServoSyncNode(Node):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint", "gripper_joint",
+        "wrist_pitch_joint", "gripper_joint",
     ]
 
     def __init__(self):
@@ -55,13 +55,13 @@ class ServoSyncNode(Node):
 
         # ── Calibration offsets (degrees) ──────────────────
         # Offset = sim_angle - real_servo_angle per joint
-        self._offsets = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self._offsets = [0.0] * len(self.JOINT_NAMES)
         if cal_file and os.path.exists(cal_file):
             self._load_calibration(cal_file)
 
         # ── State ──────────────────────────────────────────
-        self._sim_positions_rad = [0.0] * 6
-        self._real_positions_deg = [0.0] * 6
+        self._sim_positions_rad = [0.0] * len(self.JOINT_NAMES)
+        self._real_positions_deg = [0.0] * len(self.JOINT_NAMES)
         self._esp32_connected = False
         self._last_heartbeat = 0.0
         self._teach_trajectory = []
@@ -164,7 +164,7 @@ class ServoSyncNode(Node):
         cmd.name = list(self.JOINT_NAMES)
         cmd.position = []
 
-        for i in range(6):
+        for i in range(len(self.JOINT_NAMES)):
             # Convert radians to degrees
             sim_deg = math.degrees(self._sim_positions_rad[i])
             # Apply calibration offset
@@ -180,9 +180,19 @@ class ServoSyncNode(Node):
     # ═══════════════════════════════════════════════════════════
     def _real_joint_cb(self, msg: JointState):
         """Receive ESP32 servo states. Forward to sim if REAL_TO_SIM."""
-        # Store real positions
-        for i in range(min(len(msg.position), 6)):
-            self._real_positions_deg[i] = msg.position[i]
+        if msg.name:
+            for i, name in enumerate(self.JOINT_NAMES):
+                if name in msg.name:
+                    idx = msg.name.index(name)
+                    if idx < len(msg.position):
+                        self._real_positions_deg[i] = msg.position[idx]
+        elif len(msg.position) == len(self.JOINT_NAMES):
+            self._real_positions_deg[:] = msg.position
+        else:
+            self.get_logger().warning(
+                "Ignoring unnamed servo state with unexpected joint count "
+                f"{len(msg.position)}")
+            return
 
         if self._sync_mode in ("REAL_TO_SIM", "MIRROR"):
             self._forward_to_sim()
@@ -201,7 +211,7 @@ class ServoSyncNode(Node):
         override.name = list(self.JOINT_NAMES)
         override.position = []
 
-        for i in range(6):
+        for i in range(len(self.JOINT_NAMES)):
             # Remove calibration offset
             sim_deg = self._real_positions_deg[i] - self._offsets[i]
             # Convert to radians
@@ -284,7 +294,7 @@ class ServoSyncNode(Node):
         samples = []
         for _ in range(5):
             offsets = []
-            for i in range(6):
+            for i in range(len(self.JOINT_NAMES)):
                 sim_deg = math.degrees(self._sim_positions_rad[i])
                 real_deg = self._real_positions_deg[i]
                 offsets.append(sim_deg - real_deg)
@@ -292,7 +302,7 @@ class ServoSyncNode(Node):
             time.sleep(0.2)
 
         # Average offsets
-        for i in range(6):
+        for i in range(len(self.JOINT_NAMES)):
             vals = [s[i] for s in samples]
             self._offsets[i] = sum(vals) / len(vals)
 
@@ -321,7 +331,7 @@ class ServoSyncNode(Node):
 
         max_error = 0.0
         errors = []
-        for i in range(6):
+        for i in range(len(self.JOINT_NAMES)):
             sim_deg = math.degrees(self._sim_positions_rad[i])
             real_deg = self._real_positions_deg[i] + self._offsets[i]
             err = abs(sim_deg - real_deg)
@@ -360,7 +370,26 @@ class ServoSyncNode(Node):
             with open(path, "r") as f:
                 data = yaml.safe_load(f)
             if data and "offsets_deg" in data:
-                self._offsets = data["offsets_deg"][:6]
+                saved_names = data.get("joint_names", [])
+                saved_offsets = data["offsets_deg"]
+                if saved_names and len(saved_names) == len(saved_offsets):
+                    offsets_by_name = dict(zip(saved_names, saved_offsets))
+                    if all(name in offsets_by_name for name in self.JOINT_NAMES):
+                        self._offsets = [
+                            offsets_by_name[name] for name in self.JOINT_NAMES
+                        ]
+                    else:
+                        self.get_logger().warning(
+                            "Ignoring calibration offsets: joint names do not "
+                            "match the configured arm")
+                        return
+                elif len(saved_offsets) == len(self.JOINT_NAMES):
+                    self._offsets = saved_offsets
+                else:
+                    self.get_logger().warning(
+                        "Ignoring calibration offsets without matching joint "
+                        "names")
+                    return
                 self.get_logger().info(f"Loaded calibration from {path}")
         except Exception as e:
             self.get_logger().warn(f"Could not load calibration: {e}")

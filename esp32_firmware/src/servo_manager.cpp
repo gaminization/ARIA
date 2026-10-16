@@ -49,12 +49,6 @@ ServoManager::ServoManager()
         SG90_MIN_PULSE_DEFAULT, SG90_MAX_PULSE_DEFAULT,
         0.0f, 4095.0f, DEFAULT_SPEED_LIMIT
     };
-    _configs[JOINT_WRIST_ROLL] = {
-        "wrist_roll", 9, 33, SERVO_SG90,
-        0.0f, 180.0f, 90.0f,
-        SG90_MIN_PULSE_DEFAULT, SG90_MAX_PULSE_DEFAULT,
-        0.0f, 4095.0f, DEFAULT_SPEED_LIMIT
-    };
     _configs[JOINT_GRIPPER] = {
         "gripper", 11, 26, SERVO_SG90,
         0.0f, 55.0f, 20.0f,
@@ -101,7 +95,7 @@ void ServoManager::init() {
         _torque_enabled[i] = true;
     }
 
-    Serial.println("[ServoManager] All 6 servos initialized at home positions.");
+    Serial.println("[ServoManager] All 5 servos initialized at home positions.");
 }
 
 // ═══════════════════════════════════════════════════════════════

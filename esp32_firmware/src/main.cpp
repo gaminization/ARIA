@@ -124,7 +124,7 @@ uint32_t prev_loop_time = 0;
 // Joint name strings for micro-ROS messages
 const char* joint_names[NUM_JOINTS] = {
     "waist_joint", "shoulder_joint", "elbow_joint",
-    "wrist_pitch_joint", "wrist_roll_joint", "gripper_joint"
+    "wrist_pitch_joint", "gripper_joint"
 };
 
 // ═══════════════════════════════════════════════════════════════

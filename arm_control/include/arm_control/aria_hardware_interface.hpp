@@ -23,15 +23,14 @@ namespace arm_control
 {
 
 /// Number of actuated joints on the ARIA arm
-constexpr size_t NUM_JOINTS = 6;
+constexpr size_t NUM_JOINTS = 5;
 
-/// Joint names in kinematic chain order
+/// Four arm axes followed by the gripper
 const std::vector<std::string> JOINT_NAMES = {
   "waist_joint",
   "shoulder_joint",
   "elbow_joint",
   "wrist_pitch_joint",
-  "wrist_roll_joint",
   "gripper_joint"
 };
 

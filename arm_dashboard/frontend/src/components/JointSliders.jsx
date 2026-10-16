@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 
 const JOINT_CONFIGS = [
-  { name: 'waist_joint', label: 'J1 — Waist (MG995)', min: -90, max: 90, color: '#6366f1' },
-  { name: 'shoulder_joint', label: 'J2 — Shoulder (MG995)', min: 0, max: 180, color: '#8b5cf6' },
-  { name: 'elbow_joint', label: 'J3 — Elbow (MG995)', min: 0, max: 180, color: '#a78bfa' },
+  { name: 'waist_joint', label: 'J1 — Waist (MG995)', min: -180, max: 180, color: '#6366f1' },
+  { name: 'shoulder_joint', label: 'J2 — Shoulder (MG995)', min: -90, max: 90, color: '#8b5cf6' },
+  { name: 'elbow_joint', label: 'J3 — Elbow (MG995)', min: -90, max: 90, color: '#a78bfa' },
   { name: 'wrist_pitch_joint', label: 'J4 — Wrist Pitch (SG90)', min: -90, max: 90, color: '#c4b5fd' },
-  { name: 'wrist_roll_joint', label: 'J5 — Wrist Roll (SG90)', min: -90, max: 90, color: '#e0d4ff' },
+  { name: 'gripper_joint', label: 'Gripper (SG90)', min: 0, max: 60, color: '#e0d4ff' },
 ];
 
 const NAMED_POSES = {
-  Home: [0, 90, 75, 0, 0],
-  Ready: [0, 45, 90, 0, 0],
-  Extended: [0, 60, 120, -20, 0],
-  'Left View': [45, 60, 90, 0, 0],
-  'Right View': [-45, 60, 90, 0, 0],
-  'Look Down': [0, 90, 90, -45, 0],
+  Home: [0, 0, 0, 0, 0],
+  Ready: [0, 35, -55, 20, 20],
+  Extended: [0, 48, -70, 22, 25],
+  'Left View': [45, 20, -30, 10, 20],
+  'Right View': [-45, 20, -30, 10, 20],
+  'Look Down': [0, 20, -30, -45, 20],
   Zero: [0, 0, 0, 0, 0],
 };
 

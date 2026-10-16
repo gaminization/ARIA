@@ -79,7 +79,7 @@ class VisualServoNode(Node):
         self.prev_error_x = 0.0
         self.prev_error_y = 0.0
         self.object_detected = False
-        self.current_joints_rad = [0.0] * 5  # waist, shoulder, elbow, wrist_pitch, wrist_roll
+        self.current_joints_rad = [0.0] * 4
 
         self.bridge = CvBridge() if CV_AVAILABLE else None
 
@@ -129,7 +129,7 @@ class VisualServoNode(Node):
     def _joint_state_cb(self, msg: JointState):
         """Track current joint positions so corrections are relative."""
         names = ["waist_joint", "shoulder_joint", "elbow_joint",
-                 "wrist_pitch_joint", "wrist_roll_joint"]
+                 "wrist_pitch_joint"]
         for i, name in enumerate(names):
             if name in msg.name:
                 idx = msg.name.index(name)
@@ -237,7 +237,7 @@ class VisualServoNode(Node):
 
         stream_msg = JointState()
         stream_msg.name = ["waist_joint", "shoulder_joint", "elbow_joint",
-                           "wrist_pitch_joint", "wrist_roll_joint"]
+                           "wrist_pitch_joint"]
         stream_msg.position = target
         self.joint_stream_pub.publish(stream_msg)
 

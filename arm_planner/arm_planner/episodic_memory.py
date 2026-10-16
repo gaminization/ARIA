@@ -44,6 +44,12 @@ def _get_embedding_model():
             _EMBEDDING_MODEL = SentenceTransformer(
                 'all-MiniLM-L6-v2',
                 device='cpu',  # Never use GPU for embeddings
+                # Memory recording runs on the task/state-machine path.  It
+                # must never block that path while Hugging Face downloads a
+                # model (or retries an unavailable network).  Operators can
+                # pre-cache this model during provisioning; otherwise the
+                # SQLite temporal-memory features remain available.
+                local_files_only=True,
             )
             logger.info("Loaded sentence-transformers embedding model (CPU)")
         except ImportError:

@@ -80,20 +80,24 @@ The operator can approve the action via `/aria/approve` or abort via `/aria/reje
 
 ## 4. Starting the Telemetry Dashboard
 
-The dashboard can be launched as a standalone service or alongside the full simulation workcell:
+The dashboard can be launched as part of the full system or as a standalone service:
 
 ```bash
-# Terminal 1: Launch FastAPI Telemetry Backend
-source /opt/ros/humble/setup.bash
-source install/setup.bash
-python3 arm_dashboard/app.py
+# Option 1: Integrated full-system launcher (Simulation + Agents + Dashboard)
+./launch.sh
 
-# Terminal 2: Launch Vite React Frontend
+# Option 2: Standalone Dashboard Server (serves built React frontend + API)
+./arm_dashboard/launch_dashboard.sh
+# (or manually: python3 arm_dashboard/app.py)
+
+# Option 3: React Frontend Development Mode (hot-reloading)
 cd arm_dashboard/frontend
 npm run dev -- --host
 ```
 
-The interface will be accessible at:
-- **Web UI:** `http://localhost:5173`
-- **REST API Docs:** `http://localhost:8000/docs`
-- **WebSocket Feed:** `ws://localhost:8000/ws`
+The interface is accessible at:
+- **Integrated Web Console (Production):** [http://localhost:8000](http://localhost:8000)
+- **Interactive REST API (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Real-Time State WebSocket:** `ws://localhost:8000/ws/state` (10 Hz JSON telemetry)
+- **Live Camera Stream WebSocket:** `ws://localhost:8000/ws/cameras` (30 FPS dual stream)
+- **Vite Dev Server (Optional):** [http://localhost:5173](http://localhost:5173)

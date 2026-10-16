@@ -33,8 +33,8 @@ class VLAInput:
     """Input to any VLA backend."""
     top_camera_image: Optional[np.ndarray] = None       # H×W×3 uint8
     wrist_camera_image: Optional[np.ndarray] = None     # H×W×3 uint8
-    joint_positions: Optional[np.ndarray] = None        # 5 floats (rad)
-    joint_velocities: Optional[np.ndarray] = None       # 5 floats (rad/s)
+    joint_positions: Optional[np.ndarray] = None        # 4 arm joints (rad)
+    joint_velocities: Optional[np.ndarray] = None       # 4 arm joints (rad/s)
     gripper_position: float = 0.0                        # 0=open, 1=closed
     instruction: str = ""                                # NL task instruction
     timestep: int = 0
@@ -43,7 +43,7 @@ class VLAInput:
 @dataclass
 class VLAOutput:
     """Output from any VLA backend."""
-    joint_commands: np.ndarray = field(default_factory=lambda: np.zeros(5))
+    joint_commands: np.ndarray = field(default_factory=lambda: np.zeros(4))
     gripper_command: float = 0.0       # 0=open, 1=closed
     confidence: float = 0.0
     is_delta: bool = True              # True if commands are deltas
@@ -173,8 +173,16 @@ class LeRobotBackend(VLABackend):
                 img = np.transpose(img, (2, 0, 1))
                 obs["observation.images.wrist"] = torch.from_numpy(img).unsqueeze(0)
 
+            arm_positions = (
+                np.asarray(vla_input.joint_positions, dtype=np.float32)
+                if vla_input.joint_positions is not None
+                else np.zeros(4, dtype=np.float32)
+            )
+            if arm_positions.shape != (4,):
+                raise ValueError(
+                    "VLA input must contain exactly four arm joint positions")
             state = np.concatenate([
-                vla_input.joint_positions or np.zeros(5),
+                arm_positions,
                 [vla_input.gripper_position],
             ])
             obs["observation.state"] = torch.from_numpy(
@@ -399,20 +407,25 @@ class OpenVLABackend(VLABackend):
             (action, cam_note) = self._time_inference(_infer)
 
             # ── Map action to ARIA joints ──────────────────────────
-            # OpenVLA outputs 6-dim vector: [a0, a1, a2, a3, a4, gripper]
-            # After norm_stats injection with our 6-dim mask, we get exactly 6.
+            # Accept only the documented current (4 arm + gripper) or legacy
+            # (5 arm + gripper) action layout.
             action_np = np.array(action, dtype=np.float32)
 
-            if len(action_np) >= 6:
-                joint_deltas = action_np[:5]    # 5 joint deltas
-                gripper_cmd  = float(np.clip(action_np[5], 0.0, 1.0))
+            if len(action_np) == 6:
+                joint_deltas = action_np[:4]
+                gripper_cmd = float(np.clip(action_np[5], 0.0, 1.0))
             elif len(action_np) == 5:
-                joint_deltas = action_np[:5]
-                gripper_cmd  = 0.0
+                joint_deltas = action_np[:4]
+                gripper_cmd = float(np.clip(action_np[4], 0.0, 1.0))
             else:
-                # Bridge 7-dim fallback: drop wrist_roll (dim 3), use first 5
-                joint_deltas = np.concatenate([action_np[:3], action_np[4:6]])
-                gripper_cmd  = float(np.clip(action_np[6], 0.0, 1.0)) if len(action_np) > 6 else 0.0
+                return VLAOutput(
+                    confidence=0.0,
+                    reasoning=(
+                        "Unsupported VLA action dimension: expected 5 "
+                        "(four arm axes plus gripper) or 6 (legacy layout), "
+                        f"got {len(action_np)}"
+                    ),
+                )
 
             output = VLAOutput()
             output.joint_commands = joint_deltas

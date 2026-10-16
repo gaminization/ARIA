@@ -109,20 +109,36 @@ python3 scripts/check_dependencies.py
 ═══════════════════════════════════════════════════════════════
 ```
 
-### Step 3: Launch Full Simulation & Workcell
-In Terminal 1 (Simulation + ROS 2 Nodes):
+### Step 3: Launch Full Simulation & System Stack
+
+Project ARIA includes a universal launcher that automatically manages simulation, ROS 2 nodes, controllers, and the web telemetry dashboard:
+
 ```bash
-source /opt/ros/humble/setup.bash
+# Option A: One-Command Background Launch (Recommended)
+./launch.sh
+# Or with Gazebo 3D GUI:
+./launch.sh --gui
+
+# Option B: Direct Foreground Industrial Pipeline
+./scripts/aria_start.sh
+
+# Option C: Modular Manual Launch
+# Terminal 1 (Simulation & 15 Agents):
+source /opt/ros/humble/setup.bash && source install/setup.bash
+ros2 launch arm_bringup aria_full_u3.launch.py world:=aria_tester_workspace.world
+
+# Terminal 2 (FastAPI Telemetry Bridge):
 source install/setup.bash
-ros2 launch arm_bringup industrial_workcell.launch.py
+python3 arm_dashboard/app.py
 ```
 
-In Terminal 2 (FastAPI Telemetry + Web Dashboard):
+Open your browser to [http://localhost:8000](http://localhost:8000) to interact with the ARIA Operator Console (REST API docs at [http://localhost:8000/docs](http://localhost:8000/docs)).
+
+To check system status or stop all running processes:
 ```bash
-source install/setup.bash
-./scripts/aria_launch_full.sh
+./launch.sh --status   # Check active nodes, controllers, and topics
+./launch.sh --stop     # Clean shutdown
 ```
-Open your browser to `http://localhost:3000` to interact with the ARIA Operator Console.
 
 ---
 

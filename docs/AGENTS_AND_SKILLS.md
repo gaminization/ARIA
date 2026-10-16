@@ -2,7 +2,7 @@
 
 ## 1. ROS 2 Lifecycle Management of Agents
 
-All fifteen ARIA agents inherit from `rclpy.lifecycle.LifecycleNode`. This guarantees deterministic startup, clean teardown, and deterministic runtime fault recovery without thread deadlocks or dangling callbacks:
+Some agents inherit from `rclpy.lifecycle.LifecycleNode`; others, including the health monitor, are ordinary ROS nodes. Launch starts agents on timers and then runs a best-effort lifecycle activator. The activator skips unavailable nodes, so its completion message does not prove that every agent started successfully.
 
 ```mermaid
 stateDiagram-v2
@@ -15,30 +15,25 @@ stateDiagram-v2
     FINALIZED --> [*]
 ```
 
-### Heartbeat & Crash Recovery Protocol:
-- Every active agent publishes a heartbeat message at $5\,\text{Hz}$ on `/aria/heartbeats`.
-- [`HealthMonitor`](file:///home/gaminizer/Projects/ARIA/arm_planner/arm_planner/health_monitor.py) monitors heartbeat deadlines with a $200\,\text{ms}$ watchdog threshold.
-- If an agent process crashes (e.g., `SIGKILL` or uncaught exception), `HealthMonitor` dispatches a replacement process.
-- **Warm-Standby Acceleration:** A pre-configured worker in `INACTIVE` state can be promoted to `ACTIVE` in **$5.29\,\text{ms}$**, achieving complete crash recovery in **$205.85\,\text{ms}$** (compared to $3{,}458.75\,\text{ms}$ for cold OS process restarts).
+There is no shared agent-heartbeat watchdog or automatic process-replacement protocol in the current runtime. Lifecycle services can configure or activate a node, but do not restart a crashed process.
 
 ---
 
-## 2. Core Manipulation Skills Library
+## 2. Current Skill Execution Status
 
-Implemented in [`SkillAgent`](file:///home/gaminizer/Projects/ARIA/arm_agents/arm_agents/skill_agent.py) and [`SkillManager`](file:///home/gaminizer/Projects/ARIA/arm_planner/arm_planner/skill_manager.py):
+The planner vocabulary is broader than the current executor. The table describes actual execution behavior; listed but unsupported skills now fail explicitly rather than reporting success without acting.
 
-| Skill Name | Primitives Executed | Parameters | Pre-Conditions & Verification |
-| :--- | :--- | :--- | :--- |
-| **`pick`** | Approach pose $\to$ descend $\to$ grip $\to$ lift | `target_obj`, `approach_z=0.08m`, `grip_effort=1.0` | Target 3D pose resolved in World Model; contact confirmed via gripper attach |
-| **`place`** | Move above receptacle $\to$ descend $\to$ release $\to$ retract | `dest_receptacle`, `place_z=0.04m`, `release_dur=0.5s` | Gripper confirmed holding workpiece; destination clear of obstacles |
-| **`push`** | Position alongside $\to$ linear displacement $\to$ retract | `target_obj`, `direction_vec`, `push_dist=0.05m` | Clearance verified along push vector; no grasp attempted |
-| **`pull`** | Hook behind $\to$ retract towards base $\to$ lift | `target_obj`, `pull_dist=0.06m` | Safe cable clearance maintained during inward motion |
-| **`stack`** | Align above base object $\to$ precision descend $\to$ release | `base_obj`, `stacked_obj`, `tolerance=3mm` | Base object horizontal surface confirmed ($\Delta roll, \Delta pitch < 0.10\,\text{rad}$) |
-| **`sort`** | Inspect $\to$ classify $\to$ pick $\to$ transfer to bin | `target_obj`, `conforming_bin`, `defect_bin` | Quality classification score resolved by `VisionAgent` optical inspection |
-| **`inspect`** | Pick $\to$ present to overhead camera $\to$ rotate wrist | `target_obj`, `view_angles=[0, 45, 90]` | Clear camera line-of-sight; lighting $\ge 150\,\text{lux}$ |
-| **`slide`** | Maintain tabletop contact force $\to$ translate along slot | `target_obj`, `linear_slot_axis`, `speed=0.02m/s` | Sensorless force estimator monitors resistance to prevent binding |
-| **`roll`** | Tilt gripper pad $\to$ gently roll cylindrical part | `target_obj`, `roll_angle=1.57rad` | Cylindrical geometry verified; part axis aligned with roll direction |
-| **`sweep`** | Broad lateral clearing motion with extended paddle | `sweep_zone_bounds`, `sweep_velocity=0.05m/s` | Clears extraneous debris from conveyor or assembly fixture |
+| Skill | Current status |
+| :--- | :--- |
+| **`pick`** | Implemented as an IK approach/descent and simulator gripper attachment. Lift and grasp success are not equivalent to verified task placement. |
+| **`place`** | Moves to a located destination and releases. The executor does not independently verify that the object ended inside the receptacle. |
+| **`transport`** | Moves a verified held object above a located destination; requires a destination pose. |
+| **`sort`** | Composite locate/pick/release path; physical containment is not verified by the executor. |
+| **`press`** | Contact-sensor and retract gate in simulation; it does not verify an electrical or logical button state. |
+| **`inspect`** | Captures wrist-camera views and computes image focus/edge statistics; it does not perform the advertised full inspection/classification. |
+| **`push`, `pull`, `slide`, `roll`, `sweep`** | Not implemented as guarded manipulation controllers; execution returns failure. |
+| **`sam`, `depth`, `cleargrasp`, `material`** | Not integrated into grasp-pose refinement or verified material/depth estimation; unsupported requests return failure (ClearGrasp is skipped only for an opaque target). |
+| **`verify_stable`** | Stable stacking is not currently verified by available sensor evidence and returns failure. |
 
 ---
 

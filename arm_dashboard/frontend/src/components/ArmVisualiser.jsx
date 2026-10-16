@@ -7,17 +7,17 @@ const JOINT_NAMES = [
   { name: 'J2 Shoulder', limit: [-90, 90] },
   { name: 'J3 Elbow', limit: [-90, 90] },
   { name: 'J4 Wrist Pitch', limit: [-90, 90] },
-  { name: 'J5 Wrist Roll', limit: [-90, 90] },
-  { name: 'J6 Gripper', limit: [0, 60] },
+  { name: 'J5 Gripper', limit: [0, 60] },
 ];
 
 export default function ArmVisualiser({ jointState }) {
   const mountRef = useRef(null);
   const armMeshRef = useRef(null);
   const linksRef = useRef([]);
+  const fingersRef = useRef([]);
 
-  const currentAngles = jointState?.current_angles || [0, 0, 0, 0, 0, 0];
-  const targetAngles = jointState?.target_angles || [0, 0, 0, 0, 0, 0];
+  const currentAngles = jointState?.current_angles || [0, 0, 0, 0, 0];
+  const targetAngles = jointState?.target_angles || [0, 0, 0, 0, 0];
 
   // Calculate Forward Kinematics End-Effector XYZ estimate (in meters)
   const q = currentAngles.map((a) => (a * Math.PI) / 180);
@@ -141,6 +141,7 @@ export default function ArmVisualiser({ jointState }) {
     rightFinger.position.set(0.012, 0.02, 0);
     j5Group.add(leftFinger);
     j5Group.add(rightFinger);
+    fingersRef.current = [leftFinger, rightFinger];
 
     // End-Effector 3-axis helper (RGB = XYZ)
     const axesHelper = new THREE.AxesHelper(0.06);
@@ -224,7 +225,12 @@ export default function ArmVisualiser({ jointState }) {
       j4.rotation.z = (currentAngles[3] * Math.PI) / 180;
     }
     if (j5 && currentAngles[4] !== undefined) {
-      j5.rotation.y = (currentAngles[4] * Math.PI) / 180;
+      const openFraction = Math.min(60, Math.max(0, currentAngles[4])) / 60;
+      const fingerOffset = 0.004 + 0.008 * openFraction;
+      if (fingersRef.current.length === 2) {
+        fingersRef.current[0].position.x = -fingerOffset;
+        fingersRef.current[1].position.x = fingerOffset;
+      }
     }
   }, [currentAngles]);
 
@@ -241,11 +247,11 @@ export default function ArmVisualiser({ jointState }) {
         <div className="flex items-center gap-2">
           <Compass className="w-3.5 h-3.5 text-purple-400" />
           <span className="text-xs font-semibold tracking-wider text-slate-200 uppercase">
-            Robot Digital Twin (5-DOF + Gripper)
+            4-Axis Arm + Gripper (Illustrative Model)
           </span>
         </div>
         <div className="flex items-center gap-2 text-[10px] font-mono text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/40">
-          <span>SPHERE REACH: 0.35m</span>
+          <span>NOT A COLLISION OR PLANNING MODEL</span>
         </div>
       </div>
 
@@ -253,7 +259,7 @@ export default function ArmVisualiser({ jointState }) {
       <div className="relative flex-1 min-h-[140px] bg-[#090b0f] overflow-hidden" ref={mountRef}>
         {/* End-Effector Telemetry Overlay */}
         <div className="absolute top-2 left-2 z-10 bg-black/80 border border-white/10 px-2 py-1 rounded text-[10px] font-mono text-slate-300">
-          <div className="text-cyan-400 font-semibold mb-0.5">END EFFECTOR (BASE FRAME)</div>
+          <div className="text-cyan-400 font-semibold mb-0.5">APPROXIMATE END-EFFECTOR POSITION</div>
           <div>X: <span className="text-white font-bold">{eeX}m</span></div>
           <div>Y: <span className="text-white font-bold">{eeY}m</span></div>
           <div>Z: <span className="text-white font-bold">{eeZ}m</span></div>

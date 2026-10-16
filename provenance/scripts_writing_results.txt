@@ -1,0 +1,373 @@
+================================================================================
+PROJECT ARIA: INVENTORY OF SCRIPTS WRITING TO CSV / JSON IN RESULTS DIRECTORIES
+================================================================================
+
+Total matching scripts found: 66
+
+Script: arm_agents/arm_agents/evaluation_agent.py
+Detected write operations (2):
+  Line   74: writer = csv.writer(f)
+  Line   99: writer = csv.writer(f)
+
+Script: arm_control/scripts/teach_mode_node.py
+Detected write operations (1):
+  Line  300: json.dump({
+
+Script: arm_dashboard/test_dashboard.py
+Detected write operations (2):
+  Line  129: payload = json.dumps({"command": "Sort workcell objects"}).encode('utf-8')
+  Line  169: payload = json.dumps({"joint": "waist_joint", "angle_deg": 10.0, "speed": 30.0}).encode('utf-8')
+
+Script: arm_learning/arm_learning/bag_indexer.py
+Detected write operations (3):
+  Line  217: json.dumps(meta.get('topics_recorded', [])),
+  Line  218: json.dumps(meta.get('objects_in_scene', [])),
+  Line  221: json.dumps(meta),
+
+Script: arm_learning/arm_learning/bag_recorder_node.py
+Detected write operations (1):
+  Line  443: msg.data = json.dumps(status)
+
+Script: arm_learning/arm_learning/experiment_tracker.py
+Detected write operations (2):
+  Line  266: json.dump({'run_name': run_name, 'tags': tags or {},
+  Line  290: json.dump(log, f, indent=2)
+
+Script: arm_planner/arm_planner/episodic_memory.py
+Detected write operations (1):
+  Line  229: objects_json = json.dumps(objects_involved or [])
+
+Script: arm_planner/arm_planner/function_calling_orchestrator.py
+Detected write operations (2):
+  Line  427: f"[ReAct] 🔧 Tool: {tool_name}({json.dumps(tool_args)})")
+  Line  475: f"  data: {json.dumps(tool_result.data) if tool_result.data else 'null'}\n"
+
+Script: arm_planner/arm_planner/health_monitor.py
+Detected write operations (2):
+  Line   79: csv.writer(f).writerow([
+  Line  165: csv.writer(f).writerow([
+
+Script: arm_planner/arm_planner/llm_client.py
+Detected write operations (1):
+  Line  598: return (True, json.dumps(parsed, indent=2))
+
+Script: arm_planner/arm_planner/llm_planning_agent.py
+Detected write operations (2):
+  Line  412: plan_msg.data = json.dumps(plan, indent=2)
+  Line  763: action.params_json = json.dumps(prm)
+
+Script: arm_planner/arm_planner/object_model_db.py
+Detected write operations (3):
+  Line  274: json.dumps(props.get('bounding_box', [0.05, 0.05, 0.05])),
+  Line  275: json.dumps(affordance),
+  Line  278: json.dumps(props.get('typical_colors', [])),
+
+Script: arm_planner/arm_planner/recovery_manager.py
+Detected write operations (1):
+  Line  325: a.params_json = json.dumps(st.get('params') or {})
+
+Script: arm_planner/arm_planner/semantic_map.py
+Detected write operations (1):
+  Line  213: msg.data = json.dumps(graph)
+
+Script: arm_planner/arm_planner/world_model_db.py
+Detected write operations (1):
+  Line  579: json.dumps(obj.get("affordance_scores", {})),
+
+Script: arm_planner/scripts/object_model_cli.py
+Detected write operations (1):
+  Line   69: print(f"  Affordance:     {json.dumps(model.affordance, indent=2)}")
+
+Script: arm_vision/arm_vision/material_recognition_node.py
+Detected write operations (1):
+  Line  605: msg.data = json.dumps(predictions)
+
+Script: arm_vision/arm_vision/perception_orchestrator.py
+Detected write operations (2):
+  Line  408: msg.data = json.dumps(scene)
+  Line  432: msg.data = json.dumps(breakdown)
+
+Script: arm_vision/arm_vision/sam2_node.py
+Detected write operations (1):
+  Line  533: json_msg.data = json.dumps(mask_summary)
+
+Script: arm_vision/arm_vision/transparent_object_node.py
+Detected write operations (2):
+  Line  517: flags_msg.data = json.dumps(transparent_flags)
+  Line  521: quality_msg.data = json.dumps(depth_quality)
+
+Script: arm_vla/arm_vla/vla_benchmark.py
+Detected write operations (1):
+  Line  408: writer = csv.writer(f)
+
+Script: data/legacy_synthetic/scripts/benchmark_color_defect.py
+Detected write operations (3):
+  Line  136: with open(OUT_CSV, "w", newline="") as f:
+  Line  137: writer = csv.DictWriter(f, fieldnames=list(trials[0].keys()))
+  Line  196: writer = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
+
+Script: data/legacy_synthetic/scripts/benchmark_confidence_calibration.py
+Detected write operations (2):
+  Line  125: with open(CSV_OUT, "w", newline="") as f:
+  Line  126: w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+
+Script: data/legacy_synthetic/scripts/benchmark_conveyor_rendezvous.py
+Detected write operations (1):
+  Line  178: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+
+Script: data/legacy_synthetic/scripts/benchmark_depth_calibration.py
+Detected write operations (3):
+  Line  108: with open(OUT_CSV, "w", newline="") as f:
+  Line  109: writer = csv.DictWriter(f, fieldnames=list(records[0].keys()))
+  Line  176: writer = csv.DictWriter(f, fieldnames=list(summary[0].keys()))
+
+Script: data/legacy_synthetic/scripts/benchmark_fault_injection.py
+Detected write operations (2):
+  Line  124: writer = csv.writer(f)
+  Line  148: writer = csv.writer(f)
+
+Script: data/legacy_synthetic/scripts/benchmark_friction_grasp_placement.py
+Detected write operations (1):
+  Line  285: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+
+Script: data/legacy_synthetic/scripts/benchmark_ik_100k.py
+Detected write operations (2):
+  Line  329: writer = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
+  Line  335: writer = csv.writer(f)
+
+Script: data/legacy_synthetic/scripts/benchmark_language_grounding.py
+Detected write operations (2):
+  Line  180: writer = csv.DictWriter(f, fieldnames=list(records[0].keys()))
+  Line  220: writer = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
+
+Script: data/legacy_synthetic/scripts/benchmark_perception_coarse_to_fine.py
+Detected write operations (2):
+  Line  111: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+  Line  227: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+
+Script: data/legacy_synthetic/scripts/benchmark_safety_runtime.py
+Detected write operations (1):
+  Line  359: writer = csv.DictWriter(f, fieldnames=all_keys)
+
+Script: data/legacy_synthetic/scripts/benchmark_scripted_baseline.py
+Detected write operations (1):
+  Line  139: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+
+Script: data/legacy_synthetic/scripts/run_simulation_benchmarks.py
+Detected write operations (3):
+  Line  335: writer = csv.DictWriter(f, fieldnames=fieldnames)
+  Line  535: writer = csv.DictWriter(f, fieldnames=fieldnames)
+  Line  689: writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+Script: scripts/benchmark_authoritative_kinematics.py
+Detected write operations (5):
+  Line  604: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  605: writer = csv.DictWriter(f, fieldnames=fieldnames)
+  Line  633: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  634: writer = csv.DictWriter(f, fieldnames=list(csv_rows[0].keys()))
+  Line  736: json.dump(summary, f, indent=2)
+
+Script: scripts/benchmark_color_defect_real.py
+Detected write operations (4):
+  Line  493: with open(OUT_CSV, "w", newline="") as f:
+  Line  494: writer = csv.DictWriter(f, fieldnames=list(trials[0].keys()))
+  Line  577: writer = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
+  Line  641: w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+
+Script: scripts/benchmark_depth_calibration_real.py
+Detected write operations (3):
+  Line  359: with open(OUT_CSV, "w", newline="") as f:
+  Line  360: writer = csv.DictWriter(f, fieldnames=list(records[0].keys()))
+  Line  463: writer = csv.DictWriter(f, fieldnames=list(summary[0].keys()))
+
+Script: scripts/benchmark_fault_injection_real.py
+Detected write operations (14):
+  Line  211: inputs_json = json.dumps({
+  Line  218: raw_outputs_json = json.dumps({
+  Line  328: inputs_json = json.dumps({
+  Line  335: raw_outputs_json = json.dumps({
+  Line  452: inputs_json = json.dumps({
+  Line  457: raw_outputs_json = json.dumps({
+  Line  609: inputs_json = json.dumps({
+  Line  616: raw_outputs_json = json.dumps({
+  Line  750: inputs_json = json.dumps({
+  Line  756: raw_outputs_json = json.dumps({
+  ... (4 more lines omitted)
+
+Script: scripts/benchmark_fault_injection_real_v2.py
+Detected write operations (18):
+  Line  309: inputs_json = json.dumps({
+  Line  317: raw_outputs_json = json.dumps({
+  Line  431: inputs_json = json.dumps({
+  Line  438: raw_outputs_json = json.dumps({
+  Line  567: inputs_json = json.dumps({
+  Line  575: raw_outputs_json = json.dumps({
+  Line  737: inputs_json = json.dumps({
+  Line  745: raw_outputs_json = json.dumps({
+  Line  931: inputs_json = json.dumps({
+  Line  939: raw_outputs_json = json.dumps({
+  ... (8 more lines omitted)
+
+Script: scripts/benchmark_ik_comparison.py
+Detected write operations (1):
+  Line  378: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+
+Script: scripts/benchmark_ik_real_100k.py
+Detected write operations (2):
+  Line  242: writer = csv.DictWriter(f_out, fieldnames=fieldnames)
+  Line  431: writer = csv.DictWriter(f_sum, fieldnames=list(all_summaries[0].keys()))
+
+Script: scripts/benchmark_ik_real_5d.py
+Detected write operations (2):
+  Line  595: writer = csv.DictWriter(f_out, fieldnames=fieldnames)
+  Line  760: writer = csv.DictWriter(f_sum, fieldnames=list(all_summaries[0].keys()))
+
+Script: scripts/benchmark_ik_urdf_v2_10k.py
+Detected write operations (3):
+  Line  146: with open(OUT_CSV, "w", newline="", encoding="utf-8") as fout:
+  Line  147: writer = csv.DictWriter(fout, fieldnames=fieldnames)
+  Line  264: json.dump(summary, f, indent=2)
+
+Script: scripts/benchmark_language_multiseed_real.py
+Detected write operations (9):
+  Line  156: data_bytes = json.dumps(payload).encode("utf-8")
+  Line  279: "parsed_plan": json.dumps(parsed_plan),
+  Line  359: "parsed_plan": json.dumps(parsed_plan),
+  Line  405: f"Primitives: {json.dumps(primitives)}"
+  Line  448: "parsed_plan": json.dumps({"selected_primitive": best_prim, "score": round(best_score, 3)}),
+  Line  479: writer = csv.DictWriter(f_tot, fieldnames=fieldnames)
+  Line  601: writer = csv.DictWriter(f_raw, fieldnames=fieldnames)
+  Line  704: "seeds": json.dumps(SEEDS),
+  Line  718: writer = csv.DictWriter(f_sum, fieldnames=list(summary_rows[0].keys()))
+
+Script: scripts/benchmark_language_real_60.py
+Detected write operations (7):
+  Line  253: data_bytes = json.dumps(payload).encode("utf-8")
+  Line  429: "parsed_plan": json.dumps(parsed_plan),
+  Line  505: "parsed_plan": json.dumps(parsed_plan),
+  Line  560: f"Primitives: {json.dumps(primitives)}"
+  Line  606: "parsed_plan": json.dumps({"selected_primitive": best_prim, "score": round(best_score, 3), "scores": combined_scores}),
+  Line  656: writer = csv.DictWriter(raw_file, fieldnames=fieldnames)
+  Line  803: summary_writer = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
+
+Script: scripts/benchmark_manipulation_suite_gazebo.py
+Detected write operations (3):
+  Line  640: writer_m = csv.DictWriter(f_manip, fieldnames=manip_fieldnames)
+  Line  641: writer_p = csv.DictWriter(f_percep, fieldnames=percep_fieldnames)
+  Line 1018: json.dump(summary, f_sum, indent=2)
+
+Script: scripts/benchmark_pick.py
+Detected write operations (1):
+  Line   18: data=json.dumps({'command': cmd}).encode('utf-8'),
+
+Script: scripts/benchmark_planner_ambiguity.py
+Detected write operations (2):
+  Line   87: data = json.dumps(payload).encode("utf-8")
+  Line  261: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+
+Script: scripts/benchmark_reachability_grid_100k.py
+Detected write operations (3):
+  Line  153: writer = csv.writer(f)
+  Line  253: writer = csv.DictWriter(f, fieldnames=list(matrix_rows[0].keys()))
+  Line  277: json.dump(summary, f, indent=2)
+
+Script: scripts/benchmark_real_conveyor.py
+Detected write operations (3):
+  Line  201: self.writer = csv.writer(self.f)
+  Line  444: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  445: writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+Script: scripts/benchmark_real_depth_anything.py
+Detected write operations (3):
+  Line  195: self.writer = csv.writer(self.f)
+  Line  371: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  372: writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+Script: scripts/benchmark_real_friction_grasp.py
+Detected write operations (3):
+  Line  225: self.writer = csv.writer(self.f)
+  Line  443: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  444: writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+Script: scripts/benchmark_real_perception_coarse_to_fine.py
+Detected write operations (3):
+  Line  198: self.writer = csv.writer(self.f)
+  Line  431: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  432: writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+Script: scripts/benchmark_real_safety_runtime.py
+Detected write operations (3):
+  Line  162: self.writer = csv.writer(self.f)
+  Line  393: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  394: writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+Script: scripts/benchmark_real_scripted_baseline.py
+Detected write operations (3):
+  Line  191: self.writer = csv.writer(self.f)
+  Line  450: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  451: writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+Script: scripts/benchmark_simulation_real.py
+Detected write operations (4):
+  Line  353: writer = csv.DictWriter(f, fieldnames=fieldnames)
+  Line  608: writer = csv.DictWriter(f, fieldnames=fieldnames)
+  Line  836: sum_df.to_csv(manip_sum_csv, index=False)
+  Line  870: sum_df.to_csv(conv_sum_csv, index=False)
+
+Script: scripts/benchmark_simulation_real_v2.py
+Detected write operations (4):
+  Line  418: writer = csv.DictWriter(f, fieldnames=fieldnames)
+  Line  662: writer = csv.DictWriter(f, fieldnames=fieldnames)
+  Line  897: sum_df.to_csv(manip_sum_csv, index=False)
+  Line  933: sum_df.to_csv(conv_sum_csv, index=False)
+
+Script: scripts/compare_fk_three_models.py
+Detected write operations (2):
+  Line  192: with open(OUT_CSV_PATH, "w", newline="", encoding="utf-8") as f_out:
+  Line  193: writer = csv.DictWriter(f_out, fieldnames=fieldnames)
+
+Script: scripts/diagnose_pick_trials_timeseries.py
+Detected write operations (2):
+  Line  318: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  319: writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+Script: scripts/e2e_task_runner.py
+Detected write operations (1):
+  Line  177: json.dump(rep, open(os.path.join(self.out, 'report.json'), 'w'), indent=1)
+
+Script: scripts/evaluate_collision_free_friction_trials.py
+Detected write operations (4):
+  Line  344: with open(CSV_FRICTION, "w", newline="", encoding="utf-8") as f:
+  Line  345: writer = csv.DictWriter(f, fieldnames=fieldnames)
+  Line  401: with open(CSV_SG90, "w", newline="", encoding="utf-8") as f:
+  Line  402: writer = csv.DictWriter(f, fieldnames=sg90_fieldnames)
+
+Script: scripts/evaluate_fk_world_transform.py
+Detected write operations (1):
+  Line   93: out_df.to_csv(OUT_CSV, index=False)
+
+Script: scripts/freeze_heldout_lang_prompts_60.py
+Detected write operations (2):
+  Line  579: with open(OUT_JSON, "w", encoding="utf-8") as f:
+  Line  580: json.dump(PROMPTS, f, indent=2)
+
+Script: scripts/freeze_lang_prompts.py
+Detected write operations (1):
+  Line 1047: json.dump(PROMPTS, f, indent=2)
+
+Script: scripts/gazebo_tf_kinematic_validator.py
+Detected write operations (3):
+  Line  343: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  344: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+  Line  406: json.dump(summary, f, indent=2)
+
+Script: scripts/gazebo_tf_kinematic_validator_v2.py
+Detected write operations (3):
+  Line  346: with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+  Line  347: writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+  Line  414: json.dump(summary, f, indent=2)
+
+Script: scripts/train_coarse_to_fine_detectors.py
+Detected write operations (1):
+  Line  299: json.dump({
+

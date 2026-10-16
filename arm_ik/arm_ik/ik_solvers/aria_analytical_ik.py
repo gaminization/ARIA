@@ -94,7 +94,7 @@ class SolverConfig:
 class IKResult:
     """Result from an IK solver."""
     success: bool = False
-    joint_angles: np.ndarray = field(default_factory=lambda: np.zeros(5))
+    joint_angles: np.ndarray = field(default_factory=lambda: np.zeros(4))
     position_error_m: float = float('inf')
     orientation_error_rad: float = float('inf')
     solve_time_ms: float = 0.0
@@ -129,7 +129,6 @@ JOINT_LIMITS = np.array([
     [-1.5708,  1.5708],   # shoulder:    ±90°
     [-1.5708,  1.5708],   # elbow:       ±90°
     [-1.5708,  1.5708],   # wrist_pitch: ±90°
-    [-1.5708,  1.5708],   # wrist_roll:  ±90° (gripper actuation, no FK contribution)
 ])
 
 
@@ -173,15 +172,10 @@ def forward_kinematics(joints: np.ndarray) -> np.ndarray:
     This is the authoritative FK validated against Gazebo TF (mean Δ < 1 mm).
 
     Args:
-        joints: [q1, q2, q3, q4, q5] in radians
-                q1=waist, q2=shoulder, q3=elbow, q4=wrist_pitch, q5=wrist_roll (gripper)
+        joints: [waist, shoulder, elbow, wrist_pitch] in radians
 
     Returns:
         4×4 homogeneous transformation matrix (base_link → wrist_link)
-
-    Note:
-        q5 (wrist_roll / gripper) does not affect wrist_link position or orientation
-        (the wrist_link IS the endpoint of the kinematic chain for the arm).
 
     Coordinate frame:
         At q=0, wrist_link is at approximately (-2.4, 26.8, 324.0) mm in base_link.
@@ -262,7 +256,7 @@ def solve_analytical(target_position: np.ndarray,
     Args:
         target_position: [x, y, z] in base_link frame (meters)
         target_pitch: desired wrist pitch angle (sum q2+q3+q4 approximately)
-        target_roll: desired wrist roll (= q5, gripper; does not affect position)
+        target_roll: retained for API compatibility; no wrist-roll axis is modeled
         config: solver configuration
 
     Returns:
@@ -332,7 +326,7 @@ def solve_analytical(target_position: np.ndarray,
             q4_init = target_pitch - (q2_init + q3_init)
             q4_init = float(np.clip(q4_init, JOINT_LIMITS[3, 0], JOINT_LIMITS[3, 1]))
 
-            q_curr = np.array([q1, q2_init, q3_init, q4_init, target_roll])
+            q_curr = np.array([q1, q2_init, q3_init, q4_init])
 
             # Newton-Raphson refinement (usually takes 1-3 iterations)
             for _ in range(config.max_iterations):
@@ -408,7 +402,6 @@ def _gradient_fallback(target_position: np.ndarray,
     best_sol = None
     best_err = float("inf")
 
-    q5 = target_roll
     starts = []
     if config.current_joints is not None:
         starts.append(config.current_joints.copy())
@@ -419,7 +412,6 @@ def _gradient_fallback(target_position: np.ndarray,
             np.random.uniform(*JOINT_LIMITS[1]),
             np.random.uniform(*JOINT_LIMITS[2]),
             np.random.uniform(*JOINT_LIMITS[3]),
-            q5
         ])
         starts.append(q_init)
 
@@ -515,9 +507,9 @@ if __name__ == "__main__":
 
     # Test 1: FK of known joint config → compare to expected positions
     test_configs = [
-        ([0.0,  0.0,  0.0,  0.0, 0.0], "home"),
-        ([0.0,  0.5, -0.5,  0.0, 0.0], "elbow-up"),
-        ([1.571, 0.3, -0.3, 0.0, 0.0], "waist 90°"),
+        ([0.0,  0.0,  0.0,  0.0], "home"),
+        ([0.0,  0.5, -0.5,  0.0], "elbow-up"),
+        ([1.571, 0.3, -0.3, 0.0], "waist 90°"),
     ]
 
     for q_test, name in test_configs:
@@ -530,7 +522,7 @@ if __name__ == "__main__":
     print()
 
     # Test 2: FK → IK roundtrip
-    home_joints = np.array([0.0, 0.5, -0.6, 0.1, 0.0])
+    home_joints = np.array([0.0, 0.5, -0.6, 0.1])
     T = forward_kinematics(home_joints)
     target_pos = T[:3, 3]
     pitch = float(home_joints[1] + home_joints[2] + home_joints[3])

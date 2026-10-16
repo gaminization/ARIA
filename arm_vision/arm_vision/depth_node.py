@@ -35,6 +35,12 @@ try:
 except ImportError:
     CV2_AVAILABLE = False
 
+try:
+    from arm_vision.sys_config import sys_config
+except ImportError:
+    from sys_config import sys_config
+
+
 
 class DepthNode(Node):
     """
@@ -83,6 +89,8 @@ class DepthNode(Node):
             self.device = None
             self.get_logger().warn("PyTorch not available")
 
+        self._processing = False
+
         # Performance tracking
         self.frame_count = 0
         self.total_da_ms = 0.0
@@ -91,13 +99,13 @@ class DepthNode(Node):
         # Subscribers
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
-            durability=DurabilityPolicy.VOLATILE, depth=5
+            durability=DurabilityPolicy.VOLATILE, depth=2
         )
         self.image_sub = self.create_subscription(
             Image, self.camera_topic, self._image_cb, qos
         )
         self.get_logger().info(
-            f"Depth node subscribing to: {self.camera_topic}")
+            f"Depth node subscribing to: {self.camera_topic} (throttled at {sys_config.depth_max_rate_hz} Hz)")
 
         # Publishers
         self.da_pub = self.create_publisher(
@@ -109,10 +117,10 @@ class DepthNode(Node):
         self.metrics_pub = self.create_publisher(
             Float64MultiArray, '/depth/benchmark_metrics', 10)
 
-        self.get_logger().info("Depth node ready")
+        self.get_logger().info(f"Depth node ready on device {self.device} (Tier: {sys_config.hardware_tier})")
 
     def _load_models(self):
-        """Load depth estimation models onto GPU."""
+        """Load depth estimation models onto GPU according to sysconfig."""
         # ── Depth-Anything v2 (small) via transformers ──────
         try:
             from transformers import AutoImageProcessor, AutoModelForDepthEstimation
@@ -121,8 +129,10 @@ class DepthNode(Node):
             self.da_model = AutoModelForDepthEstimation.from_pretrained(
                 'depth-anything/Depth-Anything-V2-Small-hf')
             self.da_model.to(self.device)
+            if sys_config.use_half_precision:
+                self.da_model.half()
             self.da_model.eval()
-            self.get_logger().info("Depth-Anything v2 loaded via transformers")
+            self.get_logger().info("Depth-Anything v2 loaded via transformers (fp16)")
         except Exception as e:
             self.get_logger().warn(f"Depth-Anything v2 transformers load failed: {e}")
             # Fallback: try torch.hub
@@ -137,8 +147,8 @@ class DepthNode(Node):
             except Exception as e2:
                 self.get_logger().warn(f"Depth-Anything v2 torch.hub load failed: {e2}")
 
-        # ── MiDaS v3 ──────────────────────────────────────
-        if self.run_midas:
+        # ── MiDaS v3 (Only load if Depth-Anything failed or explicitly requested) ────
+        if self.da_model is None and self.run_midas:
             try:
                 self.midas_model = torch.hub.load(
                     'intel-isl/MiDaS', 'DPT_Hybrid',
@@ -152,7 +162,7 @@ class DepthNode(Node):
                 )
                 self.midas_transform = midas_transforms.dpt_transform
 
-                self.get_logger().info("MiDaS v3 loaded")
+                self.get_logger().info("MiDaS v3 fallback loaded")
             except Exception as e:
                 self.get_logger().warn(f"MiDaS load failed: {e}")
 
@@ -191,121 +201,142 @@ class DepthNode(Node):
         if self.bridge is None:
             return
 
+        if self._processing or not sys_config.should_process('depth_node', sys_config.depth_max_rate_hz):
+            return
+
+        self._processing = True
         try:
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
         except Exception as e:
             self.get_logger().error(f"CV bridge error: {e}")
+            self._processing = False
             return
 
-        h, w = cv_image.shape[:2]
-        self.frame_count += 1
+        try:
+            h, w = cv_image.shape[:2]
+            self.frame_count += 1
+            da_ms = 0.0
+            midas_ms = 0.0
 
-        # ── Depth-Anything v2 ──────────────────────────────
-        da_depth_metric = None
-        if self.da_model is not None:
-            t0 = time.perf_counter()
-            try:
-                with torch.no_grad():
-                    if hasattr(self, 'da_processor') and self.da_processor is not None:
-                        inputs = self.da_processor(images=cv_image, return_tensors="pt").to(self.device)
-                        outputs = self.da_model(**inputs)
-                        predicted_depth = outputs.predicted_depth
-                        prediction = torch.nn.functional.interpolate(
-                            predicted_depth.unsqueeze(1),
-                            size=(h, w),
-                            mode="bicubic",
-                            align_corners=False,
-                        )
-                        depth_raw = prediction.squeeze().cpu().numpy()
-                    else:
-                        depth_raw = self.da_model.infer_image(cv_image)
-                        if isinstance(depth_raw, torch.Tensor):
-                            depth_raw = depth_raw.cpu().numpy()
+            # ── Depth-Anything v2 ──────────────────────────────
+            da_depth_metric = None
+            if self.da_model is not None:
+                t0 = time.perf_counter()
+                try:
+                    with torch.no_grad():
+                        if hasattr(self, 'da_processor') and self.da_processor is not None:
+                            inputs = self.da_processor(images=cv_image, return_tensors="pt").to(self.device)
+                            if sys_config.use_half_precision and self.device.type == 'cuda':
+                                inputs = {k: v.half() if torch.is_floating_point(v) else v for k, v in inputs.items()}
+                            outputs = self.da_model(**inputs)
+                            predicted_depth = outputs.predicted_depth
+                            prediction = torch.nn.functional.interpolate(
+                                predicted_depth.unsqueeze(1),
+                                size=(h, w),
+                                mode="bicubic",
+                                align_corners=False,
+                            )
+                            depth_raw = prediction.squeeze().cpu().numpy()
+                        else:
+                            depth_raw = self.da_model.infer_image(cv_image)
+                            if isinstance(depth_raw, torch.Tensor):
+                                depth_raw = depth_raw.cpu().numpy()
 
-                # Normalize to 0-1 range
-                depth_norm = (depth_raw - depth_raw.min()) / (
-                    depth_raw.max() - depth_raw.min() + 1e-8
-                )
-
-                # Convert to metric
-                da_depth_metric = self._relative_to_metric(depth_norm, h)
-
-                # Resize to match input
-                if da_depth_metric.shape != (h, w):
-                    da_depth_metric = cv2.resize(
-                        da_depth_metric, (w, h),
-                        interpolation=cv2.INTER_LINEAR
+                    # Normalize to 0-1 range
+                    depth_norm = (depth_raw - depth_raw.min()) / (
+                        depth_raw.max() - depth_raw.min() + 1e-8
                     )
 
-                # Publish as 32FC1
-                depth_msg = self.bridge.cv2_to_imgmsg(
-                    da_depth_metric.astype(np.float32), encoding='32FC1'
+                    # Convert to metric
+                    da_depth_metric = self._relative_to_metric(depth_norm, h)
+
+                    # Resize to match input
+                    if da_depth_metric.shape != (h, w):
+                        da_depth_metric = cv2.resize(
+                            da_depth_metric, (w, h),
+                            interpolation=cv2.INTER_LINEAR
+                        )
+
+                    # Publish as 32FC1
+                    depth_msg = self.bridge.cv2_to_imgmsg(
+                        da_depth_metric.astype(np.float32), encoding='32FC1'
+                    )
+                    depth_msg.header = msg.header
+                    self.da_pub.publish(depth_msg)
+
+                except Exception as e:
+                    self.get_logger().warn(f"DA inference error: {e}")
+
+                da_ms = (time.perf_counter() - t0) * 1000
+                self.total_da_ms += da_ms
+
+            # ── MiDaS v3 (Only if DA failed or absent) ──────────
+            midas_depth_metric = None
+            if da_depth_metric is None and self.midas_model is not None and self.midas_transform is not None:
+                t0 = time.perf_counter()
+                try:
+                    input_batch = self.midas_transform(cv_image).to(self.device)
+
+                    with torch.no_grad():
+                        prediction = self.midas_model(input_batch)
+                        prediction = torch.nn.functional.interpolate(
+                            prediction.unsqueeze(1),
+                            size=(h, w),
+                            mode='bicubic',
+                            align_corners=False,
+                        ).squeeze().cpu().numpy()
+
+                    # MiDaS outputs inverse depth; convert
+                    prediction = prediction.max() - prediction  # flip
+                    depth_norm = (prediction - prediction.min()) / (
+                        prediction.max() - prediction.min() + 1e-8
+                    )
+                    midas_depth_metric = self._relative_to_metric(depth_norm, h)
+
+                    depth_msg = self.bridge.cv2_to_imgmsg(
+                        midas_depth_metric.astype(np.float32), encoding='32FC1'
+                    )
+                    depth_msg.header = msg.header
+                    self.midas_pub.publish(depth_msg)
+
+                except Exception as e:
+                    self.get_logger().warn(f"MiDaS inference error: {e}")
+
+                midas_ms = (time.perf_counter() - t0) * 1000
+                self.total_midas_ms += midas_ms
+
+            metrics_msg = Float64MultiArray()
+            metrics_msg.data = [da_ms, midas_ms]
+            self.metrics_pub.publish(metrics_msg)
+
+            # ── Colorized depth visualization ──────────────────
+            active_depth = da_depth_metric if da_depth_metric is not None else midas_depth_metric
+            if self.publish_colorized and active_depth is not None and CV2_AVAILABLE:
+                depth_vis = (active_depth - active_depth.min()) / (
+                    active_depth.max() - active_depth.min() + 1e-8
                 )
-                depth_msg.header = msg.header
-                self.da_pub.publish(depth_msg)
+                depth_vis = (depth_vis * 255).astype(np.uint8)
+                colorized = cv2.applyColorMap(depth_vis, cv2.COLORMAP_MAGMA)
 
-            except Exception as e:
-                self.get_logger().warn(f"DA inference error: {e}")
+                try:
+                    col_msg = self.bridge.cv2_to_imgmsg(colorized, encoding='bgr8')
+                    col_msg.header = msg.header
+                    self.colorized_pub.publish(col_msg)
+                except Exception:
+                    pass
 
-            self.total_da_ms += (time.perf_counter() - t0) * 1000
-
-        # ── MiDaS v3 ──────────────────────────────────────
-        midas_depth_metric = None
-        if self.midas_model is not None and self.midas_transform is not None:
-            t0 = time.perf_counter()
-            try:
-                input_batch = self.midas_transform(cv_image).to(self.device)
-
-                with torch.no_grad():
-                    prediction = self.midas_model(input_batch)
-                    prediction = torch.nn.functional.interpolate(
-                        prediction.unsqueeze(1),
-                        size=(h, w),
-                        mode='bicubic',
-                        align_corners=False,
-                    ).squeeze().cpu().numpy()
-
-                # MiDaS outputs inverse depth; convert
-                prediction = prediction.max() - prediction  # flip
-                depth_norm = (prediction - prediction.min()) / (
-                    prediction.max() - prediction.min() + 1e-8
+            # ── Performance logging ────────────────────────────
+            if self.frame_count % 100 == 0:
+                avg_da = self.total_da_ms / max(1, self.frame_count)
+                avg_midas = self.total_midas_ms / max(1, self.frame_count) if self.run_midas else 0
+                self.get_logger().info(
+                    f"Depth stats ({self.frame_count} frames): "
+                    f"DA={avg_da:.1f}ms, MiDaS={avg_midas:.1f}ms"
                 )
-                midas_depth_metric = self._relative_to_metric(depth_norm, h)
 
-                depth_msg = self.bridge.cv2_to_imgmsg(
-                    midas_depth_metric.astype(np.float32), encoding='32FC1'
-                )
-                depth_msg.header = msg.header
-                self.midas_pub.publish(depth_msg)
-
-            except Exception as e:
-                self.get_logger().warn(f"MiDaS inference error: {e}")
-
-            self.total_midas_ms += (time.perf_counter() - t0) * 1000
-
-        # ── Colorized depth visualization ──────────────────
-        if self.publish_colorized and da_depth_metric is not None and CV2_AVAILABLE:
-            depth_vis = (da_depth_metric - da_depth_metric.min()) / (
-                da_depth_metric.max() - da_depth_metric.min() + 1e-8
-            )
-            depth_vis = (depth_vis * 255).astype(np.uint8)
-            colorized = cv2.applyColorMap(depth_vis, cv2.COLORMAP_MAGMA)
-
-            try:
-                col_msg = self.bridge.cv2_to_imgmsg(colorized, encoding='bgr8')
-                col_msg.header = msg.header
-                self.colorized_pub.publish(col_msg)
-            except Exception:
-                pass
-
-        # ── Performance logging ────────────────────────────
-        if self.frame_count % 100 == 0:
-            avg_da = self.total_da_ms / self.frame_count
-            avg_midas = self.total_midas_ms / self.frame_count if self.run_midas else 0
-            self.get_logger().info(
-                f"Depth stats ({self.frame_count} frames): "
-                f"DA={avg_da:.1f}ms, MiDaS={avg_midas:.1f}ms"
-            )
+            sys_config.periodic_cache_clear()
+        finally:
+            self._processing = False
 
 
 def main(args=None):

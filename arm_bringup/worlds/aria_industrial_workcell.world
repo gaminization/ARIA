@@ -353,8 +353,8 @@
           <surface>
             <friction>
               <ode>
-                <mu>1.5</mu>
-                <mu2>1.5</mu2>
+                <mu>0.05</mu>
+                <mu2>0.05</mu2>
               </ode>
               <torsional>
                 <coefficient>5.0</coefficient>
@@ -783,13 +783,6 @@
           <geometry><box><size>0.005 0.20 0.15</size></box></geometry>
           <material><ambient>0.05 0.25 0.4 1</ambient><diffuse>0.1 0.4 0.6 1</diffuse><emissive>0.05 0.2 0.35 1</emissive></material>
         </visual>
-        <!-- Emergency Stop (E-Stop) Mushroom Button -->
-        <visual name="estop_button">
-          <pose>0.205 0.08 0.95 0 1.5708 0</pose>
-          <geometry><cylinder><radius>0.022</radius><length>0.015</length></cylinder></geometry>
-          <material><ambient>0.9 0.05 0.05 1</ambient><diffuse>1.0 0.1 0.1 1</diffuse></material>
-        </visual>
-
         <!-- 3-Tier Industrial Stack Light (Andon Tower) -->
         <!-- Mast Upright -->
         <visual name="light_mast">
@@ -815,6 +808,44 @@
           <geometry><cylinder><radius>0.025</radius><length>0.05</length></cylinder></geometry>
           <material><ambient>0.8 0.1 0.1 1</ambient><diffuse>0.9 0.15 0.15 1</diffuse></material>
         </visual>
+      </link>
+    </model>
+
+    <!-- Reachable, contact-sensed E-stop test button on the robot workstation. -->
+    <model name="emergency_stop_test_button">
+      <static>true</static>
+      <pose>0.0 0.20 0.694 0 0 0</pose>
+      <link name="button_link">
+        <collision name="button_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry><cylinder><radius>0.028</radius><length>0.05</length></cylinder></geometry>
+        </collision>
+        <visual name="button_housing">
+          <pose>0 0 -0.074 0 0 0</pose>
+          <geometry><cylinder><radius>0.038</radius><length>0.024</length></cylinder></geometry>
+          <material><ambient>0.08 0.08 0.08 1</ambient><diffuse>0.12 0.12 0.12 1</diffuse></material>
+        </visual>
+        <visual name="button_stem">
+          <pose>0 0 -0.042 0 0 0</pose>
+          <geometry><cylinder><radius>0.012</radius><length>0.052</length></cylinder></geometry>
+          <material><ambient>0.25 0.25 0.25 1</ambient><diffuse>0.32 0.32 0.32 1</diffuse></material>
+        </visual>
+        <visual name="button_cap">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry><cylinder><radius>0.028</radius><length>0.05</length></cylinder></geometry>
+          <material><ambient>0.9 0.05 0.05 1</ambient><diffuse>1.0 0.1 0.1 1</diffuse></material>
+        </visual>
+        <sensor name="estop_contact_sensor" type="contact">
+          <always_on>true</always_on>
+          <update_rate>50</update_rate>
+          <contact><collision>button_collision</collision></contact>
+          <plugin filename="libgazebo_ros_bumper.so" name="estop_contact_controller">
+            <ros>
+              <remapping>bumper_states:=/aria/industrial/estop_contact</remapping>
+            </ros>
+            <frame_name>button_link</frame_name>
+          </plugin>
+        </sensor>
       </link>
     </model>
 

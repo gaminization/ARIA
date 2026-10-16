@@ -79,6 +79,9 @@ esp32_firmware/lib/
 
 # ── IDE ──────────────────────────────────────────────────────────
 .vscode/settings.json      # personal settings, NOT launch.json/tasks.json
+.vscode/*.lock
+.vscode/*.db*
+.vscode/c_cpp_properties.json
 .idea/
 *.swp
 *.swo

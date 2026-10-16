@@ -38,6 +38,7 @@ class MemoryAgent(LifecycleNode):
         self.next_id = 1
         self.unconfirmed_candidates: dict = {}
         self.next_cand_id = 1
+        self.track_to_object: Dict[int, int] = {}
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info("MemoryAgent: CONFIGURING")
@@ -64,6 +65,7 @@ class MemoryAgent(LifecycleNode):
         else:
             self._load_from_db()
         self.bus.on_change('vision', self._on_vision)
+        self.bus.on_change('memory', self._on_external_memory)
         self.create_service(Trigger, '/aria/reset_memory', self._reset_memory_cb)
         self.create_timer(0.5, self._publish_state)  # 2Hz
         return TransitionCallbackReturn.SUCCESS
@@ -72,6 +74,7 @@ class MemoryAgent(LifecycleNode):
         """Service callback to completely wipe active objects and DB on user reset."""
         self.objects.clear()
         self.unconfirmed_candidates.clear()
+        self.track_to_object.clear()
         self.next_id = 1
         try:
             conn = sqlite3.connect(self.db_path)
@@ -84,6 +87,81 @@ class MemoryAgent(LifecycleNode):
         res.success = True
         res.message = "Memory agent wiped and republished"
         return res
+
+    def _on_external_memory(self, msg: MemoryState):
+        """Retain lifecycle changes published by agents that perform manipulation."""
+        for incoming in msg.known_objects:
+            if incoming.lifecycle_state not in {
+                'Detected', 'Tracked', 'Held', 'Grasped', 'Moved', 'Released'
+            }:
+                continue
+            next_state = 'Tracked' if incoming.lifecycle_state == 'Released' else incoming.lifecycle_state
+            existing = self.objects.get(incoming.id)
+            if (existing is None or existing.name != incoming.name or
+                    existing.class_name != incoming.class_name):
+                named_matches = [
+                    candidate for candidate in self.objects.values()
+                    if candidate.name == incoming.name
+                    and candidate.class_name == incoming.class_name
+                ]
+                if len(named_matches) == 1:
+                    existing = named_matches[0]
+                else:
+                    existing = None
+
+            if existing is None:
+                incoming_pos = incoming.last_known_pose.pose.position
+                candidates = []
+                for candidate in self.objects.values():
+                    if candidate.class_name != incoming.class_name:
+                        continue
+                    if incoming.lifecycle_state not in {
+                        'Detected', 'Tracked', 'Held', 'Grasped'
+                    } and not (
+                        incoming.lifecycle_state == 'Released'
+                        and candidate.lifecycle_state in {'Held', 'Grasped'}
+                    ):
+                        continue
+                    if incoming.color and candidate.color and incoming.color != candidate.color:
+                        continue
+                    candidate_pos = candidate.last_known_pose.pose.position
+                    distance = math.hypot(
+                        candidate_pos.x - incoming_pos.x,
+                        candidate_pos.y - incoming_pos.y,
+                    )
+                    if distance <= 0.03:
+                        candidates.append((distance, candidate))
+                candidates.sort(key=lambda item: item[0])
+                if candidates and not (
+                    len(candidates) > 1 and candidates[1][0] - candidates[0][0] < 0.005
+                ):
+                    existing = candidates[0][1]
+
+            if existing is None and incoming.lifecycle_state in {
+                'Detected', 'Tracked', 'Held', 'Grasped'
+            }:
+                existing = WorldObject()
+                existing.id = self.next_id
+                self.next_id += 1
+                existing.name = incoming.name
+                existing.class_name = incoming.class_name
+                existing.last_known_pose = incoming.last_known_pose
+                existing.color = incoming.color
+                existing.material = incoming.material
+                existing.lifecycle_state = incoming.lifecycle_state
+                existing.last_seen = incoming.last_seen
+                if not existing.last_seen.sec and not existing.last_seen.nanosec:
+                    existing.last_seen.sec = int(time.time())
+                self.objects[existing.id] = existing
+
+            if existing is None:
+                continue
+            if not (
+                existing.lifecycle_state in {'Held', 'Grasped'}
+                and incoming.lifecycle_state in {'Detected', 'Tracked'}
+            ):
+                existing.lifecycle_state = next_state
+            self._save_object(existing)
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"MemoryAgent: ACTIVATED — {len(self.objects)} objects in memory")
@@ -152,30 +230,60 @@ class MemoryAgent(LifecycleNode):
         for wo in self.objects.values():
             self._save_object(wo)
 
-    # Workspace gating bounds (optical table and elevated side pedestals)
-    TABLE_X_MIN, TABLE_X_MAX = -0.32, 0.35
-    TABLE_Y_MIN, TABLE_Y_MAX = -0.35, 0.35
-    TABLE_Z_MIN, TABLE_Z_MAX = 0.55, 0.85
+    # Workspace gating bounds (optical table, conveyors, and elevated side pedestals)
+    TABLE_X_MIN, TABLE_X_MAX = -0.45, 0.45
+    TABLE_Y_MIN, TABLE_Y_MAX = -0.45, 0.85
+    TABLE_Z_MIN, TABLE_Z_MAX = 0.50, 0.95
     ARM_BASE_RADIUS = 0.075
 
     def _on_vision(self, msg: VisionState):
         """
-        Update memory from vision detections with industrial multi-instance spatial association.
-        Supports multiple distinct objects of the same class (e.g. mug_1, mug_2, block_1, block_2)
-        while tracking relocated/moved workpieces and preventing duplicate instance proliferation.
+        Update the world model while preserving the identity of nearby, same-class objects.
         """
         now = time.time()
         now_sec = int(now)
         now_nsec = int((now - now_sec) * 1e9)
 
+        association_radius = 0.03
+        generic_classes = {'table_object', 'unknown', 'yellow_items', 'white_dish', 'item'}
+        detections = []
+        for det in msg.detected_objects:
+            is_duplicate = False
+            for previous in detections:
+                ax1 = det.bbox_x - det.bbox_w / 2
+                ay1 = det.bbox_y - det.bbox_h / 2
+                ax2 = det.bbox_x + det.bbox_w / 2
+                ay2 = det.bbox_y + det.bbox_h / 2
+                bx1 = previous.bbox_x - previous.bbox_w / 2
+                by1 = previous.bbox_y - previous.bbox_h / 2
+                bx2 = previous.bbox_x + previous.bbox_w / 2
+                by2 = previous.bbox_y + previous.bbox_h / 2
+                intersection = max(0.0, min(ax2, bx2) - max(ax1, bx1)) * max(
+                    0.0, min(ay2, by2) - max(ay1, by1)
+                )
+                area_a = det.bbox_w * det.bbox_h
+                area_b = previous.bbox_w * previous.bbox_h
+                iou = intersection / (area_a + area_b - intersection + 1e-6)
+                pos_a = det.pose_3d.pose.position
+                pos_b = previous.pose_3d.pose.position
+                same_pose = math.hypot(pos_a.x - pos_b.x, pos_a.y - pos_b.y) <= 0.025
+                if iou >= 0.85 and same_pose:
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                detections.append(det)
+
         # Collect current frame detection locations by class
         current_frame_dets_by_class = {}
-        for det in msg.detected_objects:
+        for det in detections:
             c = det.class_name.lower().strip()
             if c:
                 current_frame_dets_by_class.setdefault(c, []).append((det.pose_3d.pose.position.x, det.pose_3d.pose.position.y))
 
-        for det in msg.detected_objects:
+        seen_track_ids = set()
+        matched_object_ids = set()
+        matched_candidate_ids = set()
+        for det in detections:
             if not det.class_name or det.class_name in {'unknown', 'dining table', 'chair'}:
                 continue
 
@@ -200,62 +308,73 @@ class MemoryAgent(LifecycleNode):
             if math.hypot(det_x, det_y) < self.ARM_BASE_RADIUS:
                 continue
 
-            # 2. Spatial proximity association:
-            closest_wo = None
-            min_dist = float('inf')
-            same_class_closest = None
-            same_class_min_dist = float('inf')
-
-            for wo in self.objects.values():
-                wo_x = wo.last_known_pose.pose.position.x
-                wo_y = wo.last_known_pose.pose.position.y
-                d = math.hypot(wo_x - det_x, wo_y - det_y)
-                if d < min_dist:
-                    min_dist = d
-                    closest_wo = wo
-                if wo.class_name == det.class_name:
-                    # Match same class; prioritize color match if both have color
-                    if not det_color or not wo.color or det_color == wo.color:
-                        if d < same_class_min_dist:
-                            same_class_min_dist = d
-                            same_class_closest = wo
-
-            # Check if this matches an existing workpiece:
             matched_wo = None
-            generic_classes = {'table_object', 'unknown', 'yellow_items', 'white_dish', 'item'}
-            if same_class_closest is not None and same_class_min_dist < 0.075:
-                matched_wo = same_class_closest
-            elif closest_wo is not None and (closest_wo.class_name in generic_classes or det.class_name in generic_classes) and min_dist < 0.060:
-                matched_wo = closest_wo
-            elif closest_wo is not None and closest_wo.class_name == det.class_name and min_dist < 0.050:
-                matched_wo = closest_wo
-            else:
-                # Dynamic Relocation Check:
-                # If an existing object of same class (and matching color) exists,
-                # check if there is NO detection near its old location in this frame,
-                # or if the object was held/moved by the robot arm.
+            track_id = int(det.tracking_id)
+            if track_id in seen_track_ids:
+                track_id = -1
+            elif track_id >= 0:
+                seen_track_ids.add(track_id)
+
+            # Tracking IDs preserve identity even when nearby instances share a class.
+            if track_id >= 0:
+                mapped_id = self.track_to_object.get(track_id)
+                if mapped_id in self.objects and mapped_id not in matched_object_ids:
+                    matched_wo = self.objects[mapped_id]
+
+            if matched_wo is None:
+                compatible_objects = []
                 for wo in self.objects.values():
-                    if wo.class_name == det.class_name and (not det_color or not wo.color or det_color == wo.color):
-                        old_x = wo.last_known_pose.pose.position.x
-                        old_y = wo.last_known_pose.pose.position.y
-                        # Check if any detection in current frame is near old location
-                        dets_for_cls = current_frame_dets_by_class.get(det.class_name.lower().strip(), [])
-                        has_det_at_old = any(math.hypot(dx - old_x, dy - old_y) < 0.075 for dx, dy in dets_for_cls)
-                        if not has_det_at_old or wo.lifecycle_state in {'Held', 'Moved'}:
-                            # Old location is empty — workpiece was moved!
-                            matched_wo = wo
-                            wo.lifecycle_state = 'Moved'
-                            break
+                    if wo.id in matched_object_ids:
+                        continue
+                    same_class = wo.class_name == det.class_name
+                    generic_match = wo.class_name in generic_classes or det.class_name in generic_classes
+                    color_matches = not det_color or not wo.color or det_color == wo.color
+                    if not (same_class or generic_match) or not color_matches:
+                        continue
+                    wo_pos = wo.last_known_pose.pose.position
+                    distance = math.hypot(wo_pos.x - det_x, wo_pos.y - det_y)
+                    if distance <= association_radius:
+                        compatible_objects.append((distance, wo))
+                if compatible_objects:
+                    matched_wo = min(compatible_objects, key=lambda item: item[0])[1]
+
+            if matched_wo is None:
+                # A changed location indicates relocation only when its old position is empty.
+                relocation_candidates = []
+                for wo in self.objects.values():
+                    if wo.id in matched_object_ids or wo.class_name != det.class_name:
+                        continue
+                    if det_color and wo.color and det_color != wo.color:
+                        continue
+                    old_pos = wo.last_known_pose.pose.position
+                    current_detections = current_frame_dets_by_class.get(det.class_name.lower().strip(), [])
+                    still_at_old_location = any(
+                        math.hypot(dx - old_pos.x, dy - old_pos.y) <= association_radius
+                        for dx, dy in current_detections
+                    )
+                    if not still_at_old_location or wo.lifecycle_state in {'Held', 'Moved'}:
+                        relocation_candidates.append(
+                            (math.hypot(old_pos.x - det_x, old_pos.y - det_y), wo)
+                        )
+                if relocation_candidates:
+                    _, matched_wo = min(relocation_candidates, key=lambda item: item[0])
+                    matched_wo.lifecycle_state = 'Moved'
 
             if matched_wo is not None:
-                # Observation of existing workpiece: smooth update position (EMA alpha=0.25)
-                alpha = 0.25 if matched_wo.lifecycle_state != 'Moved' else 1.0
+                old_pos = matched_wo.last_known_pose.pose.position
+                displacement = math.hypot(old_pos.x - det_x, old_pos.y - det_y)
+                prior_state = matched_wo.lifecycle_state
+                alpha = 1.0 if prior_state in {'Moved', 'Held', 'Grasped'} else (
+                    0.75 if displacement > 0.01 else 0.25
+                )
                 matched_wo.last_known_pose.pose.position.x = (1.0 - alpha) * matched_wo.last_known_pose.pose.position.x + alpha * det_x
                 matched_wo.last_known_pose.pose.position.y = (1.0 - alpha) * matched_wo.last_known_pose.pose.position.y + alpha * det_y
                 matched_wo.last_known_pose.pose.position.z = (1.0 - alpha) * matched_wo.last_known_pose.pose.position.z + alpha * det_z
                 matched_wo.last_seen.sec = now_sec
                 matched_wo.last_seen.nanosec = now_nsec
-                matched_wo.lifecycle_state = 'Tracked'
+                matched_wo.lifecycle_state = (
+                    prior_state if prior_state in {'Held', 'Grasped'} else 'Tracked'
+                )
 
                 # Upgrade generic or missing color
                 if det_color and not matched_wo.color:
@@ -264,6 +383,9 @@ class MemoryAgent(LifecycleNode):
                     matched_wo.class_name = det.class_name
                     matched_wo.name = f"{det.class_name}_{matched_wo.id}"
 
+                matched_object_ids.add(matched_wo.id)
+                if track_id >= 0:
+                    self.track_to_object[track_id] = matched_wo.id
                 self._save_object(matched_wo)
             else:
                 # Temporal Confirmation Filter: require 3 frame sightings within 2.0s
@@ -272,23 +394,27 @@ class MemoryAgent(LifecycleNode):
                     if now - c['last_seen'] < 2.0
                 }
 
-                # Find existing matching candidate within 5cm with same or generic class
+                # Prefer a stable track ID; otherwise use a tight spatial match.
                 best_cand_id = None
                 cand_min_dist = float('inf')
                 for cid, c in self.unconfirmed_candidates.items():
+                    if cid in matched_candidate_ids:
+                        continue
                     is_same_or_generic = (
                         c['class_name'] == det.class_name or
-                        c['class_name'] in {'unknown', 'table_object'} or
-                        det.class_name in {'unknown', 'table_object'}
+                        c['class_name'] in generic_classes or
+                        det.class_name in generic_classes
                     )
                     if not is_same_or_generic:
                         continue
                     d = math.hypot(c['x'] - det_x, c['y'] - det_y)
-                    if d < 0.055 and d < cand_min_dist:
+                    same_track = track_id >= 0 and c.get('tracking_id') == track_id
+                    if (same_track or d <= association_radius) and d < cand_min_dist:
                         cand_min_dist = d
                         best_cand_id = cid
 
                 if best_cand_id is not None:
+                    matched_candidate_ids.add(best_cand_id)
                     c = self.unconfirmed_candidates[best_cand_id]
                     c['count'] += 1
                     c['last_seen'] = now
@@ -302,16 +428,18 @@ class MemoryAgent(LifecycleNode):
 
                     # Promote candidate to WorldObject after 3 confirmed frames
                     if c['count'] >= 3:
-                        # Check if a singleton object of this class and color already exists in self.objects
                         existing_same = None
                         c_cls = c['class_name']
                         c_col = c.get('color', det_color)
                         for o in self.objects.values():
-                            if o.class_name == c_cls:
-                                if not c_col or not o.color or c_col == o.color:
-                                    if c_cls not in {'jenga_block', 'jenga_tower'}:
-                                        existing_same = o
-                                        break
+                            if o.id in matched_object_ids or o.class_name != c_cls:
+                                continue
+                            if c_col and o.color and c_col != o.color:
+                                continue
+                            o_pos = o.last_known_pose.pose.position
+                            if math.hypot(o_pos.x - c['x'], o_pos.y - c['y']) <= association_radius:
+                                existing_same = o
+                                break
 
                         if existing_same is not None:
                             existing_same.last_known_pose.pose.position.x = c['x']
@@ -323,6 +451,9 @@ class MemoryAgent(LifecycleNode):
                             if c_col and not existing_same.color:
                                 existing_same.color = c_col
                             self._save_object(existing_same)
+                            matched_object_ids.add(existing_same.id)
+                            if track_id >= 0:
+                                self.track_to_object[track_id] = existing_same.id
                             del self.unconfirmed_candidates[best_cand_id]
                             continue
 
@@ -342,6 +473,9 @@ class MemoryAgent(LifecycleNode):
                         wo.color = c.get('color', det_color)
                         wo.material = ''
                         self.objects[wo.id] = wo
+                        matched_object_ids.add(wo.id)
+                        if track_id >= 0:
+                            self.track_to_object[track_id] = wo.id
                         self._save_object(wo)
                         del self.unconfirmed_candidates[best_cand_id]
                         self.bus.add_chain_of_thought(
@@ -356,7 +490,8 @@ class MemoryAgent(LifecycleNode):
                         'y': det_y,
                         'z': det_z,
                         'color': det_color,
-                        'class_name': det.class_name
+                        'class_name': det.class_name,
+                        'tracking_id': track_id if track_id >= 0 else None,
                     }
 
     def _publish_state(self):
@@ -365,7 +500,7 @@ class MemoryAgent(LifecycleNode):
         stale_ids = []
         for oid, wo in self.objects.items():
             last_seen_s = float(wo.last_seen.sec) + float(wo.last_seen.nanosec) * 1e-9
-            max_unseen_s = 60.0 if wo.lifecycle_state == 'Held' else 5.0
+            max_unseen_s = 60.0 if wo.lifecycle_state in {'Held', 'Grasped'} else 5.0
             if last_seen_s > 0 and (now - last_seen_s) > max_unseen_s:
                 stale_ids.append(oid)
         for oid in stale_ids:
@@ -377,6 +512,13 @@ class MemoryAgent(LifecycleNode):
             except Exception:
                 pass
             del self.objects[oid]
+        if stale_ids:
+            stale_id_set = set(stale_ids)
+            self.track_to_object = {
+                track_id: object_id
+                for track_id, object_id in self.track_to_object.items()
+                if object_id not in stale_id_set
+            }
 
         msg = MemoryState()
         msg.known_objects = list(self.objects.values())

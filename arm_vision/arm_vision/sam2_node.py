@@ -57,6 +57,11 @@ try:
 except ImportError:
     CV2_AVAILABLE = False
 
+try:
+    from arm_vision.sys_config import sys_config
+except ImportError:
+    from sys_config import sys_config
+
 
 # ═══════════════════════════════════════════════════════════════
 # SAM2 Model Wrapper
@@ -391,6 +396,7 @@ class SAM2Node(Node):
         # Performance tracking
         self._frame_count = 0
         self._total_ms = 0.0
+        self._processing = False
 
         # ── Subscribers ────────────────────────────────────
         qos = QoSProfile(
@@ -444,6 +450,10 @@ class SAM2Node(Node):
         if self._latest_rgb is None:
             return
 
+        if self._processing or not sys_config.should_process('sam2_node', sys_config.sam2_max_rate_hz):
+            return
+
+        self._processing = True
         t_start = time.perf_counter()
 
         # Extract bounding boxes and object IDs
@@ -475,10 +485,18 @@ class SAM2Node(Node):
             class_names.append(cls)
 
         if not boxes:
+            sys_config.periodic_cache_clear()
+            self._processing = False
             return
 
         # Run SAM2 segmentation
-        mask_results = self.sam2.segment(self._latest_rgb, boxes)
+        try:
+            mask_results = self.sam2.segment(self._latest_rgb, boxes)
+        except Exception as e:
+            self.get_logger().warn(f"SAM2 inference warning: {e}")
+            sys_config.periodic_cache_clear()
+            self._processing = False
+            return
 
         # Update mask cache and build JSON output
         masks_dict = {}
@@ -527,12 +545,8 @@ class SAM2Node(Node):
             except Exception:
                 pass
 
-        # Periodic stats
-        if self._frame_count % 100 == 0:
-            avg = self._total_ms / self._frame_count
-            self.get_logger().info(
-                f"SAM2 stats ({self._frame_count} frames): "
-                f"mean={avg:.1f}ms, {len(boxes)} objects")
+        sys_config.periodic_cache_clear()
+        self._processing = False
 
     def _draw_masks(
         self,

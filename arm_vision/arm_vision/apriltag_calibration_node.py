@@ -36,16 +36,16 @@ class AprilTagCalibrationNode(Node):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint"
+        "wrist_pitch_joint"
     ]
 
     # Calibration poses: arm configurations that give good tag visibility
     CALIBRATION_POSES_RAD = [
-        [0.0, 1.5708, 1.3090, 0.0, 0.0],       # home
-        [0.3, 1.2, 1.5, 0.0, 0.0],              # left-forward
-        [-0.3, 1.2, 1.5, 0.0, 0.0],             # right-forward
-        [0.0, 0.8, 2.0, -0.3, 0.0],             # extended-down
-        [0.0, 1.8, 0.5, 0.3, 0.0],              # tucked-up
+        [0.0, 0.0, 0.0, 0.0],       # home
+        [0.3, 0.4, -0.5, 0.0],      # left-forward
+        [-0.3, 0.4, -0.5, 0.0],     # right-forward
+        [0.0, 0.8, -0.7, -0.3],     # extended-down
+        [0.0, 0.6, -0.5, 0.3],      # tucked-up
     ]
 
     # Known AprilTag position in world frame (from SDF)
@@ -56,8 +56,8 @@ class AprilTagCalibrationNode(Node):
         self.get_logger().info("═══ ARIA AprilTag Calibration Node ═══")
 
         # State
-        self.current_joints = np.zeros(5)
-        self.calibration_offsets = np.zeros(5)
+        self.current_joints = np.zeros(len(self.JOINT_NAMES))
+        self.calibration_offsets = np.zeros(len(self.JOINT_NAMES))
         self.calibration_valid = False
 
         # Config path
@@ -109,7 +109,19 @@ class AprilTagCalibrationNode(Node):
         try:
             with open(self.offsets_path, 'r') as f:
                 data = yaml.safe_load(f)
-            self.calibration_offsets = np.array(data.get('offsets', [0]*5))
+            offsets = np.asarray(
+                data.get('offsets', [0] * len(self.JOINT_NAMES)),
+                dtype=float)
+            if offsets.shape == (len(self.JOINT_NAMES) + 1,):
+                self.get_logger().warning(
+                    "Dropping legacy wrist-roll calibration offset; "
+                    "the arm has four kinematic joints")
+                offsets = offsets[:len(self.JOINT_NAMES)]
+            if offsets.shape != (len(self.JOINT_NAMES),):
+                raise ValueError(
+                    "Calibration offsets must contain exactly four "
+                    "arm joint values")
+            self.calibration_offsets = offsets
             self.calibration_valid = data.get('valid', False)
             self.get_logger().info(
                 f"Loaded calibration offsets: {self.calibration_offsets}"
@@ -209,7 +221,7 @@ class AprilTagCalibrationNode(Node):
 
         result = minimize(
             objective,
-            x0=np.zeros(5),
+            x0=np.zeros(len(self.JOINT_NAMES)),
             method='Nelder-Mead',
             options={'maxiter': 1000, 'xatol': 1e-6},
         )

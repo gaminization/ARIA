@@ -19,9 +19,9 @@ class KeyboardControlNode(Node):
     """Terminal keyboard control for ARIA arm using curses."""
 
     JOINT_NAMES = ["waist", "shoulder", "elbow",
-                   "wrist_pitch", "wrist_roll", "gripper"]
+                   "wrist_pitch", "gripper"]
     JOINT_DISPLAY = ["J1 Waist", "J2 Shoulder", "J3 Elbow",
-                     "J4 Wrist Pitch", "J5 Wrist Roll", "J6 Gripper"]
+                     "J4 Wrist Pitch", "J5 Gripper"]
 
     # Key mappings: (increment_key, decrement_key) for each joint
     KEY_MAP = [
@@ -29,15 +29,13 @@ class KeyboardControlNode(Node):
         (ord('w'), ord('s')),  # Joint 2: shoulder
         (ord('e'), ord('d')),  # Joint 3: elbow
         (ord('r'), ord('f')),  # Joint 4: wrist pitch
-        (ord('t'), ord('g')),  # Joint 5: wrist roll
-        (ord('y'), ord('h')),  # Joint 6: gripper
+        (ord('t'), ord('g')),  # Joint 5: gripper
     ]
 
     JOINT_LIMITS_DEG = [
         [-90.0,  90.0],
         [  0.0, 180.0],
         [  0.0, 150.0],
-        [-90.0,  90.0],
         [-90.0,  90.0],
         [  0.0,  45.0],
     ]
@@ -48,7 +46,7 @@ class KeyboardControlNode(Node):
         super().__init__("keyboard_control_node")
 
         # ── State ──────────────────────────────────────────────
-        self.current_angles_deg = [0.0, 90.0, 75.0, 0.0, 0.0, 20.0]
+        self.current_angles_deg = [0.0, 90.0, 75.0, 0.0, 20.0]
         self.target_angles_deg = list(self.current_angles_deg)
         self.step_deg = 5.0
         self.estop_active = False
@@ -86,11 +84,11 @@ class KeyboardControlNode(Node):
 
     def _status_cb(self, msg: JointState):
         """Update status from manual_control_node."""
-        if len(msg.position) >= 6:
+        if len(msg.position) >= len(self.JOINT_NAMES):
             self.current_angles_deg = [
                 p * 180.0 / math.pi for p in msg.position
             ]
-        if len(msg.velocity) >= 6:
+        if len(msg.velocity) >= len(self.JOINT_NAMES):
             self.target_angles_deg = [
                 v * 180.0 / math.pi for v in msg.velocity
             ]
@@ -226,8 +224,8 @@ class KeyboardControlNode(Node):
 
             # Joint display
             row = 3
-            key_labels = ["q/a", "w/s", "e/d", "r/f", "t/g", "y/h"]
-            for i in range(6):
+            key_labels = ["q/a", "w/s", "e/d", "r/f", "t/g"]
+            for i in range(len(self.JOINT_NAMES)):
                 angle = self.current_angles_deg[i]
                 limits = self.JOINT_LIMITS_DEG[i]
 
@@ -245,7 +243,7 @@ class KeyboardControlNode(Node):
                 stdscr.addstr(row + i, 1, line.ljust(box_w - 2), col)
                 stdscr.addstr(row + i, box_w - 1, "║", curses.color_pair(4))
 
-            row += 6
+            row += len(self.JOINT_NAMES) + 1
             # Divider
             stdscr.addstr(row, 0, "╠" + "═" * (box_w - 2) + "╣", curses.color_pair(4))
             row += 1

@@ -189,7 +189,7 @@ class VLATaskExecutor:
         t0 = time.time()
         backend_name = self.vla.active_name
 
-        joint_positions = np.zeros(5)
+        joint_positions = np.zeros(4)
         trajectory: List[np.ndarray] = [joint_positions.copy()]
         n_steps = 0
         max_steps = int(task.timeout_s * 30)  # 30Hz

@@ -29,9 +29,26 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════
 # Configuration
 # ═══════════════════════════════════════════════════════════════
-_CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    'config', 'llm_config.yaml')
+def _find_config_path() -> str:
+    """Locate llm_config.yaml in source tree, ament share dir, or ARIA_ROOT."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [os.path.join(os.path.dirname(here), 'config', 'llm_config.yaml')]
+    try:
+        from ament_index_python.packages import get_package_share_directory
+        candidates.append(os.path.join(
+            get_package_share_directory('arm_planner'), 'config', 'llm_config.yaml'))
+    except Exception:
+        pass
+    candidates.append(os.path.join(
+        os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'),
+        'arm_planner', 'config', 'llm_config.yaml'))
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return candidates[0]
+
+
+_CONFIG_PATH = _find_config_path()
 
 
 def _load_config() -> dict:
@@ -230,9 +247,8 @@ class OllamaClient:
                 f"VRAM tight: {available:.1f}GB free, "
                 f"model needs {required:.1f}GB. "
                 f"Headroom threshold: {self.vram_headroom:.1f}GB")
-            # Allow loading even if tight — Ollama will manage
-            # But warn if free < model size
-            return available >= (required * 0.7)
+            # Allow loading with partial GPU offload — Ollama manages CPU/GPU split
+            return available >= self.vram_headroom
 
         logger.info(
             f"VRAM OK: {available:.1f}GB free, "
@@ -387,7 +403,7 @@ class OllamaClient:
             "stream": False,
             "options": {
                 "temperature": temperature,
-                "num_predict": 4096,
+                "num_predict": 1024,
             },
         }
         if system_prompt:

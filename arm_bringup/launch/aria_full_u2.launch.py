@@ -171,8 +171,8 @@ def generate_launch_description():
         name='attention_agent', output='screen')])
 
     planning_agent = TimerAction(period=5.5, actions=[Node(
-        package='arm_agents', executable='planning_agent',
-        name='planning_agent', output='screen')])
+        package='arm_agents', executable='llm_planning_agent',
+        name='llm_planning_agent', output='screen')])
 
     reachability_agent = TimerAction(period=5.5, actions=[Node(
         package='arm_agents', executable='reachability_agent',

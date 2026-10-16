@@ -36,7 +36,7 @@ class TeachModeNode(Node):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint", "gripper_joint",
+        "wrist_pitch_joint", "gripper_joint",
     ]
 
     def __init__(self):
@@ -52,7 +52,7 @@ class TeachModeNode(Node):
         # ── State ──────────────────────────────────────────
         self._active = False
         self._recording = False
-        self._current_positions_deg = [90.0] * 6
+        self._current_positions_deg = [90.0] * len(self.JOINT_NAMES)
         self._waypoints = []
         self._continuous_trajectory = []
         self._start_time = 0.0
@@ -109,7 +109,7 @@ class TeachModeNode(Node):
     # ═══════════════════════════════════════════════════════════
     def _servo_states_cb(self, msg: JointState):
         """Track current servo positions from ESP32 ADC feedback."""
-        for i in range(min(len(msg.position), 6)):
+        for i in range(min(len(msg.position), len(self.JOINT_NAMES))):
             self._current_positions_deg[i] = msg.position[i]
 
         # Continuous recording during active teach
@@ -341,7 +341,7 @@ class TeachModeNode(Node):
         ]
 
         joint_short = ["Waist", "Shoulder", "Elbow",
-                       "Wr.Pitch", "Wr.Roll", "Gripper"]
+                       "Wr.Pitch", "Gripper"]
         for i, name in enumerate(joint_short):
             lines.append(
                 f" J{i+1} {name:12s}: [{self._current_positions_deg[i]:6.1f}°] (ADC)"

@@ -21,15 +21,14 @@ class JointSliderGUI(Node):
     """Tkinter GUI with sliders, 2D arm view, and live status."""
 
     JOINT_NAMES = ["waist", "shoulder", "elbow",
-                   "wrist_pitch", "wrist_roll", "gripper"]
+                   "wrist_pitch", "gripper"]
     JOINT_DISPLAY = ["Waist", "Shoulder", "Elbow",
-                     "Wrist Pitch", "Wrist Roll", "Gripper"]
+                     "Wrist Pitch", "Gripper"]
 
     JOINT_LIMITS_DEG = [
         (-90.0,  90.0),
         (  0.0, 180.0),
         (  0.0, 150.0),
-        (-90.0,  90.0),
         (-90.0,  90.0),
         (  0.0,  45.0),
     ]
@@ -41,7 +40,7 @@ class JointSliderGUI(Node):
         super().__init__("joint_slider_gui")
 
         # ── State ──────────────────────────────────────────
-        self.current_angles_deg = [0.0, 90.0, 75.0, 0.0, 0.0, 20.0]
+        self.current_angles_deg = [0.0, 90.0, 75.0, 0.0, 20.0]
         self.target_angles_deg = list(self.current_angles_deg)
         self.estop_active = False
         self.motion_complete = True
@@ -165,7 +164,7 @@ class SliderApp:
         self.slider_vars = []
         self.angle_labels = []
 
-        for i in range(6):
+        for i in range(len(self.node.JOINT_NAMES)):
             row = ttk.Frame(slider_frame)
             row.pack(fill=tk.X, pady=2)
 
@@ -375,7 +374,7 @@ class SliderApp:
         # Draw gripper fingers (simplified)
         if len(points) >= 7:
             gx, gy = points[-1]
-            gripper_deg = self.node.current_angles_deg[5]
+            gripper_deg = self.node.current_angles_deg[4]
             spread = gripper_deg * 0.3  # visual spread factor
             for side in [-1, 1]:
                 fx = gx + 15 * math.cos(0)
@@ -392,7 +391,7 @@ class SliderApp:
     def _get_joint_colors(self):
         """Get color for each joint based on proximity to limits."""
         colors = []
-        for i in range(6):
+        for i in range(len(self.node.JOINT_NAMES)):
             angle = self.node.current_angles_deg[i]
             lo, hi = self.node.JOINT_LIMITS_DEG[i]
             margin = min(angle - lo, hi - angle)
@@ -407,7 +406,7 @@ class SliderApp:
     def _update_gui(self):
         """Update GUI at ~10Hz. Thread-safe: only reads from node state."""
         # Update slider labels
-        for i in range(6):
+        for i in range(len(self.node.JOINT_NAMES)):
             angle = self.node.current_angles_deg[i]
             self.angle_labels[i].config(text=f"{angle:6.1f}°")
 

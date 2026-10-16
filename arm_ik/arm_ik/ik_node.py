@@ -124,8 +124,18 @@ class IKNode(Node):
 
         # Current joints for warm-starting
         current = None
-        if len(request.current_joints) >= 5:
-            current = np.array(request.current_joints[:5])
+        if request.current_joints:
+            if len(request.current_joints) != 4:
+                response.success = False
+                response.joint_angles = []
+                response.solver_used = ""
+                response.solve_time_ms = 0.0
+                response.position_error_mm = -1.0
+                response.message = (
+                    "Expected four arm joints for IK warm-start, got "
+                    f"{len(request.current_joints)}")
+                return response
+            current = np.array(request.current_joints)
 
         config = SolverConfig(
             current_joints=current,
@@ -153,14 +163,22 @@ class IKNode(Node):
                 self.fallback_count += 1
 
         # Build response
-        response.success = bool(result.success)
-        response.joint_angles = [float(a) for a in result.joint_angles] if result.success else []
+        valid_result = bool(
+            result.success and np.shape(result.joint_angles) == (4,))
+        response.success = valid_result
+        response.joint_angles = (
+            [float(a) for a in result.joint_angles] if valid_result else [])
         response.solver_used = str(solver_used)
         response.solve_time_ms = float(result.solve_time_ms)
-        response.position_error_mm = float(result.position_error_m * 1000) if result.success else -1.0
-        response.message = result.message
+        response.position_error_mm = (
+            float(result.position_error_m * 1000) if valid_result else -1.0)
+        response.message = (
+            result.message if valid_result or not result.success else
+            "IK solver returned invalid joint dimensions; expected four "
+            "arm joints"
+        )
 
-        if result.success:
+        if valid_result:
             self.success_count += 1
 
         # Log
@@ -178,12 +196,12 @@ class IKNode(Node):
 
     def _fk_cb(self, request, response):
         """Service: /aria/ik/fk_service — compute FK from joint angles."""
-        if len(request.joint_angles) < 5:
+        if len(request.joint_angles) != 4:
             response.success = False
-            response.message = "Need at least 5 joint angles"
+            response.message = "Need exactly four arm joint angles"
             return response
 
-        joints = np.array(request.joint_angles[:5])
+        joints = np.array(request.joint_angles)
         T = forward_kinematics(joints)
 
         pos = T[:3, 3]

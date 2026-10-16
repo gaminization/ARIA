@@ -8,8 +8,6 @@ Uses MPU6050 for orientation feedback + wrist camera for visual.
 """
 import math
 import time
-from typing import Optional
-
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -20,42 +18,29 @@ from arm_interfaces.srv import SetAllJoints
 from arm_planner.state_bus import StateBus
 
 
-# Wrist joint indices
+# Arm joint indices
 WRIST_PITCH_IDX = 3
-WRIST_ROLL_IDX = 4
 
-# All joint names
+# Arm joints only; gripper is commanded separately.
 JOINT_NAMES = [
     "waist_joint", "shoulder_joint", "elbow_joint",
-    "wrist_pitch_joint", "wrist_roll_joint",
+    "wrist_pitch_joint",
 ]
 
 # Joint limits (degrees)
-WRIST_ROLL_MIN_DEG = -90.0
-WRIST_ROLL_MAX_DEG = 90.0
 WRIST_PITCH_MIN_DEG = -90.0
 WRIST_PITCH_MAX_DEG = 90.0
 
 # Rotation increments
 ROTATION_STEP_DEG = 5.0
 VERIFY_WAIT_S = 0.3        # Wait for IMU/camera after each step
-GRIP_OPEN_PARTIAL_S = 0.2  # Partial open time for repositioning
 
 
 class InHandManipulation:
     """
-    Reorients objects while holding them.
-
-    Uses:
-      - wrist_roll_joint for Z-axis rotation
-      - wrist_pitch_joint for Y-axis tilt
-      - MPU6050 IMU for orientation feedback
-      - Wrist camera for visual verification
-
-    Use cases:
-      Screwdriver: rotate_in_hand to align tip with screw
-      Paintbrush: reposition_grip for correct holding angle
-      Key: rotate_in_hand to correct insertion angle
+    Provides the currently supported wrist-pitch operation. The arm model
+    has no wrist-roll actuator, so operations requiring tool-axis rotation
+    or regrasping are reported as unsupported.
     """
 
     def __init__(self, node: Node, bus: StateBus):
@@ -64,7 +49,7 @@ class InHandManipulation:
         self.cb_group = ReentrantCallbackGroup()
 
         # Current state
-        self.current_joints = np.zeros(5)
+        self.current_joints = np.zeros(len(JOINT_NAMES))
         self.imu_orientation = np.zeros(3)  # roll, pitch, yaw (degrees)
         self.imu_accel = np.zeros(3)
         self.holding_object = False
@@ -137,7 +122,7 @@ class InHandManipulation:
 
         Args:
             target_angle_deg: rotation amount in degrees
-            axis: 'z' for wrist_roll, 'y' for wrist_pitch
+            axis: 'y' for wrist_pitch; 'z' is unsupported without wrist roll
 
         Steps:
           1. Record initial IMU orientation
@@ -150,12 +135,13 @@ class InHandManipulation:
         self.bus.add_chain_of_thought(
             f"IN-HAND: Rotating {target_angle_deg:.0f}° around {axis}-axis")
 
-        if axis == 'z':
-            joint_idx = WRIST_ROLL_IDX
-            limit_min, limit_max = WRIST_ROLL_MIN_DEG, WRIST_ROLL_MAX_DEG
-        elif axis == 'y':
+        if axis == 'y':
             joint_idx = WRIST_PITCH_IDX
             limit_min, limit_max = WRIST_PITCH_MIN_DEG, WRIST_PITCH_MAX_DEG
+        elif axis == 'z':
+            self.bus.add_chain_of_thought(
+                "IN-HAND: Unsupported: this arm has no wrist-roll joint")
+            return False
         else:
             self.bus.add_chain_of_thought(f"IN-HAND: Invalid axis '{axis}'")
             return False
@@ -231,43 +217,9 @@ class InHandManipulation:
           5. Verify new grip via wrist camera
         """
         self.bus.add_chain_of_thought(
-            f"IN-HAND: Repositioning grip {offset_mm:.0f}mm {direction}")
-
-        # Step 1: Reference
-        ref_frame = self._last_wrist_frame
-
-        # Step 2: Partial open
-        self.bus.add_chain_of_thought("IN-HAND: Partially opening gripper...")
-        # In simulation: use a partial grip angle
-        # The actual implementation would send a partial close command
-        time.sleep(GRIP_OPEN_PARTIAL_S)
-
-        # Step 3: Nudge
-        nudge_m = offset_mm / 1000.0
-        nudge_joints = self.current_joints.copy()
-
-        if direction in ('forward', 'backward'):
-            sign = 1.0 if direction == 'forward' else -1.0
-            # Small elbow adjustment to nudge
-            nudge_joints[2] += sign * 0.02  # ~1° elbow change
-        elif direction in ('left', 'right'):
-            sign = 1.0 if direction == 'right' else -1.0
-            nudge_joints[0] += sign * 0.01  # small waist change
-
-        success = self._command_joints(nudge_joints, speed_dps=5.0)
-        time.sleep(0.2)
-
-        # Step 4: Re-close gripper
-        self.bus.add_chain_of_thought("IN-HAND: Re-closing gripper...")
-        self._call_trigger(self.close_gripper)
-        time.sleep(0.3)
-
-        # Step 5: Verify
-        time.sleep(0.2)
-        self.bus.add_chain_of_thought(
-            f"IN-HAND: Grip repositioned {offset_mm:.0f}mm {direction}")
-
-        return True
+            "IN-HAND: Unsupported: grip repositioning has no verified "
+            "partial-grip and object-pose feedback implementation")
+        return False
 
     def flip_object(self) -> bool:
         """
@@ -283,52 +235,9 @@ class InHandManipulation:
           7. Verify via wrist camera
         """
         self.bus.add_chain_of_thought(
-            "IN-HAND: Flipping object (place → reposition → regrasp)")
-
-        # Step 1: Remember pose
-        current = self.current_joints.copy()
-
-        # Step 2: Lower to table
-        place_joints = current.copy()
-        place_joints[1] += 0.15  # Lower shoulder
-        place_joints[2] += 0.10  # Extend elbow
-        self._command_joints(place_joints, speed_dps=20.0)
-        time.sleep(1.0)
-
-        # Step 3: Release
-        self.bus.add_chain_of_thought("IN-HAND: Placing object on table...")
-        self._call_trigger(self.open_gripper)
-        time.sleep(0.5)
-
-        # Step 4: Lift
-        retract = place_joints.copy()
-        retract[1] -= 0.10
-        self._command_joints(retract, speed_dps=30.0)
-        time.sleep(0.5)
-
-        # Step 5: Rotate wrist 180°
-        self.bus.add_chain_of_thought(
-            "IN-HAND: Repositioning for opposite-side grasp...")
-        approach = retract.copy()
-        approach[4] += math.pi  # Rotate wrist roll 180°
-        # Clamp to limits
-        approach[4] = max(math.radians(-90), min(math.radians(90), approach[4]))
-        self._command_joints(approach, speed_dps=30.0)
-        time.sleep(0.5)
-
-        # Step 6: Lower and re-grasp
-        self._command_joints(place_joints, speed_dps=20.0)
-        time.sleep(0.5)
-        self.bus.add_chain_of_thought("IN-HAND: Re-grasping...")
-        self._call_trigger(self.close_gripper)
-        time.sleep(0.5)
-
-        # Step 7: Lift
-        self._command_joints(current, speed_dps=20.0)
-        time.sleep(1.0)
-
-        self.bus.add_chain_of_thought("IN-HAND: Flip complete")
-        return True
+            "IN-HAND: Unsupported: flipping requires a verified "
+            "place/regrasp motion plan")
+        return False
 
     def slide_to_tip(self, target_extension_mm: float) -> bool:
         """
@@ -344,40 +253,9 @@ class InHandManipulation:
           6. Verify via wrist camera
         """
         self.bus.add_chain_of_thought(
-            f"IN-HAND: Sliding object {target_extension_mm:.0f}mm "
-            f"toward gripper tips")
-
-        # Step 1: Tilt wrist down
-        tilt_joints = self.current_joints.copy()
-        original_pitch = tilt_joints[WRIST_PITCH_IDX]
-        tilt_joints[WRIST_PITCH_IDX] = math.radians(45)  # Tilt down
-        self._command_joints(tilt_joints, speed_dps=15.0)
-        time.sleep(0.5)
-
-        # Step 2: Partial open
-        self.bus.add_chain_of_thought("IN-HAND: Partial open for sliding...")
-        time.sleep(GRIP_OPEN_PARTIAL_S)
-
-        # Step 3: Wait for gravity slide
-        # Estimate slide time from extension distance
-        slide_time = target_extension_mm / 20.0  # ~20mm/s slide rate
-        self.bus.add_chain_of_thought(
-            f"IN-HAND: Waiting {slide_time:.1f}s for gravity slide...")
-        time.sleep(max(0.2, slide_time))
-
-        # Step 4: Re-close
-        self._call_trigger(self.close_gripper)
-        time.sleep(0.3)
-
-        # Step 5: Return wrist to neutral
-        restore = self.current_joints.copy()
-        restore[WRIST_PITCH_IDX] = original_pitch
-        self._command_joints(restore, speed_dps=15.0)
-        time.sleep(0.5)
-
-        self.bus.add_chain_of_thought(
-            f"IN-HAND: Slide complete. Tool extended ~{target_extension_mm:.0f}mm")
-        return True
+            "IN-HAND: Unsupported: tool sliding has no verified "
+            "object-displacement feedback")
+        return False
 
     # ═══════════════════════════════════════════════════════
     # Helpers
@@ -389,7 +267,7 @@ class InHandManipulation:
         if not self.set_joints.wait_for_service(timeout_sec=2.0):
             return False
         req = SetAllJoints.Request()
-        req.angles_deg = [float(math.degrees(a)) for a in joints_rad[:5]]
+        req.angles_deg = [float(math.degrees(a)) for a in joints_rad[:4]]
         # Append gripper angle (maintain current)
         req.angles_deg.append(44.0)
         req.speed_deg_per_s = speed_dps

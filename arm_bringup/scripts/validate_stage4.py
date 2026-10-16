@@ -54,7 +54,7 @@ class Stage4Validator(Node):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint", "gripper_joint",
+        "wrist_pitch_joint", "gripper_joint",
     ]
 
     def __init__(self):
@@ -63,7 +63,7 @@ class Stage4Validator(Node):
 
         # ── State ──────────────────────────────────────────
         self._sim_positions = {}       # name → radians
-        self._real_positions_deg = [0.0] * 6
+        self._real_positions_deg = [0.0] * len(self.JOINT_NAMES)
         self._esp32_alive = False
         self._last_heartbeat = 0.0
 
@@ -154,14 +154,14 @@ class Stage4Validator(Node):
             return result
 
         # Command each joint to 45° then back
-        test_angles = [45.0, 90.0, 90.0, 90.0, 90.0, 20.0]
+        test_angles = [45.0, 90.0, 90.0, 90.0, 20.0]
         self._send_servo_cmd(test_angles)
         self._spin_for(3.0)
 
         # Check real positions match commanded
         max_error = 0.0
         errors = []
-        for i in range(6):
+        for i in range(len(self.JOINT_NAMES)):
             error = abs(self._real_positions_deg[i] - test_angles[i])
             errors.append(error)
             max_error = max(max_error, error)
@@ -178,7 +178,7 @@ class Stage4Validator(Node):
             result.fail_test(f"max error {max_error:.1f}° (threshold: 5°)")
 
         # Return to home
-        home = [0.0, 90.0, 90.0, 90.0, 90.0, 20.0]
+        home = [0.0, 90.0, 90.0, 90.0, 20.0]
         self._send_servo_cmd(home)
         self._spin_for(2.0)
 
@@ -226,7 +226,7 @@ class Stage4Validator(Node):
         t0 = time.time()
 
         # Start in SIM_TO_REAL
-        home = [0.0, 90.0, 90.0, 90.0, 90.0, 20.0]
+        home = [0.0, 90.0, 90.0, 90.0, 20.0]
         self._send_servo_cmd(home)
         self._spin_for(3.0)
         pos_before = list(self._real_positions_deg)
@@ -249,7 +249,7 @@ class Stage4Validator(Node):
 
         # Check no position jump (within 5° tolerance)
         max_jump = 0.0
-        for i in range(6):
+        for i in range(len(self.JOINT_NAMES)):
             jump = abs(pos_after[i] - pos_teach[i])
             max_jump = max(max_jump, jump)
 

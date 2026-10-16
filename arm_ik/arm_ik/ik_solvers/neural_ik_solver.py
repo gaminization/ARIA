@@ -7,7 +7,7 @@ Small MLP trained to map pose → joint angles for THIS arm.
 Architecture: 7 inputs (xyz + quaternion xyzw)
               → 256 hidden (ReLU)
               → 128 hidden (ReLU)
-              → 5 outputs (joint angles in radians)
+              → 4 outputs (arm joint angles in radians)
 
 Training: FK-based data generation → supervised learning
 Inference: <1ms on GPU (RTX 5060)
@@ -43,7 +43,7 @@ if TORCH_AVAILABLE:
         MLP for inverse kinematics.
 
         Input:  7D — [x, y, z, qx, qy, qz, qw] (normalized)
-        Output: 5D — [θ1, θ2, θ3, θ4, θ5] (normalized to [-1, 1])
+        Output: 4D — [waist, shoulder, elbow, wrist pitch] (normalized to [-1, 1])
 
         Hidden layers: 256 → 128 with ReLU activation.
         Output: tanh to bound outputs, then scale to joint limits.
@@ -62,7 +62,7 @@ if TORCH_AVAILABLE:
                 nn.Dropout(0.1),
                 nn.Linear(128, 64),
                 nn.ReLU(),
-                nn.Linear(64, 5),
+                nn.Linear(64, 4),
                 nn.Tanh(),  # Output in [-1, 1]
             )
 
@@ -145,12 +145,12 @@ def generate_training_data(n_samples: int = 50000,
         save_path: path to save .npz file (optional)
 
     Returns:
-        (poses, joints) — numpy arrays of shape (N, 7) and (N, 5)
+        (poses, joints) — numpy arrays of shape (N, 7) and (N, 4)
     """
     print(f"Generating {n_samples} training samples...")
 
     poses = np.zeros((n_samples, 7))    # [x, y, z, qx, qy, qz, qw]
-    joints = np.zeros((n_samples, 5))   # [θ1..θ5]
+    joints = np.zeros((n_samples, 4))   # [waist, shoulder, elbow, wrist pitch]
 
     rng = np.random.default_rng(42)  # Reproducible
 
@@ -158,7 +158,7 @@ def generate_training_data(n_samples: int = 50000,
         # Sample random valid joint configuration
         q = np.array([
             rng.uniform(JOINT_LIMITS[j, 0], JOINT_LIMITS[j, 1])
-            for j in range(5)
+            for j in range(4)
         ])
 
         # Compute FK
@@ -303,11 +303,13 @@ def train_neural_ik(data_path: str = None,
 _model: Optional['IKNet'] = None
 _pos_mean: Optional[np.ndarray] = None
 _pos_std: Optional[np.ndarray] = None
+_model_load_error: Optional[str] = None
 
 
 def _load_model(model_path: str) -> bool:
     """Load trained model from disk."""
-    global _model, _pos_mean, _pos_std
+    global _model, _pos_mean, _pos_std, _model_load_error
+    _model_load_error = None
 
     if not TORCH_AVAILABLE:
         return False
@@ -322,7 +324,15 @@ def _load_model(model_path: str) -> bool:
         checkpoint = torch.load(model_path, map_location=device)
 
     _model = IKNet().to(device)
-    _model.load_state_dict(checkpoint['model_state'])
+    try:
+        _model.load_state_dict(checkpoint['model_state'])
+    except RuntimeError as exc:
+        _model = None
+        _model_load_error = (
+            "Neural IK checkpoint is incompatible with the four-axis arm; "
+            "retrain it. " + str(exc)
+        )
+        return False
     _model.eval()
 
     _pos_mean = checkpoint['pos_mean']
@@ -363,7 +373,7 @@ def solve_neural(target_position: np.ndarray,
     t_start = time.perf_counter()
 
     # Load model if needed
-    global _model, _pos_mean, _pos_std
+    global _model, _pos_mean, _pos_std, _model_load_error
     if _model is None:
         if model_path is None:
             candidates = [
@@ -383,7 +393,10 @@ def solve_neural(target_position: np.ndarray,
                 success=False,
                 solver_name="neural",
                 solve_time_ms=(time.perf_counter() - t_start) * 1000,
-                message=f"Model not found at {model_path}. Run training first.",
+                message=(
+                    _model_load_error or
+                    f"Model not found at {model_path}. Run training first."
+                ),
             )
 
     device = next(_model.parameters()).device
@@ -405,9 +418,16 @@ def solve_neural(target_position: np.ndarray,
         normalized_output = _model(input_tensor)
         joint_angles_tensor = _model.denormalize_joints(normalized_output)
         joint_angles = joint_angles_tensor.cpu().numpy().flatten()
+    if joint_angles.shape != (4,):
+        return IKResult(
+            success=False,
+            solver_name="neural",
+            solve_time_ms=(time.perf_counter() - t_start) * 1000,
+            message="Neural IK model must output exactly four arm joints",
+        )
 
     # Clamp to limits
-    for j in range(5):
+    for j in range(4):
         joint_angles[j] = np.clip(
             joint_angles[j], JOINT_LIMITS[j, 0], JOINT_LIMITS[j, 1]
         )

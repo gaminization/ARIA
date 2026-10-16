@@ -1,5 +1,5 @@
 # FK (forward kinematics) service
-float64[] joint_angles    # Joint angles [5] in radians
+float64[] joint_angles    # Arm joint angles [4] in radians (waist, shoulder, elbow, wrist pitch)
 ---
 geometry_msgs/PoseStamped end_effector_pose  # Computed end-effector pose
 bool success

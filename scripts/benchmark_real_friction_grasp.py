@@ -118,6 +118,7 @@ class FrictionGraspRealNode(Node):
     def __init__(self):
         super().__init__("friction_grasp_real_node")
         self.joint_positions: Dict[str, float] = {}
+        self.joint_efforts: Dict[str, float] = {}
         self.model_poses: Dict[str, Any] = {}
         self.left_contact_states: List[Any] = []
         self.right_contact_states: List[Any] = []
@@ -136,6 +137,9 @@ class FrictionGraspRealNode(Node):
     def _joint_cb(self, msg: JointState):
         for name, pos in zip(msg.name, msg.position):
             self.joint_positions[name] = pos
+        if msg.effort:
+            for name, eff in zip(msg.name, msg.effort):
+                self.joint_efforts[name] = eff
 
     def _model_cb(self, msg: ModelStates):
         for name, pose in zip(msg.name, msg.pose):
@@ -221,7 +225,9 @@ class TelemetryLogger:
         self.writer = csv.writer(self.f)
         self.writer.writerow([
             "timestamp_ns", "workpiece_x", "workpiece_y", "workpiece_z",
-            "tf_ee_x", "tf_ee_y", "tf_ee_z", "left_force_N", "right_force_N"
+            "tf_ee_x", "tf_ee_y", "tf_ee_z", "left_force_N", "right_force_N",
+            "gripper_joint_pos", "finger_mimic_joint_pos",
+            "gripper_joint_effort", "finger_mimic_joint_effort"
         ])
         self.running = True
         self.thread = threading.Thread(target=self._run, daemon=True)
@@ -236,7 +242,11 @@ class TelemetryLogger:
             wz = wp.position.z if wp else 0.0
             tf_ee = self.node.get_tf_ee()
             _, lf, _, rf = self.node.get_contact_metrics()
-            self.writer.writerow([t_ns, wx, wy, wz, tf_ee[0], tf_ee[1], tf_ee[2], lf, rf])
+            g_pos = self.node.joint_positions.get("gripper_joint", 0.0)
+            m_pos = self.node.joint_positions.get("finger_mimic_joint", 0.0)
+            g_eff = self.node.joint_efforts.get("gripper_joint", 0.0)
+            m_eff = self.node.joint_efforts.get("finger_mimic_joint", 0.0)
+            self.writer.writerow([t_ns, wx, wy, wz, tf_ee[0], tf_ee[1], tf_ee[2], lf, rf, g_pos, m_pos, g_eff, m_eff])
             time.sleep(0.02)  # 50 Hz
 
     def stop(self):
@@ -278,6 +288,9 @@ def run_friction_grasp_benchmark():
         "seed", "rosbag_path", "telemetry_log_path", "spawn_x_m", "spawn_y_m", "spawn_z_m",
         "grasp_mode", "pad_size_mm", "cube_size_mm", "left_pad_partner", "left_pad_force_N",
         "right_pad_partner", "right_pad_force_N", "bilateral_contact",
+        "gripper_joint_pos_rad", "finger_mimic_joint_pos_rad",
+        "gripper_joint_effort_Nm", "finger_mimic_joint_effort_Nm", "closing_asymmetry_rad",
+        "friction_mu", "effort_limit_Nm", "contact_kp",
         "initial_obj_z_m", "max_lift_z_m", "lift_dz_mm", "hold_time_s",
         "success", "failure_category", "details"
     ]
@@ -406,6 +419,14 @@ def run_friction_grasp_benchmark():
             "right_pad_partner": r_partner,
             "right_pad_force_N": f"{r_force:.3f}",
             "bilateral_contact": bilateral,
+            "gripper_joint_pos_rad": f"{node.joint_positions.get('gripper_joint', 0.0):.4f}",
+            "finger_mimic_joint_pos_rad": f"{node.joint_positions.get('finger_mimic_joint', 0.0):.4f}",
+            "gripper_joint_effort_Nm": f"{node.joint_efforts.get('gripper_joint', 0.0):.4f}",
+            "finger_mimic_joint_effort_Nm": f"{node.joint_efforts.get('finger_mimic_joint', 0.0):.4f}",
+            "closing_asymmetry_rad": f"{abs(node.joint_positions.get('gripper_joint', 0.0) - node.joint_positions.get('finger_mimic_joint', 0.0)):.4f}",
+            "friction_mu": "2.5",
+            "effort_limit_Nm": "0.245",
+            "contact_kp": "1000000.0",
             "initial_obj_z_m": f"{init_z:.4f}",
             "max_lift_z_m": f"{max_lift_z:.4f}",
             "lift_dz_mm": f"{dz_mm:.2f}",

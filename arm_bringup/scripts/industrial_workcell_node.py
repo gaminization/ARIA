@@ -139,8 +139,12 @@ class AutonomousIndustrialAgentNode(Node):
 
         self._wait_for_services()
 
-        # Start master cycle timer (fires 2.5s after launch)
-        self.cycle_timer = self.create_timer(2.5, self._start_cycle_callback)
+        # Master cycle timer (disabled by default; only runs when auto_start_cycle is true)
+        self.declare_parameter("auto_start_cycle", False)
+        if self.get_parameter("auto_start_cycle").value:
+            self.cycle_timer = self.create_timer(2.5, self._start_cycle_callback)
+        else:
+            self.cycle_timer = None
 
     def _wait_for_services(self):
         services = [
@@ -202,7 +206,9 @@ class AutonomousIndustrialAgentNode(Node):
     def _execute_joint_angles(self, angles_deg: List[float], speed_deg_per_s: float = 30.0) -> bool:
         """Execute dynamically computed 5-joint targets via /aria/set_all_joints."""
         req = SetAllJoints.Request()
-        req.joint_angles_deg = [float(a) for a in angles_deg]
+        # SetAllJoints.srv exposes `angles_deg`; using the old field name
+        # raised AttributeError before any dynamic industrial motion could run.
+        req.angles_deg = [float(a) for a in angles_deg]
         req.speed_deg_per_s = float(speed_deg_per_s)
         res = self._call_sync(self.set_all_joints_client, req, timeout=6.0)
         if res and res.success:

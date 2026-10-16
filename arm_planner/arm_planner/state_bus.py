@@ -14,6 +14,7 @@ Topics:
 ═══════════════════════════════════════════════════════════════
 """
 import threading
+from collections import Counter
 from typing import Any, Callable, Dict, Optional
 
 import rclpy
@@ -96,6 +97,53 @@ class StateSnapshot:
 
 
 # ═══════════════════════════════════════════════════════════════
+# TaskState merge — many nodes read-modify-republish the same message,
+# so a stale copy must never regress newer information.
+# ═══════════════════════════════════════════════════════════════
+def _action_rank(status: str) -> int:
+    return {'PENDING': 0, 'EXECUTING': 1}.get(status, 2)
+
+
+def _task_rank(status: str) -> int:
+    if status in ('COMPLETE', 'FAILED', 'CANCELLED'):
+        return 2
+    return 0 if status in ('', 'IDLE', 'PLANNING') else 1
+
+
+def _queue_sig(msg: TaskState):
+    return tuple((a.action_type, a.target_object, a.destination) for a in msg.action_queue)
+
+
+def merge_task_states(local: Optional[TaskState], inc: TaskState) -> TaskState:
+    """Merge an incoming TaskState into the local view without losing progress."""
+    if local is None or local.task_id != inc.task_id:
+        return inc
+    base = inc if inc.queue_epoch >= local.queue_epoch else local
+    other = local if base is inc else inc
+    # chain of thought is append-only: keep every line either side has seen
+    cot = list(local.chain_of_thought)
+    have = Counter(cot)
+    for line, n in Counter(inc.chain_of_thought).items():
+        for _ in range(max(0, n - have.get(line, 0))):
+            cot.append(line)
+    # action statuses only move forward within the same queue structure
+    if inc.queue_epoch == local.queue_epoch and len(inc.action_queue) == len(local.action_queue):
+        for i, a in enumerate(base.action_queue):
+            o = other.action_queue[i]
+            if (a.action_type, a.target_object) == (o.action_type, o.target_object) \
+                    and _action_rank(o.status) > _action_rank(a.status):
+                a.status = o.status
+                a.target_pose = o.target_pose
+    if _task_rank(local.task_status) == 2 and _task_rank(base.task_status) < 2 \
+            and inc.queue_epoch == local.queue_epoch:
+        base.task_status = local.task_status
+    if len(other.failure_log) > len(base.failure_log):
+        base.failure_log = other.failure_log
+    base.chain_of_thought = cot
+    return base
+
+
+# ═══════════════════════════════════════════════════════════════
 # State Bus — Central publisher/subscriber
 # ═══════════════════════════════════════════════════════════════
 class StateBus:
@@ -137,6 +185,7 @@ class StateBus:
         """
         self._node = node
         self.state = StateSnapshot()
+        self._last_task_sig = None
         self._change_callbacks: Dict[str, list] = {
             'vision': [], 'memory': [], 'task': [],
             'health': [], 'joints': [],
@@ -181,9 +230,11 @@ class StateBus:
             cb(msg)
 
     def _on_task(self, msg: TaskState):
-        self.state.task = msg
+        merged = merge_task_states(self.state.task, msg)
+        self._last_task_sig = (merged.task_id, _queue_sig(merged))
+        self.state.task = merged
         for cb in self._change_callbacks['task']:
-            cb(msg)
+            cb(merged)
 
     def _on_health(self, msg: HealthState):
         self.state.health = msg
@@ -208,6 +259,13 @@ class StateBus:
 
     def publish_task(self, msg: TaskState):
         """Publish task state update."""
+        sig = (msg.task_id, _queue_sig(msg))
+        prev = self.state.task
+        if prev is not None and prev.task_id == msg.task_id:
+            msg.queue_epoch = max(msg.queue_epoch, prev.queue_epoch)
+            if sig != self._last_task_sig:
+                msg.queue_epoch += 1
+        self._last_task_sig = sig
         self.state.task = msg
         self._pub_task.publish(msg)
 

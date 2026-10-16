@@ -56,7 +56,7 @@ def generate_benchmark_poses(n_poses: int = 200,
         # Random valid joint configuration
         q = np.array([
             rng.uniform(JOINT_LIMITS[j, 0] * 0.9, JOINT_LIMITS[j, 1] * 0.9)
-            for j in range(5)
+            for j in range(4)
         ])
 
         # Compute FK
@@ -138,6 +138,7 @@ def run_benchmark(poses: List[Dict]) -> Dict:
     print(f"Running benchmark on {len(poses)} poses...\n")
 
     results = {}
+    rng = np.random.default_rng(12345)
 
     for solver_name in solvers:
         solve_times = []
@@ -151,7 +152,7 @@ def run_benchmark(poses: List[Dict]) -> Dict:
             gt_joints = np.array(pose_data['ground_truth_joints'])
 
             config = SolverConfig(
-                current_joints=gt_joints + np.random.randn(5) * 0.1,
+                current_joints=gt_joints + rng.normal(size=4) * 0.1,
                 tolerance_m=0.005,
             )
 

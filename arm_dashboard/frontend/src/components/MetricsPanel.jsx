@@ -27,7 +27,9 @@ export default function MetricsPanel() {
   const runs = metrics?.recent_runs || [];
   const failures = metrics?.failure_breakdown || [];
   const overallSuccessRate = metrics?.overall_success_rate;
-  const meanLatency = metrics?.mean_latency_ms ?? 12.0;
+  const meanLatency = Number.isFinite(metrics?.mean_latency_ms)
+    ? `${metrics.mean_latency_ms.toFixed(1)}ms`
+    : 'N/A';
 
   return (
     <div className="panel-card h-full flex flex-col bg-[#13161e] border border-[#252a38] rounded-md overflow-hidden select-none">
@@ -109,7 +111,7 @@ export default function MetricsPanel() {
         <span>
           PICK SUCCESS RATE: {overallSuccessRate !== null && overallSuccessRate !== undefined ? `${(overallSuccessRate * 100).toFixed(1)}%` : 'N/A (0 Runs)'}
         </span>
-        <span>MEAN INFERENCE LATENCY: {meanLatency.toFixed(1)}ms</span>
+        <span>MEAN INFERENCE LATENCY: {meanLatency}</span>
       </div>
     </div>
   );

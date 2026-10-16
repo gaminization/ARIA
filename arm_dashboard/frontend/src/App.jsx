@@ -300,7 +300,9 @@ export default function App() {
         <div className="hidden md:flex items-center gap-3 text-[11px] font-mono">
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#13161e] border border-[#252a38]">
             <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
-            <span className="text-slate-300 font-semibold">{wsConnected ? 'ARIA ONLINE' : 'DISCONNECTED'}</span>
+            <span className="text-slate-300 font-semibold">
+              {wsConnected ? 'DASHBOARD CONNECTED' : 'DASHBOARD DISCONNECTED'}
+            </span>
           </div>
 
           <div
@@ -309,12 +311,20 @@ export default function App() {
             title="Click to manage simulation workcell"
           >
             <span className={`w-2 h-2 rounded-full ${systemState?.ros_connected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-            <span className="text-slate-300">{systemState?.ros_connected ? 'ROS 2 ONLINE' : 'SIMULATION STANDBY'}</span>
+            <span className="text-slate-300">{systemState?.ros_connected ? 'ROS 2 ONLINE' : 'ROS 2 OFFLINE'}</span>
           </div>
 
           <div className="flex items-center gap-1 text-slate-400 px-2 py-0.5 rounded bg-[#13161e] border border-[#252a38]">
             <Activity className="w-3 h-3 text-cyan-400" />
-            <span>30 FPS · 10ms</span>
+            <span>
+              {systemState?.health?.fps_top > 0
+                ? `${systemState.health.fps_top.toFixed(1)} FPS`
+                : 'FPS N/A'}
+              {' · '}
+              {systemState?.health?.inference_latency_ms > 0
+                ? `${systemState.health.inference_latency_ms.toFixed(0)}ms`
+                : 'Latency N/A'}
+            </span>
           </div>
 
           <div className="flex items-center gap-1 text-slate-400 px-2 py-0.5 rounded bg-[#13161e] border border-[#252a38]">
@@ -605,28 +615,27 @@ export default function App() {
           <span>·</span>
           <span>J4 {jointAngles[3]?.toFixed(1)}°</span>
           <span>·</span>
-          <span>J5 {jointAngles[4]?.toFixed(1)}°</span>
-          <span>·</span>
-          <span>J6 {jointAngles[5]?.toFixed(1)}°</span>
+          <span>J5 Gripper {jointAngles[4]?.toFixed(1)}°</span>
           <span className="text-[#252a38]">│</span>
           {(() => {
             const camStats = systemState?.camera_stats || {};
             const topStats = camStats.top || {};
             const wristStats = camStats.wrist || {};
-            const fps = topStats.fps > 0 ? topStats.fps : (wristStats.fps > 0 ? wristStats.fps : 30.0);
-            const res = topStats.height ? `${topStats.height}P` : '720P';
+            const fps = topStats.fps > 0 ? topStats.fps : wristStats.fps;
+            const res = topStats.height ? `${topStats.height}P` : 'N/A';
+            const inferenceMs = systemState?.health?.inference_latency_ms;
             return (
               <>
-                <span className="text-cyan-400 font-mono">{fps.toFixed(1)} FPS ({res})</span>
+                <span className="text-cyan-400 font-mono">
+                  {fps > 0 ? `${fps.toFixed(1)} FPS (${res})` : 'FPS N/A'}
+                </span>
                 <span>·</span>
-                <span className="text-purple-400">10ms</span>
+                <span className="text-purple-400">
+                  {inferenceMs > 0 ? `${inferenceMs.toFixed(0)}ms inference` : 'Latency N/A'}
+                </span>
               </>
             );
           })()}
-          <span className="text-[#252a38]">│</span>
-          <span>CPU 34%</span>
-          <span>·</span>
-          <span>GPU 58%</span>
         </div>
 
         <div className="flex items-center gap-3">

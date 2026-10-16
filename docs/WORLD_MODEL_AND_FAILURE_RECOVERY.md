@@ -11,18 +11,28 @@ stateDiagram-v2
     Tracked --> Lost: Occluded or moved out of FOV
     Lost --> Recovered: Re-identified in workspace
     Lost --> Moved: User confirms relocation
-    Tracked --> Removed: Picked & discarded / sorted out
+    Tracked --> Grasped: Gripper contact verified
+    Grasped --> Held: Object lifted
+    Held --> Tracked: Object released or placed
+    Tracked --> Removed: Discarded or removed from the workspace
     Moved --> Tracked: Position updated in SQLite
     Removed --> [*]
 ```
 
 ### Lifecycle State Machine:
 1. **`Detected`:** Raw detection from YOLOv8 or Depth-Anything v2. Bounding box coordinates recorded.
-2. **`Tracked`:** Position associated across multiple time steps; spatial Kalman filter smooths 3D coordinates.
+2. **`Tracked`:** Position associated across multiple time steps. Detector IDs are unique within a frame, overlapping boxes are suppressed by IoU, and non-overlapping nearby objects remain separate. Persistent pixel tracks match within 45 px; the world model first uses track identity and falls back to same-class spatial association within 3 cm.
 3. **`Lost`:** Target absent from expected coordinates for $> 1.5\,\text{s}$. Flagged for search behavior.
 4. **`Recovered`:** Object re-acquired after search sweep or active perception shift.
 5. **`Moved`:** Coordinates updated after dialogue confirmation or unexpected displacement.
-6. **`Removed`:** Workpiece placed into scrap bin or assembly destination; removed from active workspace map.
+6. **`Grasped` / `Held`:** Gripper contact and subsequent lift are verified. The memory manager retains held objects for up to 60 seconds without camera observations; normal tracked objects are retired after 5 seconds unseen.
+7. **`Removed`:** Workpiece discarded or otherwise removed from the active workspace map.
+
+The `MemoryAgent` owns the persistent world model. `SkillAgent` forwards coherent camera scenes and explicit search/lifecycle updates into that shared state rather than publishing a separate per-frame object database. New spatial candidates are promoted after three observations within two seconds; a verified release transitions the object back to `Tracked`.
+
+### Target resolution and reachability safeguards
+
+Explicit object types and colors are matched as separate constraints (including names such as `red_cube` and plural requests). A cached memory pose must agree with a camera detection received within the last second and within 5 cm when the detector stream has started. Candidate poses outside the 0.30 m geometric reach envelope are rejected before grasp planning, and SQLite is not used to override live perception; if no supported candidate remains, the active workspace scan is used.
 
 ---
 

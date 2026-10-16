@@ -22,7 +22,7 @@ public:
 
     TracIKSolverWrapper(double maxtime_sec = 0.005, double tolerance = 1e-4)
         : maxtime(maxtime_sec), eps(tolerance) {
-        // Construct KDL::Chain matching ARIA 5-DOF DH parameters:
+        // Construct KDL::Chain for the four arm axes.
         // Base height offset 0.105m
         chain.addSegment(KDL::Segment("base_seg", KDL::Joint("base_fixed", KDL::Joint::Fixed), KDL::Frame(KDL::Vector(0, 0, 0.105))));
         // Joint 1: Waist (RotZ, alpha=pi/2)
@@ -33,16 +33,12 @@ public:
         chain.addSegment(KDL::Segment("elbow_seg", KDL::Joint("elbow", KDL::Joint::RotZ), KDL::Frame(KDL::Vector(0.115, 0, 0))));
         // Joint 4: Wrist pitch (RotZ, a=0.095m)
         chain.addSegment(KDL::Segment("wrist_pitch_seg", KDL::Joint("wrist_pitch", KDL::Joint::RotZ), KDL::Frame(KDL::Vector(0.095, 0, 0))));
-        // Joint 5: Wrist roll (RotZ matching DH table)
-        chain.addSegment(KDL::Segment("wrist_roll_seg", KDL::Joint("wrist_roll", KDL::Joint::RotZ), KDL::Frame::Identity()));
-
-        num_joints = 5;
+        num_joints = 4;
         q_min.resize(num_joints);
         q_max.resize(num_joints);
 
-        double limits[5][2] = {
+        double limits[4][2] = {
             {-3.1416, 3.1416},
-            {-1.5708, 1.5708},
             {-1.5708, 1.5708},
             {-1.5708, 1.5708},
             {-1.5708, 1.5708}

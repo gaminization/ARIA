@@ -21,7 +21,6 @@ JOINT_LIMITS = np.array([
     [-math.pi/2, math.pi/2],     # shoulder [-90°, 90°]
     [-math.pi/2, math.pi/2],     # elbow [-90°, 90°]
     [-math.pi/2, math.pi/2],     # wrist pitch [-90°, 90°]
-    [-math.pi/2, math.pi/2],     # wrist roll [-90°, 90°]
 ])
 
 # Soft limits (5° inside hard limits)
@@ -45,7 +44,7 @@ TEMP_ALERT_C = 60.0
 
 JOINT_NAMES = [
     "waist_joint", "shoulder_joint", "elbow_joint",
-    "wrist_pitch_joint", "wrist_roll_joint"
+    "wrist_pitch_joint"
 ]
 
 class SafetyAgent(LifecycleNode):
@@ -64,9 +63,9 @@ class SafetyAgent(LifecycleNode):
         super().__init__('safety_agent')
         self.bus = StateBus(self)
         self.cb_group = ReentrantCallbackGroup()
-        self.current_joints = np.zeros(5)
+        self.current_joints = np.zeros(len(JOINT_NAMES))
         self.estop_active = False
-        self.force_estimates = np.zeros(5)
+        self.force_estimates = np.zeros(len(JOINT_NAMES))
         self.intervention_count = 0
         self.intervention_log: list = []
         self._last_log_times = {}
@@ -98,8 +97,8 @@ class SafetyAgent(LifecycleNode):
                 self.current_joints[i] = msg.position[idx]
 
     def _force_cb(self, msg: Float64MultiArray):
-        if len(msg.data) >= 5:
-            self.force_estimates = np.array(msg.data[:5])
+        if len(msg.data) == len(JOINT_NAMES):
+            self.force_estimates = np.array(msg.data)
 
     def _estop_cb(self, request, response):
         """Emergency stop — immediate halt."""
@@ -148,14 +147,18 @@ class SafetyAgent(LifecycleNode):
         """
         if self.estop_active:
             return False, "E-stop active"
+        if np.shape(target_joints) != (len(JOINT_NAMES),):
+            return False, (
+                f"Expected {len(JOINT_NAMES)} arm joint targets, "
+                f"got shape {np.shape(target_joints)}")
 
         # 1. Hard joint limits
-        for i in range(5):
+        for i in range(len(JOINT_NAMES)):
             if target_joints[i] < JOINT_LIMITS[i, 0] or target_joints[i] > JOINT_LIMITS[i, 1]:
                 return False, f"Joint {JOINT_NAMES[i]} exceeds hard limit: {math.degrees(target_joints[i]):.1f}°"
 
         # 2. Soft joint limits (warning)
-        for i in range(5):
+        for i in range(len(JOINT_NAMES)):
             if target_joints[i] < SOFT_LIMITS[i, 0] or target_joints[i] > SOFT_LIMITS[i, 1]:
                 self._log_intervention("SOFT_LIMIT",
                     f"{JOINT_NAMES[i]} near limit: {math.degrees(target_joints[i]):.1f}°")
@@ -175,7 +178,7 @@ class SafetyAgent(LifecycleNode):
                 f"Excessive force on {JOINT_NAMES[worst]}: {max_force:.2f}N")
 
         # Check if joints are within limits (0.04 rad compliance margin for ODE dynamics)
-        for i in range(5):
+        for i in range(len(JOINT_NAMES)):
             if (self.current_joints[i] < JOINT_LIMITS[i, 0] - 0.04 or
                     self.current_joints[i] > JOINT_LIMITS[i, 1] + 0.04):
                 self._log_intervention("JOINT_LIMIT",

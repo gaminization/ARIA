@@ -169,8 +169,12 @@ class ManualControlNode(Node):
         )
         self.status_timer = self.create_timer(0.1, self._publish_status)
 
-        # ── Auto-home on startup ────────────────────────────────
-        self._startup_timer = self.create_timer(1.5, self._initial_home_callback)
+        # ── Optional auto-home on startup (disabled by default) ─
+        self.declare_parameter("auto_home", False)
+        if self.get_parameter("auto_home").value:
+            self._startup_timer = self.create_timer(1.5, self._initial_home_callback)
+        else:
+            self._startup_timer = None
 
         self.get_logger().info("═══ ARIA Manual Control Node ready ═══")
         self.get_logger().info("Services: /aria/set_joint, /aria/set_all_joints, "
@@ -178,7 +182,7 @@ class ManualControlNode(Node):
                                "/aria/close_gripper, /aria/estop, /aria/release_estop")
 
     def _initial_home_callback(self):
-        """Move to home pose on initial node start."""
+        """Move to home pose on initial node start if explicitly enabled."""
         if hasattr(self, '_startup_timer') and self._startup_timer is not None:
             self._startup_timer.cancel()
             self._startup_timer = None
@@ -223,10 +227,10 @@ class ManualControlNode(Node):
         return safe_angles_deg
 
     def _cap_speed(self, speed_deg_per_s):
-        """Cap speed at maximum allowed."""
+        """Cap speed at maximum allowed for realistic physical servoing (smooth cobot motion)."""
         if speed_deg_per_s <= 0:
-            return 30.0  # default speed
-        return min(speed_deg_per_s, self.MAX_SPEED_DEG_PER_S)
+            return 10.0  # default smooth servo speed
+        return min(speed_deg_per_s, 10.0)
 
     @staticmethod
     def _deg_to_rad(deg):
@@ -297,7 +301,7 @@ class ManualControlNode(Node):
             displacement = abs(safe_angles_deg[i] - current_deg)
             max_displacement_deg = max(max_displacement_deg, displacement)
 
-        duration_s = max(max_displacement_deg / speed, 0.1)
+        duration_s = max(max_displacement_deg / speed, 1.8)
 
         # Build and publish trajectory for ALL 6 joints (including gripper)
         # The joint_trajectory_controller is configured with all 6 joints
@@ -404,7 +408,7 @@ class ManualControlNode(Node):
         n_joints = len(self.JOINT_NAMES)
         angles_in = list(request.angles_deg)
         if len(angles_in) == 6:
-            # Map [waist, shoulder, elbow, wrist_pitch, wrist_roll, gripper] -> 5 joints
+            # Legacy clients include a nonexistent wrist_roll before gripper.
             angles_deg = [angles_in[0], angles_in[1], angles_in[2], angles_in[3], angles_in[5]]
         elif len(angles_in) == n_joints:
             angles_deg = angles_in

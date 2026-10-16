@@ -17,6 +17,7 @@ from launch.actions import (
     RegisterEventHandler,
     LogInfo,
     SetEnvironmentVariable,
+    Shutdown,
     TimerAction,
 )
 from launch.conditions import IfCondition
@@ -128,6 +129,11 @@ def generate_launch_description():
         value="http://127.0.0.1:11345",
     )
 
+    set_aria_workcell = SetEnvironmentVariable(
+        name="ARIA_WORKCELL",
+        value="industrial",
+    )
+
     # ═══════════════════════════════════════════════════════
     # 1. GAZEBO CLASSIC 11
     # ═══════════════════════════════════════════════════════
@@ -171,17 +177,27 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # 4. CONTROLLER LOADING (Joint State Broadcaster + JTC)
+    # 4. CONTROLLER LOADING (via controller_manager spawner)
     # ═══════════════════════════════════════════════════════
-    load_jsb = ExecuteProcess(
-        cmd=["ros2", "control", "load_controller", "--set-state", "active",
-             "joint_state_broadcaster"],
+    load_jsb = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_state_broadcaster",
+            "--controller-manager-timeout", "30",
+            "--service-call-timeout", "60",
+        ],
         output="screen",
     )
 
-    load_jtc = ExecuteProcess(
-        cmd=["ros2", "control", "load_controller", "--set-state", "active",
-             "joint_trajectory_controller"],
+    load_jtc = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_trajectory_controller",
+            "--controller-manager-timeout", "30",
+            "--service-call-timeout", "60",
+        ],
         output="screen",
     )
 
@@ -247,7 +263,7 @@ def generate_launch_description():
     tracking_agent     = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='tracking_agent',     name='tracking_agent',     output='screen', condition=IfCondition(with_agents))])
     affordance_agent   = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='affordance_agent',   name='affordance_agent',   output='screen', condition=IfCondition(with_agents))])
     attention_agent    = TimerAction(period=4.5, actions=[Node(package='arm_agents', executable='attention_agent',    name='attention_agent',    output='screen', condition=IfCondition(with_agents))])
-    planning_agent     = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='planning_agent',     name='planning_agent',     output='screen', condition=IfCondition(with_agents))])
+    planning_agent     = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='llm_planning_agent', name='llm_planning_agent', output='screen', condition=IfCondition(with_agents))])
     reachability_agent = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='reachability_agent', name='reachability_agent', output='screen', condition=IfCondition(with_agents))])
     skill_agent        = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='skill_agent',        name='skill_agent',        output='screen', condition=IfCondition(with_agents))])
     control_agent      = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='control_agent',      name='control_agent',      output='screen', condition=IfCondition(with_agents))])
@@ -277,61 +293,7 @@ def generate_launch_description():
         )],
     )
 
-    # ═══════════════════════════════════════════════════════
-    # EVENT CHAIN: spawn -> JSB -> JTC -> manual_control -> ready
-    # ═══════════════════════════════════════════════════════
-    return LaunchDescription([
-        use_rviz_arg,
-        world_arg,
-        auto_cycle_arg,
-        gui_arg,
-        with_agents_arg,
-
-        # Environment configuration
-        set_display,
-        set_gazebo_ip,
-        set_gazebo_master,
-        set_gazebo_model_path,
-        set_gazebo_resource_path,
-        set_gazebo_plugin_path,
-
-        # Core simulator & robot nodes
-        gazebo,
-        robot_state_publisher,
-        spawn_robot,
-
-        # Chain: after spawn completes, load JSB with 2.0s settle for controller_manager
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=spawn_robot,
-                on_exit=[TimerAction(period=2.0, actions=[load_jsb])],
-            )
-        ),
-        # Chain: after JSB, load JTC
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=load_jsb,
-                on_exit=[load_jtc],
-            )
-        ),
-        # Chain: after JTC, start manual control and log ready
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=load_jtc,
-                on_exit=[
-                    manual_control,
-                    LogInfo(msg="═════════════════════════════════════════════════════════"),
-                    LogInfo(msg="★ ARIA Industrial Manufacturing Workcell Ready!"),
-                    LogInfo(msg="  - Active Infeed Conveyor: /aria/conveyor/set_power"),
-                    LogInfo(msg="  - Optical Inspection Cameras: /top_camera, /side_camera"),
-                    LogInfo(msg="  - Assembly Tray: (0.08, -0.22, 0.614)"),
-                    LogInfo(msg="  - Defect Reject Bin: (0.22, -0.18, 0.614)"),
-                    LogInfo(msg="═════════════════════════════════════════════════════════"),
-                ],
-            )
-        ),
-
-        # Multi-Agent Stack (Perception, Agents, Orchestration, Activation)
+    agent_stack = [
         ik_node,
         detection_node,
         depth_node,
@@ -356,6 +318,79 @@ def generate_launch_description():
         memory_manager,
         health_monitor,
         activate_agents,
+    ]
+
+    def _after_jsb_exit(event, _context):
+        if event.returncode != 0:
+            return [
+                LogInfo(msg="ERROR: Joint state broadcaster failed; refusing to start ARIA."),
+                Shutdown(reason="joint_state_broadcaster spawner failed"),
+            ]
+        return [load_jtc]
+
+    def _after_jtc_exit(event, _context):
+        if event.returncode != 0:
+            return [
+                LogInfo(msg="ERROR: Joint trajectory controller failed; refusing to report ARIA ready."),
+                Shutdown(reason="joint_trajectory_controller spawner failed"),
+            ]
+        return [
+            manual_control,
+            LogInfo(msg="═════════════════════════════════════════════════════════"),
+            LogInfo(msg="★ ARIA Industrial Manufacturing Workcell Ready!"),
+            LogInfo(msg="  - Active Infeed Conveyor: /aria/conveyor/set_power"),
+            LogInfo(msg="  - Optical Inspection Cameras: /top_camera, /side_camera"),
+            LogInfo(msg="  - Assembly Tray: (0.08, -0.22, 0.614)"),
+            LogInfo(msg="  - Defect Reject Bin: (0.22, -0.18, 0.614)"),
+            LogInfo(msg="═════════════════════════════════════════════════════════"),
+            *agent_stack,
+        ]
+
+    # ═══════════════════════════════════════════════════════
+    # EVENT CHAIN: spawn -> JSB -> JTC -> manual_control -> ready
+    # ═══════════════════════════════════════════════════════
+    return LaunchDescription([
+        use_rviz_arg,
+        world_arg,
+        auto_cycle_arg,
+        gui_arg,
+        with_agents_arg,
+
+        # Environment configuration
+        set_display,
+        set_gazebo_ip,
+        set_gazebo_master,
+        set_aria_workcell,
+        set_gazebo_model_path,
+        set_gazebo_resource_path,
+        set_gazebo_plugin_path,
+
+        # Core simulator & robot nodes
+        gazebo,
+        robot_state_publisher,
+        spawn_robot,
+
+        # Chain: after spawn completes, load JSB with 2.0s settle for controller_manager
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=spawn_robot,
+                on_exit=[TimerAction(period=2.0, actions=[load_jsb])],
+            )
+        ),
+        # Chain: after JSB, load JTC
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=load_jsb,
+                on_exit=_after_jsb_exit,
+            )
+        ),
+        # Chain: after JTC, start manual control and log ready
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=load_jtc,
+                on_exit=_after_jtc_exit,
+            )
+        ),
 
         # Optional nodes
         industrial_coordinator,

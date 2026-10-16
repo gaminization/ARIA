@@ -40,7 +40,7 @@ class ForceEstimatorNode(Node):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint"
+        "wrist_pitch_joint"
     ]
 
     # Spring constants per joint (N·m/rad)
@@ -49,7 +49,6 @@ class ForceEstimatorNode(Node):
         0.5,   # J2 shoulder (MG995)
         0.5,   # J3 elbow (MG995)
         0.15,  # J4 wrist pitch (SG90)
-        0.15,  # J5 wrist roll (SG90)
     ]
 
     # Gripper spring constant (N/rad)
@@ -63,8 +62,8 @@ class ForceEstimatorNode(Node):
         self.get_logger().info("═══ ARIA Force Estimator Node ═══")
 
         # State
-        self.actual_positions = np.zeros(5)
-        self.commanded_positions = np.zeros(5)
+        self.actual_positions = np.zeros(len(self.JOINT_NAMES))
+        self.commanded_positions = np.zeros(len(self.JOINT_NAMES))
         self.gripper_actual = 0.0
         self.gripper_commanded = 0.0
         self.prev_gripper_force = 0.0
@@ -73,7 +72,7 @@ class ForceEstimatorNode(Node):
         self.alpha = 0.3  # Lower = smoother
 
         # Running estimates
-        self.torque_estimates = np.zeros(5)
+        self.torque_estimates = np.zeros(len(self.JOINT_NAMES))
         self.gripper_force_estimate = 0.0
 
         # Subscribers
@@ -126,11 +125,15 @@ class ForceEstimatorNode(Node):
                 j_idx = msg.joint_names.index(name)
                 if j_idx < len(last_point.positions):
                     self.commanded_positions[i] = last_point.positions[j_idx]
+        if "gripper_joint" in msg.joint_names:
+            gripper_idx = msg.joint_names.index("gripper_joint")
+            if gripper_idx < len(last_point.positions):
+                self.gripper_commanded = last_point.positions[gripper_idx]
 
     def _estimate_forces(self):
         """Estimate joint torques and gripper force."""
         # ── Joint torque estimation ────────────────────────
-        for i in range(5):
+        for i in range(len(self.JOINT_NAMES)):
             # Position error (commanded - actual)
             error = self.commanded_positions[i] - self.actual_positions[i]
 

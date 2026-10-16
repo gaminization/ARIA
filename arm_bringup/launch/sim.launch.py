@@ -14,6 +14,7 @@ from launch.actions import (
     RegisterEventHandler,
     LogInfo,
     SetEnvironmentVariable,
+    Shutdown,
     TimerAction,
 )
 from launch.conditions import IfCondition
@@ -120,6 +121,7 @@ def generate_launch_description():
             "verbose": "false",
             "gui": gui_conf,
             "server": "true",
+            "extra_gazebo_args": "-s libgazebo_ros_state.so",
         }.items(),
     )
 
@@ -147,17 +149,27 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # 4. CONTROLLER LOADING (chained via OnProcessExit)
+    # 4. CONTROLLER LOADING (via controller_manager spawner)
     # ═══════════════════════════════════════════════════════
-    load_jsb = ExecuteProcess(
-        cmd=["ros2", "control", "load_controller", "--set-state", "active",
-             "joint_state_broadcaster"],
+    load_jsb = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_state_broadcaster",
+            "--controller-manager-timeout", "30",
+            "--service-call-timeout", "60",
+        ],
         output="screen",
     )
 
-    load_jtc = ExecuteProcess(
-        cmd=["ros2", "control", "load_controller", "--set-state", "active",
-             "joint_trajectory_controller"],
+    load_jtc = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_trajectory_controller",
+            "--controller-manager-timeout", "30",
+            "--service-call-timeout", "60",
+        ],
         output="screen",
     )
 
@@ -171,6 +183,25 @@ def generate_launch_description():
         output="screen",
         parameters=[{"use_sim_time": True}],
     )
+
+    def _after_jsb_exit(event, _context):
+        if event.returncode != 0:
+            return [
+                LogInfo(msg="ERROR: Joint state broadcaster failed; refusing to start ARIA."),
+                Shutdown(reason="joint_state_broadcaster spawner failed"),
+            ]
+        return [load_jtc]
+
+    def _after_jtc_exit(event, _context):
+        if event.returncode != 0:
+            return [
+                LogInfo(msg="ERROR: Joint trajectory controller failed; refusing to report ARIA ready."),
+                Shutdown(reason="joint_trajectory_controller spawner failed"),
+            ]
+        return [
+            manual_control,
+            LogInfo(msg="=== ARIA Simulation ready ==="),
+        ]
 
     # ═══════════════════════════════════════════════════════
     # 6. RVIZ2 (optional)
@@ -212,16 +243,14 @@ def generate_launch_description():
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=load_jsb,
-                on_exit=[load_jtc],
+                on_exit=_after_jsb_exit,
             )
         ),
-        # Manual control node (provides /aria/set_all_joints, /aria/close_gripper, /aria/open_gripper, /aria/go_named_pose)
-        TimerAction(
-            period=7.0,
-            actions=[
-                manual_control,
-                LogInfo(msg="=== ARIA Simulation ready ==="),
-            ],
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=load_jtc,
+                on_exit=_after_jtc_exit,
+            )
         ),
 
         # Optional RViz

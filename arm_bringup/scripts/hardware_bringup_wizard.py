@@ -94,15 +94,14 @@ def wait_enter(prompt="Press Enter to continue..."):
 class HardwareBringupWizard:
     """Interactive hardware setup wizard."""
 
-    JOINT_NAMES = ["Waist", "Shoulder", "Elbow",
-                   "Wrist Pitch", "Wrist Roll", "Gripper"]
-    JOINT_TYPES = ["MG995", "MG995", "MG995", "SG90", "SG90", "SG90"]
+    JOINT_NAMES = ["Waist", "Shoulder", "Elbow", "Wrist Pitch", "Gripper"]
+    JOINT_TYPES = ["MG995", "MG995", "MG995", "SG90", "SG90"]
 
     def __init__(self):
         self.esp32_port = None
         self.esp32_connected = False
         self.adc_calibration = {}
-        self.offsets = [0.0] * 6
+        self.offsets = [0.0] * len(self.JOINT_NAMES)
         self.results = {}
 
     def run(self):
@@ -112,7 +111,7 @@ class HardwareBringupWizard:
         print()
         print(f"  {Colors.YELLOW}Prerequisites:{Colors.RESET}")
         print("    • ESP32 flashed with ARIA firmware (esp32_firmware/)")
-        print("    • All 6 servo cables connected")
+        print("    • All 5 servo cables connected")
         print("    • 5V power supply connected and ON")
         print("    • USB cable from ESP32 to this PC")
         print()
@@ -214,7 +213,7 @@ class HardwareBringupWizard:
 
         checks = [
             "Is the workspace clear? (nothing within 30cm of arm)",
-            "Are all 6 servo cables connected to ESP32?",
+            "Are all 5 servo cables connected to ESP32?",
             "Is the 5V power supply connected and ON?",
             "Is the arm currently near home position (roughly upright)?",
         ]
@@ -242,6 +241,7 @@ class HardwareBringupWizard:
         wait_enter()
 
         servo_ok = 0
+        servo_pins = [3, 5, 6, 10, 11]
         for i, name in enumerate(self.JOINT_NAMES):
             print(f"\n  Testing joint J{i+1} ({name}, {self.JOINT_TYPES[i]})...")
 
@@ -257,15 +257,16 @@ class HardwareBringupWizard:
             else:
                 fail(f"J{i+1} {name}: NOT RESPONDING")
                 info(f"Troubleshooting:")
-                info(f"  • Check servo cable on pin D{[3,5,6,10,9,11][i]}")
+                info(f"  • Check servo cable on pin D{servo_pins[i]}")
                 info(f"  • Check 5V power to servo rail")
                 info(f"  • Check ESP32 firmware is running")
 
-        self.results["servos"] = f"{servo_ok}/6"
-        if servo_ok == 6:
-            ok(f"All {servo_ok}/6 servos responding!")
+        self.results["servos"] = f"{servo_ok}/{len(self.JOINT_NAMES)}"
+        if servo_ok == len(self.JOINT_NAMES):
+            ok(f"All {servo_ok}/{len(self.JOINT_NAMES)} servos responding!")
         else:
-            warn(f"Only {servo_ok}/6 servos confirmed.")
+            warn(
+                f"Only {servo_ok}/{len(self.JOINT_NAMES)} servos confirmed.")
 
     # ──────────────────────────────────────────────────────
     # STEP 4: Feedback Calibration
@@ -337,7 +338,7 @@ class HardwareBringupWizard:
             "calibrated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "joint_names": [
                 "waist_joint", "shoulder_joint", "elbow_joint",
-                "wrist_pitch_joint", "wrist_roll_joint", "gripper_joint",
+                "wrist_pitch_joint", "gripper_joint",
             ],
             "offsets_deg": self.offsets,
             "adc_calibration": {},
@@ -369,7 +370,7 @@ class HardwareBringupWizard:
         if ask_yn("Does the real arm match the simulation home position?",
                    default=True):
             ok("Alignment looks good!")
-            self.offsets = [0.0] * 6
+            self.offsets = [0.0] * len(self.JOINT_NAMES)
         else:
             if ask_yn("Is the arm within ~10° of home?"):
                 info("Running automatic fine-tuning...")
@@ -377,14 +378,17 @@ class HardwareBringupWizard:
                 time.sleep(1.0)
                 # Simulate small random offsets
                 import random
-                self.offsets = [round(random.uniform(-3, 3), 1) for _ in range(6)]
+                self.offsets = [
+                    round(random.uniform(-3, 3), 1)
+                    for _ in self.JOINT_NAMES
+                ]
                 ok(f"Calibration offsets: {self.offsets}")
             else:
                 info("Please manually move the arm to home position.")
                 wait_enter("Press Enter when arm is at home...")
                 info("Running calibration...")
                 time.sleep(1.0)
-                self.offsets = [0.0] * 6
+                self.offsets = [0.0] * len(self.JOINT_NAMES)
                 ok("Offsets set to zero (manual alignment).")
 
         self.results["offsets"] = [round(o, 1) for o in self.offsets]

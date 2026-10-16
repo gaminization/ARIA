@@ -12,13 +12,15 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64, Float64MultiArray
+from trajectory_msgs.msg import JointTrajectory
 from arm_planner.msg import HealthState, ServoHealth
 from arm_planner.state_bus import StateBus
 
 JOINT_NAMES = [
     "waist_joint", "shoulder_joint", "elbow_joint",
-    "wrist_pitch_joint", "wrist_roll_joint"
+    "wrist_pitch_joint", "gripper_joint"
 ]
+ARM_JOINT_NAMES = JOINT_NAMES[:-1]
 
 # Temperature model: servo heats ~0.5°C/min under load
 TEMP_RISE_RATE = 0.5 / 60.0   # °C/s
@@ -47,10 +49,11 @@ class HealthMonitor(Node):
     def __init__(self):
         super().__init__('health_monitor')
         self.bus = StateBus(self)
-        self.servo_temps = np.full(5, AMBIENT_TEMP)
-        self.servo_loads = np.zeros(5)
-        self.commanded = np.zeros(5)
-        self.actual = np.zeros(5)
+        self.servo_temps = np.full(len(JOINT_NAMES), AMBIENT_TEMP)
+        self.servo_loads = np.zeros(len(JOINT_NAMES))
+        self.commanded = np.zeros(len(JOINT_NAMES))
+        self.actual = np.zeros(len(JOINT_NAMES))
+        self._has_command_target = False
         self.top_fps = 0.0
         self.wrist_fps = 0.0
         self.inference_ms = 0.0
@@ -61,8 +64,14 @@ class HealthMonitor(Node):
     def on_configure(self):
         self.joint_sub = self.create_subscription(
             JointState, '/joint_states', self._joint_cb, 50)
+        self.trajectory_sub = self.create_subscription(
+            JointTrajectory,
+            '/joint_trajectory_controller/joint_trajectory',
+            self._trajectory_cb, 10)
         self.force_sub = self.create_subscription(
             Float64MultiArray, '/force/joint_torques', self._force_cb, 10)
+        self.gripper_force_sub = self.create_subscription(
+            Float64, '/force/gripper_force', self._gripper_force_cb, 10)
         self.latency_sub = self.create_subscription(
             Float64, '/depth/agent_latency', self._latency_cb, 10)
         self.log_dir = os.path.join(
@@ -86,10 +95,27 @@ class HealthMonitor(Node):
             if name in msg.name:
                 idx = msg.name.index(name)
                 self.actual[i] = msg.position[idx]
+        if not self._has_command_target:
+            self.commanded[:] = self.actual
+
+    def _trajectory_cb(self, msg: JointTrajectory):
+        if not msg.points:
+            return
+        target = msg.points[-1].positions
+        for i, name in enumerate(JOINT_NAMES):
+            if name in msg.joint_names:
+                idx = msg.joint_names.index(name)
+                if idx < len(target):
+                    self.commanded[i] = target[idx]
+        self._has_command_target = True
 
     def _force_cb(self, msg: Float64MultiArray):
-        if len(msg.data) >= 5:
-            self.servo_loads = np.abs(np.array(msg.data[:5]))
+        if len(msg.data) == len(ARM_JOINT_NAMES):
+            self.servo_loads[:len(ARM_JOINT_NAMES)] = np.abs(
+                np.array(msg.data))
+
+    def _gripper_force_cb(self, msg: Float64):
+        self.servo_loads[-1] = min(1.0, abs(float(msg.data)) / 2.0)
 
     def _latency_cb(self, msg: Float64):
         self.inference_ms = self.inference_ms * 0.9 + msg.data * 0.1
@@ -100,7 +126,7 @@ class HealthMonitor(Node):
 
         # ── Servo health ───────────────────────────────────
         servo_healths = []
-        for i in range(5):
+        for i in range(len(JOINT_NAMES)):
             # Temperature model
             if self.servo_loads[i] > 0.1:
                 self.servo_temps[i] += TEMP_RISE_RATE
@@ -109,7 +135,10 @@ class HealthMonitor(Node):
                 self.servo_temps[i] = max(AMBIENT_TEMP, self.servo_temps[i])
 
             # Drift
-            drift_deg = abs(math.degrees(self.commanded[i] - self.actual[i]))
+            drift_deg = (
+                abs(math.degrees(self.commanded[i] - self.actual[i]))
+                if self._has_command_target else float("nan")
+            )
 
             sh = ServoHealth()
             sh.joint_name = JOINT_NAMES[i]
@@ -127,7 +156,7 @@ class HealthMonitor(Node):
             elif self.servo_temps[i] > TEMP_ALERT_C:
                 self.alerts.append(f"TEMP_HIGH: {JOINT_NAMES[i]} at {self.servo_temps[i]:.0f}°C")
 
-            if drift_deg > DRIFT_ALERT_DEG:
+            if self._has_command_target and drift_deg > DRIFT_ALERT_DEG:
                 sh.healthy = False
                 self.alerts.append(f"DRIFT: {JOINT_NAMES[i]} drifting {drift_deg:.1f}°")
 
@@ -165,7 +194,11 @@ class HealthMonitor(Node):
                 csv.writer(f).writerow([
                     time.time(),
                     [f"{t:.0f}" for t in self.servo_temps],
-                    [f"{abs(math.degrees(self.commanded[i]-self.actual[i])):.1f}" for i in range(5)],
+                    [
+                        f"{abs(math.degrees(self.commanded[i]-self.actual[i])):.1f}"
+                        if self._has_command_target else "unavailable"
+                        for i in range(len(JOINT_NAMES))
+                    ],
                     f"{self.top_fps:.1f}", f"{self.wrist_fps:.1f}",
                     f"{self.inference_ms:.0f}",
                     '; '.join(self.alerts)])

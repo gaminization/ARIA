@@ -54,7 +54,7 @@ class Stage1Validator(Node):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint", "gripper_joint"
+        "wrist_pitch_joint", "gripper_joint"
     ]
 
     def __init__(self):
@@ -184,8 +184,8 @@ class Stage1Validator(Node):
         return result
 
     def test_all_joints_present(self):
-        """Test 2: All 6 joint names in /joint_states."""
-        result = ValidationResult("All 6 joints in /joint_states")
+        """Test 2: All 5 actuated joint names in /joint_states."""
+        result = ValidationResult("All 5 actuated joints in /joint_states")
 
         self._spin_for(2.0)
 
@@ -210,7 +210,7 @@ class Stage1Validator(Node):
             return result
 
         joint_results = []
-        for i, name in enumerate(self.JOINT_NAMES[:5]):  # Skip gripper
+        for i, name in enumerate(self.JOINT_NAMES[:4]):  # Arm axes only
             short_name = name.replace("_joint", "")
 
             # Command to a test angle
@@ -285,7 +285,7 @@ class Stage1Validator(Node):
         self._spin_for(3.0)
 
         if resp and resp.success:
-            home_deg = [0.0, 90.0, 75.0, 0.0, 0.0, 20.0]
+            home_deg = [0.0, 90.0, 75.0, 0.0, 20.0]
             all_ok = True
             for i, name in enumerate(self.JOINT_NAMES):
                 actual = self._get_joint_deg(name)

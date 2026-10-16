@@ -257,7 +257,7 @@ hardware_interface::return_type AriaHardwareInterface::read(
     }
   } else {
     // HARDWARE MODE: Read from ESP32 serial
-    // Parse JSON: {"pos": [j1..j6], "vel": [v1..v6], "ts": timestamp}
+    // Parse JSON: {"pos": [j1..j5], "vel": [v1..v5], "ts": timestamp}
     // Implementation in Stage 4
     std::string response = read_serial_response();
     if (!response.empty()) {
@@ -283,13 +283,14 @@ hardware_interface::return_type AriaHardwareInterface::write(
     // which GazeboSimSystem reads via the command interfaces.
   } else {
     // HARDWARE MODE: Send to ESP32
-    // Format: {"cmd": [j1..j6], "gripper": gval, "ts": timestamp}
+    // Format: {"cmd": [waist, shoulder, elbow, wrist_pitch, gripper]}
     // Implementation in Stage 4
     char cmd_buf[256];
-    snprintf(cmd_buf, sizeof(cmd_buf),
-      "{\"cmd\": [%.4f, %.4f, %.4f, %.4f, %.4f, %.4f]}",
+    snprintf(
+      cmd_buf, sizeof(cmd_buf),
+      "{\"cmd\": [%.4f, %.4f, %.4f, %.4f, %.4f]}",
       hw_commands_[0], hw_commands_[1], hw_commands_[2],
-      hw_commands_[3], hw_commands_[4], hw_commands_[5]);
+      hw_commands_[3], hw_commands_[4]);
     send_serial_command(std::string(cmd_buf));
   }
 

@@ -173,7 +173,20 @@ void AriaConveyorPlugin::OnUpdate()
         [](const ActivePart & a, const ActivePart & b) {
           return a.py < b.py;
         });
+    }
 
+    const double sim_time = world_->SimTime().Double();
+    if (sim_time - last_diagnostic_time_ >= 1.0) {
+      const double lead_y = active_parts.empty() ? 0.0 : active_parts[0].py;
+      const double next_y = active_parts.size() < 2 ? 0.0 : active_parts[1].py;
+      RCLCPP_INFO(
+        ros_node_->get_logger(),
+        "[AriaConveyorPlugin] power=%.1f%% active_parts=%zu lead_y=%.3f next_y=%.3f",
+        power_pct_, active_parts.size(), lead_y, next_y);
+      last_diagnostic_time_ = sim_time;
+    }
+
+    if (!active_parts.empty()) {
       for (size_t i = 0; i < active_parts.size(); ++i) {
         auto & part = active_parts[i];
         // The lead part stops at stop_y_ against the stopper.
@@ -188,29 +201,21 @@ void AriaConveyorPlugin::OnUpdate()
         double px = part.link->WorldPose().Pos().X();
         double x_err = 0.200 - px;
         double vx = std::clamp(x_err * 3.0, -0.06, 0.06);
-
-        if (std::abs(belt_velocity_) > 1e-4) {
-          if (part.py > target_stop_y) {
-            // Smoothly propel workpiece forward in -Y direction, centering in X and damping tumble
-            ignition::math::Vector3d cur_vel = part.link->WorldLinearVel();
-            double z_vel = std::min(0.02, cur_vel.Z());
-            part.link->SetLinearVel(ignition::math::Vector3d(vx, -belt_velocity_, z_vel));
-            part.link->SetAngularVel(ignition::math::Vector3d(0.0, 0.0, 0.0));
-          } else {
-            // Docked against mechanical end-stopper or queued neatly behind predecessor:
-            // Settle flush on conveyor deck under gravity with zero climb or tumble
-            ignition::math::Vector3d cur_vel = part.link->WorldLinearVel();
-            double z_vel = std::min(0.0, cur_vel.Z());
-            part.link->SetLinearVel(ignition::math::Vector3d(vx, 0.0, z_vel));
-            part.link->SetAngularVel(ignition::math::Vector3d(0.0, 0.0, 0.0));
-          }
-        } else {
-          // Belt is stopped: hold workpieces stable and stationary
-          ignition::math::Vector3d cur_vel = part.link->WorldLinearVel();
-          double z_vel = std::min(0.0, cur_vel.Z());
-          part.link->SetLinearVel(ignition::math::Vector3d(0.0, 0.0, z_vel));
-          part.link->SetAngularVel(ignition::math::Vector3d(0.0, 0.0, 0.0));
-        }
+        const double target_y_velocity =
+          std::abs(belt_velocity_) > 1e-4 && part.py > target_stop_y ?
+          -belt_velocity_ : 0.0;
+        const ignition::math::Vector3d cur_vel = part.link->WorldLinearVel();
+        const double target_y_acceleration = std::clamp(
+          (target_y_velocity - cur_vel.Y()) * 20.0, -2.0, 2.0);
+        const double mass = part.link->GetInertial()->Mass();
+        part.link->AddForce(
+          ignition::math::Vector3d(0.0, mass * target_y_acceleration, 0.0));
+        const double target_x_velocity =
+          std::abs(belt_velocity_) > 1e-4 ? vx : 0.0;
+        const double z_vel = std::min(0.0, cur_vel.Z());
+        part.link->SetLinearVel(
+          ignition::math::Vector3d(target_x_velocity, cur_vel.Y(), z_vel));
+        part.link->SetAngularVel(ignition::math::Vector3d(0.0, 0.0, 0.0));
       }
     }
   }

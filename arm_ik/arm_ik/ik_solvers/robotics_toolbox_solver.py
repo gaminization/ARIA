@@ -35,7 +35,6 @@ def _build_rtb_robot() -> 'rtb.DHRobot':
       2      | θ2     | 0      | 0.145  | 0
       3      | θ3     | 0      | 0.115  | 0
       4      | θ4     | 0      | 0.055  | π/2
-      5      | θ5     | 0.040  | 0      | 0
     """
     links = [
         # Joint 1: Waist (d=0.105 includes base + bracket height)
@@ -57,11 +56,6 @@ def _build_rtb_robot() -> 'rtb.DHRobot':
         rtb.RevoluteDH(
             d=0, a=0.055, alpha=math.pi / 2,
             qlim=JOINT_LIMITS[3],
-        ),
-        # Joint 5: Wrist roll
-        rtb.RevoluteDH(
-            d=0.040, a=0, alpha=0,
-            qlim=JOINT_LIMITS[4],
         ),
     ]
 
@@ -93,7 +87,7 @@ def solve_rtb(target_position: np.ndarray,
         target_position: [x, y, z] target in base_link frame
         target_orientation: 3×3 rotation matrix (optional)
         method: 'LM' (Levenberg-Marquardt) or 'GN' (Gauss-Newton)
-        initial_joints: warm start joint angles [5]
+        initial_joints: warm start arm joint angles [4]
         config: solver configuration
 
     Returns:
@@ -113,6 +107,14 @@ def solve_rtb(target_position: np.ndarray,
     if config is None:
         config = SolverConfig()
 
+    current_joints = initial_joints if initial_joints is not None else config.current_joints
+    if current_joints is not None and np.asarray(current_joints).shape != (4,):
+        return IKResult(
+            success=False,
+            solver_name=f"rtb_{method}",
+            message="initial joint state must contain four arm joint angles",
+        )
+
     t_start = time.perf_counter()
     robot = _get_robot()
 
@@ -124,12 +126,10 @@ def solve_rtb(target_position: np.ndarray,
         T_target = SE3(target_position)
 
     # Initial guess
-    if initial_joints is not None:
-        q0 = initial_joints
-    elif config.current_joints is not None:
-        q0 = config.current_joints
+    if current_joints is not None:
+        q0 = current_joints
     else:
-        q0 = np.array([0.0, 1.0, 0.5, 0.0, 0.0])
+        q0 = np.array([0.0, 1.0, 0.5, 0.0])
 
     try:
         # Select solver method
@@ -141,7 +141,7 @@ def solve_rtb(target_position: np.ndarray,
                 slimit=100,
                 tol=config.tolerance_m,
                 joint_limits=True,
-                mask=[1, 1, 1, 1, 1, 0] if target_orientation is None
+                mask=[1, 1, 1, 1, 0, 0] if target_orientation is None
                      else [1, 1, 1, 1, 1, 1],
             )
         elif method.upper() == 'GN':
@@ -153,7 +153,7 @@ def solve_rtb(target_position: np.ndarray,
                 tol=config.tolerance_m,
                 joint_limits=True,
                 pinv=True,
-                mask=[1, 1, 1, 1, 1, 0] if target_orientation is None
+                mask=[1, 1, 1, 1, 0, 0] if target_orientation is None
                      else [1, 1, 1, 1, 1, 1],
             )
         else:
@@ -166,7 +166,7 @@ def solve_rtb(target_position: np.ndarray,
         joint_angles = np.array(sol.q)
 
         # Clamp to limits
-        for j in range(5):
+        for j in range(4):
             joint_angles[j] = np.clip(
                 joint_angles[j], JOINT_LIMITS[j, 0], JOINT_LIMITS[j, 1]
             )

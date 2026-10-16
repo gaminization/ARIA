@@ -170,6 +170,61 @@ TOOL_SCHEMAS: Dict[str, Dict[str, Any]] = {
         },
         "returns": "success bool, final joint positions",
     },
+    "scan_workspace": {
+        "description": "Physically sweep the arm across 9 overhead viewpoints so the wrist camera (acting as a top-down sensor) can find all objects on the table. Use this when the world model is empty or the object is not found.",
+        "parameters": {
+            "target_object": {
+                "type": "string",
+                "description": "Optional: specific object to search for. Empty = scan everything.",
+                "required": False,
+            },
+        },
+        "returns": "List of detected objects with 3D poses registered in world model",
+    },
+    "get_sam_mask": {
+        "description": "Get pixel-accurate SAM2 segmentation mask for an object. Use after YOLO detection to refine the grasp centroid from bbox center to actual object silhouette center.",
+        "parameters": {
+            "object_id": {
+                "type": "string",
+                "description": "Object class or ID to segment",
+                "required": True,
+            },
+        },
+        "returns": "Binary mask, refined centroid (x,y), mask area_px, grasp_point_world",
+    },
+    "get_depth": {
+        "description": "Get monocular depth estimate for an object using Depth-Anything v2. Returns object height above table and safe approach distance. For transparent objects use correct_transparent_depth instead.",
+        "parameters": {
+            "object_id": {
+                "type": "string",
+                "description": "Object class or ID",
+                "required": True,
+            },
+        },
+        "returns": "object_height_m, approach_offset_m, depth_confidence",
+    },
+    "check_material": {
+        "description": "Classify the surface material of an object (transparent/glass, opaque/plastic, metal/reflective, fabric/deformable, wood). Critical for routing to the correct depth and grasp agent.",
+        "parameters": {
+            "object_id": {
+                "type": "string",
+                "description": "Object class or ID",
+                "required": True,
+            },
+        },
+        "returns": "material_class, is_transparent, is_reflective, is_deformable, confidence",
+    },
+    "correct_transparent_depth": {
+        "description": "Use ClearGrasp to correct depth estimation failure on transparent/glass objects. DepthAnything sees through glass and estimates background depth — ClearGrasp fixes this using surface normal inference. ALWAYS use for transparent objects.",
+        "parameters": {
+            "object_id": {
+                "type": "string",
+                "description": "Object class or ID (must be transparent)",
+                "required": True,
+            },
+        },
+        "returns": "corrected_depth_m, surface_normal, approach_offset_m, confidence",
+    },
     "task_complete": {
         "description": "Signal that the task is complete. Call this when all goals are achieved.",
         "parameters": {
@@ -233,7 +288,7 @@ class FunctionCallingOrchestrator:
 
 For each step, respond with ONLY a JSON object:
 {
-  "thought": "Your reasoning about what to do next",
+  "thought": "Your reasoning about what to do next — think through the full perception chain",
   "tool": "tool_name",
   "arguments": {"arg1": "value1", "arg2": "value2"}
 }
@@ -241,12 +296,17 @@ For each step, respond with ONLY a JSON object:
 Rules:
 - Always think before acting. Explain your reasoning in "thought".
 - Only call one tool per step.
-- Use detect_object before any manipulation.
-- Use check_reachability before attempting grasps.
-- If something fails, reason about why and try a different approach.
+- If world model is empty or object not found: use scan_workspace FIRST.
+- After YOLO detection: use get_sam_mask to refine grasp centroid.
+- After detection: use check_material to decide depth/grasp routing.
+- For transparent/glass objects: ALWAYS use correct_transparent_depth (not get_depth).
+- Always use get_depth (or correct_transparent_depth) before planning a grasp — object height sets safe approach.
+- Always use check_reachability before executing a grasp.
+- If something fails: reason about why and try a different approach.
 - Call task_complete when the goal is achieved.
-- Call task_failed only when all options are exhausted.
+- Call task_failed only when all recovery options are exhausted.
 - Never repeat the same failed action without changing parameters.
+- Do NOT hardcode grasp strategies per object type — reason about it from perception output.
 
 {tool_descriptions}
 """

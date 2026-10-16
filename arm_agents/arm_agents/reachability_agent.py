@@ -100,7 +100,7 @@ class ReachabilityAgent(LifecycleNode):
         if self.ik_client.wait_for_service(timeout_sec=1.0):
             ik_req = SolveIK.Request()
             ik_req.target_pose = request.target_pose
-            ik_req.allow_fallback = False
+            ik_req.allow_fallback = True
             future = self.ik_client.call_async(ik_req)
             rclpy.spin_until_future_complete(self, future, timeout_sec=2.0)
             if future.done():

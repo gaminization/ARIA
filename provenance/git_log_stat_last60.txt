@@ -1,0 +1,2408 @@
+commit c800aecf359d62577f102c02fcd28fcd028cbe72
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 15 15:58:38 2026 +0530
+
+    (tests) Fix blue_cylinder pose in workspace world; add verification debug printing for World2 maneuver 7
+
+ arm_bringup/worlds/aria_workspace.world     | 17 +++++++++++++----
+ scripts/run_world2_industrial_autonomous.py |  4 ++++
+ 2 files changed, 17 insertions(+), 4 deletions(-)
+
+commit ddb01c16ed316bfd0a4157e4e93b367c0a49d7ad
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 15 15:22:15 2026 +0530
+
+    Make industrial runner honor ARIA_AUDIT_HEADLESS to reduce GUI/resource usage during automated audits
+
+ scripts/run_world2_industrial_autonomous.py | 529 ++++++++++++++++++++++++++++
+ 1 file changed, 529 insertions(+)
+
+commit 59f703a91dcc00dc3a8c14262e63302692fe0216
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Oct 12 16:22:49 2026 +0530
+
+    feat(audit): empirical benchmark validation, feature audit suite, and paper consistency updates
+
+ arm_agents/arm_agents/evaluation_agent.py          |    2 +
+ arm_agents/arm_agents/skill_agent.py               |   76 +-
+ arm_agents/arm_agents/vision_agent.py              |   14 +-
+ arm_agents/data/affordance_db.yaml                 |    2 +-
+ arm_bringup/scripts/validate_upgrade_u1.py         |   20 +
+ arm_dashboard/app.py                               |   48 +-
+ arm_dashboard/test_dashboard.py                    |   41 +-
+ arm_moveit_config/scripts/cable_scene_updater.py   |    9 +-
+ arm_planner/arm_planner/llm_client.py              |   27 +
+ arm_planner/arm_planner/semantic_map.py            |  217 +
+ arm_planner/arm_planner/world_model_db.py          |   10 +-
+ arm_vision/arm_vision/grasp_node.py                |   66 +
+ data/real/friction_grasp_real_30seeds.csv          |   60 +-
+ data/real/ik_benchmark_dev_seeds_1_10.csv          |  600 +--
+ data/real/ik_confusion_matrix_20261012T063154Z.csv | 1001 ++++
+ data/real/perception_coarse_to_fine_real.csv       |   60 +-
+ .../perception_frames/overhead_PERCEP_C2F_201.png  |  Bin 272228 -> 262303 bytes
+ .../perception_frames/overhead_PERCEP_C2F_202.png  |  Bin 269910 -> 265331 bytes
+ .../perception_frames/overhead_PERCEP_C2F_203.png  |  Bin 269735 -> 263955 bytes
+ .../perception_frames/overhead_PERCEP_C2F_204.png  |  Bin 270051 -> 264307 bytes
+ .../perception_frames/overhead_PERCEP_C2F_205.png  |  Bin 268730 -> 265419 bytes
+ .../perception_frames/overhead_PERCEP_C2F_206.png  |  Bin 268776 -> 263777 bytes
+ .../perception_frames/overhead_PERCEP_C2F_207.png  |  Bin 269322 -> 261588 bytes
+ .../perception_frames/overhead_PERCEP_C2F_208.png  |  Bin 269931 -> 263703 bytes
+ .../perception_frames/overhead_PERCEP_C2F_209.png  |  Bin 269067 -> 265884 bytes
+ .../perception_frames/overhead_PERCEP_C2F_210.png  |  Bin 269332 -> 265622 bytes
+ .../perception_frames/overhead_PERCEP_C2F_211.png  |  Bin 269416 -> 264493 bytes
+ .../perception_frames/overhead_PERCEP_C2F_212.png  |  Bin 268767 -> 262892 bytes
+ .../perception_frames/overhead_PERCEP_C2F_213.png  |  Bin 268422 -> 263141 bytes
+ .../perception_frames/overhead_PERCEP_C2F_214.png  |  Bin 268872 -> 263490 bytes
+ .../perception_frames/overhead_PERCEP_C2F_215.png  |  Bin 267506 -> 263519 bytes
+ .../perception_frames/overhead_PERCEP_C2F_216.png  |  Bin 268686 -> 263114 bytes
+ .../perception_frames/overhead_PERCEP_C2F_217.png  |  Bin 270120 -> 263906 bytes
+ .../perception_frames/overhead_PERCEP_C2F_218.png  |  Bin 268591 -> 265112 bytes
+ .../perception_frames/overhead_PERCEP_C2F_219.png  |  Bin 266943 -> 262255 bytes
+ .../perception_frames/overhead_PERCEP_C2F_220.png  |  Bin 269169 -> 262905 bytes
+ .../perception_frames/overhead_PERCEP_C2F_221.png  |  Bin 268637 -> 264153 bytes
+ .../perception_frames/overhead_PERCEP_C2F_222.png  |  Bin 268893 -> 263253 bytes
+ .../perception_frames/overhead_PERCEP_C2F_223.png  |  Bin 267613 -> 263032 bytes
+ .../perception_frames/overhead_PERCEP_C2F_224.png  |  Bin 269426 -> 264277 bytes
+ .../perception_frames/overhead_PERCEP_C2F_225.png  |  Bin 269484 -> 265485 bytes
+ .../perception_frames/overhead_PERCEP_C2F_226.png  |  Bin 267819 -> 264687 bytes
+ .../perception_frames/overhead_PERCEP_C2F_227.png  |  Bin 270055 -> 263640 bytes
+ .../perception_frames/overhead_PERCEP_C2F_228.png  |  Bin 268711 -> 264742 bytes
+ .../perception_frames/overhead_PERCEP_C2F_229.png  |  Bin 267282 -> 262467 bytes
+ .../perception_frames/overhead_PERCEP_C2F_230.png  |  Bin 269887 -> 264363 bytes
+ .../perception_frames/wrist_PERCEP_C2F_201.png     |  Bin 87253 -> 55606 bytes
+ .../perception_frames/wrist_PERCEP_C2F_202.png     |  Bin 76751 -> 62580 bytes
+ .../perception_frames/wrist_PERCEP_C2F_203.png     |  Bin 79946 -> 59236 bytes
+ .../perception_frames/wrist_PERCEP_C2F_204.png     |  Bin 75357 -> 60795 bytes
+ .../perception_frames/wrist_PERCEP_C2F_205.png     |  Bin 74410 -> 63958 bytes
+ .../perception_frames/wrist_PERCEP_C2F_206.png     |  Bin 72086 -> 58010 bytes
+ .../perception_frames/wrist_PERCEP_C2F_207.png     |  Bin 76733 -> 61435 bytes
+ .../perception_frames/wrist_PERCEP_C2F_208.png     |  Bin 75270 -> 59981 bytes
+ .../perception_frames/wrist_PERCEP_C2F_209.png     |  Bin 77774 -> 60469 bytes
+ .../perception_frames/wrist_PERCEP_C2F_210.png     |  Bin 72418 -> 63808 bytes
+ .../perception_frames/wrist_PERCEP_C2F_211.png     |  Bin 76643 -> 64914 bytes
+ .../perception_frames/wrist_PERCEP_C2F_212.png     |  Bin 73316 -> 59986 bytes
+ .../perception_frames/wrist_PERCEP_C2F_213.png     |  Bin 73728 -> 59204 bytes
+ .../perception_frames/wrist_PERCEP_C2F_214.png     |  Bin 74532 -> 61955 bytes
+ .../perception_frames/wrist_PERCEP_C2F_215.png     |  Bin 80226 -> 57399 bytes
+ .../perception_frames/wrist_PERCEP_C2F_216.png     |  Bin 73842 -> 59290 bytes
+ .../perception_frames/wrist_PERCEP_C2F_217.png     |  Bin 75659 -> 58796 bytes
+ .../perception_frames/wrist_PERCEP_C2F_218.png     |  Bin 74005 -> 61363 bytes
+ .../perception_frames/wrist_PERCEP_C2F_219.png     |  Bin 79519 -> 59020 bytes
+ .../perception_frames/wrist_PERCEP_C2F_220.png     |  Bin 80860 -> 62859 bytes
+ .../perception_frames/wrist_PERCEP_C2F_221.png     |  Bin 79953 -> 57596 bytes
+ .../perception_frames/wrist_PERCEP_C2F_222.png     |  Bin 73248 -> 57852 bytes
+ .../perception_frames/wrist_PERCEP_C2F_223.png     |  Bin 73842 -> 63353 bytes
+ .../perception_frames/wrist_PERCEP_C2F_224.png     |  Bin 72136 -> 63940 bytes
+ .../perception_frames/wrist_PERCEP_C2F_225.png     |  Bin 75778 -> 61801 bytes
+ .../perception_frames/wrist_PERCEP_C2F_226.png     |  Bin 77009 -> 64269 bytes
+ .../perception_frames/wrist_PERCEP_C2F_227.png     |  Bin 76140 -> 57181 bytes
+ .../perception_frames/wrist_PERCEP_C2F_228.png     |  Bin 75078 -> 57501 bytes
+ .../perception_frames/wrist_PERCEP_C2F_229.png     |  Bin 74526 -> 58224 bytes
+ .../perception_frames/wrist_PERCEP_C2F_230.png     |  Bin 76925 -> 57168 bytes
+ data/real/planner_benchmark_dev_seeds_1_3.csv      |  240 +-
+ data/real/reachability_grid_20261012T063154Z.csv   | 5001 ++++++++++++++++++++
+ .../reachability_summary_20261012T063154Z.json     |   38 +
+ data/real/safety_runtime_real.csv                  |  120 +-
+ data/real/scripted_baseline_real.csv               |  210 +-
+ data/real/scripted_baseline_real_180trials.csv     |  181 +
+ .../telemetry/FRICTION_GRASP_001_telemetry.csv     |  787 ++-
+ .../telemetry/FRICTION_GRASP_002_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_003_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_004_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_005_telemetry.csv     |  770 ++-
+ .../telemetry/FRICTION_GRASP_006_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_007_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_008_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_009_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_010_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_011_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_012_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_013_telemetry.csv     |  770 ++-
+ .../telemetry/FRICTION_GRASP_014_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_015_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_016_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_017_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_018_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_019_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_020_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_021_telemetry.csv     |  770 ++-
+ .../telemetry/FRICTION_GRASP_022_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_023_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_024_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_025_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_026_telemetry.csv     |  770 ++-
+ .../telemetry/FRICTION_GRASP_027_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_028_telemetry.csv     |  769 ++-
+ .../telemetry/FRICTION_GRASP_029_telemetry.csv     |  768 ++-
+ .../telemetry/FRICTION_GRASP_030_telemetry.csv     |  769 ++-
+ data/real/telemetry/PERCEP_C2F_201_telemetry.csv   |  680 ++-
+ data/real/telemetry/PERCEP_C2F_202_telemetry.csv   |  256 +-
+ data/real/telemetry/PERCEP_C2F_203_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_204_telemetry.csv   |  254 +-
+ data/real/telemetry/PERCEP_C2F_205_telemetry.csv   |  254 +-
+ data/real/telemetry/PERCEP_C2F_206_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_207_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_208_telemetry.csv   |  254 +-
+ data/real/telemetry/PERCEP_C2F_209_telemetry.csv   |  256 +-
+ data/real/telemetry/PERCEP_C2F_210_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_211_telemetry.csv   |  256 +-
+ data/real/telemetry/PERCEP_C2F_212_telemetry.csv   |  254 +-
+ data/real/telemetry/PERCEP_C2F_213_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_214_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_215_telemetry.csv   |  256 +-
+ data/real/telemetry/PERCEP_C2F_216_telemetry.csv   |  257 +-
+ data/real/telemetry/PERCEP_C2F_217_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_218_telemetry.csv   |  256 +-
+ data/real/telemetry/PERCEP_C2F_219_telemetry.csv   |  257 +-
+ data/real/telemetry/PERCEP_C2F_220_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_221_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_222_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_223_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_224_telemetry.csv   |  256 +-
+ data/real/telemetry/PERCEP_C2F_225_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_226_telemetry.csv   |  259 +-
+ data/real/telemetry/PERCEP_C2F_227_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_228_telemetry.csv   |  255 +-
+ data/real/telemetry/PERCEP_C2F_229_telemetry.csv   |  254 +-
+ data/real/telemetry/PERCEP_C2F_230_telemetry.csv   |  257 +-
+ data/real/telemetry/SAFETY_ESTOP_401_telemetry.csv |   71 +-
+ data/real/telemetry/SAFETY_ESTOP_402_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_403_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_404_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_405_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_406_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_407_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_408_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_409_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_410_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_411_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_412_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_413_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_414_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_415_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_416_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_417_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_418_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_419_telemetry.csv |   83 +-
+ data/real/telemetry/SAFETY_ESTOP_420_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_421_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_422_telemetry.csv |   73 +-
+ data/real/telemetry/SAFETY_ESTOP_423_telemetry.csv |   71 +-
+ data/real/telemetry/SAFETY_ESTOP_424_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_425_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_426_telemetry.csv |   72 +-
+ data/real/telemetry/SAFETY_ESTOP_427_telemetry.csv |   70 +-
+ data/real/telemetry/SAFETY_ESTOP_428_telemetry.csv |   71 +-
+ data/real/telemetry/SAFETY_ESTOP_429_telemetry.csv |   71 +-
+ data/real/telemetry/SAFETY_ESTOP_430_telemetry.csv |   70 +-
+ .../telemetry/SAFETY_SIGKILL_401_telemetry.csv     |  106 +-
+ .../telemetry/SAFETY_SIGKILL_402_telemetry.csv     |   83 +-
+ .../telemetry/SAFETY_SIGKILL_403_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_404_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_405_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_406_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_407_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_408_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_409_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_410_telemetry.csv     |   65 +-
+ .../telemetry/SAFETY_SIGKILL_411_telemetry.csv     |   65 +-
+ .../telemetry/SAFETY_SIGKILL_412_telemetry.csv     |   65 +-
+ .../telemetry/SAFETY_SIGKILL_413_telemetry.csv     |   82 +-
+ .../telemetry/SAFETY_SIGKILL_414_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_415_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_416_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_417_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_418_telemetry.csv     |   83 +-
+ .../telemetry/SAFETY_SIGKILL_419_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_420_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_421_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_422_telemetry.csv     |   68 +-
+ .../telemetry/SAFETY_SIGKILL_423_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_424_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_425_telemetry.csv     |   69 +-
+ .../telemetry/SAFETY_SIGKILL_426_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_427_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_428_telemetry.csv     |   66 +-
+ .../telemetry/SAFETY_SIGKILL_429_telemetry.csv     |   67 +-
+ .../telemetry/SAFETY_SIGKILL_430_telemetry.csv     |   65 +-
+ .../SCRIPTED_task_01_SEED_101_telemetry.csv        |  282 +-
+ .../SCRIPTED_task_01_SEED_102_telemetry.csv        |  283 +-
+ .../SCRIPTED_task_01_SEED_103_telemetry.csv        |  283 +-
+ .../SCRIPTED_task_01_SEED_104_telemetry.csv        |  283 +-
+ .../SCRIPTED_task_01_SEED_105_telemetry.csv        |  283 +-
+ .../SCRIPTED_task_01_SEED_106_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_107_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_108_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_109_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_110_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_111_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_112_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_113_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_114_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_115_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_116_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_117_telemetry.csv        |  134 +
+ .../SCRIPTED_task_01_SEED_118_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_119_telemetry.csv        |  134 +
+ .../SCRIPTED_task_01_SEED_120_telemetry.csv        |  134 +
+ .../SCRIPTED_task_01_SEED_121_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_122_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_123_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_124_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_125_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_126_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_127_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_128_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_129_telemetry.csv        |  135 +
+ .../SCRIPTED_task_01_SEED_130_telemetry.csv        |  135 +
+ .../SCRIPTED_task_02_SEED_101_telemetry.csv        |  615 ++-
+ .../SCRIPTED_task_02_SEED_102_telemetry.csv        |  614 +--
+ .../SCRIPTED_task_02_SEED_103_telemetry.csv        |  614 +--
+ .../SCRIPTED_task_02_SEED_104_telemetry.csv        |  615 ++-
+ .../SCRIPTED_task_02_SEED_105_telemetry.csv        |  614 +--
+ .../SCRIPTED_task_02_SEED_106_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_107_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_108_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_109_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_110_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_111_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_112_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_113_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_114_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_115_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_116_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_117_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_118_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_119_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_120_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_121_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_122_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_123_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_124_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_125_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_126_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_127_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_128_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_129_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_02_SEED_130_telemetry.csv        |  308 ++
+ .../SCRIPTED_task_04_SEED_101_telemetry.csv        |  507 +-
+ .../SCRIPTED_task_04_SEED_102_telemetry.csv        |  507 +-
+ .../SCRIPTED_task_04_SEED_103_telemetry.csv        |  509 +-
+ .../SCRIPTED_task_04_SEED_104_telemetry.csv        |  507 +-
+ .../SCRIPTED_task_04_SEED_105_telemetry.csv        |  508 +-
+ .../SCRIPTED_task_04_SEED_106_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_107_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_108_telemetry.csv        |  258 +
+ .../SCRIPTED_task_04_SEED_109_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_110_telemetry.csv        |  256 +
+ .../SCRIPTED_task_04_SEED_111_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_112_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_113_telemetry.csv        |  255 +
+ .../SCRIPTED_task_04_SEED_114_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_115_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_116_telemetry.csv        |  256 +
+ .../SCRIPTED_task_04_SEED_117_telemetry.csv        |  258 +
+ .../SCRIPTED_task_04_SEED_118_telemetry.csv        |  263 +
+ .../SCRIPTED_task_04_SEED_119_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_120_telemetry.csv        |  255 +
+ .../SCRIPTED_task_04_SEED_121_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_122_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_123_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_124_telemetry.csv        |  255 +
+ .../SCRIPTED_task_04_SEED_125_telemetry.csv        |  254 +
+ .../SCRIPTED_task_04_SEED_126_telemetry.csv        |  262 +
+ .../SCRIPTED_task_04_SEED_127_telemetry.csv        |  255 +
+ .../SCRIPTED_task_04_SEED_128_telemetry.csv        |  256 +
+ .../SCRIPTED_task_04_SEED_129_telemetry.csv        |  255 +
+ .../SCRIPTED_task_04_SEED_130_telemetry.csv        |  255 +
+ .../SCRIPTED_task_07_SEED_101_telemetry.csv        |  416 +-
+ .../SCRIPTED_task_07_SEED_102_telemetry.csv        |  416 +-
+ .../SCRIPTED_task_07_SEED_103_telemetry.csv        |  416 +-
+ .../SCRIPTED_task_07_SEED_104_telemetry.csv        |  416 +-
+ .../SCRIPTED_task_07_SEED_105_telemetry.csv        |  418 +-
+ .../SCRIPTED_task_07_SEED_106_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_107_telemetry.csv        |  210 +
+ .../SCRIPTED_task_07_SEED_108_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_109_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_110_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_111_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_112_telemetry.csv        |  212 +
+ .../SCRIPTED_task_07_SEED_113_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_114_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_115_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_116_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_117_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_118_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_119_telemetry.csv        |  210 +
+ .../SCRIPTED_task_07_SEED_120_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_121_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_122_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_123_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_124_telemetry.csv        |  210 +
+ .../SCRIPTED_task_07_SEED_125_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_126_telemetry.csv        |  210 +
+ .../SCRIPTED_task_07_SEED_127_telemetry.csv        |  216 +
+ .../SCRIPTED_task_07_SEED_128_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_129_telemetry.csv        |  209 +
+ .../SCRIPTED_task_07_SEED_130_telemetry.csv        |  209 +
+ .../SCRIPTED_task_08_SEED_101_telemetry.csv        |  419 +-
+ .../SCRIPTED_task_08_SEED_102_telemetry.csv        |  420 +-
+ .../SCRIPTED_task_08_SEED_103_telemetry.csv        |  419 +-
+ .../SCRIPTED_task_08_SEED_104_telemetry.csv        |  421 +-
+ .../SCRIPTED_task_08_SEED_105_telemetry.csv        |  428 +-
+ .../SCRIPTED_task_08_SEED_106_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_107_telemetry.csv        |  212 +
+ .../SCRIPTED_task_08_SEED_108_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_109_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_110_telemetry.csv        |  213 +
+ .../SCRIPTED_task_08_SEED_111_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_112_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_113_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_114_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_115_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_116_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_117_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_118_telemetry.csv        |  211 +
+ .../SCRIPTED_task_08_SEED_119_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_120_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_121_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_122_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_123_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_124_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_125_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_126_telemetry.csv        |  212 +
+ .../SCRIPTED_task_08_SEED_127_telemetry.csv        |  210 +
+ .../SCRIPTED_task_08_SEED_128_telemetry.csv        |  211 +
+ .../SCRIPTED_task_08_SEED_129_telemetry.csv        |  211 +
+ .../SCRIPTED_task_08_SEED_130_telemetry.csv        |  210 +
+ .../SCRIPTED_task_09_SEED_101_telemetry.csv        |  507 +-
+ .../SCRIPTED_task_09_SEED_102_telemetry.csv        |  507 +-
+ .../SCRIPTED_task_09_SEED_103_telemetry.csv        |  507 +-
+ .../SCRIPTED_task_09_SEED_104_telemetry.csv        |  508 +-
+ .../SCRIPTED_task_09_SEED_105_telemetry.csv        |  506 +-
+ .../SCRIPTED_task_09_SEED_106_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_107_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_108_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_109_telemetry.csv        |  257 +
+ .../SCRIPTED_task_09_SEED_110_telemetry.csv        |  254 +
+ .../SCRIPTED_task_09_SEED_111_telemetry.csv        |  261 +
+ .../SCRIPTED_task_09_SEED_112_telemetry.csv        |  254 +
+ .../SCRIPTED_task_09_SEED_113_telemetry.csv        |  260 +
+ .../SCRIPTED_task_09_SEED_114_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_115_telemetry.csv        |  263 +
+ .../SCRIPTED_task_09_SEED_116_telemetry.csv        |  260 +
+ .../SCRIPTED_task_09_SEED_117_telemetry.csv        |  254 +
+ .../SCRIPTED_task_09_SEED_118_telemetry.csv        |  254 +
+ .../SCRIPTED_task_09_SEED_119_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_120_telemetry.csv        |  257 +
+ .../SCRIPTED_task_09_SEED_121_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_122_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_123_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_124_telemetry.csv        |  254 +
+ .../SCRIPTED_task_09_SEED_125_telemetry.csv        |  257 +
+ .../SCRIPTED_task_09_SEED_126_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_127_telemetry.csv        |  255 +
+ .../SCRIPTED_task_09_SEED_128_telemetry.csv        |  256 +
+ .../SCRIPTED_task_09_SEED_129_telemetry.csv        |  256 +
+ .../SCRIPTED_task_09_SEED_130_telemetry.csv        |  255 +
+ .../cognitivedrone_2503.01378v1.pdf                |  Bin 0 -> 899211 bytes
+ esp32_firmware/src/main.cpp                        |  164 +-
+ publications/ieee_tro_submission/main.aux          |   22 +-
+ publications/ieee_tro_submission/main.log          |   18 +-
+ publications/ieee_tro_submission/main.pdf          |  Bin 4964440 -> 4963436 bytes
+ publications/ieee_tro_submission/main.tex          |   66 +-
+ pytest.ini                                         |    4 +
+ scripts/audit_features.py                          |   34 +-
+ scripts/benchmark_real_conveyor.py                 |   84 +-
+ scripts/benchmark_real_friction_grasp.py           |   68 +-
+ .../benchmark_real_perception_coarse_to_fine.py    |   76 +-
+ scripts/benchmark_real_safety_runtime.py           |   95 +-
+ scripts/benchmark_real_scripted_baseline.py        |   21 +-
+ scripts/check_no_synthetic_outcomes.py             |  103 +-
+ scripts/check_paper_numbers.py                     |  132 +
+ scripts/generate_empirical_summary_tables.py       |  256 +
+ scripts/train_coarse_to_fine_detectors.py          |  311 ++
+ 399 files changed, 67864 insertions(+), 25128 deletions(-)
+
+commit b4556b2972bc10e55de7b5aef88af3782e0e13ac
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Oct 12 05:41:31 2026 +0530
+
+    build(dist): update create_project_zip script to package latest empirical benchmarks and paper
+
+ scripts/create_project_zip.py | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
+
+commit 0721cd3be5668ae14669e9b3ad97428bf554505f
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Oct 12 01:41:08 2026 +0530
+
+    feat(benchmark): empirical Gazebo re-runs across friction, conveyor, scripted, perception, depth, and safety
+
+ .gitignore                                         |   1 +
+ data/real/README.md                                |   6 +
+ data/real/conveyor_sweep_real.csv                  | 141 +++++++
+ data/real/depth_anything_real.csv                  |  31 ++
+ data/real/friction_grasp_real_30seeds.csv          |  31 ++
+ data/real/perception_coarse_to_fine_real.csv       |  31 ++
+ .../perception_frames/overhead_PERCEP_C2F_201.png  | Bin 0 -> 272228 bytes
+ .../perception_frames/overhead_PERCEP_C2F_202.png  | Bin 0 -> 269910 bytes
+ .../perception_frames/overhead_PERCEP_C2F_203.png  | Bin 0 -> 269735 bytes
+ .../perception_frames/overhead_PERCEP_C2F_204.png  | Bin 0 -> 270051 bytes
+ .../perception_frames/overhead_PERCEP_C2F_205.png  | Bin 0 -> 268730 bytes
+ .../perception_frames/overhead_PERCEP_C2F_206.png  | Bin 0 -> 268776 bytes
+ .../perception_frames/overhead_PERCEP_C2F_207.png  | Bin 0 -> 269322 bytes
+ .../perception_frames/overhead_PERCEP_C2F_208.png  | Bin 0 -> 269931 bytes
+ .../perception_frames/overhead_PERCEP_C2F_209.png  | Bin 0 -> 269067 bytes
+ .../perception_frames/overhead_PERCEP_C2F_210.png  | Bin 0 -> 269332 bytes
+ .../perception_frames/overhead_PERCEP_C2F_211.png  | Bin 0 -> 269416 bytes
+ .../perception_frames/overhead_PERCEP_C2F_212.png  | Bin 0 -> 268767 bytes
+ .../perception_frames/overhead_PERCEP_C2F_213.png  | Bin 0 -> 268422 bytes
+ .../perception_frames/overhead_PERCEP_C2F_214.png  | Bin 0 -> 268872 bytes
+ .../perception_frames/overhead_PERCEP_C2F_215.png  | Bin 0 -> 267506 bytes
+ .../perception_frames/overhead_PERCEP_C2F_216.png  | Bin 0 -> 268686 bytes
+ .../perception_frames/overhead_PERCEP_C2F_217.png  | Bin 0 -> 270120 bytes
+ .../perception_frames/overhead_PERCEP_C2F_218.png  | Bin 0 -> 268591 bytes
+ .../perception_frames/overhead_PERCEP_C2F_219.png  | Bin 0 -> 266943 bytes
+ .../perception_frames/overhead_PERCEP_C2F_220.png  | Bin 0 -> 269169 bytes
+ .../perception_frames/overhead_PERCEP_C2F_221.png  | Bin 0 -> 268637 bytes
+ .../perception_frames/overhead_PERCEP_C2F_222.png  | Bin 0 -> 268893 bytes
+ .../perception_frames/overhead_PERCEP_C2F_223.png  | Bin 0 -> 267613 bytes
+ .../perception_frames/overhead_PERCEP_C2F_224.png  | Bin 0 -> 269426 bytes
+ .../perception_frames/overhead_PERCEP_C2F_225.png  | Bin 0 -> 269484 bytes
+ .../perception_frames/overhead_PERCEP_C2F_226.png  | Bin 0 -> 267819 bytes
+ .../perception_frames/overhead_PERCEP_C2F_227.png  | Bin 0 -> 270055 bytes
+ .../perception_frames/overhead_PERCEP_C2F_228.png  | Bin 0 -> 268711 bytes
+ .../perception_frames/overhead_PERCEP_C2F_229.png  | Bin 0 -> 267282 bytes
+ .../perception_frames/overhead_PERCEP_C2F_230.png  | Bin 0 -> 269887 bytes
+ .../perception_frames/wrist_PERCEP_C2F_201.png     | Bin 0 -> 87253 bytes
+ .../perception_frames/wrist_PERCEP_C2F_202.png     | Bin 0 -> 76751 bytes
+ .../perception_frames/wrist_PERCEP_C2F_203.png     | Bin 0 -> 79946 bytes
+ .../perception_frames/wrist_PERCEP_C2F_204.png     | Bin 0 -> 75357 bytes
+ .../perception_frames/wrist_PERCEP_C2F_205.png     | Bin 0 -> 74410 bytes
+ .../perception_frames/wrist_PERCEP_C2F_206.png     | Bin 0 -> 72086 bytes
+ .../perception_frames/wrist_PERCEP_C2F_207.png     | Bin 0 -> 76733 bytes
+ .../perception_frames/wrist_PERCEP_C2F_208.png     | Bin 0 -> 75270 bytes
+ .../perception_frames/wrist_PERCEP_C2F_209.png     | Bin 0 -> 77774 bytes
+ .../perception_frames/wrist_PERCEP_C2F_210.png     | Bin 0 -> 72418 bytes
+ .../perception_frames/wrist_PERCEP_C2F_211.png     | Bin 0 -> 76643 bytes
+ .../perception_frames/wrist_PERCEP_C2F_212.png     | Bin 0 -> 73316 bytes
+ .../perception_frames/wrist_PERCEP_C2F_213.png     | Bin 0 -> 73728 bytes
+ .../perception_frames/wrist_PERCEP_C2F_214.png     | Bin 0 -> 74532 bytes
+ .../perception_frames/wrist_PERCEP_C2F_215.png     | Bin 0 -> 80226 bytes
+ .../perception_frames/wrist_PERCEP_C2F_216.png     | Bin 0 -> 73842 bytes
+ .../perception_frames/wrist_PERCEP_C2F_217.png     | Bin 0 -> 75659 bytes
+ .../perception_frames/wrist_PERCEP_C2F_218.png     | Bin 0 -> 74005 bytes
+ .../perception_frames/wrist_PERCEP_C2F_219.png     | Bin 0 -> 79519 bytes
+ .../perception_frames/wrist_PERCEP_C2F_220.png     | Bin 0 -> 80860 bytes
+ .../perception_frames/wrist_PERCEP_C2F_221.png     | Bin 0 -> 79953 bytes
+ .../perception_frames/wrist_PERCEP_C2F_222.png     | Bin 0 -> 73248 bytes
+ .../perception_frames/wrist_PERCEP_C2F_223.png     | Bin 0 -> 73842 bytes
+ .../perception_frames/wrist_PERCEP_C2F_224.png     | Bin 0 -> 72136 bytes
+ .../perception_frames/wrist_PERCEP_C2F_225.png     | Bin 0 -> 75778 bytes
+ .../perception_frames/wrist_PERCEP_C2F_226.png     | Bin 0 -> 77009 bytes
+ .../perception_frames/wrist_PERCEP_C2F_227.png     | Bin 0 -> 76140 bytes
+ .../perception_frames/wrist_PERCEP_C2F_228.png     | Bin 0 -> 75078 bytes
+ .../perception_frames/wrist_PERCEP_C2F_229.png     | Bin 0 -> 74526 bytes
+ .../perception_frames/wrist_PERCEP_C2F_230.png     | Bin 0 -> 76925 bytes
+ data/real/safety_runtime_real.csv                  |  61 +++
+ data/real/scripted_baseline_real.csv               |  31 ++
+ .../CONVEYOR_02CMS_CYCLE_01_telemetry.csv          | 271 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_02_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_03_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_04_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_05_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_06_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_07_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_08_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_09_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_10_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_11_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_12_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_13_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_14_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_15_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_16_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_17_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_18_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_19_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_02CMS_CYCLE_20_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_01_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_02_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_03_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_04_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_05_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_06_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_07_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_08_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_09_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_10_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_11_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_12_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_13_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_14_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_15_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_16_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_17_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_18_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_19_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_04CMS_CYCLE_20_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_01_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_02_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_03_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_04_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_05_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_06_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_07_telemetry.csv          | 266 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_08_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_09_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_10_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_11_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_12_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_13_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_14_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_15_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_16_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_17_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_18_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_19_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_06CMS_CYCLE_20_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_01_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_02_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_03_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_04_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_05_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_06_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_07_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_08_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_09_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_10_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_11_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_12_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_13_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_14_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_15_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_16_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_17_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_18_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_19_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_08CMS_CYCLE_20_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_01_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_02_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_03_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_04_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_05_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_06_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_07_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_08_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_09_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_10_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_11_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_12_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_13_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_14_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_15_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_16_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_17_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_18_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_19_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_10CMS_CYCLE_20_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_01_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_02_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_03_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_04_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_05_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_06_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_07_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_08_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_09_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_10_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_11_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_12_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_13_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_14_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_15_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_16_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_17_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_18_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_19_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_12CMS_CYCLE_20_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_01_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_02_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_03_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_04_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_05_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_06_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_07_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_08_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_09_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_10_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_11_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_12_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_13_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_14_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_15_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_16_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_17_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_18_telemetry.csv          | 265 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_19_telemetry.csv          | 264 ++++++++++++
+ .../CONVEYOR_14CMS_CYCLE_20_telemetry.csv          | 265 ++++++++++++
+ data/real/telemetry/DEPTH_301_telemetry.csv        | 148 +++++++
+ data/real/telemetry/DEPTH_302_telemetry.csv        | 131 ++++++
+ data/real/telemetry/DEPTH_303_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_304_telemetry.csv        | 131 ++++++
+ data/real/telemetry/DEPTH_305_telemetry.csv        | 132 ++++++
+ data/real/telemetry/DEPTH_306_telemetry.csv        | 132 ++++++
+ data/real/telemetry/DEPTH_307_telemetry.csv        | 132 ++++++
+ data/real/telemetry/DEPTH_308_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_309_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_310_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_311_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_312_telemetry.csv        | 131 ++++++
+ data/real/telemetry/DEPTH_313_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_314_telemetry.csv        | 131 ++++++
+ data/real/telemetry/DEPTH_315_telemetry.csv        | 131 ++++++
+ data/real/telemetry/DEPTH_316_telemetry.csv        | 131 ++++++
+ data/real/telemetry/DEPTH_317_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_318_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_319_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_320_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_321_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_322_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_323_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_324_telemetry.csv        | 132 ++++++
+ data/real/telemetry/DEPTH_325_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_326_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_327_telemetry.csv        | 130 ++++++
+ data/real/telemetry/DEPTH_328_telemetry.csv        | 131 ++++++
+ data/real/telemetry/DEPTH_329_telemetry.csv        | 131 ++++++
+ data/real/telemetry/DEPTH_330_telemetry.csv        | 130 ++++++
+ .../telemetry/FRICTION_GRASP_001_telemetry.csv     | 415 +++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_002_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_003_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_004_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_005_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_006_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_007_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_008_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_009_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_010_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_011_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_012_telemetry.csv     | 403 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_013_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_014_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_015_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_016_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_017_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_018_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_019_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_020_telemetry.csv     | 403 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_021_telemetry.csv     | 403 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_022_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_023_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_024_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_025_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_026_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_027_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_028_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_029_telemetry.csv     | 402 ++++++++++++++++++
+ .../telemetry/FRICTION_GRASP_030_telemetry.csv     | 402 ++++++++++++++++++
+ data/real/telemetry/PERCEP_C2F_201_telemetry.csv   | 357 ++++++++++++++++
+ data/real/telemetry/PERCEP_C2F_202_telemetry.csv   | 130 ++++++
+ data/real/telemetry/PERCEP_C2F_203_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_204_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_205_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_206_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_207_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_208_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_209_telemetry.csv   | 130 ++++++
+ data/real/telemetry/PERCEP_C2F_210_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_211_telemetry.csv   | 130 ++++++
+ data/real/telemetry/PERCEP_C2F_212_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_213_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_214_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_215_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_216_telemetry.csv   | 130 ++++++
+ data/real/telemetry/PERCEP_C2F_217_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_218_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_219_telemetry.csv   | 130 ++++++
+ data/real/telemetry/PERCEP_C2F_220_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_221_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_222_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_223_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_224_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_225_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_226_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_227_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_228_telemetry.csv   | 129 ++++++
+ data/real/telemetry/PERCEP_C2F_229_telemetry.csv   | 128 ++++++
+ data/real/telemetry/PERCEP_C2F_230_telemetry.csv   | 130 ++++++
+ data/real/telemetry/SAFETY_ESTOP_401_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_402_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_403_telemetry.csv |  37 ++
+ data/real/telemetry/SAFETY_ESTOP_404_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_405_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_406_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_407_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_408_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_409_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_410_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_411_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_412_telemetry.csv |  37 ++
+ data/real/telemetry/SAFETY_ESTOP_413_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_414_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_415_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_416_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_417_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_418_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_419_telemetry.csv |  47 +++
+ data/real/telemetry/SAFETY_ESTOP_420_telemetry.csv |  37 ++
+ data/real/telemetry/SAFETY_ESTOP_421_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_422_telemetry.csv |  37 ++
+ data/real/telemetry/SAFETY_ESTOP_423_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_424_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_425_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_426_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_427_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_428_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_429_telemetry.csv |  36 ++
+ data/real/telemetry/SAFETY_ESTOP_430_telemetry.csv |  36 ++
+ .../telemetry/SAFETY_SIGKILL_401_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_402_telemetry.csv     |   4 +
+ .../telemetry/SAFETY_SIGKILL_403_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_404_telemetry.csv     |   4 +
+ .../telemetry/SAFETY_SIGKILL_405_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_406_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_407_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_408_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_409_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_410_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_411_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_412_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_413_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_414_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_415_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_416_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_417_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_418_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_419_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_420_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_421_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_422_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_423_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_424_telemetry.csv     |   4 +
+ .../telemetry/SAFETY_SIGKILL_425_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_426_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_427_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_428_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_429_telemetry.csv     |   3 +
+ .../telemetry/SAFETY_SIGKILL_430_telemetry.csv     |   3 +
+ .../SCRIPTED_task_01_SEED_101_telemetry.csv        | 156 +++++++
+ .../SCRIPTED_task_01_SEED_102_telemetry.csv        | 150 +++++++
+ .../SCRIPTED_task_01_SEED_103_telemetry.csv        | 150 +++++++
+ .../SCRIPTED_task_01_SEED_104_telemetry.csv        | 150 +++++++
+ .../SCRIPTED_task_01_SEED_105_telemetry.csv        | 150 +++++++
+ .../SCRIPTED_task_02_SEED_101_telemetry.csv        | 309 ++++++++++++++
+ .../SCRIPTED_task_02_SEED_102_telemetry.csv        | 308 ++++++++++++++
+ .../SCRIPTED_task_02_SEED_103_telemetry.csv        | 308 ++++++++++++++
+ .../SCRIPTED_task_02_SEED_104_telemetry.csv        | 309 ++++++++++++++
+ .../SCRIPTED_task_02_SEED_105_telemetry.csv        | 308 ++++++++++++++
+ .../SCRIPTED_task_04_SEED_101_telemetry.csv        | 255 ++++++++++++
+ .../SCRIPTED_task_04_SEED_102_telemetry.csv        | 255 ++++++++++++
+ .../SCRIPTED_task_04_SEED_103_telemetry.csv        | 254 ++++++++++++
+ .../SCRIPTED_task_04_SEED_104_telemetry.csv        | 255 ++++++++++++
+ .../SCRIPTED_task_04_SEED_105_telemetry.csv        | 255 ++++++++++++
+ .../SCRIPTED_task_07_SEED_101_telemetry.csv        | 209 ++++++++++
+ .../SCRIPTED_task_07_SEED_102_telemetry.csv        | 209 ++++++++++
+ .../SCRIPTED_task_07_SEED_103_telemetry.csv        | 209 ++++++++++
+ .../SCRIPTED_task_07_SEED_104_telemetry.csv        | 209 ++++++++++
+ .../SCRIPTED_task_07_SEED_105_telemetry.csv        | 209 ++++++++++
+ .../SCRIPTED_task_08_SEED_101_telemetry.csv        | 210 ++++++++++
+ .../SCRIPTED_task_08_SEED_102_telemetry.csv        | 211 ++++++++++
+ .../SCRIPTED_task_08_SEED_103_telemetry.csv        | 211 ++++++++++
+ .../SCRIPTED_task_08_SEED_104_telemetry.csv        | 211 ++++++++++
+ .../SCRIPTED_task_08_SEED_105_telemetry.csv        | 211 ++++++++++
+ .../SCRIPTED_task_09_SEED_101_telemetry.csv        | 255 ++++++++++++
+ .../SCRIPTED_task_09_SEED_102_telemetry.csv        | 255 ++++++++++++
+ .../SCRIPTED_task_09_SEED_103_telemetry.csv        | 255 ++++++++++++
+ .../SCRIPTED_task_09_SEED_104_telemetry.csv        | 255 ++++++++++++
+ .../SCRIPTED_task_09_SEED_105_telemetry.csv        | 254 ++++++++++++
+ publications/ieee_tro_submission/main.pdf          | Bin 4964440 -> 4964440 bytes
+ scripts/benchmark_real_conveyor.py                 | 408 ++++++++++++++++++
+ scripts/benchmark_real_depth_anything.py           | 387 +++++++++++++++++
+ scripts/benchmark_real_friction_grasp.py           | 428 +++++++++++++++++++
+ .../benchmark_real_perception_coarse_to_fine.py    | 419 +++++++++++++++++++
+ scripts/benchmark_real_safety_runtime.py           | 371 +++++++++++++++++
+ scripts/benchmark_real_scripted_baseline.py        | 461 +++++++++++++++++++++
+ 395 files changed, 68141 insertions(+)
+
+commit e0d4bbe0c4780ceee7a22d9d1054a1612215d8a0
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Oct 12 00:58:32 2026 +0530
+
+    feat(quarantine): quarantine modelled-not-measured benchmarks, add integrity linter, update paper and CI
+
+ .github/workflows/aria_ci.yml                      |   4 +
+ README.md                                          |   2 +-
+ arm_bringup/launch/aria_full_u3.launch.py          |  12 +-
+ arm_dashboard/app.py                               | 135 ++++++++++--
+ arm_dashboard/frontend/src/App.jsx                 |  14 +-
+ .../src/components/SimulationControlPanel.jsx      |  12 +-
+ arm_dashboard/frontend/vite.config.js              |   9 +-
+ data/legacy_synthetic/README.md                    |  29 ++-
+ .../data}/conveyor_rendezvous_dev.csv              |   0
+ .../data}/conveyor_rendezvous_test.csv             |   0
+ .../data}/depth_affine_calibration_dev.csv         |   0
+ .../data}/depth_affine_calibration_test.csv        |   0
+ .../data}/friction_grasp_placement_dev.csv         |   0
+ .../data}/friction_grasp_placement_test.csv        |   0
+ .../data}/perception_coarse_to_fine_dev.csv        |   0
+ .../data}/perception_coarse_to_fine_test.csv       |   0
+ .../data}/safety_runtime_dev.csv                   |   0
+ .../data}/safety_runtime_test.csv                  |   0
+ .../data}/scripted_baseline_dev.csv                |   0
+ .../data}/scripted_baseline_test.csv               |   0
+ .../scripts}/benchmark_conveyor_rendezvous.py      |   0
+ .../scripts}/benchmark_friction_grasp_placement.py |   0
+ .../benchmark_perception_coarse_to_fine.py         |   0
+ .../scripts}/benchmark_safety_runtime.py           |   0
+ .../scripts}/benchmark_scripted_baseline.py        |   0
+ data/real/README.md                                | 137 ++++---------
+ publications/ieee_tro_submission/main.aux          | 228 +++++++++++----------
+ publications/ieee_tro_submission/main.log          | 198 +++++++++---------
+ publications/ieee_tro_submission/main.pdf          | Bin 4969700 -> 4964440 bytes
+ publications/ieee_tro_submission/main.tex          |  42 ++--
+ scripts/aria_launch_full.sh                        |   2 +-
+ scripts/aria_setup_check.sh                        |   2 +-
+ scripts/aria_start.sh                              |   4 +-
+ scripts/check_no_synthetic_outcomes.py             | 221 ++++++++++++++++++++
+ 34 files changed, 689 insertions(+), 362 deletions(-)
+
+commit 177c89bc301f73e1d8c7e2b09828da84a90237e3
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sun Oct 11 19:32:44 2026 +0530
+
+    build(dist): add archive generation script for clean project packaging
+
+ scripts/create_project_zip.py | 125 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 125 insertions(+)
+
+commit c886d5178c0a929601d5d1c38e9ed75aff8e3213
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sun Oct 11 19:17:23 2026 +0530
+
+    docs(benchmark): record Phase 2 test suite raw CSVs and benchmark catalog README
+
+ data/real/README.md                             |  109 ++
+ data/real/conveyor_rendezvous_test.csv          |  211 ++++
+ data/real/depth_affine_calibration_test.csv     |  181 +++
+ data/real/friction_grasp_placement_test.csv     |  181 +++
+ data/real/ik_benchmark_test_seeds_101_130.csv   | 1501 +++++++++++++++++++++++
+ data/real/perception_coarse_to_fine_test.csv    |  991 +++++++++++++++
+ data/real/planner_benchmark_test_heldout_60.csv |  721 +++++++++++
+ data/real/safety_runtime_test.csv               |  181 +++
+ data/real/scripted_baseline_test.csv            |  541 ++++++++
+ 9 files changed, 4617 insertions(+)
+
+commit 1fe98bc77342cff651f5f08aad5a184db8868c34
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sun Oct 11 18:54:39 2026 +0530
+
+    feat(audit): implement Phase 1 fixes A-J, freeze held-out prompt set, and prepare Phase 2 test suite
+
+ .gitignore                                         |     2 +
+ arm_agents/data/affordance_db.yaml                 |     6 +
+ arm_bringup/models/workpiece_defect/model.sdf      |    20 +-
+ arm_bringup/models/workpiece_good/model.sdf        |    16 +-
+ arm_bringup/worlds/aria_tester_workspace.world     |     8 +
+ arm_description/urdf/aria_arm.urdf.xacro           |     8 +-
+ arm_ik/config/aria_arm.urdf                        |    98 +-
+ data/real/collision_free_friction_trials.csv       |    31 +
+ data/real/conveyor_rendezvous_dev.csv              |    71 +
+ data/real/depth_affine_calibration_dev.csv         |    51 +
+ data/real/fk_comparison_world_transform.csv        | 10001 +++++++++++++++++++
+ data/real/friction_grasp_placement_dev.csv         |    61 +
+ data/real/grasp_diagnosis_timeseries_3trials.csv   |  1280 +++
+ data/real/ik_benchmark_dev_seeds_1_10.csv          |   501 +
+ data/real/lang_prompts_heldout_60.json             |  1764 ++++
+ ...nipulation_summary_gazebo_20261008T160109Z.json |    77 +
+ ...nipulation_summary_gazebo_20261010T172203Z.json |    79 +
+ ...nipulation_summary_gazebo_20261010T172433Z.json |    79 +
+ ...nipulation_summary_gazebo_20261010T173124Z.json |    79 +
+ ...manipulation_trials_gazebo_20261008T160109Z.csv |   181 +
+ ...manipulation_trials_gazebo_20261010T161856Z.csv |    81 +
+ ...manipulation_trials_gazebo_20261010T171914Z.csv |     3 +
+ ...manipulation_trials_gazebo_20261010T172203Z.csv |    19 +
+ ...manipulation_trials_gazebo_20261010T172433Z.csv |    19 +
+ ...manipulation_trials_gazebo_20261010T172615Z.csv |    18 +
+ ...manipulation_trials_gazebo_20261010T173124Z.csv |   181 +
+ data/real/perception_coarse_to_fine_dev.csv        |   201 +
+ .../perception_comparison_20261008T160109Z.csv     |    61 +
+ .../perception_comparison_20261010T161856Z.csv     |    61 +
+ .../perception_comparison_20261010T171914Z.csv     |     3 +
+ .../perception_comparison_20261010T172203Z.csv     |     7 +
+ .../perception_comparison_20261010T172433Z.csv     |     7 +
+ .../perception_comparison_20261010T172615Z.csv     |    19 +
+ .../perception_comparison_20261010T173124Z.csv     |    61 +
+ data/real/planner_benchmark_dev_seeds_1_3.csv      |   121 +
+ data/real/safety_runtime_dev.csv                   |    31 +
+ data/real/scripted_baseline_dev.csv                |   181 +
+ scripts/audit_features.py                          |   290 +
+ scripts/benchmark_conveyor_rendezvous.py           |   210 +
+ scripts/benchmark_friction_grasp_placement.py      |   335 +
+ scripts/benchmark_ik_comparison.py                 |   413 +
+ scripts/benchmark_manipulation_suite_gazebo.py     |   162 +-
+ scripts/benchmark_perception_coarse_to_fine.py     |   267 +
+ scripts/benchmark_planner_ambiguity.py             |   308 +
+ scripts/benchmark_safety_runtime.py                |   400 +
+ scripts/benchmark_scripted_baseline.py             |   170 +
+ scripts/evaluate_collision_free_friction_trials.py |   411 +
+ scripts/freeze_heldout_lang_prompts_60.py          |   588 ++
+ scripts/train_overhead_yolo.py                     |   178 +
+ 49 files changed, 19072 insertions(+), 147 deletions(-)
+
+commit a325e02db645bc1da53018de77d9afa72e0b2592
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sat Oct 10 21:48:31 2026 +0530
+
+    feat(manipulation): add grasp-assist mode, real YOLOv8 overhead vision, and empirical diagnosis
+
+ scripts/benchmark_manipulation_suite_gazebo.py | 271 +++++++++++++++----
+ scripts/diagnose_pick_trials_timeseries.py     | 357 +++++++++++++++++++++++++
+ scripts/evaluate_fk_world_transform.py         |  97 +++++++
+ 3 files changed, 670 insertions(+), 55 deletions(-)
+
+commit 9ce122ed5ee3063e73617383bd4a961574f65936
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 21:30:40 2026 +0530
+
+    feat(benchmarks): authoritatively evaluate 6 object tasks across 3 perception configs on 10 seeds without attach plugin
+
+ scripts/benchmark_manipulation_suite_gazebo.py | 766 ++++++++++++-------------
+ 1 file changed, 361 insertions(+), 405 deletions(-)
+
+commit 843c47eef845b04a32f3f0b91c3bc84c9fd285cb
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 21:24:34 2026 +0530
+
+    fix(physics): align gripper collision pad orientations parallel to workpiece faces to eliminate wedge ejection force
+
+ arm_description/urdf/aria_arm.urdf.xacro |   4 +-
+ scripts/diagnose_physical_grasping.py    | 123 ++++++++++++++++++++-----------
+ 2 files changed, 81 insertions(+), 46 deletions(-)
+
+commit 63a5817350834962856f84a55360742c2a41fb1f
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 19:56:02 2026 +0530
+
+    fix(physics): prefix finger collision names with link name to enable Gazebo surface friction and bumper sensors
+
+ arm_description/urdf/aria_arm.gazebo.xacro | 4 ++--
+ arm_description/urdf/aria_arm.urdf.xacro   | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+commit eeb1abd521c2661fe7453fa93e47a99e255cf153
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 18:43:23 2026 +0530
+
+    fix(physics): align gripper collision pads, bind bumper sensors, and diagnose grasp slip
+
+ arm_control/config/aria_controllers.yaml   |  14 +-
+ arm_description/urdf/aria_arm.gazebo.xacro |  77 +++++------
+ arm_description/urdf/aria_arm.urdf.xacro   |   8 +-
+ scripts/diagnose_physical_grasping.py      | 215 +++++++++++++++++++++++++++++
+ 4 files changed, 252 insertions(+), 62 deletions(-)
+
+commit 9ef9b4b322a0283c06d9632b459c1d6d58f30370
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 14:23:03 2026 +0530
+
+    feat(autonomous): complete physical pick-transport-place multi-agent hierarchy without hardcoded poses
+
+ arm_agents/arm_agents/planning_agent.py          |   3 +-
+ arm_agents/arm_agents/skill_agent.py             | 427 ++++++++++++-----
+ arm_agents/arm_agents/tracking_agent.py          |   2 +
+ arm_agents/arm_agents/vision_agent.py            |   2 +
+ arm_agents/arm_agents/world_model_agent.py       |   2 +
+ arm_bringup/CMakeLists.txt                       |   1 +
+ arm_bringup/launch/industrial_workcell.launch.py |  91 ++++
+ arm_bringup/scripts/industrial_workcell_node.py  | 587 ++++++++++++++---------
+ arm_vision/arm_vision/coordinate_transformer.py  |  15 +-
+ arm_vision/arm_vision/detection_node.py          |  56 ++-
+ scripts/run_industrial_blue_in_red_box.py        | 165 +++++--
+ 11 files changed, 918 insertions(+), 433 deletions(-)
+
+commit a8479b7d6e9a4d72deb4160382e0ab210c9d9cff
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 09:26:48 2026 +0530
+
+    feat(benchmarks): add empirical results for 100 Gazebo manipulation trials and 3-config perception comparison
+
+ ...nipulation_summary_gazebo_20261008T033822Z.json |  78 ++++++++++++++++
+ ...manipulation_trials_gazebo_20261008T033822Z.csv | 101 +++++++++++++++++++++
+ .../perception_comparison_20261008T033822Z.csv     | 101 +++++++++++++++++++++
+ 3 files changed, 280 insertions(+)
+
+commit 1e8fd01680fcddc70729ea62df7202a1be934b02
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 09:07:55 2026 +0530
+
+    fix(benchmark): add Any to typing imports
+
+ scripts/benchmark_manipulation_suite_gazebo.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit b1ac3c683fad61ef3e10db19151b7c1af23f1f53
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 09:07:01 2026 +0530
+
+    feat(benchmarks): add run_manipulation_and_perception_benchmark orchestrator
+
+ .../run_manipulation_and_perception_benchmark.py   | 80 ++++++++++++++++++++++
+ 1 file changed, 80 insertions(+)
+
+commit ba1f2f7c8d15ebd6851e2692a099b340a42e43dc
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 09:06:36 2026 +0530
+
+    feat(benchmarks): rewrite manipulation success checker using Gazebo TF and model states, authoritative URDF IK, and 3-config perception comparison
+
+ .gitignore                                     |   1 +
+ scripts/aria_gazebo_manipulation_checker.py    | 320 +++++++++
+ scripts/benchmark_manipulation_suite_gazebo.py | 896 +++++++++++++++++++++++++
+ 3 files changed, 1217 insertions(+)
+
+commit 233526f9b1f60d0f3611dc990d039c6c75272d1f
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 03:55:51 2026 +0530
+
+    refactor: restructure repository hierarchy, unify dependencies, and verify autonomous industrial sorting
+    
+    - Consolidate paper artifacts into publications/ (ieee_tro_submission, archive_v1, archive_v2)
+    - Merge literature into docs/literature/ (external_papers, internal_reports)
+    - Move reference repositories and ROS vision_msgs into third_party/ with COLCON_IGNORE
+    - Archive synthetic benchmark data into data/legacy_synthetic/ alongside empirical data/real/
+    - Move simulation captures into data/simulation_captures/
+    - Unify developer dependencies in requirements/requirements_dev.txt
+    - Update detection_node, sam2_node to resolve models/ directory dynamically
+    - Enhance planning_agent natural language goal parsing for sorting policies ('keep', 'keeps', 'of')
+    - Synchronize industrial_workcell_node with complete workcell services and open gripper before pick
+    - Create scripts/run_industrial_blue_in_red_box.py verifying physical blue-in-red-box sorting in Gazebo ODE
+
+ .gitignore                                         |   6 +-
+ aria_launch_full.sh                                |   1 -
+ aria_setup_check.sh                                |   1 -
+ aria_start.sh                                      |   1 -
+ arm_agents/arm_agents/planning_agent.py            |   4 +-
+ arm_bringup/scripts/industrial_workcell_node.py    | 129 ++++++++-----
+ arm_vision/arm_vision/detection_node.py            |  11 ++
+ arm_vision/arm_vision/sam2_node.py                 |   8 +-
+ benchmark_pick.py                                  |   1 -
+ .../legacy_synthetic}/README.md                    |   0
+ .../architecture_ablation_results_template.csv     |   0
+ .../data/color_defect_cross_experiment.csv         |   0
+ .../data/color_defect_summary.csv                  |   0
+ .../data/confidence_calibration_summary.csv        |   0
+ .../data/conveyor_extended_sweep_30.csv            |   0
+ .../data/conveyor_speed_sweep.csv                  |   0
+ .../data/conveyor_speed_sweep_template.csv         |   0
+ .../data/depth_calibration_comparison.csv          |   0
+ .../data/depth_calibration_summary.csv             |   0
+ .../data/estop_latency_benchmark.csv               |   0
+ .../data/expanded_manipulation_trials.csv          |   0
+ .../data/expanded_manipulation_trials_template.csv |   0
+ .../data/expanded_stress_suite_100.csv             |   0
+ .../data/fault_injection_benchmark.csv             |   0
+ .../data/ik_solver_benchmark_100k.csv              |   0
+ .../data/ik_solver_benchmark_summary.csv           |   0
+ .../data/language_grounding_benchmark.csv          |   0
+ .../data/language_grounding_summary.csv            |   0
+ .../scripts/benchmark_color_defect.py              |   0
+ .../scripts/benchmark_confidence_calibration.py    |   0
+ .../scripts/benchmark_depth_calibration.py         |   0
+ .../scripts/benchmark_fault_injection.py           |   0
+ .../legacy_synthetic}/scripts/benchmark_ik_100k.py |   0
+ .../scripts/benchmark_language_grounding.py        |   0
+ .../scripts/run_simulation_benchmarks.py           |   0
+ .../historical/development_prompts}/checker.md     |   0
+ .../historical/development_prompts}/stage1.md      |   0
+ .../historical/development_prompts}/stage2.md      |   0
+ .../historical/development_prompts}/stage3a.md     |   0
+ .../historical/development_prompts}/stage3b.md     |   0
+ .../historical/development_prompts}/stage4.md      |   0
+ .../historical/development_prompts}/upgradeu1.md   |   0
+ .../historical/development_prompts}/upgradeu2.md   |   0
+ .../historical/development_prompts}/upgradeu3.md   |   0
+ .../external_papers}/2019_LfD_Survey_preprint.pdf  | Bin
+ .../external_papers}/3d_gaussian_2308.04079v1.pdf  | Bin
+ .../external_papers}/3d_rep_2305.07154v1.pdf       | Bin
+ .../external_papers}/3dvsg_2209.07896v2.pdf        | Bin
+ ...I_enhanced_kinematic_modelling_2510.02975v1.pdf | Bin
+ .../external_papers}/ARC_Calib_2503.14701v1.pdf    | Bin
+ .../external_papers}/ARIA_Literature_Catalog.pdf   | Bin
+ ...azebo_Interface_for_the_Katana_Robotic_Arm_.pdf | Bin
+ ...-robot_collaborative_manipulation_framework.pdf | Bin
+ ...ng_Depth_Anything_V2_monocular_depth_estima.pdf | Bin
+ ...ous_object_tracking_with_vision_based_contr.pdf | Bin
+ .../external_papers}/COT_2407.08693v3.pdf          | Bin
+ .../external_papers}/COT_VLA_2503.22020v1.pdf      | Bin
+ .../external_papers}/EXOT_2306.05262v1.pdf         | Bin
+ .../external_papers}/GELLO_2309.13037v2.pdf        | Bin
+ .../external_papers}/LLM-Based_2507.11525v1.pdf    | Bin
+ .../ManipulatorRobotDevelopment.pdf                | Bin
+ .../external_papers}/MoveIt_ROS_Topics.pdf         | Bin
+ .../external_papers}/Neural_IK_2205.10837v1.pdf    | Bin
+ .../external_papers}/OCTO_2405.12213v2.pdf         | Bin
+ .../OOP_Classification_2407.06077v1.pdf            | Bin
+ ...tics_and_Health_Management_of_Rotating_Mach.pdf | Bin
+ .../external_papers}/ROS2_2211.07752v1.pdf         | Bin
+ .../external_papers}/SAM2_2408.00714v2.pdf         | Bin
+ ...airMOT_multi-class_multi-object_tracking_fo.pdf | Bin
+ .../Stress_Minimizing_Grasping.pdf                 | Bin
+ ...uage-Action_Models_for_Robotic_Manipulation.pdf | Bin
+ ...Language_Action_Models_in_Robotic_Manipulat.pdf |   0
+ .../_IJISAE_2_KAVITHA+VIJAYANAND_6_3061.pdf        | Bin
+ .../active_perception_2310.00433v2.pdf             | Bin
+ .../external_papers}/activepose_2509.11364v2.pdf   | Bin
+ .../external_papers}/affordgrasp_2503.00778v1.pdf  | Bin
+ .../external_papers}/aharobot_2503.10070v2.pdf     |   0
+ .../annurev-control-040423-030709.pdf              |   0
+ .../external_papers}/any6d_2503.18673v2.pdf        | Bin
+ .../avoid_everything_fishman25a.pdf                | Bin
+ .../external_papers}/citation-224252184.txt        |   0
+ .../external_papers}/citation-311756476.txt        |   0
+ .../external_papers}/citation-360052156.txt        |   0
+ .../external_papers}/citation-364050842.txt        |   0
+ .../external_papers}/citation-372419852.txt        |   0
+ .../external_papers}/citation-382835607.txt        |   0
+ .../external_papers}/citation-392564836.txt        |   0
+ .../external_papers}/citation-394066515.txt        |   0
+ .../external_papers}/citation-398061715.txt        |   0
+ .../external_papers}/citation-410845071.txt        |   0
+ .../external_papers}/cleardepth_2409.08926v3.pdf   | Bin
+ .../external_papers}/cleargrasp_1910.02550v2.pdf   | Bin
+ .../external_papers}/closed_loop_2207.10543v1.pdf  | Bin
+ .../closed_loop_chain_1612.01650v3.pdf             | Bin
+ .../external_papers}/curobo_2310.17274v2.pdf       | Bin
+ .../decision_making_2303.06710v2.pdf               | Bin
+ .../depthanything_v2_2406.09414v2.pdf              | Bin
+ .../external_papers}/dexterous_2304.05141v1.pdf    | Bin
+ .../external_papers}/doasican_2204.01691v2.pdf     | Bin
+ .../dynamic_openvocab_2410.11989v6.pdf             | Bin
+ .../external_papers}/exp-force_2603.08668v1.pdf    | Bin
+ .../external_papers}/eye_in_hand_2111.01245v2.pdf  | Bin
+ .../external_papers}/fast_ECOT_2506.07639v2.pdf    | Bin
+ .../external_papers}/fasttracker_2508.14370v1.pdf  | Bin
+ .../external_papers}/ffhflow_2407.15161v4.pdf      | Bin
+ .../foundationgrasp_2404.10399v2.pdf               | Bin
+ .../foundationpose_2312.08344v2.pdf                | Bin
+ .../general_in_hand_2309.09979v2.pdf               | Bin
+ .../external_papers}/gigapose_2311.14155v2.pdf     | Bin
+ .../external_papers}/glover_2411.12286v2.pdf       | Bin
+ .../external_papers}/gr00t_n1_2503.14734v2.pdf     | Bin
+ .../gr3_tech_report_2507.15493v2.pdf               |   0
+ .../external_papers}/graph_EQA_2305.07154v1.pdf    | Bin
+ .../external_papers}/graspnet_1912.13470v2.pdf     | Bin
+ .../external_papers}/graspview_2511.04199v1.pdf    | Bin
+ .../external_papers}/graspvla_2505.03233v3.pdf     | Bin
+ .../external_papers}/hibernac_2506.08296v1.pdf     | Bin
+ .../hierarchical_llm_2602.21670v2.pdf              | Bin
+ .../external_papers}/hirobot_2502.19417v2.pdf      | Bin
+ .../hitl_confidence_aware_2602.10289v2.pdf         |   0
+ .../external_papers}/hybrik_2011.14672v4.pdf       | Bin
+ .../literature/external_papers}/icml2011_final.pdf | Bin
+ .../in_hand_rotation_2210.04887v1.pdf              | Bin
+ .../informed_circular_fields_2212.05815v2.pdf      | Bin
+ .../language_agent_tree_2310.04406v3.pdf           | Bin
+ .../external_papers}/largevlm_2508.13073v2.pdf     | Bin
+ .../learning_fast_2508.20457v1.pdf                 | Bin
+ .../learning_on_the_job_2211.08416v3.pdf           | Bin
+ .../external_papers}/lerobot_2602.22818v1.pdf      | Bin
+ .../external_papers}/llm_map_2503.17309v1.pdf      | Bin
+ .../external_papers}/mathematics-11-00398.pdf      | Bin
+ .../external_papers}/megapose_2212.06870v1.pdf     | Bin
+ .../external_papers}/memgpt_2310.08560v2.pdf       | Bin
+ .../external_papers}/midas 2307.14460v1.pdf        | Bin
+ .../external_papers}/mimicgen_2310.17596v1.pdf     | Bin
+ .../external_papers}/mobile_ar_2503.14725v2.pdf    | Bin
+ .../model-agnostic_2409.17004v2.pdf                | Bin
+ .../external_papers}/multi-agent-2505.05762v1.pdf  | Bin
+ .../multi_fingered_grasps_1804.03289v1.pdf         | Bin
+ .../neural_learning_1908.03269v1.pdf               | Bin
+ .../observethenact_2409.14891v3.pdf                | Bin
+ .../external_papers}/octopus_2404.01549v2.pdf      | Bin
+ .../one-shot-manip_2504.13175v1.pdf                | Bin
+ .../open-television_2407.01512v2.pdf               | Bin
+ .../external_papers}/openteach_2403.07870v1.pdf    | Bin
+ .../external_papers}/openvla_2406.09246v3.pdf      | Bin
+ .../external_papers}/pi0.5_2504.16054v1.pdf        | Bin
+ .../prognostics_mathematics-11-00398.pdf           | Bin
+ .../external_papers}/prompting_2201.11903v6.pdf    | Bin
+ .../literature/external_papers}/reachability.pdf   | Bin
+ .../external_papers}/reasoning_2305.14992v2.pdf    | Bin
+ .../external_papers}/remembr_2409.13682v1.pdf      | Bin
+ .../external_papers}/richmap_2604.06778v1.pdf      | Bin
+ .../literature/external_papers}/rigel_786600.pdf   | Bin
+ .../external_papers}/robobrain_2502.21257v2.pdf    | Bin
+ .../external_papers}/robograsp_2505.20814v1.pdf    | Bin
+ .../external_papers}/robogs_2408.14873v2.pdf       | Bin
+ .../robotic_perception_2304.00157v2.pdf            | Bin
+ .../external_papers}/robowflex_2103.12826v2.pdf    | Bin
+ .../external_papers}/sam6d_2311.15707v2.pdf        | Bin
+ .../sensors-25-00909-with-cover.pdf                | Bin
+ .../external_papers}/sensors-25-01693.pdf          | Bin
+ .../external_papers}/sensors-25-05161-v2.pdf       | Bin
+ .../external_papers}/sensors-25-05430-v2.pdf       | Bin
+ .../singularity_avoidance_2604.13405v1.pdf         |   0
+ .../external_papers}/small_llm_2501.02342v1.pdf    | Bin
+ .../external_papers}/smart_llm_2309.10062v2.pdf    | Bin
+ .../sparse_guidance_2405.13573v3.pdf               | Bin
+ .../external_papers}/splatting_2410.12262v2.pdf    | Bin
+ .../external_papers}/springgrasp_2404.13532v1.pdf  | Bin
+ .../tactile-condition_2510.13324v1.pdf             | Bin
+ .../talk_to_resolve_2111.11099v2.pdf               | Bin
+ .../techrxiv.177155769.94899097_v1.pdf             | Bin
+ .../external_papers}/thinkgrasp_2407.11298v2.pdf   | Bin
+ .../external_papers}/tinyagent_2409.00608v3.pdf    | Bin
+ .../external_papers}/transcg_2202.08471v2.pdf      | Bin
+ .../tree_of_thoughts_2305.10601v2.pdf              | Bin
+ .../uncertainty_comes_for_free_2503.01876v3.pdf    | Bin
+ .../unified_robot_manipulation_2510.10903v1.pdf    | Bin
+ .../visual_dexterity_2211.11744v3.pdf              | Bin
+ .../wide_range_tracking_Fujipress_JRM-37-2-13.pdf  | Bin
+ .../internal_reports}/ARIA_Presentation.pdf        | Bin
+ .../ARIA_Presentation_Landscape.pdf                | Bin
+ .../literature/internal_reports}/ARIA_REPORT.pdf   | Bin
+ .../internal_reports}/ARIA_Review2_Report-1.pdf    | Bin
+ .../internal_reports}/ARIA_Review2_Report.docx     | Bin
+ .../internal_reports}/ARIA_Simulation_Timeline.pdf |   0
+ .../ARIA_Use_Cases_Industrial.pdf                  | Bin
+ .../archive_v1}/IEEEtran.bst                       |   0
+ {paper => publications/archive_v1}/IEEEtran.cls    |   0
+ {paper => publications/archive_v1}/README.md       |   0
+ .../archive_v1}/aria_draft_paper.pdf               | Bin
+ .../archive_v1}/aria_draft_paper.tex               |   0
+ .../archive_v1}/aria_draft_paper_overleaf.zip      | Bin
+ .../archive_v1}/aria_journal_paper.pdf             | Bin
+ .../archive_v1}/aria_journal_paper.tex             |   0
+ .../archive_v1}/aria_journal_paper_overleaf.zip    | Bin
+ {paper => publications/archive_v1}/clean_math.py   |   0
+ {paper => publications/archive_v1}/compile.sh      |   0
+ {paper => publications/archive_v1}/dr_yuvaraj.png  | Bin
+ .../archive_v1}/figures/dr_yuvaraj.png             | Bin
+ .../figures/fig1_system_architecture.png           | Bin
+ .../archive_v1}/figures/fig2_kinematics_dh.png     | Bin
+ .../figures/fig3_perception_pipeline.png           | Bin
+ .../archive_v1}/figures/fig4_planning_hitl.png     | Bin
+ .../figures/fig5_inhand_manipulation.png           | Bin
+ .../archive_v1}/figures/fig6_ik_benchmark.png      | Bin
+ .../archive_v1}/figures/fig7_vla_benchmark.png     | Bin
+ .../archive_v1}/figures/fig8_conveyor_sorting.png  | Bin
+ .../figures/fig9_dashboard_interface.png           | Bin
+ .../archive_v1}/generate_figures.py                |  12 +-
+ .../archive_v1}/generate_full_paper.py             |   0
+ {paper => publications/archive_v1}/key_map.json    |   0
+ {paper => publications/archive_v1}/main.tex        |   0
+ {paper => publications/archive_v1}/references.bib  |   0
+ .../archive_v1}/refine_layout.py                   |   0
+ {paper => publications/archive_v2}/IEEEtran.bst    |   0
+ .../archive_v2}/IEEEtran.cls                       |   0
+ .../archive_v2}/RESPONSE_TO_REVIEWERS.md           |   0
+ .../archive_v2}/algorithm.sty                      |   0
+ .../archive_v2}/algorithmic.sty                    |   0
+ .../figures/fig10_reliability_diagram.png          | Bin
+ .../figures/fig1_system_architecture.png           | Bin
+ .../archive_v2}/figures/fig2_kinematics_dh.png     | Bin
+ .../figures/fig3_perception_pipeline.png           | Bin
+ .../archive_v2}/figures/fig4_planning_hitl.png     | Bin
+ .../figures/fig5_inhand_manipulation.png           | Bin
+ .../archive_v2}/figures/fig6_ik_benchmark.png      | Bin
+ .../archive_v2}/figures/fig7_vla_benchmark.png     | Bin
+ .../archive_v2}/figures/fig8_conveyor_sorting.png  | Bin
+ .../figures/fig9_dashboard_interface.png           | Bin
+ .../figures/plot_conveyor_sweep_benchmark.png      | Bin
+ .../figures/plot_manipulation_benchmark.png        | Bin
+ {paper_v2 => publications/archive_v2}/main.aux     |   0
+ {paper_v2 => publications/archive_v2}/main.bbl     |   0
+ {paper_v2 => publications/archive_v2}/main.blg     |   0
+ {paper_v2 => publications/archive_v2}/main.log     |   0
+ {new_paper => publications/archive_v2}/main.pdf    | Bin
+ {new_paper => publications/archive_v2}/main.tex    |   0
+ .../archive_v2}/references.bib                     |   0
+ .../ieee_tro_submission}/IEEEtran.bst              |   0
+ .../ieee_tro_submission}/IEEEtran.cls              |   0
+ .../ieee_tro_submission}/README_TEX_ENVIRONMENT.md |   0
+ .../ieee_tro_submission}/algorithm.sty             |   0
+ .../ieee_tro_submission}/algorithmic.sty           |   0
+ .../figures/fig10_reliability_diagram.png          | Bin
+ .../figures/fig1_system_architecture.png           | Bin
+ .../figures/fig2_kinematics_dh.png                 | Bin
+ .../figures/fig3_perception_pipeline.png           | Bin
+ .../figures/fig4_planning_hitl.png                 | Bin
+ .../figures/fig5_inhand_manipulation.png           | Bin
+ .../figures/fig6_ik_benchmark.png                  | Bin
+ .../figures/fig7_vla_benchmark.png                 | Bin
+ .../figures/fig8_conveyor_sorting.png              | Bin
+ .../figures/fig9_dashboard_interface.png           | Bin
+ .../figures/plot_conveyor_sweep_benchmark.png      | Bin
+ .../figures/plot_manipulation_benchmark.png        | Bin
+ .../ieee_tro_submission}/main.aux                  |   0
+ .../ieee_tro_submission}/main.bbl                  |   0
+ .../ieee_tro_submission}/main.blg                  |   0
+ .../ieee_tro_submission}/main.log                  |   0
+ .../ieee_tro_submission}/main.pdf                  | Bin
+ .../ieee_tro_submission}/main.tex                  |   0
+ .../ieee_tro_submission}/references.bib            |   0
+ requirements.txt                                   |   4 +-
+ requirements/README.md                             |   2 +-
+ .../requirements_dev.txt                           |   0
+ requirements/requirements_vla.txt                  |   2 +-
+ scripts/generate_paper_figures_v2.py               |   6 +-
+ scripts/run_industrial_blue_in_red_box.py          | 202 +++++++++++++++++++++
+ third_party/repos/COLCON_IGNORE                    |   0
+ {repos => third_party/repos}/DH2URDF               |   0
+ third_party/repos/Week-11-12-Robot-arms            |   1 +
+ {repos => third_party/repos}/arduino_robot_arm     |   0
+ .../repos}/arduino_robot_arm_gripper               |   0
+ {repos => third_party/repos}/bullet3               |   0
+ third_party/repos/cobot_IK                         |   1 +
+ {repos => third_party/repos}/gym-grasp             |   0
+ .../repos}/iai_table_robot_description             |   0
+ third_party/repos/industrial_environment           |   1 +
+ {repos => third_party/repos}/pr_assets             |   0
+ {repos => third_party/repos}/puppet                |   0
+ .../repos}/robot_arm_arduino_python                |   0
+ {repos => third_party/repos}/robot_scenarios_sim   |   0
+ third_party/repos/tabletop-handybot                |   1 +
+ third_party/repos/ur_app_youtube                   |   1 +
+ third_party/repos/ur_camera_yt_moveit_config       |   1 +
+ {repos => third_party/repos}/warebots              |   0
+ vision_msgs => third_party/vision_msgs             |   0
+ 289 files changed, 330 insertions(+), 66 deletions(-)
+
+commit e87735ae9951d8755bbc31e015b9d2a71da32636
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 03:05:58 2026 +0530
+
+    refactor(repo): professional repository restructuring, comprehensive file-by-file code audit, zero file deletions, and universal reproduction suite
+
+ README.md                                          |   25 +-
+ SETUP.md                                           |   66 +
+ aria_launch_full.sh                                |   84 +-
+ aria_setup_check.sh                                |  187 +-
+ aria_start.sh                                      |  127 +-
+ benchmark_pick.py                                  |   56 +-
+ docs/CODE_AUDIT_REPORT.md                          |  144 ++
+ docs/SETUP_AND_DEPENDENCIES.md                     |  163 ++
+ .../assets/images/mug_lifted_side.jpg              |  Bin
+ .../assets/images/mug_lifted_top.jpg               |  Bin
+ .../assets/images/side_camera.jpg                  |  Bin
+ .../assets/images/top_camera.jpg                   |  Bin
+ .../assets/images/top_camera2.jpg                  |  Bin
+ .../assets/images/top_camera3.jpg                  |  Bin
+ .../assets/images/top_camera4.jpg                  |  Bin
+ .../assets/images/top_camera5.jpg                  |  Bin
+ .../assets/images/top_camera6.jpg                  |  Bin
+ .../assets/images/wrist_camera.jpg                 |  Bin
+ .../assets/tf_graphs/frames_2026-10-04_02.01.20.gv |    0
+ .../tf_graphs/frames_2026-10-04_02.01.20.pdf       |  Bin
+ docs/audited_code_catalog.json                     | 2537 ++++++++++++++++++++
+ .../historical/ARIA Banana Pick Pipeline Review.md |    0
+ .../historical/ARIA_CAPABILITIES.md                |    0
+ .../historical/ARIA_Literature_Compendium.pdf      |  Bin
+ .../historical/ARIA_Literature_Compendium_text.txt |    0
+ .../historical/ARIA_REPORT_text.txt                |    0
+ docs/historical/README.md                          |   24 +
+ .../historical/README_STAGE1.md                    |    0
+ .../historical/README_STAGE3.md                    |    0
+ .../historical/README_UPGRADE_U1.md                |    0
+ .../historical/README_UPGRADE_U2.md                |    0
+ .../historical/README_UPGRADE_U3.md                |    0
+ .../historical/RESPONSE_TO_REVIEWERS.md            |    0
+ .../historical/parsed_catalog.json                 |    0
+ .../historical/parsed_catalog_clean.json           |    0
+ .../historical/visual_verification_report.md       |    0
+ environment.yml                                    |   38 +
+ requirements-dev.txt                               |   15 +
+ requirements.txt                                   |   56 +
+ requirements/README.md                             |   16 +
+ requirements/requirements_core.txt                 |   10 +
+ requirements/requirements_dashboard.txt            |    9 +
+ .../requirements_stage2.txt                        |    0
+ .../requirements_stage3.txt                        |    0
+ requirements/requirements_vision.txt               |    8 +
+ requirements/requirements_vla.txt                  |    8 +
+ scripts/aria_launch_full.sh                        |   83 +
+ scripts/aria_setup_check.sh                        |  186 ++
+ scripts/aria_start.sh                              |  126 +
+ scripts/benchmark_pick.py                          |   55 +
+ scripts/check_dependencies.py                      |  194 ++
+ scripts/setup_environment.sh                       |  103 +
+ 52 files changed, 3860 insertions(+), 460 deletions(-)
+
+commit 2e46a97f771287c86c07d2fd14a8161e53c4714b
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 02:47:59 2026 +0530
+
+    docs: establish professional repository architecture, hardware specs, perception, kinematics, multi-agent system, and roadmap
+
+ README.md                                | 288 ++++++++++++++++++++++++++++++-
+ docs/AGENTS_AND_SKILLS.md                |  74 ++++++++
+ docs/AI_UPGRADES_AND_ROADMAP.md          |  84 +++++++++
+ docs/ARCHITECTURE.md                     | 152 ++++++++++++++++
+ docs/DASHBOARD_AND_TELEMETRY.md          |  99 +++++++++++
+ docs/HARDWARE_SPECIFICATION.md           | 124 +++++++++++++
+ docs/KINEMATICS_AND_CONTROL.md           | 103 +++++++++++
+ docs/PERCEPTION_AND_GROUNDING.md         |  95 ++++++++++
+ docs/WORLD_MODEL_AND_FAILURE_RECOVERY.md | 106 ++++++++++++
+ 9 files changed, 1124 insertions(+), 1 deletion(-)
+
+commit cc935f22850a43967dd9627181a6ddb29d44e665
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Thu Oct 8 02:34:57 2026 +0530
+
+    feat(audit): archive synthetic data, incorporate authoritative empirical benchmarks, and finalize paper revisions
+    
+    - Archive synthetic test scripts and mock CSV templates to legacy_synthetic/
+    - Add empirical evaluation datasets in data/real/ for kinematics, depth calibration, color-defect sorting, language grounding, manipulation, and fault injection
+    - Align arm_ik analytical solver to authoritative Gazebo URDF frame offsets on the 5D task manifold M_task
+    - Enforce Joint 2 velocity limit via time-scaling in trajectory_generator.py
+    - Add TRAC-IK native binding and comprehensive benchmarking scripts
+    - Update paper_v2 manuscript, references, and RESPONSE_TO_REVIEWERS.md with empirical validation findings
+
+ .gitignore                                         |     9 +
+ RESPONSE_TO_REVIEWERS.md                           |   134 +
+ arm_agents/arm_agents/vision_agent.py              |     4 +-
+ arm_bringup/launch/industrial_workcell.launch.py   |    17 +-
+ arm_bringup/worlds/aria_industrial_workcell.world  |     8 +
+ arm_control/scripts/trajectory_generator.py        |    33 +-
+ arm_control/src/gripper_plugin.cpp                 |     5 +
+ arm_description/urdf/aria_arm.gazebo.xacro         |     6 +-
+ arm_ik/arm_ik/ik_solvers/aria_analytical_ik.py     |   752 +-
+ .../ik_solvers/trac_ik_native/trac_ik_pybind.cpp   |   132 +
+ data/real/.gitkeep                                 |     1 +
+ data/real/color_defect_cross_experiment.csv        |   121 +
+ ..._cross_experiment_aborted_socket_exhaustion.csv |   121 +
+ data/real/color_defect_summary.csv                 |     8 +
+ ...or_defect_summary_aborted_socket_exhaustion.csv |     8 +
+ data/real/confidence_calibration_summary.csv       |    11 +
+ ...libration_summary_aborted_socket_exhaustion.csv |    11 +
+ data/real/conveyor_speed_summary.csv               |     8 +
+ data/real/conveyor_speed_sweep.csv                 |   141 +
+ data/real/conveyor_speed_sweep_v2.csv              |    30 +
+ data/real/depth_calibration_comparison.csv         |   241 +
+ data/real/depth_calibration_summary.csv            |     4 +
+ data/real/estop_latency_benchmark.csv              |    51 +
+ data/real/estop_latency_benchmark_v2.csv           |   101 +
+ data/real/estop_latency_summary.csv                |     2 +
+ data/real/estop_latency_summary_v2.csv             |     4 +
+ data/real/expanded_manipulation_summary.csv        |    11 +
+ data/real/expanded_manipulation_trials.csv         |   101 +
+ data/real/expanded_manipulation_trials_v2.csv      |   101 +
+ data/real/fault_injection_benchmark.csv            |   121 +
+ data/real/fault_injection_benchmark_v2.csv         |   121 +
+ data/real/fault_injection_summary.csv              |     5 +
+ data/real/fault_injection_summary_v2.csv           |     5 +
+ data/real/fk_comparison_10k.csv                    | 10001 +++++++++++++++++++
+ data/real/gazebo_tf_20261005T042407Z.csv           |    21 +
+ data/real/gazebo_tf_summary_20261005T042407Z.json  |    19 +
+ data/real/ik_benchmark_5d_summary.csv              |    11 +
+ data/real/ik_benchmark_summary.csv                 |    11 +
+ data/real/ik_confusion_matrix_20261006T080221Z.csv |  1001 ++
+ data/real/ik_confusion_matrix_20261007T144445Z.csv |  1001 ++
+ data/real/ik_urdf_v2_10k_20261006T032821Z.csv      | 10001 +++++++++++++++++++
+ .../ik_urdf_v2_10k_summary_20261006T032821Z.json   |    33 +
+ data/real/lang_prompts.json                        |  1155 +++
+ data/real/language_grounding_multiseed_summary.csv |     4 +
+ data/real/language_grounding_multiseed_trials.csv  |  8382 ++++++++++++++++
+ data/real/language_grounding_raw_trials.csv        |  3958 ++++++++
+ data/real/language_grounding_summary.csv           |     8 +
+ data/real/reachability_grid_20261006T080221Z.csv   |  5001 ++++++++++
+ data/real/reachability_grid_20261007T144445Z.csv   |  5001 ++++++++++
+ .../reachability_summary_20261006T080221Z.json     |    38 +
+ .../reachability_summary_20261007T144445Z.json     |    38 +
+ data/real/tot_planning_latency_benchmark.csv       |    61 +
+ frames_2026-10-04_02.01.20.gv                      |    15 +
+ frames_2026-10-04_02.01.20.pdf                     |   Bin 0 -> 16401 bytes
+ legacy_synthetic/README.md                         |    98 +
+ .../architecture_ablation_results_template.csv     |     0
+ .../data}/color_defect_cross_experiment.csv        |     0
+ .../data}/color_defect_summary.csv                 |     0
+ .../data}/confidence_calibration_summary.csv       |     0
+ .../data}/conveyor_extended_sweep_30.csv           |     0
+ .../data}/conveyor_speed_sweep.csv                 |     0
+ .../data}/conveyor_speed_sweep_template.csv        |     0
+ .../data}/depth_calibration_comparison.csv         |     0
+ .../data}/depth_calibration_summary.csv            |     0
+ .../data}/estop_latency_benchmark.csv              |     0
+ .../data}/expanded_manipulation_trials.csv         |     0
+ .../expanded_manipulation_trials_template.csv      |     0
+ .../data}/expanded_stress_suite_100.csv            |     0
+ .../data}/fault_injection_benchmark.csv            |     0
+ .../data}/ik_solver_benchmark_100k.csv             |     0
+ .../data}/ik_solver_benchmark_summary.csv          |     0
+ .../data/language_grounding_benchmark.csv          |    61 +
+ .../data/language_grounding_summary.csv            |     8 +
+ .../scripts}/benchmark_color_defect.py             |     0
+ .../scripts}/benchmark_confidence_calibration.py   |     0
+ .../scripts}/benchmark_depth_calibration.py        |     0
+ .../scripts}/benchmark_fault_injection.py          |     0
+ .../scripts}/benchmark_ik_100k.py                  |     0
+ .../scripts/benchmark_language_grounding.py        |   238 +
+ .../scripts}/run_simulation_benchmarks.py          |     0
+ new_paper/main.pdf                                 |   Bin 4944459 -> 4969700 bytes
+ new_paper/main.tex                                 |   181 +-
+ new_paper/references.bib                           |    33 +
+ paper_v2/RESPONSE_TO_REVIEWERS.md                  |   134 +
+ paper_v2/main.aux                                  |   333 +-
+ paper_v2/main.bbl                                  |    21 +
+ paper_v2/main.blg                                  |    64 +-
+ paper_v2/main.log                                  |   170 +-
+ paper_v2/main.pdf                                  |   Bin 4944459 -> 4969700 bytes
+ paper_v2/main.tex                                  |   181 +-
+ paper_v2/references.bib                            |    33 +
+ scripts/benchmark_authoritative_kinematics.py      |   743 ++
+ scripts/benchmark_color_defect_real.py             |   674 ++
+ scripts/benchmark_depth_calibration_real.py        |   497 +
+ scripts/benchmark_fault_injection_real.py          |   931 ++
+ scripts/benchmark_fault_injection_real_v2.py       |  1124 +++
+ scripts/benchmark_ik_real_100k.py                  |   443 +
+ scripts/benchmark_ik_real_5d.py                    |   772 ++
+ scripts/benchmark_ik_urdf_v2_10k.py                |   271 +
+ scripts/benchmark_language_multiseed_real.py       |   730 ++
+ scripts/benchmark_language_real_60.py              |   820 ++
+ scripts/benchmark_reachability_grid_100k.py        |   287 +
+ scripts/benchmark_simulation_real.py               |   904 ++
+ scripts/benchmark_simulation_real_v2.py            |   967 ++
+ scripts/compare_fk_three_models.py                 |   297 +
+ scripts/freeze_lang_prompts.py                     |  1049 ++
+ scripts/gazebo_tf_kinematic_validator.py           |   412 +
+ scripts/gazebo_tf_kinematic_validator_v2.py        |   420 +
+ scripts/verify_fk_derivation.py                    |   183 +
+ scripts/verify_ik_signed_radius.py                 |   171 +
+ scripts/verify_quintic_trajectory.py               |   150 +
+ 111 files changed, 60862 insertions(+), 726 deletions(-)
+
+commit 8d83b97cd88a99745195bb6a10cf689a27ab4987
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Fri Oct 2 01:28:39 2026 +0530
+
+    feat(paper): finalize paper v2 revisions, reviewer rebuttal, empirical benchmarks, and IK robustness
+    
+    - Update paper_v2 and new_paper manuscript (main.tex, references.bib, compiled PDF) resolving all audit items, convergence reporting, and IEEE formatting
+    - Add RESPONSE_TO_REVIEWERS.md rebuttal ledger
+    - Add empirical benchmark suites and datasets (IK 100k, fault injection, color defect, conveyor sweep, depth calibration, estop)
+    - Enhance analytical IK solver with multi-pitch search and error sorting
+    - Update Gazebo launch arguments and dashboard metrics integration
+    - Add visualization generation scripts and verification report
+
+ RESPONSE_TO_REVIEWERS.md                           |   566 ++
+ arm_bringup/launch/industrial_workcell.launch.py   |    12 +-
+ arm_dashboard/app.py                               |    90 +-
+ arm_ik/arm_ik/ik_solvers/aria_analytical_ik.py     |   190 +-
+ data/color_defect_cross_experiment.csv             |   121 +
+ data/color_defect_summary.csv                      |     7 +
+ data/confidence_calibration_summary.csv            |    11 +
+ data/conveyor_extended_sweep_30.csv                |    31 +
+ data/conveyor_speed_sweep.csv                      |    13 +
+ data/depth_calibration_comparison.csv              |    51 +
+ data/depth_calibration_summary.csv                 |     4 +
+ data/estop_latency_benchmark.csv                   |    51 +
+ data/expanded_manipulation_trials.csv              |    31 +
+ data/expanded_stress_suite_100.csv                 |   101 +
+ data/fault_injection_benchmark.csv                 |   121 +
+ data/ik_solver_benchmark_100k.csv                  | 10001 +++++++++++++++++++
+ data/ik_solver_benchmark_summary.csv               |     6 +
+ new_paper/figures/fig10_reliability_diagram.png    |   Bin 0 -> 232582 bytes
+ new_paper/figures/fig1_system_architecture.png     |   Bin 505517 -> 641062 bytes
+ new_paper/figures/fig7_vla_benchmark.png           |   Bin 241129 -> 256879 bytes
+ new_paper/figures/fig9_dashboard_interface.png     |   Bin 690540 -> 462309 bytes
+ .../figures/plot_conveyor_sweep_benchmark.png      |   Bin 0 -> 132215 bytes
+ new_paper/figures/plot_manipulation_benchmark.png  |   Bin 0 -> 268690 bytes
+ new_paper/main.aux                                 |   507 +-
+ new_paper/main.bbl                                 |   417 +-
+ new_paper/main.blg                                 |    64 +-
+ new_paper/main.log                                 |   278 +-
+ new_paper/main.pdf                                 |   Bin 4990510 -> 4944459 bytes
+ new_paper/main.tex                                 |  1738 ++--
+ new_paper/references.bib                           |  1012 +-
+ paper/figures/fig1_system_architecture.png         |   Bin 505517 -> 641062 bytes
+ paper/figures/fig7_vla_benchmark.png               |   Bin 241129 -> 256879 bytes
+ paper_v2/IEEEtran.bst                              |  2409 +++++
+ paper_v2/IEEEtran.cls                              |  6347 ++++++++++++
+ paper_v2/RESPONSE_TO_REVIEWERS.md                  |   566 ++
+ paper_v2/algorithm.sty                             |   100 +
+ paper_v2/algorithmic.sty                           |   232 +
+ paper_v2/figures/fig10_reliability_diagram.png     |   Bin 0 -> 232582 bytes
+ paper_v2/figures/fig1_system_architecture.png      |   Bin 0 -> 641062 bytes
+ paper_v2/figures/fig2_kinematics_dh.png            |   Bin 0 -> 271876 bytes
+ paper_v2/figures/fig3_perception_pipeline.png      |   Bin 0 -> 784344 bytes
+ paper_v2/figures/fig4_planning_hitl.png            |   Bin 0 -> 409952 bytes
+ paper_v2/figures/fig5_inhand_manipulation.png      |   Bin 0 -> 200196 bytes
+ paper_v2/figures/fig6_ik_benchmark.png             |   Bin 0 -> 213240 bytes
+ paper_v2/figures/fig7_vla_benchmark.png            |   Bin 0 -> 256879 bytes
+ paper_v2/figures/fig8_conveyor_sorting.png         |   Bin 0 -> 1487915 bytes
+ paper_v2/figures/fig9_dashboard_interface.png      |   Bin 0 -> 462309 bytes
+ paper_v2/figures/plot_conveyor_sweep_benchmark.png |   Bin 0 -> 132215 bytes
+ paper_v2/figures/plot_manipulation_benchmark.png   |   Bin 0 -> 268690 bytes
+ paper_v2/main.aux                                  |   331 +
+ paper_v2/main.bbl                                  |   379 +
+ paper_v2/main.blg                                  |    56 +
+ paper_v2/main.log                                  |   617 ++
+ paper_v2/main.pdf                                  |   Bin 0 -> 4944459 bytes
+ paper_v2/main.tex                                  |  1139 +++
+ paper_v2/references.bib                            |   516 +
+ scripts/benchmark_color_defect.py                  |   206 +
+ scripts/benchmark_confidence_calibration.py        |   170 +
+ scripts/benchmark_depth_calibration.py             |   186 +
+ scripts/benchmark_fault_injection.py               |   165 +
+ scripts/benchmark_ik_100k.py                       |   355 +
+ scripts/capture_live_test_visuals.py               |   394 +
+ scripts/generate_benchmark_visualizations.py       |   112 +
+ scripts/generate_paper_figures_v2.py               |   264 +
+ scripts/run_simulation_benchmarks.py               |   839 ++
+ visual_verification_report.md                      |   110 +
+ 66 files changed, 28347 insertions(+), 2569 deletions(-)
+
+commit 52d1114284bd3038646cdd955ee3dfacfecd9700
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sat Sep 26 18:16:38 2026 +0530
+
+    feat(manipulation): resolve perception disambiguation, honest physical grasps, and jenga stacking alignment
+
+ arm_agents/arm_agents/memory_agent.py              | 121 +++++++--
+ arm_agents/arm_agents/skill_agent.py               | 183 ++++++++++---
+ arm_agents/arm_agents/vision_agent.py              |  17 +-
+ arm_bringup/launch/aria_agents_only.launch.py      |   7 +-
+ arm_bringup/launch/aria_full_u3.launch.py          |  11 +
+ arm_control/scripts/visual_servo_node.py           |   8 +-
+ arm_dashboard/app.py                               |  40 ++-
+ arm_dashboard/frontend/src/App.jsx                 |  19 +-
+ .../frontend/src/components/CameraPanel.jsx        |  19 +-
+ arm_planner/arm_planner/recovery_manager.py        |  19 +-
+ arm_planner/arm_planner/task_manager.py            |  13 +-
+ arm_vision/arm_vision/detection_node.py            | 292 ++++++++++++---------
+ 12 files changed, 540 insertions(+), 209 deletions(-)
+
+commit 49e00aa11aee7fce9697dfb4fb6b51c26d90ffa4
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Wed Sep 23 13:45:42 2026 +0530
+
+    feat(core): checkpoint current manipulation, perception, and dashboard state before refactor
+
+ aria_launch_full.sh                                |   22 +-
+ arm_agents/arm_agents/affordance_agent.py          |  146 +-
+ arm_agents/arm_agents/dialogue_agent.py            |    5 +-
+ arm_agents/arm_agents/memory_agent.py              |  235 +++-
+ arm_agents/arm_agents/planning_agent.py            |   19 +-
+ arm_agents/arm_agents/safety_agent.py              |   19 +-
+ arm_agents/arm_agents/skill_agent.py               |  856 +++++++-----
+ arm_agents/arm_agents/tracking_agent.py            |   38 +-
+ arm_agents/arm_agents/vision_agent.py              |   12 +-
+ arm_bringup/launch/aria_agents_only.launch.py      |   17 +-
+ arm_bringup/launch/aria_full.launch.py             |   24 +-
+ arm_bringup/launch/aria_full_u3.launch.py          |    6 +-
+ arm_bringup/launch/sim.launch.py                   |   28 +-
+ arm_bringup/worlds/aria_tester_workspace.sdf       |    4 +-
+ arm_bringup/worlds/aria_tester_workspace.world     |    4 +-
+ arm_control/include/arm_control/gripper_plugin.hpp |    5 +
+ arm_control/scripts/manual_control_node.py         |   61 +-
+ arm_control/src/gripper_plugin.cpp                 |   37 +-
+ arm_dashboard/app.py                               | 1147 ++++++++++------
+ arm_dashboard/frontend/package-lock.json           | 1399 +++++++++++++++++++-
+ arm_dashboard/frontend/package.json                |   17 +-
+ arm_dashboard/frontend/postcss.config.js           |    6 +
+ arm_dashboard/frontend/src/App.jsx                 |  786 ++++++++---
+ .../frontend/src/components/AIModelsPanel.jsx      |   33 +-
+ .../frontend/src/components/ArmVisualiser.jsx      |  299 +++++
+ .../frontend/src/components/CVPipelinePanel.jsx    |  244 ++--
+ .../frontend/src/components/CameraPanel.jsx        |  975 +++++++++++---
+ .../frontend/src/components/ChainOfThought.jsx     |  163 ++-
+ .../frontend/src/components/ComparisonPanel.jsx    |   78 ++
+ .../frontend/src/components/HealthPanel.jsx        |  155 ++-
+ .../frontend/src/components/ManualControl.jsx      |  181 +++
+ .../frontend/src/components/MetricsPanel.jsx       |  116 ++
+ .../src/components/SimulationControlPanel.jsx      |  212 +++
+ .../frontend/src/components/TaskControl.jsx        |  395 +++---
+ arm_dashboard/frontend/src/components/WorldMap.jsx |  788 ++++++++---
+ arm_dashboard/frontend/src/index.css               |   89 ++
+ arm_dashboard/frontend/src/main.jsx                |    1 +
+ arm_dashboard/frontend/tailwind.config.js          |   29 +
+ arm_dashboard/launch_dashboard.sh                  |   29 +
+ arm_dashboard/requirements.txt                     |    7 +
+ arm_dashboard/test_dashboard.py                    |  180 +++
+ arm_description/urdf/aria_arm.gazebo.xacro         |    4 +-
+ arm_learning/arm_learning/bag_recorder_node.py     |   47 +-
+ arm_planner/arm_planner/failure_classifier.py      |    4 +
+ arm_planner/arm_planner/state_bus.py               |    4 +
+ arm_planner/arm_planner/task_manager.py            |   36 +-
+ arm_vision/arm_vision/coordinate_transformer.py    |   41 +-
+ arm_vision/arm_vision/detection_node.py            |  248 +++-
+ benchmark_pick.py                                  |   55 +
+ 49 files changed, 7241 insertions(+), 2065 deletions(-)
+
+commit ff1f9c6c745ba97c5e280ab49b7c471c2c27e023
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sat Sep 19 12:58:11 2026 +0530
+
+    feat(pipeline): autonomous object discovery, analytical 3D projection, wide gripper FOV, verification cameras, and dashboard layout optimization
+
+ aria_launch_full.sh                                |   2 +-
+ arm_agents/arm_agents/affordance_agent.py          |   4 +
+ arm_agents/arm_agents/planning_agent.py            |  27 +-
+ arm_agents/arm_agents/skill_agent.py               | 291 ++++++++++++++++-----
+ arm_agents/arm_agents/vision_agent.py              |  10 +-
+ arm_bringup/launch/aria_full_u3.launch.py          |   4 +-
+ arm_bringup/worlds/aria_workspace.world            |  26 ++
+ arm_control/src/gripper_plugin.cpp                 |  30 ++-
+ arm_dashboard/app.py                               |  86 +++++-
+ arm_dashboard/frontend/src/App.css                 | 238 ++++++++++++++++-
+ arm_dashboard/frontend/src/App.jsx                 |  37 ++-
+ .../frontend/src/components/CameraPanel.jsx        |  33 ++-
+ .../frontend/src/components/TaskControl.jsx        |  99 ++++++-
+ arm_dashboard/frontend/src/components/WorldMap.jsx | 196 +++++++++-----
+ arm_description/urdf/aria_arm.gazebo.xacro         |   2 +-
+ arm_ik/config/aria_arm.urdf                        |   4 +-
+ arm_planner/arm_planner/task_manager.py            |  33 +--
+ arm_vision/arm_vision/coordinate_transformer.py    |   4 +-
+ arm_vision/arm_vision/detection_node.py            |  31 ++-
+ 19 files changed, 935 insertions(+), 222 deletions(-)
+
+commit a8345d6c24c3826415602dd2162467b2f460e7a5
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sat Sep 19 02:10:03 2026 +0530
+
+    feat(agents): complete autonomous perception-manipulation pipeline with active gripper exploration, depth anything, and live dashboard telemetry
+
+ .gitignore                                         |   11 +-
+ aria_launch_full.sh                                |   65 +
+ aria_setup_check.sh                                |  186 +
+ arm_agents/arm_agents/affordance_agent.py          |    3 +
+ arm_agents/arm_agents/evaluation_agent.py          |    4 +-
+ arm_agents/arm_agents/memory_agent.py              |    2 +-
+ arm_agents/arm_agents/openvla_executor.py          |  332 +
+ arm_agents/arm_agents/skill_agent.py               |  664 +-
+ arm_agents/setup.py                                |    2 +
+ arm_bringup/launch/aria_agents_only.launch.py      |  145 +
+ arm_bringup/launch/aria_full_u3.launch.py          |   20 +
+ arm_bringup/launch/industrial_workcell.launch.py   |   17 +-
+ arm_bringup/launch/sim.launch.py                   |   22 +-
+ arm_bringup/scripts/activate_agents.py             |    2 +-
+ arm_bringup/scripts/industrial_workcell_node.py    |   46 +-
+ arm_bringup/worlds/aria_workspace.world            |    4 +-
+ arm_control/CMakeLists.txt                         |    2 +
+ arm_dashboard/frontend/src/App.css                 |  275 +
+ arm_dashboard/frontend/src/App.jsx                 |  121 +-
+ .../frontend/src/components/AIModelsPanel.jsx      |  200 +
+ .../frontend/src/components/CVPipelinePanel.jsx    |  186 +
+ .../frontend/src/components/CameraPanel.jsx        |  256 +-
+ arm_dashboard/frontend/src/components/WorldMap.jsx |  276 +-
+ arm_ik/arm_ik/ik_node.py                           |   10 +-
+ arm_ik/arm_ik/ik_solvers/neural_ik_solver.py       |   19 +-
+ arm_ik/config/aria_arm.urdf                        |  681 +++
+ arm_vision/arm_vision/depth_node.py                |   54 +-
+ arm_vision/arm_vision/sam2_node.py                 |   46 +-
+ arm_vla/arm_vla/vla_interface.py                   |  210 +-
+ data/architecture_ablation_results_template.csv    |    1 +
+ data/conveyor_speed_sweep_template.csv             |    1 +
+ data/expanded_manipulation_trials_template.csv     |    1 +
+ new_paper/IEEEtran.bst                             | 2409 ++++++++
+ new_paper/IEEEtran.cls                             | 6347 ++++++++++++++++++++
+ new_paper/README_TEX_ENVIRONMENT.md                |   20 +
+ new_paper/algorithm.sty                            |  100 +
+ new_paper/algorithmic.sty                          |  232 +
+ new_paper/figures/fig1_system_architecture.png     |  Bin 0 -> 505517 bytes
+ new_paper/figures/fig2_kinematics_dh.png           |  Bin 0 -> 271876 bytes
+ new_paper/figures/fig3_perception_pipeline.png     |  Bin 0 -> 784344 bytes
+ new_paper/figures/fig4_planning_hitl.png           |  Bin 0 -> 409952 bytes
+ new_paper/figures/fig5_inhand_manipulation.png     |  Bin 0 -> 200196 bytes
+ new_paper/figures/fig6_ik_benchmark.png            |  Bin 0 -> 213240 bytes
+ new_paper/figures/fig7_vla_benchmark.png           |  Bin 0 -> 241129 bytes
+ new_paper/figures/fig8_conveyor_sorting.png        |  Bin 0 -> 1487915 bytes
+ new_paper/figures/fig9_dashboard_interface.png     |  Bin 0 -> 690540 bytes
+ new_paper/main.aux                                 |  256 +
+ new_paper/main.bbl                                 |  228 +
+ new_paper/main.blg                                 |   56 +
+ new_paper/main.log                                 |  599 ++
+ new_paper/main.pdf                                 |  Bin 0 -> 4990510 bytes
+ new_paper/main.tex                                 | 1637 +++++
+ new_paper/references.bib                           | 1086 ++++
+ related_docs/ARIA_Presentation_Landscape.pdf       |  Bin 0 -> 464114 bytes
+ related_docs/ARIA_Review2_Report-1.pdf             |  Bin 0 -> 1223035 bytes
+ related_docs/ARIA_Review2_Report.docx              |  Bin 0 -> 1969520 bytes
+ scripts/manual_sort.py                             |  222 +
+ scripts/statistical_validator.py                   |  378 ++
+ tests/synthetic_data/dummy_synthetic_ablation.csv  |   25 +
+ tests/synthetic_data/dummy_synthetic_conveyor.csv  |   25 +
+ .../dummy_synthetic_manipulation.csv               |   21 +
+ tests/synthetic_data/test_tables.aux               |    9 +
+ tests/synthetic_data/test_tables.log               |  347 ++
+ tests/synthetic_data/test_tables.pdf               |  Bin 0 -> 75080 bytes
+ tests/synthetic_data/test_tables.tex               |   84 +
+ 65 files changed, 17363 insertions(+), 582 deletions(-)
+
+commit fe20a79955ef60a34f0e7185483dfd2b7168f171
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 23:51:00 2026 +0530
+
+    fix(paper): remove author footnote completely and update running header for professor review
+
+ paper/aria_draft_paper.pdf            | Bin 4502000 -> 4503420 bytes
+ paper/aria_draft_paper.tex            |   6 ++----
+ paper/aria_draft_paper_overleaf.zip   | Bin 4716725 -> 4716369 bytes
+ paper/aria_journal_paper.pdf          | Bin 4502000 -> 4503413 bytes
+ paper/aria_journal_paper.tex          |   6 ++----
+ paper/aria_journal_paper_overleaf.zip | Bin 4716729 -> 4716373 bytes
+ paper/generate_full_paper.py          |   6 ++----
+ paper/main.tex                        |   6 ++----
+ 8 files changed, 8 insertions(+), 16 deletions(-)
+
+commit e3a7b1e74235892ebd49582b9947e39d5a458a08
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 23:43:24 2026 +0530
+
+    fix(paper): remove editor-note boilerplate from author footnote block
+
+ paper/aria_draft_paper.pdf            | Bin 4502346 -> 4502000 bytes
+ paper/aria_draft_paper.tex            |   4 +---
+ paper/aria_draft_paper_overleaf.zip   | Bin 4716941 -> 4716725 bytes
+ paper/aria_journal_paper.pdf          | Bin 4502346 -> 4502000 bytes
+ paper/aria_journal_paper.tex          |   4 +---
+ paper/aria_journal_paper_overleaf.zip | Bin 4716945 -> 4716729 bytes
+ paper/generate_full_paper.py          |   4 +---
+ paper/main.tex                        |   4 +---
+ 8 files changed, 4 insertions(+), 12 deletions(-)
+
+commit a5d5ec4397e333298031c6b47420b64a046c511b
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 23:33:38 2026 +0530
+
+    style(paper): add microtype and suppress informational underfull box notices in Overleaf
+
+ paper/aria_draft_paper.pdf            | Bin 4501588 -> 4502346 bytes
+ paper/aria_draft_paper.tex            |   5 +++++
+ paper/aria_draft_paper_overleaf.zip   | Bin 4716781 -> 4716941 bytes
+ paper/aria_journal_paper.pdf          | Bin 4501588 -> 4502346 bytes
+ paper/aria_journal_paper.tex          |   5 +++++
+ paper/aria_journal_paper_overleaf.zip | Bin 4716785 -> 4716945 bytes
+ paper/generate_full_paper.py          |   7 +++++++
+ paper/main.tex                        |   5 +++++
+ 8 files changed, 22 insertions(+)
+
+commit ba239b3146f5faeebb1d407902c040e65cfbe0ac
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 23:24:05 2026 +0530
+
+    fix(paper): resolve Overleaf overfull hboxes, eliminate fixltx2e, and ensure Page 1 abstract layout is self-contained
+
+ paper/aria_draft_paper.pdf            |  Bin 4501421 -> 4501588 bytes
+ paper/aria_draft_paper.tex            |   41 +-
+ paper/aria_draft_paper_overleaf.zip   |  Bin 4716789 -> 4716781 bytes
+ paper/aria_journal_paper.pdf          |  Bin 4500183 -> 4501588 bytes
+ paper/aria_journal_paper.tex          |   41 +-
+ paper/aria_journal_paper_overleaf.zip |  Bin 4716793 -> 4716785 bytes
+ paper/generate_full_paper.py          |   41 +-
+ paper/main.tex                        | 1587 +++++++++++++++++++++++++++++++++
+ 8 files changed, 1656 insertions(+), 54 deletions(-)
+
+commit ad284a7e059580cb723f25ae8974071415a28ede
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 22:38:55 2026 +0530
+
+    Fix page 1 layout: unify abstract into single paragraph to prevent footnote cutoff and column splitting; replace raw markdown bolding with textbf
+
+ paper/aria_draft_paper.tex            |  26 ++++++++++----------------
+ paper/aria_draft_paper_overleaf.zip   | Bin 4717077 -> 4716789 bytes
+ paper/aria_journal_paper.pdf          | Bin 4501421 -> 4500183 bytes
+ paper/aria_journal_paper.tex          |  26 ++++++++++----------------
+ paper/aria_journal_paper_overleaf.zip | Bin 4717081 -> 4716793 bytes
+ paper/generate_full_paper.py          |  26 ++++++++++----------------
+ 6 files changed, 30 insertions(+), 48 deletions(-)
+
+commit f233e1f4c128d1f9afab2cdfeded95dd7c107040
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 21:50:31 2026 +0530
+
+    Audit paper update: synchronize kinematics, 15-agent catalog, U2 advanced perception, and U3 production infrastructure
+
+ paper/aria_draft_paper.pdf            | Bin 4499341 -> 4501421 bytes
+ paper/aria_draft_paper.tex            |  54 ++++++++++++++++------------------
+ paper/aria_draft_paper_overleaf.zip   | Bin 9260824 -> 4717077 bytes
+ paper/aria_journal_paper.pdf          | Bin 4499309 -> 4501421 bytes
+ paper/aria_journal_paper.tex          |  54 ++++++++++++++++------------------
+ paper/aria_journal_paper_overleaf.zip | Bin 9260824 -> 4717081 bytes
+ paper/generate_full_paper.py          |  54 ++++++++++++++++------------------
+ paper/references.bib                  |  14 +++++----
+ 8 files changed, 87 insertions(+), 89 deletions(-)
+
+commit 55ef19bb607a8d9a88cbe82173631f41a6b17fac
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 21:30:48 2026 +0530
+
+    Standardize author institutional affiliation to School of Computer Science and Engineering
+
+ paper/aria_draft_paper.tex   |   4 ++--
+ paper/aria_journal_paper.pdf | Bin 4499341 -> 4499309 bytes
+ paper/aria_journal_paper.tex |   4 ++--
+ paper/generate_full_paper.py |   4 ++--
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+commit 94e100bab401df1c95484438e131402126d35d70
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 21:27:24 2026 +0530
+
+    Remove IEEE membership designations, remove unverified footnotes, and verify all baseline citations
+
+ paper/aria_draft_paper.pdf            | Bin 4500106 -> 4499341 bytes
+ paper/aria_draft_paper.tex            |  38 ++++++++---------
+ paper/aria_draft_paper_overleaf.zip   | Bin 9260267 -> 9260824 bytes
+ paper/aria_journal_paper.pdf          | Bin 4500106 -> 4499341 bytes
+ paper/aria_journal_paper.tex          |  38 ++++++++---------
+ paper/aria_journal_paper_overleaf.zip | Bin 9260267 -> 9260824 bytes
+ paper/generate_full_paper.py          |  38 ++++++++---------
+ paper/references.bib                  |  76 +++++++++++++++++++++++++++++-----
+ 8 files changed, 123 insertions(+), 67 deletions(-)
+
+commit 660cfb05899a28f1962da69966f3540916c66d13
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 21:19:30 2026 +0530
+
+    Eliminate all overfull hboxes in equations and listings for clean IEEE T-RO submission
+
+ paper/aria_draft_paper.pdf            | Bin 4499765 -> 4500106 bytes
+ paper/aria_draft_paper.tex            |  56 ++++++++++++++++++++--------------
+ paper/aria_draft_paper_overleaf.zip   | Bin 9249149 -> 9260267 bytes
+ paper/aria_journal_paper.pdf          | Bin 4499765 -> 4500106 bytes
+ paper/aria_journal_paper.tex          |  56 ++++++++++++++++++++--------------
+ paper/aria_journal_paper_overleaf.zip | Bin 9249149 -> 9260267 bytes
+ paper/generate_full_paper.py          |  56 ++++++++++++++++++++--------------
+ paper/references.bib                  |  40 ++++++++++++------------
+ 8 files changed, 119 insertions(+), 89 deletions(-)
+
+commit 42458908ffb466ecea7af169263f2b15d68a5756
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 21:12:27 2026 +0530
+
+    feat(paper): implement all IEEE T-RO auditor refinements (Proposition 3 proof, EKF state-space, Hand-Eye transforms, table resize wrapping, and classical citations)
+
+ paper/aria_draft_paper.pdf            | Bin 4488710 -> 4499765 bytes
+ paper/aria_draft_paper.tex            | 128 +++++++++++++++++++++++++++++-----
+ paper/aria_draft_paper_overleaf.zip   | Bin 9241870 -> 9249149 bytes
+ paper/aria_journal_paper.pdf          | Bin 4488710 -> 4499765 bytes
+ paper/aria_journal_paper.tex          | 128 +++++++++++++++++++++++++++++-----
+ paper/aria_journal_paper_overleaf.zip | Bin 9241870 -> 9249149 bytes
+ paper/generate_full_paper.py          | 128 +++++++++++++++++++++++++++++-----
+ paper/references.bib                  |  44 ++++++++++++
+ 8 files changed, 377 insertions(+), 51 deletions(-)
+
+commit 3130fd6a8d02701623bf5828cb5bf07f9dc0e95d
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 21:01:04 2026 +0530
+
+    refactor(paper): upgrade reference 18 to IEEE RA-L 2025 making top 20 citations strictly 100% Q1 journals
+
+ paper/aria_draft_paper.pdf            | Bin 4488640 -> 4488710 bytes
+ paper/aria_draft_paper.tex            |   6 +++---
+ paper/aria_draft_paper_overleaf.zip   | Bin 9241854 -> 9241870 bytes
+ paper/aria_journal_paper.pdf          | Bin 4488640 -> 4488710 bytes
+ paper/aria_journal_paper.tex          |   6 +++---
+ paper/aria_journal_paper_overleaf.zip | Bin 9241854 -> 9241870 bytes
+ paper/generate_full_paper.py          |   6 +++---
+ paper/references.bib                  |  18 ++++++++++++++----
+ 8 files changed, 23 insertions(+), 13 deletions(-)
+
+commit bf78037800eb966d1426502d764c40f1f9f48b37
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 20:54:14 2026 +0530
+
+    feat(paper): specialize manuscript for IEEE Transactions on Robotics (T-RO) with Q1 Open Access literature citations
+
+ paper/aria_draft_paper.pdf            | Bin 4488355 -> 4488640 bytes
+ paper/aria_draft_paper.tex            | 122 +++++++++++++++++++--------------
+ paper/aria_draft_paper_overleaf.zip   | Bin 9241375 -> 9241854 bytes
+ paper/aria_journal_paper.pdf          | Bin 4488354 -> 4488640 bytes
+ paper/aria_journal_paper.tex          | 122 +++++++++++++++++++--------------
+ paper/aria_journal_paper_overleaf.zip | Bin 9241375 -> 9241854 bytes
+ paper/generate_full_paper.py          | 125 +++++++++++++++++++---------------
+ paper/references.bib                  |  11 +++
+ 8 files changed, 218 insertions(+), 162 deletions(-)
+
+commit eecb1159f792d7dae7864bf5f402e01828ae1068
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 20:00:02 2026 +0530
+
+    docs(paper): remove author biographies, photos, and faculty descriptions; maintain 25-page layout
+
+ paper/aria_draft_paper.pdf            | Bin 4500254 -> 4488355 bytes
+ paper/aria_draft_paper.tex            |  15 ++-------------
+ paper/aria_draft_paper_overleaf.zip   | Bin 9264966 -> 9241375 bytes
+ paper/aria_journal_paper.pdf          | Bin 4500254 -> 4488354 bytes
+ paper/aria_journal_paper.tex          |  15 ++-------------
+ paper/aria_journal_paper_overleaf.zip | Bin 9264966 -> 9241375 bytes
+ paper/generate_full_paper.py          |  15 ++-------------
+ 7 files changed, 6 insertions(+), 39 deletions(-)
+
+commit e5846fefd1b31cfadc5db6415bece3f22dc8ed6c
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 19:47:29 2026 +0530
+
+    feat(paper): complete 25-page IEEE journal paper with Dr. Yuvaraj N and Overleaf package
+    
+    - Set Q1 Open Access base paper (Sun et al., IEEE Access 2022) as citation [1]
+    - Structured dual authorship: Garv Arora (1st Author) and Dr. Yuvaraj N (Supervisor)
+    - Added official portrait photo dr_yuvaraj.png for Dr. Yuvaraj N to IEEE biography
+    - Formulated 301-word abstract and 8 keywords adhering to IEEE RA-L / T-RO format
+    - Authored 10-paragraph Introduction cited sequentially [1]-[10] with Gaps and Contributions
+    - Authored 10-paragraph Literature Review cited sequentially [11]-[20] with Table I summary matrix
+    - Expanded closed-form kinematics, 6x5 Jacobian, and Lagrangian dynamics with 6 detailed algorithms
+    - Integrated 14 quantitative benchmark and specification tables across 25 pages
+    - Compiled clean 25-page PDFs (aria_journal_paper.pdf & aria_draft_paper.pdf)
+    - Packaged standalone Overleaf zip archive with all figures and styles
+
+ paper/aria_draft_paper.pdf            |  Bin 4160216 -> 4500254 bytes
+ paper/aria_draft_paper.tex            | 1510 +++++++++++++++++++++++----
+ paper/aria_draft_paper_overleaf.zip   |  Bin 13076346 -> 9264966 bytes
+ paper/aria_journal_paper.pdf          |  Bin 4426137 -> 4500254 bytes
+ paper/aria_journal_paper.tex          | 1831 ++++++++++++++++++++-------------
+ paper/aria_journal_paper_overleaf.zip |  Bin 17321399 -> 9264966 bytes
+ paper/dr_yuvaraj.png                  |  Bin 0 -> 10834 bytes
+ paper/figures/dr_yuvaraj.png          |  Bin 0 -> 10834 bytes
+ paper/generate_full_paper.py          | 1522 +++++++++++++++++++++++++++
+ paper/references.bib                  |   10 +
+ 10 files changed, 3955 insertions(+), 918 deletions(-)
+
+commit 81417094dc55c404210f96d63409d8c2e2871c33
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 19:07:48 2026 +0530
+
+    docs(paper): complete Review-2 research paper with Sections 3 to 6, benchmarks, and Overleaf packages
+    
+    - Add Section 3: Proposed Methodology / Proposed System (Overall methodology, 6-tier architecture, DH kinematics, closed-form analytical IK, zero-cost depth, workflow)
+    - Add Section 4: Implementation / Experimental Setup (Hardware/software requirements, ARIA dataset, ROS 2 / Gazebo setup, predictive conveyor dynamics)
+    - Add Section 5: Results and Discussion (IK benchmark, 10-task VLA foundation benchmark, industrial conveyor sorting, dashboard telemetry)
+    - Add Section 6: Conclusion (Summary, key findings, addressing of Gaps 1-5, limitations, future scope)
+    - Update aria_draft_paper.pdf (8 pages, IEEE format)
+    - Update standalone aria_draft_paper_overleaf.zip (13MB with all figures)
+    - Update aria_journal_paper_overleaf.zip
+
+ paper/aria_draft_paper.pdf            | Bin 88558 -> 4160216 bytes
+ paper/aria_draft_paper.tex            | 415 +++++++++++++++++++++++++---------
+ paper/aria_draft_paper_overleaf.zip   | Bin 188610 -> 13076346 bytes
+ paper/aria_journal_paper_overleaf.zip | Bin 13437524 -> 17321399 bytes
+ 4 files changed, 304 insertions(+), 111 deletions(-)
+
+commit 94f1b9f5873ee13b4e8a0f18148e508b1390e60c
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 18:54:15 2026 +0530
+
+    docs(paper): track aria_draft_paper_overleaf.zip standalone package
+
+ paper/aria_draft_paper_overleaf.zip | Bin 0 -> 188610 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+commit a1b837ff1039c9e5b854b5a98dd5678aed772f8a
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 18:53:58 2026 +0530
+
+    docs(paper): add structured draft paper adhering to academic review rubric (sections a-h)
+    
+    - Add aria_draft_paper.tex and aria_draft_paper.pdf with required sections:
+      a. Title and Author Details (Garv Arora, VIT)
+      b. Abstract
+      c. Keywords
+      d. Introduction
+      e. Objective(s) - Primary aim and 7 specific technical objectives
+      f. Literature Review - categorized across 5 subfields with comparative matrix
+      g. Research Gap Identified - 5 critical unaddressed research gaps
+      h. References - IEEE formatted citations
+    - Add aria_draft_paper_overleaf.zip standalone package for 1-click Overleaf build
+    - Update aria_journal_paper_overleaf.zip to include both manuscripts
+
+ paper/aria_draft_paper.pdf            | Bin 0 -> 88558 bytes
+ paper/aria_draft_paper.tex            | 228 ++++++++++++++++++++++++++++++++++
+ paper/aria_journal_paper_overleaf.zip | Bin 13342564 -> 13437524 bytes
+ 3 files changed, 228 insertions(+)
+
+commit fdc272eaadd0afe557b8e252ba99746ce7cd4dbb
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 8 18:48:30 2026 +0530
+
+    docs(paper): complete 19-page IEEE journal paper with Overleaf bundle and industrial workcell integration
+    
+    - Add complete 19-page IEEE Transactions journal manuscript (aria_journal_paper.tex)
+    - Include high-res figures (fig1-fig9) covering decentralized architecture, DH kinematics, zero-cost-depth perception, HITL planning, in-hand pivoting, IK/VLA benchmarks, conveyor sorting, and dashboard UI
+    - Include IEEEtran.cls, IEEEtran.bst, bibliography (references.bib), and compilation scripts
+    - Provide standalone Overleaf-ready package (aria_journal_paper_overleaf.zip)
+    - Update skill agent, bringup launch scripts, and detection/depth nodes for industrial workcell
+
+ aria_start.sh                              |  126 +
+ arm_agents/arm_agents/skill_agent.py       |  214 +-
+ arm_bringup/launch/aria_full_u3.launch.py  |   44 +-
+ arm_bringup/launch/sim.launch.py           |    8 +-
+ arm_dashboard/app.py                       |   24 +-
+ arm_vision/arm_vision/depth_node.py        |    7 +-
+ arm_vision/arm_vision/detection_node.py    |   14 +-
+ paper/IEEEtran.bst                         | 2409 +++++++++++
+ paper/IEEEtran.cls                         | 6347 ++++++++++++++++++++++++++++
+ paper/README.md                            |   54 +
+ paper/aria_journal_paper.pdf               |  Bin 0 -> 4426137 bytes
+ paper/aria_journal_paper.tex               | 1036 +++++
+ paper/aria_journal_paper_overleaf.zip      |  Bin 0 -> 13342564 bytes
+ paper/clean_math.py                        |   63 +
+ paper/compile.sh                           |   21 +
+ paper/figures/fig1_system_architecture.png |  Bin 0 -> 505517 bytes
+ paper/figures/fig2_kinematics_dh.png       |  Bin 0 -> 271876 bytes
+ paper/figures/fig3_perception_pipeline.png |  Bin 0 -> 784344 bytes
+ paper/figures/fig4_planning_hitl.png       |  Bin 0 -> 409952 bytes
+ paper/figures/fig5_inhand_manipulation.png |  Bin 0 -> 200196 bytes
+ paper/figures/fig6_ik_benchmark.png        |  Bin 0 -> 213240 bytes
+ paper/figures/fig7_vla_benchmark.png       |  Bin 0 -> 241129 bytes
+ paper/figures/fig8_conveyor_sorting.png    |  Bin 0 -> 1487915 bytes
+ paper/figures/fig9_dashboard_interface.png |  Bin 0 -> 690540 bytes
+ paper/generate_figures.py                  |  879 ++++
+ paper/key_map.json                         |  138 +
+ paper/references.bib                       |  951 +++++
+ paper/refine_layout.py                     |   91 +
+ 28 files changed, 12374 insertions(+), 52 deletions(-)
+
+commit c523a51dcb3d57f4fb7de8b7cffcdf15906a5f8f
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sat Sep 5 22:44:55 2026 +0530
+
+    feat(sim): add autonomous industrial manufacturing workcell with conveyor line, quality inspection, and finalized wrist camera angle
+    
+    - Add aria_industrial_workcell.world with anchored, zero-tilt conveyor, photoelectric sensors, 4-slot assembly matrix, and defect reject bin
+    - Add Gazebo AriaConveyorPlugin for active belt motion, lateral centering, and queue spacing
+    - Add AriaGripperPlugin for reliable physical grasp and detach
+    - Finalize in-hand gripper camera pose from commit 58ffae390ee81e4d9a12573fffd9622512c7739e (0.025 0.050 -0.007 1.5708 0.0000 2.3358)
+    - Add SetConveyorPower service and industrial workcell autonomous sequencer and verification test suite
+    - Update CREDITS.md with open-source attributions
+
+ ARIA_Literature_Compendium_text.txt                | 3209 ++++++++++++++++++++
+ ARIA_REPORT_text.txt                               |  480 +++
+ CREDITS.md                                         |   20 +
+ README_STAGE1.md                                   |    2 +-
+ arm_bringup/CMakeLists.txt                         |    9 +
+ arm_bringup/launch/industrial_workcell.launch.py   |  250 ++
+ arm_bringup/launch/sim.launch.py                   |    2 +-
+ arm_bringup/models/workpiece_defect/model.config   |   11 +
+ arm_bringup/models/workpiece_defect/model.sdf      |   88 +
+ arm_bringup/models/workpiece_good/model.config     |   11 +
+ arm_bringup/models/workpiece_good/model.sdf        |   77 +
+ arm_bringup/scripts/conveyor_part_spawner.py       |   85 +
+ arm_bringup/scripts/industrial_workcell_node.py    |  362 +++
+ arm_bringup/scripts/test_industrial_workcell.py    |  163 +
+ arm_bringup/worlds/aria_industrial_workcell.sdf    |  907 ++++++
+ arm_bringup/worlds/aria_industrial_workcell.world  |  907 ++++++
+ arm_control/CMakeLists.txt                         |   47 +-
+ .../include/arm_control/conveyor_belt_plugin.hpp   |   71 +
+ arm_control/include/arm_control/gripper_plugin.hpp |   49 +
+ arm_control/package.xml                            |    2 +
+ arm_control/scripts/manual_control_node.py         |   59 +-
+ arm_control/src/conveyor_belt_plugin.cpp           |  267 ++
+ arm_control/src/gripper_plugin.cpp                 |  157 +
+ arm_description/urdf/aria_arm.gazebo.xacro         |   56 +-
+ arm_description/urdf/aria_arm.urdf.xacro           |   10 +-
+ arm_interfaces/CMakeLists.txt                      |    1 +
+ arm_interfaces/srv/SetConveyorPower.srv            |    5 +
+ parsed_catalog.json                                | 1634 ++++++++++
+ parsed_catalog_clean.json                          | 1634 ++++++++++
+ 29 files changed, 10549 insertions(+), 26 deletions(-)
+
+commit d05861c2ef82eb04d6def6ede4869a0f79ef9c9b
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 1 10:09:25 2026 +0530
+
+    tested
+
+ ARIA_Literature_Compendium.pdf           | Bin 0 -> 3785361 bytes
+ Literature/ARIA_Literature_Catalog.pdf   | Bin 0 -> 3785361 bytes
+ arm_agents/arm_agents/control_agent.py   |  14 +-
+ arm_agents/arm_agents/safety_agent.py    |  12 +-
+ arm_agents/arm_agents/skill_agent.py     | 266 ++++++++++++++++++++++++++++---
+ arm_agents/arm_agents/vision_agent.py    |   6 -
+ arm_control/scripts/visual_servo_node.py |  18 +--
+ arm_dashboard/app.py                     |  66 ++++----
+ 8 files changed, 307 insertions(+), 75 deletions(-)
+
+commit 04f1808f1ff10331918d9bf604c53019e69d1e97
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Tue Sep 1 01:59:08 2026 +0530
+
+    checkpoint: integrate thin-client dashboard, lifecycle agent updates, tester world, and vision pipeline
+
+ ARIA Banana Pick Pipeline Review.md                | 20236 +++++++++++++++++++
+ ...azebo_Interface_for_the_Katana_Robotic_Arm_.pdf |   Bin 0 -> 808408 bytes
+ Literature/_IJISAE_2_KAVITHA+VIJAYANAND_6_3061.pdf |   Bin 0 -> 457927 bytes
+ Literature/sensors-25-00909-with-cover.pdf         |   Bin 0 -> 1158235 bytes
+ arm_agents/arm_agents/affordance_agent.py          |     2 +
+ arm_agents/arm_agents/affordance_agent_v2.py       |     2 +
+ arm_agents/arm_agents/attention_agent.py           |     2 +
+ arm_agents/arm_agents/control_agent.py             |     2 +
+ arm_agents/arm_agents/depth_agent.py               |     2 +
+ arm_agents/arm_agents/dialogue_agent.py            |     2 +
+ arm_agents/arm_agents/evaluation_agent.py          |     2 +
+ arm_agents/arm_agents/learning_agent.py            |     2 +
+ arm_agents/arm_agents/llm_dialogue_agent.py        |     2 +
+ arm_agents/arm_agents/memory_agent.py              |     2 +
+ arm_agents/arm_agents/planning_agent.py            |     2 +
+ arm_agents/arm_agents/reachability_agent.py        |     2 +
+ arm_agents/arm_agents/safety_agent.py              |     2 +
+ arm_agents/arm_agents/skill_agent.py               |   214 +-
+ arm_agents/arm_agents/vision_agent.py              |     5 +-
+ arm_bringup/launch/aria_full.launch.py             |    25 +
+ arm_bringup/scripts/activate_agents.py             |    66 +
+ arm_bringup/scripts/pick_up_red_cup_test.py        |   281 +
+ arm_bringup/scripts/run_pick_test.sh               |   132 +
+ arm_bringup/scripts/validate_stage2.py             |    11 +-
+ arm_bringup/worlds/aria_workspace.world            |    23 +
+ arm_control/scripts/visual_servo_node.py           |    87 +-
+ arm_dashboard/app.py                               |   460 +-
+ .../frontend/src/components/CameraPanel.jsx        |    17 +-
+ arm_ik/arm_ik/ik_solvers/aria_analytical_ik.py     |     8 +-
+ arm_planner/arm_planner/health_monitor.py          |     0
+ arm_planner/arm_planner/memory_manager.py          |     0
+ arm_planner/arm_planner/task_manager.py            |     0
+ arm_vision/arm_vision/grasp_node.py                |    59 +-
+ mug_lifted_side.jpg                                |   Bin 0 -> 147489 bytes
+ mug_lifted_top.jpg                                 |   Bin 0 -> 101429 bytes
+ side_camera.jpg                                    |   Bin 0 -> 150173 bytes
+ top_camera.jpg                                     |   Bin 0 -> 102625 bytes
+ top_camera2.jpg                                    |   Bin 0 -> 102561 bytes
+ top_camera3.jpg                                    |   Bin 0 -> 102144 bytes
+ top_camera4.jpg                                    |   Bin 0 -> 102025 bytes
+ top_camera5.jpg                                    |   Bin 0 -> 101639 bytes
+ top_camera6.jpg                                    |   Bin 0 -> 101588 bytes
+ vision_msgs                                        |     1 +
+ wrist_camera.jpg                                   |   Bin 0 -> 23131 bytes
+ 44 files changed, 21491 insertions(+), 160 deletions(-)
+
+commit 21f3f33474634961a40027af5e5874963ac1af2a
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Aug 31 14:41:04 2026 +0530
+
+    feat(sim): link joint clearances, natural object toppling, and grounded low-profile sweep
+
+ arm_bringup/worlds/aria_tester_workspace.sdf   | 384 ++++++++++++-------------
+ arm_bringup/worlds/aria_tester_workspace.world | 384 ++++++++++++-------------
+ arm_control/scripts/manual_control_node.py     |  32 ++-
+ arm_description/urdf/aria_arm.urdf.xacro       |  16 +-
+ 4 files changed, 391 insertions(+), 425 deletions(-)
+
+commit ac224cef0815508b40eab83d73b8720ba67a75f4
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Aug 31 14:08:35 2026 +0530
+
+    feat(physics): rigid non-penetration contact constraints and FK safety envelope
+
+ arm_bringup/worlds/aria_tester_workspace.sdf   | 198 ++++++++++++++++++++++---
+ arm_bringup/worlds/aria_tester_workspace.world | 198 ++++++++++++++++++++++---
+ arm_control/scripts/manual_control_node.py     |  32 ++--
+ 3 files changed, 365 insertions(+), 63 deletions(-)
+
+commit 3e11bf3080ef88bead6538508d885db2fe16b0da
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Aug 31 14:07:35 2026 +0530
+
+    feat(sim): verified stable tabletop kinematics, implicit ODE joint dynamics, and display fix
+
+ arm_bringup/launch/sim.launch.py               |  6 ++++++
+ arm_bringup/worlds/aria_tester_workspace.sdf   | 14 ++++++-------
+ arm_bringup/worlds/aria_tester_workspace.world | 14 ++++++-------
+ arm_description/urdf/aria_arm.gazebo.xacro     | 29 ++++++++++++++++++++++++++
+ arm_description/urdf/aria_arm.urdf.xacro       |  8 +++----
+ 5 files changed, 53 insertions(+), 18 deletions(-)
+
+commit 8cd1549fbdf2e04ec6ecf27a04cb5613530ca07b
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Aug 31 01:47:38 2026 +0530
+
+    feat(sim): stabilize physics, mesh collisions, and table safety envelope
+
+ arm_bringup/launch/sim.launch.py               |   2 +
+ arm_bringup/launch/tester_sim.launch.py        |   1 +
+ arm_bringup/worlds/aria_tester_workspace.sdf   | 797 ++++++++++++++++---------
+ arm_bringup/worlds/aria_tester_workspace.world | 797 ++++++++++++++++---------
+ arm_control/scripts/manual_control_node.py     |  34 ++
+ arm_description/urdf/aria_arm.gazebo.xacro     |  28 +-
+ arm_description/urdf/aria_arm.urdf.xacro       |  58 +-
+ 7 files changed, 1113 insertions(+), 604 deletions(-)
+
+commit 351f4d9d55478a401b153c3a65b4ba669d42fc2d
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Aug 31 01:04:59 2026 +0530
+
+    Execute deep table-level 360-degree sweep knocking all objects across workspace
+
+ arm_bringup/worlds/aria_tester_workspace.sdf   | 741 +++++++++----------------
+ arm_bringup/worlds/aria_tester_workspace.world | 741 +++++++++----------------
+ 2 files changed, 494 insertions(+), 988 deletions(-)
+
+commit 573c8de2360d7e74943b516c22e2ffbc3398c213
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Aug 31 00:57:06 2026 +0530
+
+    Execute full 360 degree tabletop physical sweep demonstrating realistic multi-object contact dynamics
+
+ arm_control/scripts/manual_control_node.py | 4 ++--
+ arm_description/urdf/aria_arm.urdf.xacro   | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+commit d9efb416295c008cf996bd1324e9c3371c55bcb5
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Aug 31 00:34:21 2026 +0530
+
+    Fix physics explosion, restore authentic 4-tier Jenga Tower, and stabilize object mass/contact parameters
+
+ arm_bringup/worlds/aria_tester_workspace.sdf   | 259 +++++++++++++++----------
+ arm_bringup/worlds/aria_tester_workspace.world | 259 +++++++++++++++----------
+ arm_description/urdf/aria_arm.gazebo.xacro     |  37 +++-
+ arm_description/urdf/aria_arm.urdf.xacro       |   2 +-
+ 4 files changed, 353 insertions(+), 204 deletions(-)
+
+commit 2759af0ca28a1e04138deaceffdf32764e407a8d
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Mon Aug 31 00:03:45 2026 +0530
+
+    Update rviz config and verify in-hand banana approach
+
+ arm_bringup/config/aria_rviz.rviz | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+commit 58ffae390ee81e4d9a12573fffd9622512c7739e
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sun Aug 30 23:51:18 2026 +0530
+
+    Update gripper camera orientation and verify banana approach continuous frames
+
+ arm_description/urdf/aria_arm.gazebo.xacro | 2 +-
+ arm_description/urdf/aria_arm.urdf.xacro   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 17c37c2d1a91663c2b3fa7762b7040b203763a35
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sun Aug 30 23:41:51 2026 +0530
+
+    Position wrist camera directly above and in middle of gripper claws pointing towards claws
+
+ arm_description/urdf/aria_arm.gazebo.xacro | 2 +-
+ arm_description/urdf/aria_arm.urdf.xacro   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 1b65a0ba66ecf9639893e9ab971ef70419b82dbd
+Author: ARIA Setup <aria@gaminizer.dev>
+Date:   Sun Aug 30 22:34:39 2026 +0530
+
+    feat(vision): remove RealSense, restore Logitech C270 overhead camera and calibrate wrist camera optics
+
+ arm_bringup/config/aria_rviz.rviz              | 20 +++++++++++++++--
+ arm_bringup/scripts/test_tester_world.py       |  8 +++----
+ arm_bringup/worlds/aria_tester_workspace.sdf   | 30 +++-----------------------
+ arm_bringup/worlds/aria_tester_workspace.world | 30 +++-----------------------
+ arm_control/scripts/manual_control_node.py     |  4 +++-
+ arm_description/meshes/stl/Arm_01.stl          |  1 +
+ arm_description/meshes/stl/Arm_02.stl          |  1 +
+ arm_description/meshes/stl/Arm_03.stl          |  1 +
+ arm_description/urdf/aria_arm.gazebo.xacro     |  2 +-
+ arm_description/urdf/aria_arm.urdf.xacro       |  2 +-
+ 10 files changed, 36 insertions(+), 63 deletions(-)

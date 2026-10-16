@@ -13,8 +13,54 @@
 #include <ignition/math/Pose3.hh>
 #include <ignition/math/Vector3.hh>
 
+#include <algorithm>
+#include <cctype>
+#include <set>
+#include <string>
+
 namespace gazebo_ros
 {
+namespace
+{
+
+std::set<std::string> semantic_tokens(const std::string & value)
+{
+  std::set<std::string> tokens;
+  std::string token;
+  const auto flush_token = [&tokens, &token]() {
+      if (token == "cup") {
+        token = "mug";
+      } else if (token == "ball") {
+        token = "orange";
+      }
+      if (!token.empty()) {
+        tokens.insert(token);
+      }
+      token.clear();
+    };
+
+  for (const unsigned char ch : value) {
+    if (std::isalnum(ch)) {
+      token.push_back(static_cast<char>(std::tolower(ch)));
+    } else {
+      flush_token();
+    }
+  }
+  flush_token();
+  return tokens;
+}
+
+bool model_matches_target(const std::string & model_name, const std::string & target_name)
+{
+  const auto target_tokens = semantic_tokens(target_name);
+  const auto model_tokens = semantic_tokens(model_name);
+  return !target_tokens.empty() &&
+         std::includes(
+    model_tokens.begin(), model_tokens.end(),
+    target_tokens.begin(), target_tokens.end());
+}
+
+}  // namespace
 
 AriaGripperPlugin::AriaGripperPlugin() = default;
 
@@ -66,6 +112,13 @@ void AriaGripperPlugin::Load(gazebo::physics::ModelPtr _model, sdf::ElementPtr _
     "/aria/gripper/detach",
     std::bind(&AriaGripperPlugin::DetachService, this, std::placeholders::_1, std::placeholders::_2));
 
+  target_model_sub_ = ros_node_->create_subscription<std_msgs::msg::String>(
+    "/aria/gripper/target_model", 10,
+    [this](const std_msgs::msg::String::SharedPtr msg) {
+      target_model_filter_ = msg->data;
+      RCLCPP_INFO(ros_node_->get_logger(), "[AriaGripperPlugin] Target model filter updated to '%s'", target_model_filter_.c_str());
+    });
+
   RCLCPP_INFO(
     ros_node_->get_logger(),
     "[AriaGripperPlugin] Industrial Grasp Plugin online (palm link: %s, max_dist: %.3f m, mimic: %s)",
@@ -109,30 +162,48 @@ void AriaGripperPlugin::AttachService(
   gazebo::physics::ModelPtr best_model = nullptr;
   gazebo::physics::LinkPtr best_link = nullptr;
 
-  for (const auto & m : world_->Models()) {
-    if (!m || m == model_ || m->IsStatic()) continue;
-    const std::string & name = m->GetName();
-    if (name.find("table") != std::string::npos ||
-        name.find("ground") != std::string::npos ||
-        name.find("camera") != std::string::npos ||
-        name.find("inspection_rig") != std::string::npos ||
-        name.find("light") != std::string::npos ||
-        name.find("plane") != std::string::npos) {
-      continue;
+  // Pass 1: If target_model_filter_ is set, search for matching model within envelope
+  if (!target_model_filter_.empty()) {
+    for (const auto & m : world_->Models()) {
+      if (!m || m == model_ || m->IsStatic()) continue;
+      if (model_matches_target(m->GetName(), target_model_filter_)) {
+        for (const auto & l : m->GetLinks()) {
+          if (!l) continue;
+          double d = (l->WorldPose().Pos() - palm_pos).Length();
+          if (d < min_dist) {
+            min_dist = d;
+            best_model = m;
+            best_link = l;
+          }
+        }
+        break;
+      }
     }
+  }
 
-    for (const auto & l : m->GetLinks()) {
-      if (!l) continue;
-      double d = (l->WorldPose().Pos() - palm_pos).Length();
-      RCLCPP_INFO(
-        ros_node_->get_logger(),
-        "[AriaGripperPlugin] Candidate model '%s' link '%s' pos=(%.3f, %.3f, %.3f), dist=%.3f",
-        m->GetName().c_str(), l->GetName().c_str(),
-        l->WorldPose().Pos().X(), l->WorldPose().Pos().Y(), l->WorldPose().Pos().Z(), d);
-      if (d < min_dist) {
-        min_dist = d;
-        best_model = m;
-        best_link = l;
+  // Only use nearest-object fallback when no identity was requested.
+  if (!best_model && target_model_filter_.empty()) {
+    min_dist = (max_attach_dist_ > 0.0) ? max_attach_dist_ : 0.14;
+    for (const auto & m : world_->Models()) {
+      if (!m || m == model_ || m->IsStatic()) continue;
+      const std::string & name = m->GetName();
+      if (name.find("table") != std::string::npos ||
+          name.find("ground") != std::string::npos ||
+          name.find("camera") != std::string::npos ||
+          name.find("inspection_rig") != std::string::npos ||
+          name.find("light") != std::string::npos ||
+          name.find("plane") != std::string::npos) {
+        continue;
+      }
+
+      for (const auto & l : m->GetLinks()) {
+        if (!l) continue;
+        double d = (l->WorldPose().Pos() - palm_pos).Length();
+        if (d < min_dist) {
+          min_dist = d;
+          best_model = m;
+          best_link = l;
+        }
       }
     }
   }

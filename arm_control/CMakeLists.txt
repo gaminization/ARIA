@@ -82,6 +82,7 @@ ament_target_dependencies(aria_gripper_plugin
   rclcpp
   gazebo_ros
   std_srvs
+  std_msgs
 )
 
 # ── Install ───────────────────────────────────────────────

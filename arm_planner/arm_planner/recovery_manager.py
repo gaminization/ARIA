@@ -6,9 +6,13 @@ Selects and executes recovery strategy per failure type.
 Max 3 retries per failure. Escalates to user if all fail.
 ═══════════════════════════════════════════════════════════════
 """
+import asyncio
+import copy
+import json
 import time
-from typing import Optional
-from arm_planner.msg import FailureEvent, TaskState
+from typing import List, Optional
+from arm_planner.msg import Action, FailureEvent, TaskState
+from arm_planner.skill_registry import resolve_executable, EXECUTABLE_NAMES, CORE_SKILLS
 from arm_planner.state_bus import StateBus
 
 MAX_RETRIES = 3
@@ -243,3 +247,99 @@ class RecoveryManager:
     def reset(self, task_id: str):
         """Reset retry counters for a task."""
         self.retry_counts.pop(task_id, None)
+
+
+# ═══════════════════════════════════════════════════════════════
+# LLM-driven recovery: the planner LLM diagnoses a stuck/failed
+# step from the chain-of-thought trace and proposes corrective steps.
+# ═══════════════════════════════════════════════════════════════
+RECOVERY_SYSTEM_PROMPT = """You are the recovery brain of a 5-DoF tabletop robot arm (ROS2).
+A step of the current plan FAILED. Read the trace, diagnose the most likely root cause, and
+propose corrective steps that run BEFORE the failed step is retried.
+Typical causes and remedies (reason, do not pattern-match):
+- target not found / stale world model / detection ambiguity -> scan_workspace, then locate
+- grasp slipped or missed -> depth / sam to refine centroid, then plan_grasp again
+- IK / reachability failure -> check reachability; if the object is out of reach, give up
+- transparent or reflective object -> cleargrasp, then plan_grasp
+- unclear material -> material, then plan_grasp
+Executable skills (use ONLY these names in "skill"):
+%s
+Respond with ONE JSON object:
+{"diagnosis": "...", "steps": [{"skill": "name", "object_id": "...", "target": "", "params": {}}],
+ "retry_failed_action": true, "give_up": false, "reasoning": "..."}
+Set give_up=true only if the task is physically impossible (e.g. unreachable, object missing after a scan).
+"""
+
+
+def llm_recovery_plan(task: TaskState, idx: int, attempt: int) -> Optional[dict]:
+    """Synchronous helper (call from a worker thread). Returns parsed recovery dict or None."""
+    try:
+        from arm_planner.llm_client import OllamaClient
+    except Exception:
+        return None
+    failed = task.action_queue[idx]
+    trace = '\n'.join(list(task.chain_of_thought)[-14:])
+    prompt = (
+        f'COMMAND: "{task.current_command}"\nGOAL: {task.current_goal}\n'
+        f'FAILED STEP #{idx}: {failed.action_type}(object="{failed.target_object}", '
+        f'destination="{failed.destination}")\nRECOVERY ATTEMPT: {attempt}\n'
+        f'RECENT TRACE:\n{trace}\n\nPropose the recovery JSON.')
+
+    async def _run():
+        c = OllamaClient()
+        resp, ok = await c.generate(
+            prompt=prompt, model=c.default_model,
+            system_prompt=RECOVERY_SYSTEM_PROMPT % '\n'.join(f'  - {k}: {v}' for k, v in CORE_SKILLS.items()),
+            response_format='json', temperature=0.1)
+        return resp, ok
+    try:
+        resp, ok = asyncio.run(_run())
+        if not ok:
+            return None
+        data = json.loads(resp)
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def build_recovery_actions(task: TaskState, idx: int, plan: Optional[dict]) -> Optional[List[Action]]:
+    """Turn a recovery dict into Action list (corrective steps + retry clone). None => give up."""
+    failed = task.action_queue[idx]
+    steps: List[Action] = []
+    retry = True
+    if plan:
+        if plan.get('give_up'):
+            return None
+        retry = bool(plan.get('retry_failed_action', True))
+        for st in plan.get('steps', []) or []:
+            if not isinstance(st, dict):
+                continue
+            name = resolve_executable(st.get('skill'), st.get('agent'))
+            if name is None:
+                continue
+            a = Action()
+            a.action_type = name
+            a.target_object = str(st.get('object_id') or st.get('object') or failed.target_object or '')
+            a.destination = str(st.get('target') or '')
+            try:
+                a.params_json = json.dumps(st.get('params') or {})
+            except (TypeError, ValueError):
+                a.params_json = '{}'
+            a.confidence = max(float(failed.confidence), 0.8)
+            a.status = 'PENDING'
+            a.reasoning = f"recovery: {plan.get('diagnosis', '')}"[:200]
+            steps.append(a)
+    else:
+        # LLM unavailable: minimal generic recovery — refresh perception, then retry.
+        a = Action()
+        a.action_type = 'scan_workspace'
+        a.confidence = max(float(failed.confidence), 0.8)
+        a.status = 'PENDING'
+        a.reasoning = 'recovery: LLM unavailable, refreshing world model before retry'
+        steps.append(a)
+    if retry:
+        clone = copy.deepcopy(failed)
+        clone.status = 'PENDING'
+        clone.confidence = max(float(failed.confidence), 0.8)
+        steps.append(clone)
+    return steps

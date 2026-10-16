@@ -9,3 +9,4 @@ float32 confidence
 bool awaiting_user_approval
 string task_status             # IDLE/PLANNING/EXECUTING/PAUSED/COMPLETE/FAILED
 string task_id
+uint32 queue_epoch             # bumped by StateBus whenever the action-queue structure changes

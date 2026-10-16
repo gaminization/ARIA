@@ -83,11 +83,11 @@ try:
     from geometry_msgs.msg import Point
     from std_msgs.msg import String, Bool
     from std_srvs.srv import Trigger
-    from arm_interfaces.srv import SendCommand, SetJoint, SetAllJoints
+    from arm_interfaces.srv import SendCommand, SetJoint, SetAllJoints, GoNamedPose
     from arm_planner.msg import TaskState, VisionState, MemoryState, HealthState
     ROS_AVAILABLE = True
 except ImportError as e:
-    print(f"[Dashboard] ROS 2 imports unavailable ({e}) — running in simulation/mock bridge mode.")
+    print(f"[Dashboard] ROS 2 imports unavailable ({e}) — controls disabled; telemetry unavailable.")
 
 JOINT_NAMES = [
     "waist_joint", "shoulder_joint", "elbow_joint",
@@ -108,59 +108,30 @@ class ARIADashboardState:
         self.force_estimates = [0.0] * len(JOINT_NAMES)
 
         self.task_state = {
-            "current_command": "Autonomous workcell ready",
-            "current_goal": "Awaiting mission instruction",
-            "subgoals": [
-                {"id": 1, "name": "Scan workspace sector", "status": "completed"},
-                {"id": 2, "name": "Perceive & classify workpieces", "status": "active"},
-                {"id": 3, "name": "Compute geometric grasp pose", "status": "pending"},
-                {"id": 4, "name": "Execute trajectory & verify grasp", "status": "pending"},
-            ],
+            "current_command": "",
+            "current_goal": "",
+            "subgoals": [],
             "action_queue": [],
-            "confidence": 0.94,
-            "task_status": "IDLE",
-            "task_id": "mission-001",
+            "confidence": None,
+            "task_status": "UNKNOWN",
+            "task_id": "",
             "awaiting_approval": False,
         }
         self._task_cot_seen = 0
 
         self.vision_state = {
-            "detected_objects": [
-                {
-                    "class_name": "banana",
-                    "confidence": 0.942,
-                    "tracking_id": 4,
-                    "bbox_x": 320, "bbox_y": 240, "bbox_w": 120, "bbox_h": 40,
-                    "lifecycle_state": "Detected",
-                    "pos_3d": [0.20, -0.12, 0.623],
-                },
-                {
-                    "class_name": "mug",
-                    "confidence": 0.917,
-                    "tracking_id": 2,
-                    "bbox_x": 180, "bbox_y": 200, "bbox_w": 80, "bbox_h": 85,
-                    "lifecycle_state": "Detected",
-                    "pos_3d": [0.35, 0.12, 0.638],
-                }
-            ],
-            "tracked_ids": [2, 4],
+            "detected_objects": [],
+            "tracked_ids": [],
             "active_perception": False,
-            "scene_confidence": 0.93,
+            "scene_confidence": None,
         }
 
         self.health_state = {
-            "servo_health": [
-                {"joint_name": "J1 Waist", "temperature_estimate_c": 38.2, "drift_deg": 0.05, "load_estimate_pct": 24.0, "healthy": True},
-                {"joint_name": "J2 Shoulder", "temperature_estimate_c": 42.1, "drift_deg": 0.08, "load_estimate_pct": 46.5, "healthy": True},
-                {"joint_name": "J3 Elbow", "temperature_estimate_c": 40.5, "drift_deg": 0.04, "load_estimate_pct": 38.0, "healthy": True},
-                {"joint_name": "J4 Wrist Pitch", "temperature_estimate_c": 36.4, "drift_deg": 0.02, "load_estimate_pct": 18.2, "healthy": True},
-                {"joint_name": "J5 Wrist Roll", "temperature_estimate_c": 35.0, "drift_deg": 0.01, "load_estimate_pct": 12.0, "healthy": True},
-                {"joint_name": "J6 Gripper", "temperature_estimate_c": 34.2, "drift_deg": 0.00, "load_estimate_pct": 15.0, "healthy": True},
-            ],
-            "fps_top": 30.0,
-            "fps_wrist": 30.0,
-            "inference_ms": 11.8,
-            "calibration_valid": True,
+            "servo_health": [],
+            "fps_top": None,
+            "fps_wrist": None,
+            "inference_ms": None,
+            "calibration_valid": None,
             "alerts": [],
         }
 
@@ -180,11 +151,8 @@ class ARIADashboardState:
 
         self.chain_of_thought: deque = deque(maxlen=1000)
         self.camera_stats = {
-            "top": {"fps": 0.0, "width": 1280, "height": 720},
-            "wrist": {"fps": 0.0, "width": 1280, "height": 720},
-            "side": {"fps": 0.0, "width": 1280, "height": 720},
-            "annotated": {"fps": 0.0, "width": 1280, "height": 720},
-            "depth": {"fps": 0.0, "width": 1280, "height": 720},
+            name: {"fps": 0.0, "width": None, "height": None}
+            for name in ("top", "wrist", "side", "annotated", "depth")
         }
         self.top_camera_jpeg: Optional[bytes] = None
         self.top_camera_hd_jpeg: Optional[bytes] = None
@@ -267,7 +235,7 @@ class ARIADashboardState:
                 "vision": {
                     "detected_objects": self.vision_state.get("detected_objects", []),
                     "tracked_ids": self.vision_state.get("tracked_ids", []),
-                    "scene_confidence": self.vision_state.get("scene_confidence", 0.92),
+                    "scene_confidence": self.vision_state.get("scene_confidence"),
                     "active_perception": self.vision_state.get("active_perception", False),
                 },
                 "task": {
@@ -275,7 +243,7 @@ class ARIADashboardState:
                     "current_goal": self.task_state.get("current_goal", ""),
                     "subgoals": self.task_state.get("subgoals", []),
                     "chain_of_thought": list(self.chain_of_thought)[-50:],
-                    "confidence": self.task_state.get("confidence", 0.92),
+                    "confidence": self.task_state.get("confidence"),
                     "task_status": self.task_state.get("task_status", "IDLE"),
                     "task_id": self.task_state.get("task_id", ""),
                     "awaiting_approval": self.task_state.get("awaiting_approval", False),
@@ -290,9 +258,9 @@ class ARIADashboardState:
                 },
                 "health": {
                     "servo_health": self.health_state.get("servo_health", []),
-                    "fps_top": self.health_state.get("fps_top", 30.0),
-                    "fps_wrist": self.health_state.get("fps_wrist", 30.0),
-                    "inference_latency_ms": self.health_state.get("inference_ms", 12.0),
+                    "fps_top": self.health_state.get("fps_top"),
+                    "fps_wrist": self.health_state.get("fps_wrist"),
+                    "inference_latency_ms": self.health_state.get("inference_ms"),
                     "active_alerts": self.health_state.get("alerts", []),
                     "calibration_valid": self.health_state.get("calibration_valid", True),
                 },
@@ -330,16 +298,12 @@ class ARIADashboardState:
                 self._task_start_time = time.time()
             elif prev_status == "EXECUTING" and new_status in ("COMPLETE", "COMPLETED", "FAILED", "ABORTED"):
                 duration = time.time() - getattr(self, '_task_start_time', time.time())
-                is_success = new_status in ("COMPLETE", "COMPLETED")
                 run_entry = {
                     "run": len(self.session_runs) + 1,
                     "task_id": msg.task_id or f"task-{len(self.session_runs)+1}",
-                    "command": msg.current_command or "Autonomous Task",
-                    "pick_success_rate": 1.0 if is_success else 0.0,
+                    "command": msg.current_command,
                     "duration_s": round(duration, 1),
-                    "inference_latency_ms": round(self.health_state.get("inference_ms", 12.0), 1),
-                    "failure_type": "None" if is_success else "Grasp Slip",
-                    "status": "Success" if is_success else "Failure",
+                    "status": new_status,
                     "timestamp": time.strftime("%H:%M:%S")
                 }
                 self.session_runs.append(run_entry)
@@ -432,9 +396,9 @@ class ARIADashboardState:
                     }
                     for s in msg.servo_health
                 ],
-                "fps_top": float(msg.fps_top_camera),
-                "fps_wrist": float(msg.fps_wrist_camera),
-                "inference_ms": float(msg.inference_latency_ms),
+                "fps_top": float(msg.fps_top_camera) if msg.fps_top_camera > 0 else None,
+                "fps_wrist": float(msg.fps_wrist_camera) if msg.fps_wrist_camera > 0 else None,
+                "inference_ms": float(msg.inference_latency_ms) if msg.inference_latency_ms > 0 else None,
                 "calibration_valid": bool(msg.calibration_valid),
                 "alerts": list(msg.active_alerts),
             }
@@ -493,6 +457,7 @@ if ROS_AVAILABLE:
             self.release_estop_client = self.create_client(Trigger, '/aria/release_estop', callback_group=self.cb_group)
             self.set_joint_client = self.create_client(SetJoint, '/aria/set_joint', callback_group=self.cb_group)
             self.set_all_joints_client = self.create_client(SetAllJoints, '/aria/set_all_joints', callback_group=self.cb_group)
+            self.go_named_pose_client = self.create_client(GoNamedPose, '/aria/go_named_pose', callback_group=self.cb_group)
             self.reset_memory_client = self.create_client(Trigger, '/aria/reset_memory', callback_group=self.cb_group)
 
             self.create_timer(1.0, self._connectivity_check)
@@ -662,6 +627,28 @@ async def call_service(client, request, timeout: float = 5.0):
     return await loop.run_in_executor(None, call_service_sync, client, request, timeout)
 
 
+def require_ros_service(client_name: str):
+    if not ROS_AVAILABLE or bridge_node is None:
+        raise HTTPException(status_code=503, detail="ROS 2 control bridge is unavailable")
+    client = getattr(bridge_node, client_name, None)
+    if client is None or not client.service_is_ready():
+        raise HTTPException(
+            status_code=503,
+            detail=f"ROS 2 service for {client_name} is unavailable",
+        )
+    return client
+
+
+async def call_ready_service(client, request, client_name: str, timeout: float = 2.0):
+    response = await call_service(client, request, timeout=timeout)
+    if response is None:
+        raise HTTPException(
+            status_code=504,
+            detail=f"ROS 2 service call timed out: {client_name}",
+        )
+    return response
+
+
 # ═══════════════════════════════════════════════════════════════
 # FastAPI Application & Endpoints
 # ═══════════════════════════════════════════════════════════════
@@ -685,6 +672,11 @@ if os.path.exists(FRONTEND_DIR):
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "ros_available": ROS_AVAILABLE}
 
 
 # ── Request Models ─────────────────────────────────────────────
@@ -743,95 +735,73 @@ async def post_command(req: CommandRequest):
     """Send natural language command to /aria/command."""
     cmd = req.command.strip()
     if not cmd:
-        return {"success": False, "message": "Command cannot be empty"}
-    state.add_cot(f"[OPERATOR] Command dispatched: '{cmd}'")
-    with state._lock:
-        state.task_state["current_command"] = cmd
-        state.task_state["current_goal"] = f"Executing autonomous manipulation for: {cmd}"
-        state.task_state["task_status"] = "EXECUTING"
-    state.add_cot(f"PLANNER: Received goal: {cmd}")
-    state.add_cot("PLANNER: Formulating subgoals with dynamic affordances...")
-
-    if bridge_node and ROS_AVAILABLE and bridge_node.cmd_client.service_is_ready():
-        ros_req = SendCommand.Request()
-        ros_req.command = cmd
-        resp = await call_service(bridge_node.cmd_client, ros_req, timeout=1.0)
-        if resp is not None:
-            return {"success": resp.accepted, "task_id": resp.task_id, "message": resp.message}
-
-    task_id = f"task-{int(time.time()*1000)%1000000:06d}"
-    return {"success": True, "task_id": task_id, "message": f"Command '{cmd}' accepted"}
+        raise HTTPException(status_code=422, detail="Command cannot be empty")
+    client = require_ros_service("cmd_client")
+    ros_req = SendCommand.Request()
+    ros_req.command = cmd
+    resp = await call_ready_service(client, ros_req, "cmd_client", timeout=5.0)
+    if resp.accepted:
+        state.add_cot(f"[OPERATOR] Command accepted by task manager: '{cmd}'")
+    return {"success": resp.accepted, "task_id": resp.task_id, "message": resp.message}
 
 @app.post("/api/approve")
 async def approve():
     """Approve paused action via /aria/approve."""
-    state.add_cot("[OPERATOR] Action APPROVED")
-    with state._lock:
-        state.task_state["awaiting_approval"] = False
-    if bridge_node and ROS_AVAILABLE and bridge_node.approve_client.service_is_ready():
-        resp = await call_service(bridge_node.approve_client, Trigger.Request(), timeout=1.0)
-        if resp is not None:
-            return {"success": resp.success, "message": resp.message}
-    return {"success": True, "message": "Action approved successfully"}
+    client = require_ros_service("approve_client")
+    resp = await call_ready_service(client, Trigger.Request(), "approve_client")
+    if resp.success:
+        state.add_cot("[OPERATOR] Action approval accepted")
+    return {"success": resp.success, "message": resp.message}
 
 @app.post("/api/reject")
 async def reject():
     """Reject paused action via /aria/reject."""
-    state.add_cot("[OPERATOR] Action REJECTED")
-    with state._lock:
-        state.task_state["awaiting_approval"] = False
-    if bridge_node and ROS_AVAILABLE and bridge_node.reject_client.service_is_ready():
-        resp = await call_service(bridge_node.reject_client, Trigger.Request(), timeout=1.0)
-        if resp is not None:
-            return {"success": resp.success, "message": resp.message}
-    return {"success": True, "message": "Action rejected successfully"}
+    client = require_ros_service("reject_client")
+    resp = await call_ready_service(client, Trigger.Request(), "reject_client")
+    if resp.success:
+        state.add_cot("[OPERATOR] Action rejection accepted")
+    return {"success": resp.success, "message": resp.message}
 
 @app.post("/api/estop")
 async def estop():
     """Trigger E-STOP via /aria/estop."""
-    state.add_cot("🚨 [SAFETY] EMERGENCY STOP ACTIVATED — ALL JOINTS HALTED")
-    state.task_state["task_status"] = "EMERGENCY_STOP"
-    if bridge_node is None or not ROS_AVAILABLE or not bridge_node.estop_client.service_is_ready():
-        return {"success": True, "message": "E-STOP ENGAGED"}
-    resp = await call_service(bridge_node.estop_client, Trigger.Request(), timeout=2.0)
-    if resp is None:
-        return {"success": True, "message": "E-STOP ENGAGED (fallback)"}
+    client = require_ros_service("estop_client")
+    resp = await call_ready_service(client, Trigger.Request(), "estop_client")
+    if resp.success:
+        state.add_cot("[SAFETY] Emergency-stop request confirmed by controller")
+        with state._lock:
+            state.task_state["task_status"] = "EMERGENCY_STOP"
     return {"success": resp.success, "message": resp.message}
 
 @app.post("/api/release_estop")
 async def release_estop():
     """Release E-STOP via /aria/release_estop."""
-    state.add_cot("[SAFETY] E-STOP released — System normal")
-    state.task_state["task_status"] = "IDLE"
-    if bridge_node is None or not ROS_AVAILABLE or not bridge_node.release_estop_client.service_is_ready():
-        return {"success": True, "message": "E-STOP RELEASED"}
-    resp = await call_service(bridge_node.release_estop_client, Trigger.Request(), timeout=2.0)
-    if resp is None:
-        return {"success": True, "message": "E-STOP RELEASED (fallback)"}
+    client = require_ros_service("release_estop_client")
+    resp = await call_ready_service(client, Trigger.Request(), "release_estop_client")
+    if resp.success:
+        state.add_cot("[SAFETY] E-stop release confirmed by controller")
+        with state._lock:
+            state.task_state["task_status"] = "IDLE"
     return {"success": resp.success, "message": resp.message}
 
 @app.post("/api/joint")
 async def set_joint(req: JointRequest):
     """Set single joint angle via /aria/set_joint."""
     name = req.joint or req.joint_name or "waist_joint"
-    speed = req.speed or req.speed_deg_per_s or 30.0
-    if bridge_node is None or not ROS_AVAILABLE or not bridge_node.set_joint_client.service_is_ready():
-        # Mock / direct state update
-        if name in JOINT_NAMES:
-            idx = JOINT_NAMES.index(name)
-            state.joint_positions[idx] = math.radians(req.angle_deg)
-        return {"success": True, "message": f"Set {name} to {req.angle_deg}°"}
-
+    if name not in JOINT_NAMES:
+        raise HTTPException(status_code=422, detail=f"Unknown joint: {name}")
+    speed = req.speed_deg_per_s if req.speed is None else req.speed
+    if not math.isfinite(req.angle_deg) or not math.isfinite(speed) or speed <= 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Joint angle and speed must be finite; speed must be positive",
+        )
+    client = require_ros_service("set_joint_client")
     ros_req = SetJoint.Request()
     ros_req.joint_name = name
     ros_req.angle_deg = req.angle_deg
     ros_req.speed_deg_per_s = speed
-    resp = await call_service(bridge_node.set_joint_client, ros_req, timeout=2.0)
-    if resp is None:
-        if name in JOINT_NAMES:
-            idx = JOINT_NAMES.index(name)
-            state.joint_positions[idx] = math.radians(req.angle_deg)
-        return {"success": True, "message": f"Set {name} to {req.angle_deg}°"}
+    resp = await call_ready_service(client, ros_req, "set_joint_client")
     return {"success": resp.success, "message": resp.message}
 
 @app.post("/api/joints")
@@ -840,41 +810,45 @@ async def set_all_joints(req: AllJointsRequest):
     angles = [float(a) for a in req.angles_deg]
     if len(angles) == 6:
         angles = [angles[0], angles[1], angles[2], angles[3], angles[5]]
-    elif len(angles) > 5:
-        angles = angles[:5]
+    elif len(angles) != len(JOINT_NAMES):
+        raise HTTPException(
+            status_code=422,
+            detail="Expected five actuator angles: four arm axes and gripper",
+        )
+    if not all(math.isfinite(angle) for angle in angles):
+        raise HTTPException(status_code=422, detail="Joint angles must all be finite")
+    if not math.isfinite(req.speed_deg_per_s) or req.speed_deg_per_s <= 0:
+        raise HTTPException(status_code=422, detail="Joint speed must be finite and positive")
 
-    if bridge_node is None or not ROS_AVAILABLE or not bridge_node.set_all_joints_client.service_is_ready():
-        for i, a in enumerate(angles[:len(JOINT_NAMES)]):
-            state.joint_positions[i] = math.radians(a)
-        return {"success": True, "expected_duration_s": 2.0}
-
+    client = require_ros_service("set_all_joints_client")
     ros_req = SetAllJoints.Request()
     ros_req.angles_deg = angles
     ros_req.speed_deg_per_s = req.speed_deg_per_s
-    resp = await call_service(bridge_node.set_all_joints_client, ros_req, timeout=2.0)
-    if resp is None:
-        for i, a in enumerate(angles[:len(JOINT_NAMES)]):
-            state.joint_positions[i] = math.radians(a)
-        return {"success": True, "expected_duration_s": 2.0}
+    resp = await call_ready_service(client, ros_req, "set_all_joints_client")
     return {"success": resp.success, "expected_duration_s": resp.expected_duration_s}
 
 @app.post("/api/reset")
 async def reset_robot():
     """Reset robot: release e-stop, reset mission state, move to ready pose."""
-    state.add_cot("Reset triggered: Releasing E-STOP and resetting workcell...")
-    if bridge_node and ROS_AVAILABLE:
-        if bridge_node.release_estop_client.service_is_ready():
-            await call_service(bridge_node.release_estop_client, Trigger.Request(), timeout=2.0)
-        if bridge_node.go_named_pose_client.service_is_ready():
-            ready_req = GoNamedPose.Request()
-            ready_req.pose_name = "ready"
-            ready_req.speed_deg_per_s = 30.0
-            await call_service(bridge_node.go_named_pose_client, ready_req, timeout=2.0)
+    estop_client = require_ros_service("release_estop_client")
+    ready_client = require_ros_service("go_named_pose_client")
+    estop_resp = await call_ready_service(
+        estop_client, Trigger.Request(), "release_estop_client")
+    if not estop_resp.success:
+        return {"success": False, "message": estop_resp.message}
+    ready_req = GoNamedPose.Request()
+    ready_req.pose_name = "ready"
+    ready_req.speed_deg_per_s = 30.0
+    ready_resp = await call_ready_service(
+        ready_client, ready_req, "go_named_pose_client")
+    if not ready_resp.success:
+        return {"success": False, "message": ready_resp.message}
     with state._lock:
         state.task_state["task_status"] = "IDLE"
         state.task_state["current_command"] = "Autonomous workcell ready"
         state.task_state["current_goal"] = "Awaiting mission instruction"
         state.task_state["awaiting_approval"] = False
+    state.add_cot("Reset completed: ready pose reached and E-stop released")
     return {"success": True, "message": "Robot reset successfully"}
 
 @app.get("/api/metrics")
@@ -900,8 +874,7 @@ async def get_metrics():
             except Exception:
                 pass
 
-    with state._lock:
-        all_runs = list(runs) + list(state.session_runs)
+    all_runs = list(runs)
 
     if not all_runs:
         return {
@@ -909,7 +882,7 @@ async def get_metrics():
             "failure_breakdown": [],
             "overall_success_rate": None,
             "target_success_rate": 0.85,
-            "mean_latency_ms": round(state.health_state.get("inference_ms", 12.0), 1),
+            "mean_latency_ms": state.health_state.get("inference_ms"),
             "latency_target_ms": 200.0,
             "total_runs": 0,
         }
@@ -935,7 +908,7 @@ async def get_metrics():
         "failure_breakdown": [{"category": k, "count": v} for k, v in fail_counts.items()],
         "overall_success_rate": overall_sr,
         "target_success_rate": 0.85,
-        "mean_latency_ms": round(state.health_state.get("inference_ms", 12.0), 1),
+        "mean_latency_ms": state.health_state.get("inference_ms"),
         "latency_target_ms": 200.0,
         "total_runs": len(all_runs),
     }
@@ -958,22 +931,15 @@ async def target_object(req: TargetRequest):
     action = req.action or "pick"
     cmd_str = f"{action} the {cls_name}"
 
-    state.add_cot(
-        f"[OPERATOR] Target selected from World Model: '{cls_name}' (ID={req.object_id}) "
-        f"at (X={target_obj.get('pos_x', 0):.3f}, Y={target_obj.get('pos_y', 0):.3f})")
-    state.add_cot(f"[OPERATOR] Dispatching autonomous mission: '{cmd_str}'")
-
-    if bridge_node is None or not ROS_AVAILABLE:
-        state.task_state["current_command"] = cmd_str
-        state.task_state["current_goal"] = f"Autonomous {action} for {cls_name}"
-        state.task_state["task_status"] = "EXECUTING"
-        return {"success": True, "task_id": f"target-obj-{req.object_id}", "message": f"Dispatched '{cmd_str}'"}
-
+    client = require_ros_service("cmd_client")
     ros_req = SendCommand.Request()
     ros_req.command = cmd_str
-    resp = await call_service(bridge_node.cmd_client, ros_req, timeout=5.0)
-    if resp is None:
-        return {"success": False, "message": "task_manager response timed out"}
+    resp = await call_ready_service(client, ros_req, "cmd_client", timeout=5.0)
+    if resp.accepted:
+        state.add_cot(
+            f"[OPERATOR] Target selected from World Model: '{cls_name}' (ID={req.object_id}) "
+            f"at (X={target_obj.get('pos_x', 0):.3f}, Y={target_obj.get('pos_y', 0):.3f})")
+        state.add_cot(f"[OPERATOR] Mission accepted: '{cmd_str}'")
     return {"success": resp.accepted, "task_id": resp.task_id, "message": resp.message}
 
 @app.post("/api/reset_world_model")

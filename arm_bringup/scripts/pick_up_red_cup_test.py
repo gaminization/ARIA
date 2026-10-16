@@ -53,7 +53,7 @@ class PickUpRedCupTest(Node):
         self.get_logger().info("═══ ARIA Pick-Up Red Cup Test ═══")
         
         self.cb_group = ReentrantCallbackGroup()
-        self.current_joints = np.zeros(5)
+        self.current_joints = np.zeros(4)
         self.gripper_position = 0.0
 
         # Subscribers

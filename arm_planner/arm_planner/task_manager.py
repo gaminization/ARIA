@@ -9,6 +9,7 @@ Lifecycle:
   IDLE → PLANNING → EXECUTING → PAUSED/RECOVERY → COMPLETE/FAILED
 ═══════════════════════════════════════════════════════════════
 """
+import threading
 import time
 import uuid
 from enum import Enum
@@ -24,7 +25,8 @@ from arm_planner.msg import (
     TaskState, Action, FailureEvent, VisionState, MemoryState,
 )
 from arm_planner.state_bus import StateBus
-from arm_planner.recovery_manager import RecoveryManager
+from arm_planner.recovery_manager import (
+    RecoveryManager, llm_recovery_plan, build_recovery_actions)
 from arm_planner.failure_classifier import classify_failure
 
 
@@ -40,6 +42,11 @@ class TaskStatus(Enum):
 
 # Confidence threshold — below this, ask user for approval
 CONFIDENCE_THRESHOLD = 0.75
+DEFAULT_AUTO_APPROVE_AFTER_S = 0.0
+
+
+ACTION_TIMEOUT_S = 240.0
+MAX_TASK_RECOVERIES = 3
 
 
 class TaskManager(LifecycleNode):
@@ -74,6 +81,12 @@ class TaskManager(LifecycleNode):
         self.status = TaskStatus.IDLE
         self.current_task_id = ""
         self.action_index = 0
+        self._exec_since = {}
+        self._paused_since = None
+        self._approved_task_id = ''
+        self.declare_parameter(
+            'auto_approve_after_s', DEFAULT_AUTO_APPROVE_AFTER_S)
+        self._recoveries = {}
 
         # ── Services ───────────────────────────────────────
         self.command_srv = self.create_service(
@@ -208,13 +221,25 @@ class TaskManager(LifecycleNode):
         task = self.bus.state.task
         if task is None:
             return
+        if self.status != TaskStatus.PAUSED:
+            self._paused_since = None
 
         if self.status == TaskStatus.PLANNING:
             self._handle_planning(task)
         elif self.status == TaskStatus.EXECUTING:
             self._handle_executing(task)
         elif self.status == TaskStatus.PAUSED:
-            pass  # Waiting for /aria/approve or /aria/reject
+            # Low-confidence actions require an explicit operator decision by default.
+            # Automatic approval is available only when explicitly configured.
+            grace = float(self.get_parameter('auto_approve_after_s').value)
+            if self._paused_since is None:
+                self._paused_since = time.time()
+            elif grace > 0 and time.time() - self._paused_since > grace:
+                self.bus.add_chain_of_thought(
+                    f"AUTONOMY: no operator response in {grace:.0f}s — auto-approving and proceeding.")
+                self._paused_since = None
+                self._approve_cb(None, Trigger.Response())
+            return
         elif self.status == TaskStatus.RECOVERY:
             self._handle_recovery(task)
         elif self.status == TaskStatus.COMPLETE:
@@ -233,6 +258,11 @@ class TaskManager(LifecycleNode):
             self.bus.add_chain_of_thought(
                 f"Planning complete. {len(task.action_queue)} actions queued."
             )
+        elif task.task_status == TaskStatus.PAUSED.value:
+            self.status = TaskStatus.PAUSED
+            self.action_index = 0
+            self.bus.add_chain_of_thought(
+                f"Plan ready ({len(task.action_queue)} actions) but needs operator approval.")
         elif task.task_status == TaskStatus.FAILED.value:
             self.status = TaskStatus.FAILED
 
@@ -265,43 +295,29 @@ class TaskManager(LifecycleNode):
             )
 
         elif action.status == 'FAILED':
-            # Trigger autonomous failure classification & recovery
             self.status = TaskStatus.RECOVERY
             task.task_status = TaskStatus.RECOVERY.value
             self.bus.add_chain_of_thought(
-                f"Action FAILED: {action.action_type}. Initiating autonomous AI recovery..."
-            )
-            ctx = {
-                'error_source': action.action_type,
-                'action_type': action.action_type,
-                'target_object': action.target_object,
-                'ik_failed': 'ik' in action.action_type.lower() or 'plan' in action.action_type.lower(),
-                'detection_confidence': action.confidence,
-                'expected_contact': action.action_type == 'GRASP',
-                'was_holding': action.action_type in {'LIFT', 'TRANSPORT'},
-            }
-            failure_event = classify_failure(ctx)
-            recovered = self.recovery_manager.attempt_recovery(failure_event, task)
-            if recovered:
-                # Reset action to PENDING so planner resumes seamlessly
-                action.status = 'PENDING'
-                self.status = TaskStatus.EXECUTING
-                task.task_status = TaskStatus.EXECUTING.value
+                f"Action FAILED: {action.action_type}. Asking the LLM to diagnose and recover...")
+            self.bus.publish_task(task)
+            threading.Thread(
+                target=self._recover_worker, args=(task, self.action_index), daemon=True).start()
+
+        elif action.status == 'EXECUTING':
+            since = self._exec_since.setdefault(
+                (task.task_id, self.action_index), time.time())
+            if time.time() - since > ACTION_TIMEOUT_S:
+                action.status = 'FAILED'
                 task.action_queue[self.action_index] = action
                 self.bus.add_chain_of_thought(
-                    f"RECOVERY: ✓ Autonomous recovery succeeded for {action.action_type}. Resuming execution."
-                )
-            else:
-                self.status = TaskStatus.FAILED
-                task.task_status = TaskStatus.FAILED.value
-                self.bus.add_chain_of_thought(
-                    f"RECOVERY: ✗ Recovery strategies exhausted for {action.action_type}. Mission halted."
-                )
-            self.bus.publish_task(task)
+                    f"WATCHDOG: '{action.action_type}' made no progress for "
+                    f"{ACTION_TIMEOUT_S:.0f}s — marking FAILED so recovery can take over.")
+                self.bus.publish_task(task)
 
         elif action.status == 'PENDING':
             # Check confidence before executing
-            if action.confidence < CONFIDENCE_THRESHOLD:
+            if (action.confidence < CONFIDENCE_THRESHOLD
+                    and task.task_id != self._approved_task_id):
                 self.status = TaskStatus.PAUSED
                 task.task_status = TaskStatus.PAUSED.value
                 task.awaiting_user_approval = True
@@ -320,6 +336,56 @@ class TaskManager(LifecycleNode):
                     f"[confidence={action.confidence:.2f}]"
                 )
                 self.bus.publish_task(task)
+
+    def _recover_worker(self, task: TaskState, idx: int):
+        """LLM-driven recovery (runs off the executor thread; the LLM call is slow)."""
+        try:
+            action = task.action_queue[idx]
+            ctx = {
+                'error_source': action.action_type,
+                'action_type': action.action_type,
+                'target_object': action.target_object,
+                'detection_confidence': action.confidence,
+            }
+            self.bus.log_failure(classify_failure(ctx))
+            n = self._recoveries.get(task.task_id, 0)
+            plan = None
+            new_actions = None
+            if n < MAX_TASK_RECOVERIES:
+                self._recoveries[task.task_id] = n + 1
+                plan = llm_recovery_plan(task, idx, n + 1)
+                if plan:
+                    self.bus.add_chain_of_thought(
+                        f"RECOVERY (LLM): diagnosis — {plan.get('diagnosis', '?')}")
+                    if plan.get('reasoning'):
+                        self.bus.add_chain_of_thought(f"RECOVERY (LLM): {plan['reasoning']}")
+                new_actions = build_recovery_actions(task, idx, plan)
+            if not new_actions:
+                self.status = TaskStatus.FAILED
+                task.task_status = TaskStatus.FAILED.value
+                self.bus.add_chain_of_thought(
+                    f"RECOVERY: no viable recovery for {action.action_type}. Mission halted.")
+                self.bus.publish_task(task)
+                return
+            cur = self.bus.state.task
+            if cur is not None and cur.task_id == task.task_id:
+                task = cur
+            queue = list(task.action_queue)
+            queue[idx].status = 'RECOVERED'
+            queue[idx + 1:idx + 1] = new_actions
+            task.action_queue = queue
+            self.action_index = idx + 1
+            self.status = TaskStatus.EXECUTING
+            task.task_status = TaskStatus.EXECUTING.value
+            self.bus.add_chain_of_thought(
+                "RECOVERY: inserted " + ", ".join(a.action_type for a in new_actions) +
+                f" (attempt {self._recoveries[task.task_id]}/{MAX_TASK_RECOVERIES})")
+            self.bus.publish_task(task)
+        except Exception as e:
+            self.get_logger().error(f"Recovery worker error: {e}")
+            self.status = TaskStatus.FAILED
+            task.task_status = TaskStatus.FAILED.value
+            self.bus.publish_task(task)
 
     def _handle_recovery(self, task: TaskState):
         """Wait for RecoveryManager to finish."""
@@ -371,7 +437,8 @@ class TaskManager(LifecycleNode):
             if self.action_index < len(task.action_queue):
                 task.action_queue[self.action_index].status = 'EXECUTING'
 
-            self.bus.add_chain_of_thought("User APPROVED. Resuming execution.")
+            self._approved_task_id = task.task_id
+            self.bus.add_chain_of_thought("APPROVED. Resuming execution.")
             self.bus.publish_task(task)
 
         self.status = TaskStatus.EXECUTING

@@ -6,7 +6,7 @@
 # ── Controller Manager ─────────────────────────────────────────
 controller_manager:
   ros__parameters:
-    update_rate: 1000  # Hz — match gazebo physics step rate
+    update_rate: 100  # Hz — joint_states fan-out to ~20 python nodes; 100 Hz is ample for 5 hobby servos
 
     # Active controllers
     joint_trajectory_controller:

@@ -79,7 +79,7 @@ class OpenVLAExecutorNode(LifecycleNode):
         # State
         self._active = False         # VLA mode enabled
         self._instruction = ""       # Current task instruction
-        self._joint_positions = np.zeros(5)
+        self._joint_positions = np.zeros(4)
         self._gripper_pos = 0.0
         self._last_inference_time = 0.0
         self._inference_hz = 2.0     # target rate (limited by model speed)
@@ -203,7 +203,7 @@ class OpenVLAExecutorNode(LifecycleNode):
     def _joint_cb(self, msg: JointState):
         """Track current joint positions."""
         names = ["waist_joint", "shoulder_joint", "elbow_joint",
-                 "wrist_pitch_joint", "wrist_roll_joint"]
+                 "wrist_pitch_joint"]
         for i, name in enumerate(names):
             if name in msg.name:
                 idx = msg.name.index(name)
@@ -294,7 +294,13 @@ class OpenVLAExecutorNode(LifecycleNode):
                 f"{vla_out.reasoning}")
             return
 
-        # Publish joint deltas [5 joints + gripper]
+        if len(vla_out.joint_commands) != 4:
+            self.get_logger().error(
+                "OpenVLAExecutor: model output must contain four arm-joint "
+                f"deltas, got {len(vla_out.joint_commands)}")
+            return
+
+        # Publish four arm-joint deltas and one gripper command.
         delta_msg = Float64MultiArray()
         delta_msg.data = list(vla_out.joint_commands) + [vla_out.gripper_command]
         self.delta_pub.publish(delta_msg)

@@ -332,9 +332,6 @@
   <gazebo reference="wrist_pitch_joint">
     <implicitSpringDamper>true</implicitSpringDamper>
   </gazebo>
-  <gazebo reference="wrist_roll_joint">
-    <implicitSpringDamper>true</implicitSpringDamper>
-  </gazebo>
   <gazebo reference="gripper_joint">
     <implicitSpringDamper>true</implicitSpringDamper>
   </gazebo>

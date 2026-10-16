@@ -6,35 +6,28 @@ Selects depth model, fuses with geometric model, monitors perf.
 ═══════════════════════════════════════════════════════════════
 """
 import time
-import numpy as np
 import rclpy
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
-from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
-from sensor_msgs.msg import Image
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Float64MultiArray
 from arm_planner.state_bus import StateBus
 
 class DepthAgent(LifecycleNode):
-    """Manages depth pipeline: selects DA v2 vs MiDaS, fuses with geometry."""
+    """Reports measured inference timings for the active depth backends."""
 
     def __init__(self):
         super().__init__('depth_agent')
         self.bus = StateBus(self)
         self.da_latency_ms = 0.0
         self.midas_latency_ms = 0.0
-        self.da_accuracy = 0.0
-        self.midas_accuracy = 0.0
-        self.selected_model = 'depth_anything'
-        self.frame_count = 0
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info("DepthAgent: CONFIGURING")
-        qos = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT,
-                         durability=DurabilityPolicy.VOLATILE, depth=5)
-        self.da_sub = self.create_subscription(
-            Image, '/depth/image_depth_anything', self._da_cb, qos)
-        self.midas_sub = self.create_subscription(
-            Image, '/depth/image_midas', self._midas_cb, qos)
+        self.metrics_sub = self.create_subscription(
+            Float64MultiArray,
+            '/depth/benchmark_metrics',
+            self._metrics_cb,
+            10,
+        )
         self.latency_pub = self.create_publisher(Float64, '/depth/agent_latency', 10)
         self.create_timer(5.0, self._evaluate_models)
         return TransitionCallbackReturn.SUCCESS
@@ -47,31 +40,31 @@ class DepthAgent(LifecycleNode):
         self.get_logger().info("DepthAgent: DEACTIVATED")
         return TransitionCallbackReturn.SUCCESS
 
-    def _da_cb(self, msg: Image):
-        self.frame_count += 1
-        self.da_latency_ms = self.da_latency_ms * 0.9 + 10.0 * 0.1  # placeholder EMA
-
-    def _midas_cb(self, msg: Image):
-        self.midas_latency_ms = self.midas_latency_ms * 0.9 + 15.0 * 0.1
+    def _metrics_cb(self, msg: Float64MultiArray):
+        if len(msg.data) < 2:
+            self.get_logger().warning(
+                "Ignoring malformed depth metrics; expected DA and MiDaS timings")
+            return
+        da_ms, midas_ms = msg.data[:2]
+        if da_ms > 0.0:
+            self.da_latency_ms = (
+                da_ms if self.da_latency_ms == 0.0
+                else self.da_latency_ms * 0.9 + da_ms * 0.1
+            )
+        if midas_ms > 0.0:
+            self.midas_latency_ms = (
+                midas_ms if self.midas_latency_ms == 0.0
+                else self.midas_latency_ms * 0.9 + midas_ms * 0.1
+            )
 
     def _evaluate_models(self):
-        """Periodically compare DA v2 vs MiDaS and select best."""
-        if self.da_latency_ms < self.midas_latency_ms:
-            if self.selected_model != 'depth_anything':
-                self.selected_model = 'depth_anything'
-                self.bus.add_chain_of_thought(
-                    f"DEPTH: Switched to Depth-Anything v2 "
-                    f"(DA={self.da_latency_ms:.1f}ms < MiDaS={self.midas_latency_ms:.1f}ms)"
-                )
-        else:
-            if self.selected_model != 'midas':
-                self.selected_model = 'midas'
-                self.bus.add_chain_of_thought(
-                    f"DEPTH: Switched to MiDaS "
-                    f"(MiDaS={self.midas_latency_ms:.1f}ms < DA={self.da_latency_ms:.1f}ms)"
-                )
+        """Publish the fastest measured backend latency; this does not switch models."""
+        observed = [
+            latency for latency in (self.da_latency_ms, self.midas_latency_ms)
+            if latency > 0.0
+        ]
         msg = Float64()
-        msg.data = min(self.da_latency_ms, self.midas_latency_ms)
+        msg.data = min(observed) if observed else 0.0
         self.latency_pub.publish(msg)
 
 def main(args=None):

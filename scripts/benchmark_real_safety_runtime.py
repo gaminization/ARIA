@@ -43,6 +43,9 @@ ROSBAGS_DIR = os.path.join(DATA_REAL_DIR, "rosbags")
 TELEMETRY_DIR = os.path.join(DATA_REAL_DIR, "telemetry")
 OUT_CSV = os.path.join(DATA_REAL_DIR, "safety_runtime_real.csv")
 
+# Pre-registered physical arrest threshold (Directive 6: pre-register before execution)
+PHYSICAL_ARREST_THRESHOLD_MS = 250.0
+
 os.makedirs(DATA_REAL_DIR, exist_ok=True)
 os.makedirs(ROSBAGS_DIR, exist_ok=True)
 os.makedirs(TELEMETRY_DIR, exist_ok=True)
@@ -361,9 +364,7 @@ except Exception:
         except Exception:
             rosbag_proc.kill()
 
-        trial_wall_time = time.perf_counter() - trial_t0
-        # Physical arrest must achieve joint velocity < 0.01 rad/s within stated threshold of 250.0 ms
-        PHYSICAL_ARREST_THRESHOLD_MS = 250.0
+        # Physical arrest evaluated against pre-registered threshold
         succ = bool(estop_ok and arrested and (arrest_ms <= PHYSICAL_ARREST_THRESHOLD_MS))
 
         row_estop = {

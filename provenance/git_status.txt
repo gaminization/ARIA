@@ -1,0 +1,117 @@
+On branch test
+Your branch is ahead of 'origin/test' by 2 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+  (commit or discard the untracked or modified content in submodules)
+	modified:   .vscode/settings.json
+	modified:   README.md
+	modified:   SETUP.md
+	modified:   arm_agents/arm_agents/memory_agent.py
+	modified:   arm_agents/arm_agents/reachability_agent.py
+	modified:   arm_agents/arm_agents/skill_agent.py
+	modified:   arm_agents/data/affordance_db.yaml
+	modified:   arm_bringup/launch/aria_agents_only.launch.py
+	modified:   arm_bringup/launch/aria_full.launch.py
+	modified:   arm_bringup/launch/aria_full_u2.launch.py
+	modified:   arm_bringup/launch/aria_full_u3.launch.py
+	modified:   arm_bringup/launch/industrial_workcell.launch.py
+	modified:   arm_bringup/launch/sim.launch.py
+	modified:   arm_bringup/scripts/activate_agents.py
+	modified:   arm_bringup/scripts/industrial_workcell_node.py
+	modified:   arm_bringup/worlds/aria_industrial_workcell.world
+	modified:   arm_bringup/worlds/aria_workspace.world
+	modified:   arm_control/CMakeLists.txt
+	modified:   arm_control/config/aria_controllers.yaml
+	modified:   arm_control/include/arm_control/conveyor_belt_plugin.hpp
+	modified:   arm_control/include/arm_control/gripper_plugin.hpp
+	modified:   arm_control/scripts/manual_control_node.py
+	modified:   arm_control/src/conveyor_belt_plugin.cpp
+	modified:   arm_control/src/gripper_plugin.cpp
+	modified:   arm_dashboard/app.py
+	modified:   arm_dashboard/launch_dashboard.sh
+	modified:   arm_planner/arm_planner/episodic_memory.py
+	modified:   arm_planner/arm_planner/function_calling_orchestrator.py
+	modified:   arm_planner/arm_planner/llm_client.py
+	modified:   arm_planner/arm_planner/llm_planning_agent.py
+	modified:   arm_planner/arm_planner/recovery_manager.py
+	modified:   arm_planner/arm_planner/search_behavior.py
+	modified:   arm_planner/arm_planner/state_bus.py
+	modified:   arm_planner/arm_planner/task_manager.py
+	modified:   arm_planner/config/llm_config.yaml
+	modified:   arm_planner/msg/Action.msg
+	modified:   arm_planner/msg/TaskState.msg
+	modified:   arm_planner/prompts/system_prompt_planner.txt
+	modified:   arm_vision/arm_vision/depth_node.py
+	modified:   arm_vision/arm_vision/detection_node.py
+	modified:   arm_vision/arm_vision/sam2_node.py
+	modified:   data/real/collision_free_friction_trials.csv
+	modified:   data/real/friction_grasp_real_30seeds.csv
+	modified:   docs/AGENTS_AND_SKILLS.md
+	modified:   docs/DASHBOARD_AND_TELEMETRY.md
+	modified:   docs/SETUP_AND_DEPENDENCIES.md
+	modified:   docs/WORLD_MODEL_AND_FAILURE_RECOVERY.md
+	modified:   publications/ieee_tro_submission/main.aux
+	modified:   publications/ieee_tro_submission/main.bbl
+	modified:   publications/ieee_tro_submission/main.blg
+	modified:   publications/ieee_tro_submission/main.log
+	modified:   publications/ieee_tro_submission/main.pdf
+	modified:   publications/ieee_tro_submission/main.tex
+	modified:   pytest.ini
+	modified:   scripts/aria_launch_full.sh
+	modified:   scripts/aria_setup_check.sh
+	modified:   scripts/aria_start.sh
+	modified:   scripts/benchmark_real_friction_grasp.py
+	modified:   scripts/benchmark_real_safety_runtime.py
+	modified:   scripts/check_paper_numbers.py
+	modified:   third_party/repos/DH2URDF (untracked content)
+	modified:   third_party/repos/Week-11-12-Robot-arms (untracked content)
+	modified:   third_party/repos/arduino_robot_arm (untracked content)
+	modified:   third_party/repos/arduino_robot_arm_gripper (untracked content)
+	modified:   third_party/repos/bullet3 (untracked content)
+	modified:   third_party/repos/cobot_IK (untracked content)
+	modified:   third_party/repos/gym-grasp (untracked content)
+	modified:   third_party/repos/iai_table_robot_description (untracked content)
+	modified:   third_party/repos/industrial_environment (untracked content)
+	modified:   third_party/repos/pr_assets (untracked content)
+	modified:   third_party/repos/puppet (untracked content)
+	modified:   third_party/repos/robot_arm_arduino_python (untracked content)
+	modified:   third_party/repos/robot_scenarios_sim (untracked content)
+	modified:   third_party/repos/tabletop-handybot (untracked content)
+	modified:   third_party/repos/ur_app_youtube (untracked content)
+	modified:   third_party/repos/ur_camera_yt_moveit_config (untracked content)
+	modified:   third_party/repos/warebots (untracked content)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.vscode/browse.vc.db-shm
+	.vscode/browse.vc.db-wal
+	.vscode/browse.vc.db.lock
+	.vscode/c_cpp_properties.json
+	arm_agents/test/
+	arm_bringup/config/fastdds_udp.xml
+	arm_planner/arm_planner/skill_registry.py
+	arm_vision/arm_vision/sys_config.py
+	arm_vision/test/
+	launch.sh
+	provenance/
+	publications/ieee_tro_submission/figures/raw_trials_tasks_7_8.png
+	scripts/aria_sim_audit_support.py
+	scripts/aria_stop.sh
+	scripts/e2e_batch.sh
+	scripts/e2e_restart.sh
+	scripts/e2e_task_runner.py
+	scripts/execute_all_maneuvers_visual_audit.py
+	scripts/llm_probe.py
+	scripts/plot_task7_task8_raw_trials.py
+	scripts/pose_probe.py
+	scripts/run_world1_tester_autonomous.py
+	scripts/run_world3_workspace_autonomous.py
+	scripts/verify_paper_claims_against_csv.py
+	scripts/world_model_audit.py
+	tests/test_llm_plan_safety.py
+	tests/test_sim_audit_support.py
+
+no changes added to commit (use "git add" and/or "git commit -a")

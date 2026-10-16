@@ -6,7 +6,7 @@
 # ═══════════════════════════════════════════════════════════════
 set -e
 
-ARIA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARIA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PASS=0; FAIL=0; WARN=0
 
 ok()   { echo "  ✅ $1"; PASS=$((PASS+1)); }
@@ -53,27 +53,32 @@ echo ""
 echo "── [3/8] Model Files ───────────────────────────────────────"
 check_model() {
   local path="$1"; local name="$2"; local url="$3"
-  if [ -f "$path" ]; then
-    local size=$(du -sh "$path" | cut -f1)
+  local resolved="$path"
+  if [ ! -f "$resolved" ] && [ -f "$ARIA_DIR/models/$(basename "$path")" ]; then
+    resolved="$ARIA_DIR/models/$(basename "$path")"
+  fi
+  if [ -f "$resolved" ]; then
+    local size=$(du -sh "$resolved" | cut -f1)
     ok "$name ($size)"
   else
     echo "  ❌ $name MISSING"
     FAIL=$((FAIL+1))
     if [ -n "$url" ]; then
       echo "     → Auto-downloading..."
+      mkdir -p "$(dirname "$path")"
       wget -q --show-progress "$url" -O "$path" 2>&1 | tail -1
       [ -f "$path" ] && echo "     ✅ Downloaded: $name" || echo "     ❌ Download failed"
     fi
   fi
 }
 
-check_model "$ARIA_DIR/yolov8m.pt" "YOLOv8m" \
+check_model "$ARIA_DIR/models/yolov8m.pt" "YOLOv8m" \
   "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8m.pt"
-check_model "$ARIA_DIR/yolov8n.pt" "YOLOv8n" \
+check_model "$ARIA_DIR/models/yolov8n.pt" "YOLOv8n" \
   "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8n.pt"
-check_model "$ARIA_DIR/sam2_hiera_tiny.pt" "SAM2.0 tiny" \
+check_model "$ARIA_DIR/models/sam2_hiera_tiny.pt" "SAM2.0 tiny" \
   "https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_tiny.pt"
-check_model "$ARIA_DIR/sam2.1_hiera_tiny.pt" "SAM2.1 tiny" \
+check_model "$ARIA_DIR/models/sam2.1_hiera_tiny.pt" "SAM2.1 tiny" \
   "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt"
 
 check_model "$ARIA_DIR/arm_ik/models/neural_ik.pt" "Neural IK MLP" ""
@@ -162,7 +167,9 @@ echo "── [8/8] Gazebo Assets ───────────────�
   && ok "libaria_gripper_plugin.so built" || fail "libaria_gripper_plugin.so not built"
 python3 -c "
 from ultralytics import YOLO
-m = YOLO('$ARIA_DIR/yolov8m.pt')
+import os
+p = '$ARIA_DIR/models/yolov8m.pt' if os.path.exists('$ARIA_DIR/models/yolov8m.pt') else '$ARIA_DIR/yolov8m.pt'
+m = YOLO(p)
 ids = [k for k,v in m.names.items() if v == 'banana']
 print(f'  ✅ YOLOv8m detects banana at class index {ids}')
 " 2>/dev/null && PASS=$((PASS+1)) || warn "Could not verify banana detection"

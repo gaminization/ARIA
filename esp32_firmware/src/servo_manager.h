@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // ARIA ESP32 Servo Manager — Header
-// Manages 6 servos: 3×MG995 (waist, shoulder, elbow)
-//                    3×SG90  (wrist pitch, wrist roll, gripper)
+// Manages 5 servos: 3×MG995 (waist, shoulder, elbow)
+//                    2×SG90  (wrist pitch, gripper)
 // ═══════════════════════════════════════════════════════════════
 #pragma once
 
@@ -36,15 +36,14 @@ struct JointConfig {
 };
 
 // ── Number of joints ──────────────────────────────────────────
-#define NUM_JOINTS 6
+#define NUM_JOINTS 5
 
 // ── Joint indices ─────────────────────────────────────────────
 #define JOINT_WAIST        0
 #define JOINT_SHOULDER     1
 #define JOINT_ELBOW        2
 #define JOINT_WRIST_PITCH  3
-#define JOINT_WRIST_ROLL   4
-#define JOINT_GRIPPER      5
+#define JOINT_GRIPPER      4
 
 // ═══════════════════════════════════════════════════════════════
 // ServoManager class

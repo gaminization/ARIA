@@ -7,11 +7,11 @@ export default function TaskControl({ taskState, onSendCommand, onApprove, onRej
   const [controlMode, setControlMode] = useState('auto'); // 'auto' | 'manual'
   const [showEstopConfirm, setShowEstopConfirm] = useState(false);
 
-  const goal = taskState?.current_goal || 'Standby — Ready for autonomous task execution';
-  const confidence = taskState?.confidence ?? 0.92;
+  const goal = taskState?.current_goal || 'No task-state telemetry received';
+  const confidence = taskState?.confidence;
   const subgoals = taskState?.subgoals || [];
   const awaitingApproval = Boolean(taskState?.awaiting_approval);
-  const status = taskState?.task_status || 'IDLE';
+  const status = taskState?.task_status || 'UNKNOWN';
 
   const handleSend = (e) => {
     e.preventDefault();
@@ -103,16 +103,20 @@ export default function TaskControl({ taskState, onSendCommand, onApprove, onRej
             <div className="flex flex-col gap-1 rounded border border-[#252a38] bg-[#0c0e14] p-2">
               <div className="flex justify-between items-center text-[10px] font-mono">
                 <span className="text-slate-400">PLANNER CONFIDENCE</span>
-                <span className="font-bold text-slate-200">{(confidence * 100).toFixed(0)}%</span>
+                <span className="font-bold text-slate-200">
+                  {Number.isFinite(confidence) ? `${(confidence * 100).toFixed(0)}%` : 'N/A'}
+                </span>
               </div>
               <div className="w-full bg-[#1a1f2c] h-1.5 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-300 ${getConfidenceColor(confidence).split(' ')[0]}`}
-                  style={{ width: `${confidence * 100}%` }}
+                  className={`h-full rounded-full transition-all duration-300 ${Number.isFinite(confidence) ? getConfidenceColor(confidence).split(' ')[0] : 'bg-slate-600'}`}
+                  style={{ width: `${Number.isFinite(confidence) ? confidence * 100 : 0}%` }}
                 />
               </div>
               <div className="text-[10px] font-mono text-slate-400 mt-0.5">
-                {confidence >= 0.8 ? (
+                {!Number.isFinite(confidence) ? (
+                  <span className="text-slate-400">Confidence unavailable</span>
+                ) : confidence >= 0.8 ? (
                   <span className="text-emerald-400">✓ Proceeding autonomously</span>
                 ) : (
                   <span className="text-amber-400">⚠ Low confidence — Operator oversight recommended</span>

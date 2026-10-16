@@ -12,7 +12,7 @@ fallback_to_rulebased: true
 
 # ── Generation parameters ──────────────────────────────────
 temperature: 0.1          # Low temperature for deterministic planning
-timeout_s: 30.0           # Max seconds per LLM call
+timeout_s: 90.0           # Max seconds per LLM call (allows 8B model prefill + generation on CPU/GPU)
 max_retries: 2            # Retries on failure (including JSON fix)
 
 # ── Vision model configuration ─────────────────────────────
@@ -21,10 +21,9 @@ use_vision_for_planning: false   # Start false, enable when needed
 vision_model: "qwen2.5-vl:7b-instruct-q4_K_M"
 
 # ── VRAM management ────────────────────────────────────────
-# RTX 5060 has 8GB. LLM uses ~5GB, leaving ~3GB for YOLO+depth.
-# LLM loads for planning, unloads during execution.
-unload_after_planning: true      # Free VRAM after plan is generated
-vram_headroom_gb: 2.5            # Minimum free VRAM before loading LLM
+# Keep model resident in Ollama to prevent 20s reload penalty on each task
+unload_after_planning: false     # Keep model warm in memory
+vram_headroom_gb: 1.0            # Minimum free VRAM before loading LLM
 
 # ── Confidence thresholds ──────────────────────────────────
 llm_plan_confidence_threshold: 0.75   # Plans above this auto-execute

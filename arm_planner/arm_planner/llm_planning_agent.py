@@ -35,9 +35,25 @@ from arm_agents.planning_agent import PlanningAgent as RuleBasedPlanningAgent
 # ═══════════════════════════════════════════════════════════════
 # Prompt loader
 # ═══════════════════════════════════════════════════════════════
-_PROMPTS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    'prompts')
+def _find_prompts_dir() -> str:
+    """Locate the prompts directory across source tree, install share, or ARIA_ROOT."""
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'prompts'),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'prompts'),
+        os.path.join(os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'), 'arm_planner', 'prompts'),
+    ]
+    try:
+        from ament_index_python.packages import get_package_share_directory
+        candidates.append(os.path.join(get_package_share_directory('arm_planner'), 'prompts'))
+    except Exception:
+        pass
+    for c in candidates:
+        if os.path.isdir(c):
+            return c
+    return candidates[0]
+
+
+_PROMPTS_DIR = _find_prompts_dir()
 
 
 def _load_prompt(filename: str) -> str:
@@ -66,12 +82,30 @@ VALID_AGENTS = {
     'VisionAgent', 'DepthAgent', 'TrackingAgent', 'AffordanceAgent',
     'ControlAgent', 'SafetyAgent', 'MemoryAgent', 'WorldModelAgent',
     'SkillAgent', 'ReachabilityAgent',
+    # Perception pipeline agents
+    'SAM2Agent', 'GraspNetAgent', 'ClearGraspAgent', 'MaterialAgent',
+    'OpenVLAAgent', 'ScanAgent',
 }
 
-VALID_SKILLS = {
-    'pick', 'place', 'push', 'pull', 'stack', 'sort',
-    'inspect', 'slide', 'roll', 'sweep',
-}
+from arm_planner.skill_registry import resolve_executable, EXECUTABLE_NAMES, CORE_SKILLS, SKILL_ALIAS_MAP
+
+VALID_SKILLS = set(EXECUTABLE_NAMES) | set(SKILL_ALIAS_MAP.keys())
+
+
+
+def skills_prompt_block() -> str:
+    return '\n'.join(f'  - {k}: {v}' for k, v in CORE_SKILLS.items())
+
+
+MOTION_GUIDE = (
+    "Arm kinematics for authoring motions: joints = [waist, shoulder, elbow, wrist_pitch, gripper] in DEGREES. "
+    "waist: rotation about the vertical axis (0 = facing the table front, +-180 max). shoulder/elbow/wrist: pitch, +-90 max. "
+    "gripper: 0 closed .. 55 open. Reference poses: home=[0,0,0,0,0] (arm vertical, pointing up); "
+    "ready=[0,35,-55,20,0] (forearm reaching out over the table). Table work area is within ~28 cm of the base. "
+    "Use joint_motion for gestures (waving = raise the arm near home with the gripper open, then swing the waist back and forth "
+    "with repeat>=2; nodding = oscillate the wrist), and for carrying a grasped object to a pose (e.g. a drinking gesture: "
+    "pick the mug, lift, then raise and tilt the wrist). Never invent skill names."
+)
 
 
 def validate_plan_json(plan: dict) -> tuple[bool, str]:
@@ -106,14 +140,13 @@ def validate_plan_json(plan: dict) -> tuple[bool, str]:
         if action_missing:
             return False, f"Action {i} missing keys: {action_missing}"
 
-        agent = action.get('agent', '')
-        if agent and agent not in VALID_AGENTS:
-            # Warning, not error — LLM might use slightly different names
-            pass
-
-        skill = action.get('skill')
-        if skill and skill not in VALID_SKILLS:
-            pass  # Also a soft warning
+        # Every step must resolve to something the SkillAgent can execute.
+        # Invented names (e.g. "navigation", "gripping") would otherwise stall the task.
+        if resolve_executable(action.get('skill'), action.get('agent')) is None:
+            return False, (
+                f"Action {i} (agent={action.get('agent')!r}, skill={action.get('skill')!r}) "
+                f"is not executable. The 'skill' field must be one of: "
+                f"{', '.join(CORE_SKILLS)}")
 
     return True, ""
 
@@ -328,17 +361,30 @@ class LLMPlanningAgent(LifecycleNode):
             self._fallback_decompose(task)
             return
 
-        # ── Step 6: Parse and validate ─────────────────────
-        try:
-            plan = json.loads(response)
-        except json.JSONDecodeError:
+        # ── Step 6: Parse and validate (with LLM self-repair) ──
+        plan, valid, error = self._parse_plan(response)
+        for attempt in range(2):
+            if valid:
+                break
+            self.get_logger().warn(
+                f"Plan invalid ({error}); raw[:400]={response[:400]!r}")
             self.bus.add_chain_of_thought(
-                "LLM_PLANNING: JSON parse failed — using fallback")
-            await self._maybe_unload(model)
-            self._fallback_decompose(task)
-            return
+                f"LLM_PLANNING: Plan invalid ({error}) — asking LLM to repair")
+            repair_prompt = (
+                prompt + "\n\nYour previous answer was rejected: " + error +
+                "\nReturn ONE JSON object with EXACTLY the top-level keys: "
+                "goal (string), subgoals (list of strings), actions (list of objects with "
+                "step, agent, skill, parameters, reasoning, preconditions, expected_outcome), "
+                "confidence (0-1), ambiguity_notes (string), requires_approval (bool), "
+                "alternative_interpretations (list). No wrapper object, no markdown.")
+            response, success = await self.client.generate(
+                prompt=repair_prompt, model=model,
+                system_prompt=self.system_prompt,
+                response_format="json", temperature=0.1)
+            if not success:
+                break
+            plan, valid, error = self._parse_plan(response)
 
-        valid, error = validate_plan_json(plan)
         if not valid:
             self.bus.add_chain_of_thought(
                 f"LLM_PLANNING: Plan validation failed: {error} — "
@@ -349,6 +395,7 @@ class LLMPlanningAgent(LifecycleNode):
 
         # ── Step 7: Cross-check with world model ──────────
         plan = self._cross_check_plan(plan)
+        plan = self._enforce_plan_invariants(plan, command)
 
         # ── Step 8: Unload model ───────────────────────────
         await self._maybe_unload(model)
@@ -374,6 +421,45 @@ class LLMPlanningAgent(LifecycleNode):
             f"LLM_PLANNING: Plan generated in {elapsed_ms:.0f}ms — "
             f"{len(plan.get('actions', []))} actions, "
             f"confidence={plan.get('confidence', 0):.2f}")
+
+    @staticmethod
+    def _parse_plan(response: str):
+        """Parse LLM JSON, unwrap a single wrapper key, normalize and validate."""
+        try:
+            plan = json.loads(response)
+        except (json.JSONDecodeError, TypeError):
+            return {}, False, "response was not valid JSON"
+        if isinstance(plan, list):
+            plan = {'actions': plan}
+        if not isinstance(plan, dict):
+            return {}, False, "top-level JSON must be an object"
+        if 'actions' not in plan:
+            for v in plan.values():
+                if isinstance(v, dict) and 'actions' in v:
+                    plan = v
+                    break
+        # Lenient defaults for optional-ish fields the LLM often drops
+        plan.setdefault('ambiguity_notes', '')
+        plan.setdefault('requires_approval', False)
+        plan.setdefault('alternative_interpretations', [])
+        if 'goal' not in plan and isinstance(plan.get('actions'), list):
+            plan['goal'] = str(plan.get('task', plan.get('command', 'execute task')))
+        if 'subgoals' not in plan and isinstance(plan.get('actions'), list):
+            plan['subgoals'] = [str(a.get('reasoning', ''))[:80]
+                                for a in plan['actions'] if isinstance(a, dict)]
+        if isinstance(plan.get('confidence'), str):
+            try:
+                plan['confidence'] = float(plan['confidence'])
+            except ValueError:
+                pass
+        for a in plan.get('actions', []) if isinstance(plan.get('actions'), list) else []:
+            if isinstance(a, dict):
+                a.setdefault('parameters', {})
+                a.setdefault('reasoning', '')
+                a.setdefault('skill', None)
+                a.setdefault('step', 0)
+        valid, err = validate_plan_json(plan)
+        return plan, valid, err
 
     async def _maybe_unload(self, model: str):
         """Unload model if configured to do so."""
@@ -450,9 +536,154 @@ class LLMPlanningAgent(LifecycleNode):
             f"CURRENT WORLD STATE:\n{context}\n\n"
             f"EPISODIC MEMORY:\n{episodic_context}\n\n"
             f"Generate a plan to accomplish this command. "
-            f"Respond with ONLY valid JSON matching the schema."
+            f"Respond with ONLY valid JSON matching the schema.\n"
+            f"Every action's \"skill\" MUST be one of these (with their parameters):\n{skills_prompt_block()}\n"
+            f"{MOTION_GUIDE}\n"
+            f"Use the object names exactly as they appear in the world state or the command "
+            f"(parameters.object_id; destinations in parameters.target).\n"
+            f"Skeleton (fill in, keep ALL top-level keys): "
+            f"{{\"goal\": \"...\", \"subgoals\": [\"...\"], \"actions\": [{{\"step\": 1, "
+            f"\"agent\": \"VisionAgent\", \"skill\": \"locate\", \"parameters\": {{\"object_id\": \"...\"}}, "
+            f"\"reasoning\": \"...\", \"preconditions\": [], \"expected_outcome\": \"...\"}}], "
+            f"\"confidence\": 0.0, \"ambiguity_notes\": \"\", \"requires_approval\": false, "
+            f"\"alternative_interpretations\": []}}"
         )
         return prompt
+
+    # ── Plan invariants (physical completeness) ────────────
+    def _enforce_plan_invariants(self, plan: dict, command: str = '') -> dict:
+        """A grasp is never the end of a plan: it must be followed by lift/place/etc., and
+        every plan ends with a verify step (system-prompt rule 13)."""
+        actions = plan.get('actions', [])
+        command_lower = command.lower()
+        is_control_actuation = (
+            any(word in command_lower.split() for word in ('press', 'tap', 'actuate', 'activate'))
+            or ('push' in command_lower.split() and any(
+                word in command_lower for word in ('button', 'switch', 'key', 'control')))
+        ) and any(
+            term in command_lower
+            for term in ('button', 'switch', 'key', 'control', 'emergency stop', 'e-stop')
+        )
+        if is_control_actuation:
+            target = ''
+            existing_press = None
+            pre_actions = []
+            removed_skills = []
+            for action in actions:
+                skill = resolve_executable(action.get('skill'), action.get('agent'))
+                params = action.get('parameters') or {}
+                object_id = str(params.get('object_id') or params.get('object') or '')
+                if skill == 'locate' and object_id and not target:
+                    target = object_id
+                if skill == 'press':
+                    existing_press = action
+                elif skill in {'scan_workspace', 'locate', 'reachability', 'safety'}:
+                    pre_actions.append(action)
+                elif skill != 'verify':
+                    removed_skills.append(skill or 'unknown')
+
+            target = target or (
+                str((existing_press.get('parameters') or {}).get('object_id', ''))
+                if existing_press else ''
+            ) or 'button'
+            if not any(
+                resolve_executable(action.get('skill'), action.get('agent')) == 'locate'
+                for action in pre_actions
+            ):
+                pre_actions.append({
+                    'step': len(pre_actions) + 1,
+                    'agent': 'VisionAgent',
+                    'skill': 'locate',
+                    'parameters': {'object_id': target},
+                    'reasoning': 'Locate the control before actuation.',
+                    'preconditions': [],
+                    'expected_outcome': 'control pose resolved',
+                })
+            if not any(
+                resolve_executable(action.get('skill'), action.get('agent')) == 'reachability'
+                for action in pre_actions
+            ):
+                pre_actions.append({
+                    'step': len(pre_actions) + 1,
+                    'agent': 'ReachabilityAgent',
+                    'skill': 'reachability',
+                    'parameters': {'object_id': target},
+                    'reasoning': 'Confirm the control pose is reachable before actuation.',
+                    'preconditions': ['control pose resolved'],
+                    'expected_outcome': 'control pose is reachable',
+                })
+
+            press_action = existing_press or {
+                'step': len(pre_actions) + 1,
+                'agent': 'SkillAgent',
+                'skill': 'press',
+                'parameters': {'object_id': target},
+                'reasoning': 'Actuate the control without grasping or removing it.',
+                'preconditions': ['control pose is reachable'],
+                'expected_outcome': 'contact sensed and arm retracted',
+            }
+            press_params = press_action.setdefault('parameters', {})
+            press_params['object_id'] = target
+            verify_action = next(
+                (
+                    action for action in actions
+                    if resolve_executable(action.get('skill'), action.get('agent')) == 'verify'
+                ),
+                {
+                    'step': len(pre_actions) + 2,
+                    'agent': 'VisionAgent',
+                    'skill': 'verify',
+                    'parameters': {'object_id': target},
+                    'reasoning': 'Verify contact and retraction before declaring success.',
+                    'preconditions': [],
+                    'expected_outcome': 'actuation outcome confirmed',
+                },
+            )
+            plan['actions'] = pre_actions + [press_action, verify_action]
+            if removed_skills or existing_press is None:
+                self.bus.add_chain_of_thought(
+                    'LLM_PLANNING: constrained control actuation to locate, reachability, '
+                    'press, and verify; removed unsafe or unrelated actions')
+            actions = plan['actions']
+
+        # Remove spurious locate of non-objects for gestures
+        filtered_actions = []
+        for a in actions:
+            skill = resolve_executable(a.get('skill'), a.get('agent'))
+            prm = a.get('parameters') or {}
+            obj = str(prm.get('object_id', '')).lower()
+            if skill == 'locate' and obj in ('user', 'human', 'person', 'operator', 'me'):
+                continue
+            filtered_actions.append(a)
+        actions = filtered_actions
+
+        names = [resolve_executable(a.get('skill'), a.get('agent')) for a in actions]
+        grasp_idx = [i for i, n in enumerate(names) if n == 'execute_grasp']
+        carries = {'lift', 'place', 'stack', 'transport', 'pick', 'sort', 'push', 'pull'}
+        added = []
+        if grasp_idx and not any(n in carries for n in names[grasp_idx[-1] + 1:]):
+            obj = (actions[grasp_idx[-1]].get('parameters') or {}).get('object_id', '')
+            actions.append({'step': len(actions) + 1, 'agent': 'SkillAgent', 'skill': 'lift',
+                            'parameters': {'object_id': obj},
+                            'reasoning': 'Invariant: a grasp must be followed by lifting the object clear of the table.',
+                            'preconditions': ['object grasped'], 'expected_outcome': 'object raised'})
+            added.append('lift')
+        if actions and resolve_executable(actions[-1].get('skill'), actions[-1].get('agent')) != 'verify':
+            obj = ''
+            for a in reversed(actions):
+                obj = (a.get('parameters') or {}).get('object_id', '')
+                if obj:
+                    break
+            actions.append({'step': len(actions) + 1, 'agent': 'VisionAgent', 'skill': 'verify',
+                            'parameters': {'object_id': obj},
+                            'reasoning': 'Invariant: confirm the physical outcome from sensors before declaring success.',
+                            'preconditions': [], 'expected_outcome': 'outcome confirmed'})
+            added.append('verify')
+        if added:
+            plan['actions'] = actions
+            self.bus.add_chain_of_thought(
+                f"LLM_PLANNING: plan was physically incomplete — appended {', '.join(added)}")
+        return plan
 
     # ── Plan cross-checking ────────────────────────────────
     def _cross_check_plan(self, plan: dict) -> dict:
@@ -476,7 +707,13 @@ class LLMPlanningAgent(LifecycleNode):
                     if val.lower() not in known_names and val != 'null':
                         unknown_refs += 1
 
-        if unknown_refs > 0 and plan['confidence'] > 0.5:
+        # Referencing objects the world model has not seen yet is expected when the plan
+        # itself starts by locating/scanning for them, so only penalise plans that do not.
+        discovers = any(
+            resolve_executable(a.get('skill'), a.get('agent')) in (
+                'locate', 'scan_workspace', 'pick', 'sort')
+            for a in plan.get('actions', []))
+        if unknown_refs > 0 and not discovers and plan['confidence'] > 0.5:
             # Reduce confidence if referencing unknown objects
             reduction = min(0.2, unknown_refs * 0.05)
             plan['confidence'] = max(0.3, plan['confidence'] - reduction)
@@ -505,12 +742,27 @@ class LLMPlanningAgent(LifecycleNode):
         actions = []
         for act in plan.get('actions', []):
             action = Action()
-            action.action_type = act.get('skill') or act.get('agent', '')
-            action.target_object = str(
-                act.get('parameters', {}).get('object_id', ''))
-            action.destination = str(
-                act.get('parameters', {}).get('target', ''))
+            action.action_type = resolve_executable(act.get('skill'), act.get('agent')) or \
+                act.get('skill') or act.get('agent', '')
+            prm = act.get('parameters') or {}
+            if not isinstance(prm, dict):
+                prm = {}
+
+            def _first(*keys):
+                for k in keys:
+                    v = prm.get(k)
+                    if v not in (None, '', [], {}):
+                        return str(v)
+                return ''
+            action.target_object = _first(
+                'object_id', 'object', 'target_object', 'object_name', 'item')
+            action.destination = _first(
+                'target', 'destination', 'base_id', 'location', 'zone', 'target_id')
             action.confidence = plan.get('confidence', 0.5)
+            try:
+                action.params_json = json.dumps(prm)
+            except (TypeError, ValueError):
+                action.params_json = '{}'
             action.status = 'PENDING'
             action.reasoning = act.get('reasoning', '')
             actions.append(action)

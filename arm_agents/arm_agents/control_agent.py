@@ -29,16 +29,16 @@ class ControlAgent(LifecycleNode):
 
     JOINT_NAMES = [
         "waist_joint", "shoulder_joint", "elbow_joint",
-        "wrist_pitch_joint", "wrist_roll_joint"
+        "wrist_pitch_joint"
     ]
 
     def __init__(self):
         super().__init__('control_agent')
         self.bus = StateBus(self)
         self.cb_group = ReentrantCallbackGroup()
-        self.current_joints = np.zeros(5)
-        self.commanded_joints = np.zeros(5)
-        self.tracking_error = np.zeros(5)
+        self.current_joints = np.zeros(4)
+        self.commanded_joints = np.zeros(4)
+        self.tracking_error = np.zeros(4)
         self.visual_servo_active = False
         self.is_moving = False
         self._last_error_log_time = 0.0
@@ -90,6 +90,12 @@ class ControlAgent(LifecycleNode):
 
     def move_to_joints(self, target_rad: np.ndarray, speed_dps: float = 30.0) -> bool:
         """Command arm to joint position."""
+        target_rad = np.asarray(target_rad, dtype=float)
+        if target_rad.shape != (len(self.JOINT_NAMES),):
+            self.get_logger().error(
+                f"Expected {len(self.JOINT_NAMES)} arm joint targets, "
+                f"got shape {target_rad.shape}")
+            return False
         self.commanded_joints = target_rad.copy()
         self.bus.add_chain_of_thought(
             f"CONTROL: Moving to [{', '.join(f'{math.degrees(a):.1f}°' for a in target_rad)}] "
@@ -108,6 +114,12 @@ class ControlAgent(LifecycleNode):
     def wait_for_arrival(self, target_rad: np.ndarray,
                          tolerance_rad: float = 0.05, timeout: float = 15.0) -> bool:
         """Block until arm reaches target or timeout."""
+        target_rad = np.asarray(target_rad, dtype=float)
+        if target_rad.shape != (len(self.JOINT_NAMES),):
+            self.get_logger().error(
+                f"Expected {len(self.JOINT_NAMES)} arm joint targets, "
+                f"got shape {target_rad.shape}")
+            return False
         start = time.time()
         while time.time() - start < timeout:
             error = np.max(np.abs(self.current_joints - target_rad))

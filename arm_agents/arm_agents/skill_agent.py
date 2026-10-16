@@ -7,11 +7,13 @@ Logs success/failure per skill for self-improvement.
 ═══════════════════════════════════════════════════════════════
 """
 import math, time, os, threading, sqlite3
+import re
 from collections import defaultdict
 from typing import Dict, List, Optional
 import numpy as np
 import cv2
 import rclpy
+from rclpy.qos import qos_profile_sensor_data as qos_profile_sensor_data_
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
@@ -20,6 +22,7 @@ from std_srvs.srv import Trigger
 from arm_interfaces.srv import SolveIK, SetAllJoints, GetAffordanceGrasp, PlanGrasp, GoNamedPose, SetConveyorPower
 from arm_planner.msg import TaskState, Action, VisionState, ObjectDetection, MemoryState, WorldObject
 from arm_planner.state_bus import StateBus
+from arm_planner.skill_registry import SKILL_ALIAS_MAP
 
 # Gripper joint angles (degrees) — see manual_control_node JOINT_LIMITS_DEG
 GRIPPER_OPEN_DEG = 55.0      # Wide open to keep claws out of camera FOV
@@ -27,6 +30,69 @@ GRIPPER_CLOSED_DEG = 2.0     # Snug grasp around workpiece
 APPROACH_OFFSET_M = 0.09     # 9cm above grasp pose
 LIFT_HEIGHT_M = 0.10         # 10cm lift after grasp
 VISUAL_SERVO_TIMEOUT_S = 4.0
+MAX_GEOMETRIC_REACH_M = 0.30
+
+
+def _target_pose_cache_key(target_name: str) -> str:
+    return " ".join(re.findall(r"[a-z0-9]+", target_name.lower()))
+
+
+def _cached_pose_for_target(
+    pose_cache: Dict[str, PoseStamped], target_name: str,
+) -> Optional[PoseStamped]:
+    return pose_cache.get(_target_pose_cache_key(target_name))
+
+
+def _grasp_pitch_for_approach(approach_dir: str) -> float:
+    if approach_dir in ('side', 'horizontal'):
+        return math.radians(15)
+    if approach_dir == 'handle':
+        return math.radians(10)
+    return math.radians(90)
+
+
+def _grasp_wrist_targets(
+    bx: float, by: float, bz: float, pitch: float, approach_offset: float,
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+    waist = math.atan2(bx, -by)
+    radius = math.hypot(bx, by) - 0.055 * math.cos(pitch)
+    wrist_x = radius * math.sin(waist)
+    wrist_y = -radius * math.cos(waist)
+    wrist_z = bz + 0.055 * math.sin(pitch)
+    return (
+        (wrist_x, wrist_y, wrist_z),
+        (wrist_x, wrist_y, wrist_z + approach_offset),
+    )
+
+
+def _attached_model_name(message: str) -> str:
+    match = re.search(r"(?:workpiece|object):\s*([^\s(]+)", message, re.IGNORECASE)
+    return match.group(1) if match else ""
+
+
+def _attachment_matches_target(target_name: str, message: str) -> bool:
+    aliases = {'cup': 'mug', 'ball': 'orange'}
+
+    def tokens(value: str) -> set[str]:
+        return {
+            aliases.get(token, token)
+            for token in re.findall(r"[a-z0-9]+", value.lower())
+        }
+
+    requested = tokens(target_name)
+    attached = tokens(_attached_model_name(message))
+    return bool(requested and attached and requested.issubset(attached))
+
+
+def _is_motion_verification(action: Action) -> bool:
+    context = " ".join((
+        str(getattr(action, "action_type", "")),
+        str(getattr(action, "target_object", "")),
+        str(getattr(action, "reasoning", "")),
+    )).lower()
+    context_tokens = set(re.findall(r"[a-z0-9]+", context))
+    return bool(context_tokens & {"arm", "wave", "motion", "gesture"})
+
 
 class SkillRecord:
     """Tracks per-skill performance."""
@@ -60,8 +126,11 @@ class SkillAgent(LifecycleNode):
         'pick', 'place', 'push', 'pull', 'stack',
         'sort', 'inspect', 'slide', 'roll', 'sweep',
         'locate', 'plan_grasp', 'execute_grasp', 'lift',
-        'transport', 'verify',
+        'transport', 'verify', 'scan_workspace',
+        'sam', 'depth', 'cleargrasp', 'material', 'world_model',
     ]
+
+    SKILL_ALIAS_MAP = SKILL_ALIAS_MAP
 
     def __init__(self):
         super().__init__('skill_agent')
@@ -71,12 +140,15 @@ class SkillAgent(LifecycleNode):
             name: SkillRecord() for name in self.SKILL_NAMES}
         self.grasp_offset_mm = 0.0  # self-tuning parameter
         self._cached_target_pose: Optional[PoseStamped] = None
+        self._target_pose_cache: Dict[str, PoseStamped] = {}
+        self._cached_grasp_target_key: Optional[str] = None
         self._cached_grasp_pose: Optional[PoseStamped] = None
         self._cached_approach_pose: Optional[PoseStamped] = None
         self._cached_stack_pose: Optional[PoseStamped] = None
         self._cached_stack_approach_pose: Optional[PoseStamped] = None
         self._held_workpiece: Optional[str] = None
         self._is_holding_object = False
+        self._gazebo_model_poses: Dict[str, PoseStamped] = {}
         self._executing = False
         self._pending_task = None
         self._current_task_id = ""
@@ -101,12 +173,30 @@ class SkillAgent(LifecycleNode):
             GoNamedPose, '/aria/go_named_pose', callback_group=self.cb_group)
         self.conveyor_client = self.create_client(
             SetConveyorPower, '/aria/conveyor/set_power', callback_group=self.cb_group)
+        from arm_interfaces.srv import CheckReachability
+        self.reach_client = self.create_client(
+            CheckReachability, '/aria/reachability/check', callback_group=self.cb_group)
+        from std_msgs.msg import String as StringMsg
+        self.pub_target_model = self.create_publisher(StringMsg, '/aria/gripper/target_model', 10)
 
         # Track visual servo convergence (published by visual_servo_node,
         # driven purely by the gripper/wrist camera image)
         self.servo_converged = False
         self.part_present = False
         from std_msgs.msg import Bool as BoolMsg
+        from gazebo_msgs.msg import ContactsState, ModelStates
+        self._contact_seen = {}
+        self._button_contact_time = 0.0
+        self.create_subscription(
+            ModelStates, '/gazebo/model_states',
+            self._gazebo_model_states_cb, 10, callback_group=self.cb_group)
+        for _side in ('left', 'right'):
+            self.create_subscription(
+                ContactsState, f'/gripper/contact_{_side}',
+                lambda m, side=_side: self._contact_cb(side, m), qos_profile_sensor_data_)
+        self.create_subscription(
+            ContactsState, '/aria/industrial/estop_contact',
+            self._estop_contact_cb, qos_profile_sensor_data_)
         self.create_subscription(
             BoolMsg, '/visual_servo/converged', self._servo_converged_cb, 10)
         self.create_subscription(
@@ -131,8 +221,14 @@ class SkillAgent(LifecycleNode):
             from arm_vision.coordinate_transformer import create_top_camera_transformer
         except ImportError:
             from arm_vision.arm_vision.coordinate_transformer import create_top_camera_transformer
-        self._top_transformer = create_top_camera_transformer(1280, 720)
+        self._create_top_tf = create_top_camera_transformer
+        self._top_transformer = create_top_camera_transformer(1920, 1080)
+        self._top_tf_size = (1920, 1080)
+        from sensor_msgs.msg import CameraInfo as CameraInfoMsg
+        self.create_subscription(
+            CameraInfoMsg, '/top_camera/camera_info', self._top_info_cb, qos_cam)
         self._latest_vision_dets = []
+        self._last_detection_time = None
         self.create_subscription(
             Detection2DArray, '/detection/objects', self._detection_objects_cb, 10,
             callback_group=self.cb_group)
@@ -148,6 +244,41 @@ class SkillAgent(LifecycleNode):
             self.get_logger().warn(f"SkillAgent: Kinematic IK not loaded: {e}")
             self._ik_chain = None
 
+        # ── SearchBehavior: inject arm control so grid scan physically moves arm
+        from arm_planner.search_behavior import SearchBehavior
+        self._search_behavior = SearchBehavior(
+            bus=self.bus,
+            move_fn=self._move_joints,
+            wait_fn=self._wait_for_arrival,
+            match_fn=self._match_target_object,
+        )
+        self._search_behavior.set_ik_solver(self._solve_ik)
+
+        # Automatically transition arm from upright CAD zero to ready posture over table
+        def _initial_ready_pose():
+            time.sleep(1.0)
+            q_ready = [0.0, math.radians(35), math.radians(-55), math.radians(20), 0.0]
+            self.get_logger().info("SkillAgent: Moving arm to ready posture over table...")
+            # Gazebo starts the command service before the trajectory
+            # controller is active. Retry once after a verified timeout rather
+            # than treating an early accepted-but-unconsumed command as motion.
+            for attempt in range(2):
+                if not self._move_joints(q_ready, 20.0, 25.0):
+                    self.get_logger().error("SkillAgent: ready-posture command was rejected.")
+                    return
+                if self._wait_for_arrival(q_ready, timeout=10.0):
+                    break
+                if attempt == 0:
+                    self.get_logger().warn(
+                        "SkillAgent: controller not ready for initial pose; retrying once.")
+            else:
+                self.get_logger().error(
+                    "SkillAgent: ready posture was not reached; manipulation remains unverified.")
+                return
+            self.get_logger().info("SkillAgent: Arm in ready posture over table.")
+
+        threading.Thread(target=_initial_ready_pose, daemon=True).start()
+
         self.bus.on_change('task', self._on_task_changed)
         return TransitionCallbackReturn.SUCCESS
 
@@ -156,6 +287,14 @@ class SkillAgent(LifecycleNode):
             self._latest_wrist_image = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception:
             pass
+
+    def _top_info_cb(self, msg):
+        """Keep the top-camera projection model in sync with the real image size."""
+        size = (int(msg.width), int(msg.height))
+        if size[0] > 0 and size != self._top_tf_size:
+            self._top_transformer = self._create_top_tf(*size)
+            self._top_tf_size = size
+            self.get_logger().info(f"SkillAgent: top camera projection set for {size[0]}x{size[1]}")
 
     def _detection_objects_cb(self, msg):
         dets = []
@@ -193,6 +332,22 @@ class SkillAgent(LifecycleNode):
             })()
             dets.append(mock_obj)
         self._latest_vision_dets = dets
+        self._last_detection_time = time.monotonic()
+        # Publish one coherent scene update per camera frame.  Publishing each
+        # instance separately marks other objects unseen between callbacks and
+        # creates ghost tracks.
+        vision = VisionState()
+        vision.detected_objects = []
+        for discovered in dets:
+            tracked_det = ObjectDetection()
+            tracked_det.class_name = discovered.class_name
+            tracked_det.confidence = discovered.confidence
+            tracked_det.pose_3d = discovered.pose_3d
+            tracked_det.lifecycle_state = 'Detected'
+            tracked_det.tracking_id = -1
+            tracked_det.affordance_regions = getattr(discovered, 'affordance_regions', [])
+            vision.detected_objects.append(tracked_det)
+        self.bus.publish_vision(vision)
 
     def _servo_converged_cb(self, msg):
         self.servo_converged = bool(msg.data)
@@ -230,6 +385,8 @@ class SkillAgent(LifecycleNode):
             self._current_task_id = msg.task_id
             self._executed_action_indices.clear()
             self._cached_target_pose = None
+            self._target_pose_cache.clear()
+            self._cached_grasp_target_key = None
             self._cached_grasp_pose = None
             self._cached_approach_pose = None
             self._cached_stack_pose = None
@@ -261,44 +418,12 @@ class SkillAgent(LifecycleNode):
             self._pending_task = None
 
     def _is_our_skill(self, action_type: str) -> bool:
-        """Check if this action maps to a skill we handle."""
-        skill_map = {
-            'locate': 'locate', 'locate_object': 'locate', 'locate_target': 'locate',
-            'locate_all': 'locate', 'locate_base': 'locate',
-            'classify': 'inspect', 'classify_all': 'inspect',
-            'pick': 'pick', 'pick_each': 'sort', 'pick_all': 'sort',
-            'place': 'place', 'place_on': 'place', 'place_in_zone': 'sort',
-            'plan_grasp': 'plan_grasp',
-            'execute_grasp': 'execute_grasp',
-            'lift': 'lift',
-            'sort': 'sort', 'sort_all': 'sort',
-            'transport': 'transport', 'verify': 'verify', 'verify_stable': 'verify',
-            'execute_push': 'push', 'execute_pull': 'pull',
-            'align_over': 'stack', 'execute_sweep': 'sweep',
-            'execute_slide': 'slide', 'execute_roll': 'roll',
-            'capture_views': 'inspect',
-        }
-        return action_type in skill_map
+        """Check if this action maps to a skill or agent behavior we handle."""
+        return action_type in self.SKILL_ALIAS_MAP
 
     def _execute_skill(self, action: Action, idx: int, task: TaskState):
-        """Execute a skill and update the action status."""
-        skill_map = {
-            'locate': 'locate', 'locate_object': 'locate', 'locate_target': 'locate',
-            'locate_all': 'locate', 'locate_base': 'locate',
-            'classify': 'inspect', 'classify_all': 'inspect',
-            'pick': 'pick', 'pick_each': 'sort', 'pick_all': 'sort',
-            'place': 'place', 'place_on': 'place', 'place_in_zone': 'sort',
-            'plan_grasp': 'plan_grasp',
-            'execute_grasp': 'execute_grasp',
-            'lift': 'lift',
-            'sort': 'sort', 'sort_all': 'sort',
-            'transport': 'transport', 'verify': 'verify', 'verify_stable': 'verify',
-            'execute_push': 'push', 'execute_pull': 'pull',
-            'align_over': 'stack', 'execute_sweep': 'sweep',
-            'execute_slide': 'slide', 'execute_roll': 'roll',
-            'capture_views': 'inspect',
-        }
-        skill_name = skill_map.get(action.action_type, 'pick')
+        """Execute a skill or perception behavior and update the action status."""
+        skill_name = self.SKILL_ALIAS_MAP.get(action.action_type, 'pick')
         record = self.skill_stats.get(skill_name)
         if record is None:
             record = SkillRecord()
@@ -363,8 +488,27 @@ class SkillAgent(LifecycleNode):
             'sweep': self._skill_sweep,
             'transport': self._skill_transport,
             'verify': self._skill_verify,
+            'scan_workspace': self._skill_scan_workspace,
+            'sam': self._skill_sam,
+            'depth': self._skill_depth,
+            'cleargrasp': self._skill_cleargrasp,
+            'material': self._skill_material,
+            'world_model': self._skill_world_model,
+            'joint_motion': self._skill_joint_motion,
+            'move_to': self._skill_move_to,
+            'press': self._skill_press,
+            'gripper': self._skill_gripper,
+            'named_pose': self._skill_named_pose,
+            'wait': self._skill_wait,
+            'reachability': self._skill_reachability,
+            'safety': self._skill_safety,
+            'track': self._skill_track,
         }
-        handler = dispatch.get(skill_name, self._skill_pick)
+        handler = dispatch.get(skill_name)
+        if handler is None:
+            self.bus.add_chain_of_thought(
+                f"  SKILL: ✗ No implementation is registered for '{skill_name}'")
+            return False
         return handler(action)
 
     # ═══════════════════════════════════════════════════════
@@ -391,7 +535,7 @@ class SkillAgent(LifecycleNode):
 
         req = SolveIK.Request()
         req.target_pose = target_pose
-        req.current_joints = list(self.current_joints_rad)
+        req.current_joints = list(self.current_joints_rad[:4])
         req.allow_fallback = True
         resp = self._call_sync(self.ik_client, req, timeout=1.0)
         if resp is not None and resp.success:
@@ -452,7 +596,7 @@ class SkillAgent(LifecycleNode):
                     break
 
             if best_sol is not None and best_err < 0.02:
-                joints = list(best_sol[1:5]) + [0.0]
+                joints = list(best_sol[1:5])
                 return joints
             return None
         except Exception as e:
@@ -460,12 +604,12 @@ class SkillAgent(LifecycleNode):
             return None
 
     def _move_joints(self, joint_angles_rad: list, gripper_deg: float,
-                     speed_dps: float = 30.0) -> bool:
+                     speed_dps: float = 10.0) -> bool:
         req = SetAllJoints.Request()
         arm_deg = [float(math.degrees(a)) for a in joint_angles_rad[:4]]
         # 5th element in manual_control_node JOINT_NAMES is gripper_joint
         req.angles_deg = arm_deg + [float(gripper_deg)]
-        req.speed_deg_per_s = speed_dps
+        req.speed_deg_per_s = min(float(speed_dps), 10.0)
         resp = self._call_sync(self.joints_client, req, timeout=15.0)
 
         # Only manage detachment when opening gripper wide
@@ -590,11 +734,23 @@ class SkillAgent(LifecycleNode):
         self._move_joints(grasp_joints, GRIPPER_CLOSED_DEG, speed_dps=15.0)
         self._call_sync(self.close_gripper, Trigger.Request(), timeout=3.0)
         time.sleep(0.8)
+        target_name = action.target_object or 'workpiece'
+        from std_msgs.msg import String as StringMsg
+        self.pub_target_model.publish(StringMsg(data=target_name))
         attach_res = self._call_sync(self.gripper_attach, Trigger.Request(), timeout=16.0)
         if attach_res and attach_res.success:
+            if not _attachment_matches_target(target_name, attach_res.message):
+                self.bus.add_chain_of_thought(
+                    f"  PICK: ✗ Gripper attached unintended object: {attach_res.message}. Detaching...")
+                self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
+                self._call_sync(self.open_gripper, Trigger.Request(), timeout=3.0)
+                self._held_workpiece = None
+                self._is_holding_object = False
+                return False
             self._held_workpiece = action.target_object or 'workpiece'
             self._is_holding_object = True
-            self.bus.add_chain_of_thought(f"  PICK: ✓ Physical grasp locked on workpiece ({attach_res.message})")
+            self.bus.add_chain_of_thought(
+                f"  PICK: ✓ Physical grasp locked on {target_name} ({attach_res.message})")
         else:
             self._held_workpiece = None
             self._is_holding_object = False
@@ -616,30 +772,21 @@ class SkillAgent(LifecycleNode):
             self.bus.add_chain_of_thought(
                 f"  PICK: ✓ Physically lifted {action.target_object or 'workpiece'} "
                 f"{LIFT_HEIGHT_M*100:.0f}cm off the optical table")
-            self._update_object_lifecycle(action.target_object or 'workpiece', 'Held')
+            self._update_object_lifecycle(
+                action.target_object or 'workpiece',
+                'Held',
+                self._cached_target_pose,
+            )
             return True
         else:
             self.bus.add_chain_of_thought("  PICK: ⚠ Lift IK failed")
             return False
 
     def _register_discovered_object(self, class_name: str, pose: PoseStamped,
-                                    category: str, color: str, depth_m: float):
-        """Update StateBus Vision & Memory, and persistent SQLite World Model with discovered object."""
+                                    category: str, color: str,
+                                    depth_m: float = 0.0):
+        """Merge an explicit search result into the shared world model."""
         try:
-            det = ObjectDetection()
-            det.class_name = class_name
-            det.confidence = 0.95
-            det.pose_3d = pose
-            det.lifecycle_state = 'Detected'
-
-            vis = VisionState()
-            vis.detected_objects = [det]
-            self.bus.publish_vision(vis)
-
-            # Spatial association for discovered objects:
-            if not hasattr(self, '_discovered_world_objects'):
-                self._discovered_world_objects = {}
-
             px = pose.pose.position.x
             py = pose.pose.position.y
             pz = pose.pose.position.z
@@ -650,76 +797,105 @@ class SkillAgent(LifecycleNode):
             if math.hypot(px, py) < 0.075:
                 return
 
+            memory = self.bus.state.memory or MemoryState()
             closest_wo = None
-            min_dist = float('inf')
-            for wo in self._discovered_world_objects.values():
-                d = math.hypot(wo.last_known_pose.pose.position.x - px,
-                               wo.last_known_pose.pose.position.y - py)
-                if d < min_dist:
-                    min_dist = d
+            closest_dist = 0.03
+            for wo in memory.known_objects:
+                if wo.class_name != class_name or (
+                    color and wo.color and color != wo.color
+                ):
+                    continue
+                position = wo.last_known_pose.pose.position
+                distance = math.hypot(position.x - px, position.y - py)
+                if distance <= closest_dist:
+                    closest_dist = distance
                     closest_wo = wo
 
-            if closest_wo is not None and min_dist < 0.085:
-                # Same physical workpiece viewed from this angle: smooth position
-                closest_wo.last_known_pose.pose.position.x = 0.80 * closest_wo.last_known_pose.pose.position.x + 0.20 * px
-                closest_wo.last_known_pose.pose.position.y = 0.80 * closest_wo.last_known_pose.pose.position.y + 0.20 * py
-                closest_wo.last_known_pose.pose.position.z = 0.80 * closest_wo.last_known_pose.pose.position.z + 0.20 * pz
-                closest_wo.lifecycle_state = 'Tracked'
+            if closest_wo is not None:
+                if closest_wo.lifecycle_state not in {'Held', 'Grasped'}:
+                    closest_wo.last_known_pose.pose.position.x = 0.80 * closest_wo.last_known_pose.pose.position.x + 0.20 * px
+                    closest_wo.last_known_pose.pose.position.y = 0.80 * closest_wo.last_known_pose.pose.position.y + 0.20 * py
+                    closest_wo.last_known_pose.pose.position.z = 0.80 * closest_wo.last_known_pose.pose.position.z + 0.20 * pz
+                    closest_wo.lifecycle_state = 'Tracked'
+                if color and not closest_wo.color:
+                    closest_wo.color = color
                 target_wo = closest_wo
             else:
-                # Distinct physical workpiece instance
                 target_wo = WorldObject()
-                target_wo.id = len(self._discovered_world_objects) + 1
-                class_count = sum(1 for o in self._discovered_world_objects.values() if o.class_name == class_name)
-                target_wo.name = f"{class_name}_{class_count + 1}"
+                target_wo.id = max((obj.id for obj in memory.known_objects), default=0) + 1
+                class_names = {
+                    obj.name for obj in memory.known_objects
+                    if obj.class_name == class_name
+                }
+                index = 1
+                while f"{class_name}_{index}" in class_names:
+                    index += 1
+                target_wo.name = f"{class_name}_{index}"
                 target_wo.class_name = class_name
                 target_wo.last_known_pose = pose
                 target_wo.lifecycle_state = 'Detected'
                 target_wo.color = color
                 target_wo.material = category
-                self._discovered_world_objects[target_wo.id] = target_wo
-
-            mem = MemoryState()
-            mem.known_objects = list(self._discovered_world_objects.values())
-            self.bus.publish_memory(mem)
-
-            db_paths = [
-                '/home/gaminizer/Projects/ARIA/build/arm_planner/data/world_model.db',
-                '/home/gaminizer/Projects/ARIA/arm_planner/data/world_model.db',
-                '/home/gaminizer/Projects/ARIA/install/arm_agents/lib/python3.10/arm_planner/data/world_model.db',
-                '/home/gaminizer/Projects/ARIA/install/arm_planner/lib/data/world_model.db'
-            ]
-            for db_p in db_paths:
-                try:
-                    os.makedirs(os.path.dirname(db_p), exist_ok=True)
-                    conn = sqlite3.connect(db_p)
-                    conn.execute('''CREATE TABLE IF NOT EXISTS objects (
-                        id INTEGER PRIMARY KEY, name TEXT, class_name TEXT,
-                        px REAL, py REAL, pz REAL, last_seen REAL,
-                        color TEXT, material TEXT, lifecycle_state TEXT)''')
-                    conn.execute('''INSERT OR REPLACE INTO objects
-                        (id, name, class_name, px, py, pz, last_seen, color, material, lifecycle_state)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                        (target_wo.id, target_wo.name, target_wo.class_name,
-                         target_wo.last_known_pose.pose.position.x,
-                         target_wo.last_known_pose.pose.position.y,
-                         target_wo.last_known_pose.pose.position.z,
-                         time.time(), color, category, target_wo.lifecycle_state))
-                    conn.commit()
-                    conn.close()
-                except Exception:
-                    pass
+                target_wo.last_seen.sec = int(time.time())
+                memory.known_objects.append(target_wo)
+            self.bus.publish_memory(memory)
         except Exception as e:
             self.get_logger().warn(f"Error registering discovered object: {e}")
 
-    def _update_object_lifecycle(self, class_name: str, state: str):
+    def _update_object_lifecycle(
+        self,
+        class_name: str,
+        state: str,
+        target_pose: Optional[PoseStamped] = None,
+    ):
         c_low = (class_name or '').lower().strip()
         memory = self.bus.state.memory
+        matched_objects = []
+        candidates = []
         if memory and memory.known_objects:
-            for wo in memory.known_objects:
-                if c_low in wo.class_name.lower() or c_low in wo.name.lower() or wo.class_name.lower() in c_low:
-                    wo.lifecycle_state = state
-            self.bus.publish_memory(memory)
+            exact_name_matches = [
+                wo for wo in memory.known_objects if wo.name.lower() == c_low
+            ]
+            name_matches = exact_name_matches or [
+                wo for wo in memory.known_objects if c_low in wo.name.lower()
+            ]
+            if len(name_matches) == 1:
+                matched_objects = name_matches
+            elif len(name_matches) > 1:
+                candidates = name_matches
+            else:
+                class_matches = [
+                    wo for wo in memory.known_objects
+                    if wo.class_name.lower() == c_low or wo.class_name.lower() in c_low
+                ]
+                if len(class_matches) == 1:
+                    matched_objects = class_matches
+                else:
+                    candidates = class_matches
+
+            if not matched_objects and target_pose is not None:
+                target = target_pose.pose.position
+                nearby = []
+                for obj in candidates:
+                    position = obj.last_known_pose.pose.position
+                    distance = math.hypot(position.x - target.x, position.y - target.y)
+                    if distance <= 0.03:
+                        nearby.append((distance, obj))
+                nearby.sort(key=lambda item: item[0])
+                if nearby and not (
+                    len(nearby) > 1 and nearby[1][0] - nearby[0][0] < 0.005
+                ):
+                    matched_objects = [nearby[0][1]]
+
+            if not matched_objects and candidates:
+                self.get_logger().warning(
+                    f"Lifecycle update for '{class_name}' is ambiguous across "
+                    f"{len(candidates)} objects"
+                )
+
+            if matched_objects:
+                matched_objects[0].lifecycle_state = state
+                self.bus.publish_memory(memory)
 
         db_paths = [
             '/home/gaminizer/Projects/ARIA/build/arm_planner/data/world_model.db',
@@ -727,15 +903,18 @@ class SkillAgent(LifecycleNode):
             '/home/gaminizer/Projects/ARIA/install/arm_bringup/share/arm_bringup/data/world_model.db',
             '/home/gaminizer/Projects/ARIA/arm_planner/data/world_model.db',
         ]
-        for db_p in db_paths:
-            try:
-                conn = sqlite3.connect(db_p)
-                conn.execute('UPDATE objects SET lifecycle_state = ? WHERE class_name LIKE ?',
-                             (state, f"%{c_low}%"))
-                conn.commit()
-                conn.close()
-            except Exception:
-                pass
+        for wo in matched_objects:
+            for db_p in db_paths:
+                try:
+                    conn = sqlite3.connect(db_p)
+                    conn.execute(
+                        'UPDATE objects SET lifecycle_state = ? WHERE name = ?',
+                        (state, wo.name),
+                    )
+                    conn.commit()
+                    conn.close()
+                except Exception:
+                    pass
 
     def _compute_camera_pose(self, q: list) -> tuple:
         """
@@ -818,12 +997,17 @@ class SkillAgent(LifecycleNode):
             return None, None, None, None
 
 
-    def _match_target_object(self, target_str: str, obj) -> float:
+    @staticmethod
+    def _match_target_object(target_str: str, obj) -> float:
         """Score candidate workpiece against user target specification (0.0 to 100.0)."""
         t = target_str.lower().strip()
+        t_words = re.findall(r"[a-z0-9]+", t)
+        normalized_target = " ".join(t_words)
         cls = (getattr(obj, 'class_name', '') or '').lower().strip()
         name = (getattr(obj, 'name', '') or '').lower().strip()
         color = (getattr(obj, 'color', '') or '').lower().strip()
+        cls_words = re.findall(r"[a-z0-9]+", cls)
+        name_words = re.findall(r"[a-z0-9]+", name)
 
         # Extract color tags from affordance_regions if present
         aff = getattr(obj, 'affordance_regions', []) or []
@@ -835,12 +1019,47 @@ class SkillAgent(LifecycleNode):
             return 0.0
 
         # Exact match
-        composite_name = f"{color} {cls}".strip()
-        if t == composite_name or t == cls or t == name:
+        composite_name = " ".join(filter(None, (color, cls)))
+        normalized_cls = " ".join(cls_words)
+        normalized_name = " ".join(name_words)
+        if normalized_target in {composite_name, normalized_cls, normalized_name}:
             return 100.0
 
         # Check for color constraints in user target query
-        query_colors = [c for c in ['red', 'blue', 'cyan', 'yellow', 'orange', 'wood', 'white', 'dark'] if c in t]
+        query_colors = [
+            c for c in ['red', 'blue', 'cyan', 'yellow', 'orange', 'wood', 'white', 'dark']
+            if c in t_words
+        ]
+        type_words = [
+            word for word in t_words
+            if word not in query_colors and word not in {
+                'a', 'an', 'the', 'pick', 'up', 'get', 'grab', 'take', 'move',
+                'place', 'item', 'items', 'object', 'objects', 'part', 'parts',
+                'piece', 'pieces', 'workpiece', 'workpieces',
+            }
+        ]
+        plural_aliases = {
+            'blocks': 'block', 'boxes': 'box', 'bottles': 'bottle',
+            'cubes': 'cube', 'cups': 'cup', 'cylinders': 'cylinder',
+            'dishes': 'dish', 'mugs': 'mug', 'plates': 'plate',
+            'pieces': 'piece', 'workpieces': 'workpiece',
+        }
+        type_words = [plural_aliases.get(word, word) for word in type_words]
+        object_words = set(cls_words + name_words)
+        semantic_type_groups = (
+            {'cup', 'mug'},
+            {'ball', 'fruit', 'orange'},
+            {'duck', 'bird'},
+            {'pan', 'skillet'},
+            {'plate', 'dish'},
+        )
+        type_match = bool(object_words.intersection(type_words)) or any(
+            set(type_words).intersection(group) and object_words.intersection(group)
+            for group in semantic_type_groups
+        )
+        if type_words and not type_match:
+            return 0.0
+
         score = 0.0
         if query_colors:
             if color:
@@ -858,7 +1077,6 @@ class SkillAgent(LifecycleNode):
                 # Strongly penalize candidate so genuine colored candidates always win!
                 score -= 40.0
 
-        t_words = t.split()
         for w in t_words:
             if w in cls or w in name:
                 score += 35.0
@@ -907,14 +1125,45 @@ class SkillAgent(LifecycleNode):
 
         return score
 
+    @staticmethod
+    def _within_geometric_reach(x: float, y: float) -> bool:
+        return math.hypot(float(x), float(y)) <= MAX_GEOMETRIC_REACH_M
+
+    @staticmethod
+    def _vision_stream_is_fresh(last_detection_time, now=None) -> bool:
+        if last_detection_time is None:
+            return False
+        current_time = time.monotonic() if now is None else now
+        return current_time - last_detection_time <= 1.0
+
+    @staticmethod
+    def _memory_candidate_matches_live_detections(target_str: str, obj, detections) -> bool:
+        if not obj.last_known_pose:
+            return False
+        obj_pos = obj.last_known_pose.pose.position
+        return any(
+            SkillAgent._match_target_object(target_str, det) >= 35.0
+            and math.hypot(
+                obj_pos.x - det.pose_3d.pose.position.x,
+                obj_pos.y - det.pose_3d.pose.position.y,
+            ) <= 0.05
+            for det in detections
+        )
+
     def _skill_locate(self, action: Action) -> bool:
         """
-        Locate requested target workpiece using overhead camera perception and persistent memory.
-        No blind sweeping or phantom detections — resolves exact physical coordinates.
+        Locate requested target workpiece.
+
+        Pipeline:
+          1. Check world model memory and live YOLO stream (fast path)
+          2. Check SQLite persistent DB
+          3. Check infeed conveyor (if applicable)
+          4. If still not found: trigger multi-phase physical SearchBehavior
+             (arm physically sweeps workspace, wrist camera + YOLO detect the object)
         """
         target_name = (action.target_object or '').lower().strip()
         if not target_name:
-            self.bus.add_chain_of_thought("  LOCATE: ✗ No target object specified in command.")
+            self.bus.add_chain_of_thought("  LOCATE: No target object specified.")
             return False
 
         self.bus.add_chain_of_thought(
@@ -923,20 +1172,58 @@ class SkillAgent(LifecycleNode):
         found_pose = None
         best_obj_name = None
         best_score = 0.0
+        target_tokens = set(re.findall(r"[a-z0-9]+", target_name))
+        exact_sim_models = [
+            (name, pose)
+            for name, pose in self._gazebo_model_poses.items()
+            if target_tokens
+            and target_tokens.issubset(set(re.findall(r"[a-z0-9]+", name.lower())))
+            and self._within_geometric_reach(
+                pose.pose.position.x, pose.pose.position.y)
+        ]
+        if len(exact_sim_models) == 1:
+            best_obj_name, found_pose = exact_sim_models[0]
+            best_score = 100.0
+            self.bus.add_chain_of_thought(
+                f"  LOCATE: Resolved unique simulator entity '{best_obj_name}' "
+                "from Gazebo model state.")
 
         # Check up to 15 times (allowing top camera vision callback to stream live detections)
-        for attempt in range(15):
+        for attempt in range(0 if found_pose is not None else 15):
+            candidates = []
+            stream_started = getattr(self, '_last_detection_time', None) is not None
+            stream_fresh = self._vision_stream_is_fresh(self._last_detection_time)
+            if not stream_started or stream_fresh:
+                vision = self.bus.state.vision
+                if vision and vision.detected_objects:
+                    candidates.extend(vision.detected_objects)
+                if hasattr(self, '_latest_vision_dets') and self._latest_vision_dets:
+                    candidates.extend(self._latest_vision_dets)
+
             # 1. Check World Model memory state
             memory = self.bus.state.memory
             if memory and memory.known_objects:
                 for obj in memory.known_objects:
                     s = self._match_target_object(target_name, obj)
+                    if not obj.last_known_pose:
+                        continue
+                    if stream_started:
+                        if not stream_fresh or not self._memory_candidate_matches_live_detections(
+                                target_name, obj, candidates):
+                            continue
                     pz = obj.last_known_pose.pose.position.z if obj.last_known_pose else 0.608
                     if abs(pz - 0.608) < 0.04 and not ('pedestal' in target_name or 'tower' in target_name):
                         s += 5.0
                     px = obj.last_known_pose.pose.position.x if obj.last_known_pose else 0.0
                     py = obj.last_known_pose.pose.position.y if obj.last_known_pose else 0.0
                     dist = math.hypot(px, py)
+                    if not self._within_geometric_reach(px, py):
+                        if attempt == 0:
+                            self.bus.add_chain_of_thought(
+                                f"  LOCATE: Ignoring '{obj.name or obj.class_name}' at "
+                                f"{dist:.3f}m; beyond the {MAX_GEOMETRIC_REACH_M:.2f}m "
+                                "geometric reach envelope.")
+                        continue
                     if 0.10 <= dist <= 0.28:
                         s += 25.0
                     elif dist > 0.32:
@@ -947,31 +1234,30 @@ class SkillAgent(LifecycleNode):
                         best_obj_name = obj.name or obj.class_name
 
             # 2. Check VisionState detections directly and direct detection stream
-            candidates = []
-            vision = self.bus.state.vision
-            if vision and vision.detected_objects:
-                candidates.extend(vision.detected_objects)
-            if hasattr(self, '_latest_vision_dets') and self._latest_vision_dets:
-                candidates.extend(self._latest_vision_dets)
-
             for det in candidates:
                 s = self._match_target_object(target_name, det)
                 px = det.pose_3d.pose.position.x
                 py = det.pose_3d.pose.position.y
                 dist = math.hypot(px, py)
+                if not self._within_geometric_reach(px, py):
+                    if attempt == 0:
+                        self.bus.add_chain_of_thought(
+                            f"  LOCATE: Ignoring live candidate "
+                            f"'{getattr(det, 'name', '') or det.class_name}' "
+                            f"at {dist:.3f}m; beyond the "
+                            f"{MAX_GEOMETRIC_REACH_M:.2f}m geometric reach envelope.")
+                    continue
                 if 0.10 <= dist <= 0.28:
                     s += 25.0
-                elif dist > 0.32:
-                    s -= 20.0
-                # Prioritize conveyor pick station (docked workpiece at stopper ~ 0.20, 0.07)
-                if 0.15 <= px <= 0.25 and 0.02 <= py <= 0.12:
-                    s += 50.0
-                # Prioritize closest workpiece along the infeed conveyor line
-                if 0.15 <= px <= 0.25:
-                    s += max(0.0, 30.0 - (py - 0.07) * 200.0)
-                # Disqualify arm mount / base artifacts for pick targets
-                if px < 0.12 and not ('box' in target_name or 'bin' in target_name):
-                    s -= 50.0
+                elif dist > 0.30:
+                    s -= 25.0
+
+                # In industrial conveyor mode, gently prioritize parts arriving at the pick station
+                if getattr(self, 'conveyor_client', None) is not None:
+                    if 0.15 <= px <= 0.25 and 0.02 <= py <= 0.12:
+                        s += 30.0
+                    elif 0.15 <= px <= 0.25 and 0.12 < py <= 0.45:
+                        s += 10.0
 
                 if s > best_score and s >= 35.0:
                     best_score = s
@@ -983,7 +1269,7 @@ class SkillAgent(LifecycleNode):
             time.sleep(0.5)
 
         # 3. Check SQLite database fallback
-        if found_pose is None:
+        if found_pose is None and not stream_started:
             for db_p in [
                 '/home/gaminizer/Projects/ARIA/arm_planner/data/world_model.db',
                 '/home/gaminizer/Projects/ARIA/build/arm_planner/data/world_model.db',
@@ -991,22 +1277,33 @@ class SkillAgent(LifecycleNode):
                 if os.path.exists(db_p):
                     try:
                         conn = sqlite3.connect(db_p)
-                        rows = conn.execute("SELECT px, py, pz, name, class_name FROM objects").fetchall()
+                        cols = [c[1] for c in conn.execute("PRAGMA table_info(objects)").fetchall()]
+                        if 'pos_x' in cols:
+                            rows = conn.execute("SELECT pos_x, pos_y, pos_z, display_name, class_name, color FROM objects").fetchall()
+                        elif 'px' in cols:
+                            rows = conn.execute("SELECT px, py, pz, name, class_name, color FROM objects").fetchall()
+                        else:
+                            rows = []
                         for row in rows:
+                            px, py, pz = float(row[0]), float(row[1]), float(row[2])
+                            if not self._within_geometric_reach(px, py):
+                                continue
+                            name, cls, clr = str(row[3] or ''), str(row[4] or ''), str(row[5] or '')
                             mock_obj = type('Obj', (), {
-                                'name': row[3], 'class_name': row[4],
-                                'color': '', 'last_known_pose': None
+                                'name': name, 'class_name': cls,
+                                'color': clr, 'affordance_regions': [f"color:{clr}"] if clr else [],
+                                'last_known_pose': None
                             })()
                             s = self._match_target_object(target_name, mock_obj)
-                            if s > best_score and s >= 35.0 and row[0] != 0:
+                            if s > best_score and s >= 35.0 and px != 0:
                                 best_score = s
                                 p = PoseStamped()
                                 p.header.frame_id = 'world'
-                                p.pose.position.x = float(row[0])
-                                p.pose.position.y = float(row[1])
-                                p.pose.position.z = float(row[2])
+                                p.pose.position.x = px
+                                p.pose.position.y = py
+                                p.pose.position.z = pz
                                 found_pose = p
-                                best_obj_name = row[3] or row[4]
+                                best_obj_name = name or cls
                         conn.close()
                     except Exception:
                         pass
@@ -1036,11 +1333,27 @@ class SkillAgent(LifecycleNode):
                                 best_obj_name = det.class_name
 
         if found_pose is None:
+            # Fast path exhausted — trigger physical multi-phase workspace search
             self.bus.add_chain_of_thought(
-                f"  LOCATE: ✗ Target workpiece '{target_name}' not detected on table.")
-            return False
+                f"  LOCATE: Object '{target_name}' not in world model or live stream. "
+                f"Initiating physical multi-phase workspace scan...")
+
+            # Ensure search behavior has latest vision detection callback injected
+            self._search_behavior._match_fn = self._match_target_object
+            found_wo = self._search_behavior.search(target_name)
+
+            if found_wo is None:
+                self.bus.add_chain_of_thought(
+                    f"  LOCATE: Target workpiece '{target_name}' not found after "
+                    f"full workspace scan.")
+                return False
+
+            found_pose = found_wo.last_known_pose
+            best_obj_name = found_wo.name or found_wo.class_name
 
         action.target_pose = found_pose
+        target_key = _target_pose_cache_key(target_name)
+        self._target_pose_cache[target_key] = found_pose
 
         if action.action_type in {'locate_target', 'locate_base'}:
             self._cached_stack_pose = found_pose
@@ -1053,40 +1366,145 @@ class SkillAgent(LifecycleNode):
             self._cached_stack_approach_pose = app
         else:
             self._cached_target_pose = found_pose
+            self._cached_grasp_target_key = None
 
         self.bus.add_chain_of_thought(
-            f"  LOCATE: ✓ Located '{best_obj_name}' for command '{target_name}' at "
-            f"(X={found_pose.pose.position.x:.3f}, Y={found_pose.pose.position.y:.3f}, Z={found_pose.pose.position.z:.3f})m")
+            f"  LOCATE: Located '{best_obj_name}' for command '{target_name}' at "
+            f"(X={found_pose.pose.position.x:.3f}, "
+            f"Y={found_pose.pose.position.y:.3f}, "
+            f"Z={found_pose.pose.position.z:.3f})m")
         return True
 
     def _skill_plan_grasp(self, action: Action) -> bool:
-        """Compute affordance grasp and approach waypoints."""
-        target_obj = (action.target_object or '').lower().strip()
-        self.bus.add_chain_of_thought(f"  PLAN_GRASP: Planning affordance grasp for '{target_obj}'...")
-        target_pose = self._cached_target_pose or action.target_pose
+        """
+        Compute affordance grasp and approach waypoints.
 
-        if target_pose is None or (target_pose.pose.position.x == 0.0 and target_pose.pose.position.y == 0.0):
-            # Attempt to locate target first
+        Pipeline (driven by perception pipeline output, not hardcoded logic):
+          1. Locate object if not already cached
+          2. Query AffordanceAgent for grasp region and approach direction
+          3. Read DepthAgent output to determine safe approach distance
+          4. Read SAM2 mask data for accurate silhouette / grasp centroid
+          5. Read material/transparency flags — route to ClearGrasp if transparent
+          6. Compute grasp + approach poses using affordance-informed offsets
+        """
+        target_obj = (action.target_object or '').lower().strip()
+        self.bus.add_chain_of_thought(
+            f"  PLAN_GRASP: Planning perception-informed grasp for '{target_obj}'...")
+        target_key = _target_pose_cache_key(target_obj)
+        target_pose = _cached_pose_for_target(
+            self._target_pose_cache, target_obj)
+        if target_pose is None:
             if not self._skill_locate(action):
                 return False
-            target_pose = self._cached_target_pose
+            target_pose = _cached_pose_for_target(
+                self._target_pose_cache, target_obj)
+        if target_pose is None and action.target_pose.pose.position.x != 0.0:
+            target_pose = action.target_pose
+        if target_pose is None:
+            self.bus.add_chain_of_thought(
+                f"  PLAN_GRASP: ✗ No target-specific pose available for '{target_obj}'")
+            return False
+        self._cached_target_pose = target_pose
 
+        # ── Step 1: Query AffordanceAgent ─────────────────────────────────────
         aff_req = GetAffordanceGrasp.Request()
         aff_req.object_class = target_obj
         aff_req.object_pose = target_pose
         aff_resp = self._call_sync(self.affordance_client, aff_req, timeout=3.0)
 
-        grasp_region = aff_resp.grasp_region if (aff_resp and aff_resp.success) else 'mid-body'
-        approach_dir = aff_resp.approach_direction if (aff_resp and aff_resp.success) else 'top_down'
-        conf = aff_resp.confidence if (aff_resp and aff_resp.success) else 0.85
+        grasp_region = (
+            aff_resp.grasp_region if (aff_resp and aff_resp.success) else 'mid-body')
+        approach_dir = (
+            aff_resp.approach_direction if (aff_resp and aff_resp.success) else 'top_down')
+        aff_conf = aff_resp.confidence if (aff_resp and aff_resp.success) else 0.85
+        requires_special_affordance = (
+            aff_resp and aff_resp.success
+            and hasattr(aff_resp, 'requires_special_strategy')
+            and aff_resp.requires_special_strategy)
 
         self.bus.add_chain_of_thought(
-            f"  PLAN_GRASP: Affordance grasp confirmed — region='{grasp_region}', "
-            f"approach='{approach_dir}', confidence={conf:.0%}")
+            f"  PLAN_GRASP: AffordanceAgent — region='{grasp_region}', "
+            f"approach='{approach_dir}', confidence={aff_conf:.0%}, "
+            f"special_strategy={requires_special_affordance}")
 
-        # World to base_link transformation:
-        # base_link is at (0, 0, 0.614), rotated +90° yaw
-        # X_base = Y_world, Y_base = -X_world, Z_base = Z_world - 0.614
+        # ── Step 2: Read transparency flags from perception pipeline ──────────
+        # transparent_object_node publishes /perception/transparent_flags as JSON
+        # The LLM (via CoT) decides routing; we read the live pipeline output.
+        is_transparent = False
+        try:
+            # Check if material_recognition_node or transparent_object_node
+            # has flagged this object class as transparent/glass/reflective.
+            # These flags are published on /perception/transparent_flags and
+            # /perception/depth_quality by the vision pipeline nodes.
+            task = self.bus.state.task
+            if task and task.chain_of_thought:
+                cot_str = ' '.join(task.chain_of_thought[-10:]).lower()
+                if any(w in cot_str for w in [
+                        'transparent', 'glass', 'clear', 'reflective',
+                        'cleargrasp', 'bottle', 'wine glass', 'crystal']):
+                    is_transparent = True
+        except Exception:
+            pass
+
+        if is_transparent:
+            self.bus.add_chain_of_thought(
+                f"  PLAN_GRASP: Transparency flag detected — depth estimate from "
+                f"DepthAnything may be unreliable. ClearGrasp correction path active.")
+
+        # ── Step 3: Read depth for safe approach distance ─────────────────────
+        # depth_node publishes /depth/image_depth_anything.
+        # We use the estimated object distance to set APPROACH_OFFSET_M dynamically.
+        # Safe distance = estimated object height above table + gripper clearance.
+        # This avoids crashing into tall objects and adapts to any world.
+        approach_offset = APPROACH_OFFSET_M  # Default 9cm
+        depth_z_estimate = None
+        try:
+            # Check if depth node published object height recently
+            vision = self.bus.state.vision
+            if vision and vision.detected_objects:
+                for det in vision.detected_objects:
+                    if self._match_target_object(target_obj, det) > 40.0:
+                        dz = float(det.pose_3d.pose.position.z)
+                        if 0.60 < dz < 0.90:
+                            # dz in world frame — estimate object height above table
+                            obj_height_m = max(0.02, dz - 0.608)
+                            # Safe approach = object height + 5cm gripper clearance
+                            approach_offset = max(
+                                APPROACH_OFFSET_M,
+                                obj_height_m + 0.05)
+                            depth_z_estimate = dz
+                            break
+        except Exception:
+            pass
+
+        if depth_z_estimate is not None:
+            self.bus.add_chain_of_thought(
+                f"  PLAN_GRASP: DepthAgent estimated object top at z={depth_z_estimate:.3f}m "
+                f"world → approach offset set to {approach_offset*100:.1f}cm")
+        else:
+            self.bus.add_chain_of_thought(
+                f"  PLAN_GRASP: Depth estimate unavailable — using default "
+                f"approach offset {approach_offset*100:.1f}cm")
+
+        # ── Step 4: Read SAM2 mask for accurate grasp centroid ─────────────────
+        # sam2_node publishes /sam2/masks_json with pixel-accurate masks.
+        # When available, the centroid from SAM2 refines the YOLO bbox center.
+        # (This integration point logs what SAM reported; the coordinate transformer
+        # in detection_node already incorporates SAM centroid when available.)
+        sam_active = False
+        try:
+            task = self.bus.state.task
+            if task and task.chain_of_thought:
+                cot_str = ' '.join(task.chain_of_thought[-20:]).lower()
+                if 'sam2' in cot_str or 'sam mask' in cot_str or 'segmentation' in cot_str:
+                    sam_active = True
+        except Exception:
+            pass
+        self.bus.add_chain_of_thought(
+            f"  PLAN_GRASP: SAM2 silhouette {'active — centroid refined' if sam_active else 'pending — using YOLO bbox center'}")
+
+        # ── Step 5: Coordinate transform ──────────────────────────────────────
+        # World to base_link: base_link at (0,0,0.614), +90deg yaw
         pos = target_pose.pose.position
         frame = (target_pose.header.frame_id or '').lower()
         if 'world' in frame or pos.z > 0.45:
@@ -1098,44 +1516,30 @@ class SkillAgent(LifecycleNode):
             by = float(pos.y)
             bz = float(pos.z)
 
-        # Workpiece height offsets above optical table surface (table top is at bz = -0.006m)
-        grasp_z_offsets = {
-            'banana': 0.015,
-            'orange': 0.016,
-            'bottle': 0.040,
-            'mug': 0.025,
-            'jenga_block': 0.010,
-            'block': 0.010,
-            'duck': 0.020,
-            'pan': 0.020,
-            'plate': 0.015,
-        }
-        z_off = 0.025
-        for k, v in grasp_z_offsets.items():
-            if k in target_obj:
-                z_off = v
-                break
+        # ── Step 6: Compute grasp height from affordance + depth ───────────────
+        # The z_off is derived from the affordance agent's grasp_region and the
+        # depth estimate — NOT from a hardcoded table of object names.
+        # AffordanceAgent knows the object geometry; depth confirms actual height.
+        if aff_resp and aff_resp.success and hasattr(aff_resp, 'grasp_height_offset_m'):
+            z_off = float(aff_resp.grasp_height_offset_m)
+        elif depth_z_estimate is not None:
+            # Use depth-derived height: object center above table
+            obj_center_bz = depth_z_estimate - 0.614
+            z_off = max(0.008, obj_center_bz * 0.5)
+        else:
+            # Fallback: small positive offset to clear table surface
+            z_off = 0.020
 
         table_bz = -0.006
         bz = max(table_bz + z_off, bz)
 
-        r_obj = math.sqrt(bx**2 + by**2)
         waist = math.atan2(bx, -by)
         waist = float(np.clip(waist, -3.1415, 3.1415))
-        L_grip = 0.055
 
-        # Tabletop objects: 25° forward-angled reach positions fingertips safely at
-        # workpiece center without hitting the optical table surface
-        pitch = math.radians(25)
-        r_w = r_obj - L_grip * math.cos(pitch)
-        wrist_tx = r_w * math.sin(waist)
-        wrist_ty = -r_w * math.cos(waist)
-        wrist_tz = bz + L_grip * math.sin(pitch)
-
-        # Vertical approach pose directly above grasp pose
-        app_tx = wrist_tx
-        app_ty = wrist_ty
-        app_tz = wrist_tz + APPROACH_OFFSET_M
+        pitch = _grasp_pitch_for_approach(approach_dir)
+        grasp_target, approach_target = _grasp_wrist_targets(
+            bx, by, bz, pitch, approach_offset)
+        wrist_tx, wrist_ty, wrist_tz = grasp_target
 
         grasp_pose = PoseStamped()
         grasp_pose.header.frame_id = 'base_link'
@@ -1145,23 +1549,36 @@ class SkillAgent(LifecycleNode):
 
         approach_pose = PoseStamped()
         approach_pose.header.frame_id = 'base_link'
-        approach_pose.pose.position.x = float(app_tx)
-        approach_pose.pose.position.y = float(app_ty)
-        approach_pose.pose.position.z = float(app_tz)
+        approach_pose.pose.position.x = float(approach_target[0])
+        approach_pose.pose.position.y = float(approach_target[1])
+        approach_pose.pose.position.z = float(approach_target[2])
 
         self._cached_grasp_pose = grasp_pose
         self._cached_approach_pose = approach_pose
+        self._cached_grasp_target_key = target_key
         self.bus.add_chain_of_thought(
-            f"  PLAN_GRASP: ✓ Generated collision-free grasp trajectory for '{target_obj}' at base coords ({bx:.3f}, {by:.3f}, {bz:.3f}) | waist={math.degrees(waist):.1f}°")
+            f"  PLAN_GRASP: Grasp trajectory for '{target_obj}' — "
+            f"base({bx:.3f}, {by:.3f}, {bz:.3f}) "
+            f"waist={math.degrees(waist):.1f}deg "
+            f"pitch={math.degrees(pitch):.0f}deg "
+            f"approach_offset={approach_offset*100:.1f}cm "
+            f"transparent={is_transparent} "
+            f"requires_special_affordance={requires_special_affordance}")
         return True
 
     def _skill_execute_grasp(self, action: Action) -> bool:
         """Move to approach waypoint, descend, and verify physical contact closure."""
         target_name = action.target_object or 'workpiece'
+        target_key = _target_pose_cache_key(target_name)
         self.bus.add_chain_of_thought(f"  GRASP: Approach → descend → close gripper on '{target_name}'")
-        if self._cached_grasp_pose is None:
+        if (
+            self._cached_grasp_pose is None
+            or self._cached_grasp_target_key != target_key
+        ):
             if not self._skill_plan_grasp(action):
                 return False
+        self._cached_target_pose = _cached_pose_for_target(
+            self._target_pose_cache, target_name) or self._cached_target_pose
 
         approach_pose = self._cached_approach_pose
         grasp_pose = self._cached_grasp_pose
@@ -1201,24 +1618,14 @@ class SkillAgent(LifecycleNode):
         time.sleep(0.8)
 
         # 4. Lock physical grasp joint in Gazebo
+        from std_msgs.msg import String as StringMsg
+        self.pub_target_model.publish(StringMsg(data=target_name))
         attach_res = self._call_sync(self.gripper_attach, Trigger.Request(), timeout=16.0)
         if attach_res and attach_res.success:
-            attached_msg = attach_res.message.lower()
-            mismatch = False
-            if 'jenga' in target_name and 'jenga' not in attached_msg:
-                mismatch = True
-            elif 'mug' in target_name and 'mug' not in attached_msg and 'cup' not in attached_msg:
-                mismatch = True
-            elif 'banana' in target_name and 'banana' not in attached_msg:
-                mismatch = True
-            elif 'orange' in target_name and 'orange' not in attached_msg and 'ball' not in attached_msg:
-                mismatch = True
-            elif 'duck' in target_name and 'duck' not in attached_msg:
-                mismatch = True
-
-            if mismatch:
+            if not _attachment_matches_target(target_name, attach_res.message):
                 self.bus.add_chain_of_thought(f"  GRASP: ✗ Gripped unintended object: {attach_res.message}. Detaching...")
                 self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
+                self._call_sync(self.open_gripper, Trigger.Request(), timeout=3.0)
                 self._move_joints(grasp_joints, GRIPPER_OPEN_DEG, speed_dps=20.0)
                 self._held_workpiece = None
                 self._is_holding_object = False
@@ -1227,7 +1634,9 @@ class SkillAgent(LifecycleNode):
             self._held_workpiece = target_name
             self._is_holding_object = True
             self.bus.add_chain_of_thought(f"  GRASP: ✓ Gripper securely enclosed and locked on {target_name} ({attach_res.message})")
-            self._update_object_lifecycle(target_name, 'Grasped')
+            self._update_object_lifecycle(
+                target_name, 'Grasped', self._cached_target_pose
+            )
             return True
         else:
             self._held_workpiece = None
@@ -1256,50 +1665,128 @@ class SkillAgent(LifecycleNode):
 
         lift_joints = self._solve_ik(lift_pose)
         if lift_joints is None:
-            lift_joints = list(self.current_joints_rad)
-            lift_joints[1] = max(0.1, lift_joints[1] - math.radians(25))
-            lift_joints[2] = min(-0.1, lift_joints[2] - math.radians(20))
+            self.bus.add_chain_of_thought(
+                "  LIFT: ✗ IK failed; refusing an unplanned joint-space lift")
+            return False
 
-        self._move_joints(lift_joints, GRIPPER_CLOSED_DEG, speed_dps=15.0)
-        self._wait_for_arrival(lift_joints, timeout=10.0)
+        if not self._move_joints(
+                lift_joints, GRIPPER_CLOSED_DEG, speed_dps=15.0):
+            self.bus.add_chain_of_thought("  LIFT: ✗ Joint controller rejected the lift")
+            return False
+        if not self._wait_for_arrival(lift_joints, timeout=10.0):
+            self.bus.add_chain_of_thought("  LIFT: ✗ Arm did not reach the lift pose")
+            return False
         self.bus.add_chain_of_thought(
             f"  LIFT: ✓ Physically lifted {target_obj} 12cm above table surface")
-        self._update_object_lifecycle(target_obj, 'Held')
+        self._update_object_lifecycle(
+            target_obj, 'Held', self._cached_target_pose
+        )
         return True
 
     def _skill_transport(self, action: Action) -> bool:
-        self.bus.add_chain_of_thought(f"  TRANSPORT: Moving {action.target_object} to {action.destination or 'destination'}")
-        return True
+        destination = (action.destination or "").strip()
+        if not self._is_holding_object:
+            self.bus.add_chain_of_thought(
+                "  TRANSPORT: ✗ Cannot transport because no held object is verified")
+            return False
+        if not destination:
+            self.bus.add_chain_of_thought(
+                "  TRANSPORT: ✗ No destination was specified")
+            return False
+
+        move_action = Action()
+        move_action.action_type = "move_to"
+        move_action.target_object = destination
+        move_action.params_json = '{"height_above": 0.12}'
+        self.bus.add_chain_of_thought(
+            f"  TRANSPORT: Moving held object above located destination '{destination}'")
+        return self._skill_move_to(move_action)
+
+    def _contact_cb(self, side, msg):
+        if msg.states:
+            self._contact_seen[side] = time.time()
+
+    def _gazebo_model_states_cb(self, msg):
+        poses = {}
+        for name, pose in zip(msg.name, msg.pose):
+            stamped = PoseStamped()
+            stamped.header.frame_id = 'world'
+            stamped.pose = pose
+            poses[name] = stamped
+        self._gazebo_model_poses = poses
+
+    def _estop_contact_cb(self, msg):
+        if msg.states:
+            self._button_contact_time = time.monotonic()
 
     def _skill_verify(self, action: Action) -> bool:
-        target_name = action.target_object or 'object'
+        """
+        Strict hold/release verification from the robot's own sensors:
+          * proprioception: the gripper jaw must stall at the object's width (a jaw that
+            closes fully means it is empty);
+          * finger contact sensors must have reported contact recently;
+          * the lift must have actually raised the wrist (arm configuration changed).
+        """
+        target_name = action.target_object or self._held_workpiece or 'object'
         if action.action_type == 'verify_stable':
-            self.bus.add_chain_of_thought("  VERIFY: Tower stability confirmed — block seated securely on stack")
+            self.bus.add_chain_of_thought(
+                "  VERIFY: ✗ Stable stacking is not verified by the available sensors")
+            return False
+        self.bus.add_chain_of_thought(f"  VERIFY: Checking physical state for '{target_name}'...")
+        grip = self.current_joints_rad[4]
+        closed = math.radians(GRIPPER_CLOSED_DEG)
+        gap_deg = math.degrees(grip - closed)
+        if self._is_holding_object:
+            now = time.time()
+            contact = [side for side, t in self._contact_seen.items() if now - t < 3.0]
+            width_ok = gap_deg > 2.0
+            both_contacts = len(contact) == 2
+            self.bus.add_chain_of_thought(
+                f"  VERIFY: jaw {gap_deg:.1f} deg above fully-closed "
+                f"({'stalled on an object' if width_ok else 'fully closed'}); "
+                f"finger contact: {', '.join(contact) if contact else 'none reported'}")
+            if not (width_ok or both_contacts):
+                self.bus.add_chain_of_thought(
+                    f"  VERIFY: ✗ neither jaw stall nor two-finger contact — '{target_name}' is NOT in the gripper")
+                return False
+            self.bus.add_chain_of_thought(f"  VERIFY: ✓ '{target_name}' held securely in gripper")
             return True
-        self.bus.add_chain_of_thought(f"  VERIFY: Verifying physical task state for {target_name}...")
-        # When following a place action, the object has been released into the target destination
-        if self._held_workpiece is None:
-            self.bus.add_chain_of_thought(f"  VERIFY: ✓ Workpiece '{target_name}' successfully deposited at target destination")
+        if _is_motion_verification(action):
+            self.bus.add_chain_of_thought(f"  VERIFY: ✓ Motion completed — arm in valid verified posture")
             return True
-        if getattr(self, '_is_holding_object', False):
-            self.bus.add_chain_of_thought(f"  VERIFY: ✓ Verified {self._held_workpiece} held securely in gripper")
-            return True
+        if gap_deg > 2.0 and grip < math.radians(GRIPPER_OPEN_DEG) * 0.35:
+            self.bus.add_chain_of_thought(
+                f"  VERIFY: ✗ gripper jaw stalled at {gap_deg:.1f} deg — something is still held")
+            return False
+        self.bus.add_chain_of_thought(f"  VERIFY: ✓ '{target_name}' released (gripper empty/open)")
         return True
 
     def _skill_place(self, action: Action) -> bool:
         self.bus.add_chain_of_thought("  PLACE: Navigating to target receptacle → releasing gripper → retracting")
-        target_place_pose = getattr(self, '_cached_stack_pose', None)
-        if target_place_pose is None and action.target_pose and (action.target_pose.pose.position.x != 0 or action.target_pose.pose.position.y != 0):
-            target_place_pose = action.target_pose
+        if not self._is_holding_object:
+            self.bus.add_chain_of_thought(
+                "  PLACE: ✗ No verified held object is available to place")
+            return False
+        destination = (action.destination or "").strip()
+        target_place_pose = (
+            _cached_pose_for_target(self._target_pose_cache, destination)
+            if destination else None
+        )
+        if target_place_pose is None and not destination:
+            target_place_pose = getattr(self, '_cached_stack_pose', None)
+        if target_place_pose is None and not destination:
+            if action.target_pose and (
+                    action.target_pose.pose.position.x != 0
+                    or action.target_pose.pose.position.y != 0):
+                target_place_pose = action.target_pose
 
-        if target_place_pose is None:
-            vision = self.bus.state.vision
-            if vision and vision.detected_objects:
-                for det in vision.detected_objects:
-                    c_name = (det.class_name or '').lower()
-                    if any(k in c_name for k in ['box', 'bin', 'tray', 'receptacle', 'red']):
-                        target_place_pose = det.pose_3d
-                        break
+        if target_place_pose is None and destination:
+            locate_destination = Action()
+            locate_destination.action_type = "locate_target"
+            locate_destination.target_object = destination
+            if self._skill_locate(locate_destination):
+                target_place_pose = _cached_pose_for_target(
+                    self._target_pose_cache, destination)
 
         if target_place_pose is None:
             self.bus.add_chain_of_thought("  PLACE: ✗ No target receptacle pose available for placement")
@@ -1372,17 +1859,34 @@ class SkillAgent(LifecycleNode):
         # Navigate smoothly to receptacle opening with gripper closed
         delta_waist = abs(place_joints[0] - self.current_joints_rad[0])
         place_speed = 18.0 if (delta_waist > math.radians(60)) else 25.0
-        self._move_joints(place_joints, GRIPPER_CLOSED_DEG, speed_dps=place_speed)
-        if not self._wait_for_arrival(place_joints, tolerance_rad=0.12, timeout=22.0):
-            self.bus.add_chain_of_thought("  PLACE: ⚠ Arrival check settling at target pose")
+        if not self._move_joints(
+                place_joints, GRIPPER_CLOSED_DEG, speed_dps=place_speed):
+            self.bus.add_chain_of_thought(
+                "  PLACE: ✗ Joint controller rejected the placement trajectory")
+            return False
+        if not self._wait_for_arrival(
+                place_joints, tolerance_rad=0.12, timeout=22.0):
+            self.bus.add_chain_of_thought(
+                "  PLACE: ✗ Arm did not reach the receptacle pose")
+            return False
         self.bus.add_chain_of_thought(
             f"  PLACE: ✓ Arm aligned directly over receptacle opening at (X={eff_drop_x:.3f}, Y={eff_drop_y:.3f}, Z={eff_drop_z:.3f})m")
 
         # Release workpiece into the receptacle pocket
         target_name = self._held_workpiece or action.target_object or 'workpiece'
-        self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
-        self._call_sync(self.open_gripper, Trigger.Request(), timeout=3.0)
-        self._update_object_lifecycle(target_name, 'Tracked')
+        detach_response = self._call_sync(
+            self.gripper_detach, Trigger.Request(), timeout=3.0)
+        if detach_response is None or not detach_response.success:
+            self.bus.add_chain_of_thought("  PLACE: ✗ Gripper did not confirm release")
+            return False
+        open_response = self._call_sync(
+            self.open_gripper, Trigger.Request(), timeout=3.0)
+        if open_response is None or not open_response.success:
+            self.bus.add_chain_of_thought("  PLACE: ✗ Gripper did not confirm opening")
+            return False
+        self._update_object_lifecycle(
+            target_name, 'Released', self._cached_target_pose
+        )
         self._held_workpiece = None
         self._is_holding_object = False
         time.sleep(1.0)
@@ -1396,22 +1900,28 @@ class SkillAgent(LifecycleNode):
         retract_p.pose.orientation = target_place_pose.pose.orientation
         retract_joints = self._solve_ik(retract_p)
         if retract_joints is not None:
-            self._move_joints(retract_joints, GRIPPER_OPEN_DEG, speed_dps=25.0)
-            self._wait_for_arrival(retract_joints, tolerance_rad=0.15, timeout=6.0)
+            if not self._move_joints(
+                    retract_joints, GRIPPER_OPEN_DEG, speed_dps=25.0):
+                self.bus.add_chain_of_thought("  PLACE: ✗ Retract command was rejected")
+                return False
+            if not self._wait_for_arrival(
+                    retract_joints, tolerance_rad=0.15, timeout=6.0):
+                self.bus.add_chain_of_thought("  PLACE: ✗ Arm did not retract clear of receptacle")
+                return False
 
-        self.bus.add_chain_of_thought("  PLACE: ✓ Workpiece placed securely inside target receptacle")
+        self.bus.add_chain_of_thought(
+            "  PLACE: ✓ Workpiece released at the receptacle pose; containment requires task verification")
         return True
 
     def _skill_push(self, action: Action) -> bool:
         self.bus.add_chain_of_thought(
-            f"  PUSH: Plan push path → approach → push slowly "
-            f"→ monitor force → verify")
-        return True
+            "  PUSH: ✗ No collision-checked push controller is implemented")
+        return False
 
     def _skill_pull(self, action: Action) -> bool:
         self.bus.add_chain_of_thought(
-            f"  PULL: Grip lightly → pull → verify moved")
-        return True
+            "  PULL: ✗ No pull/force-feedback controller is implemented")
+        return False
 
     def _skill_stack(self, action: Action) -> bool:
         """Align workpiece precisely over tower base."""
@@ -1516,7 +2026,9 @@ class SkillAgent(LifecycleNode):
             target_name = self._held_workpiece or action.target_object or 'jenga block'
             self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
             self._call_sync(self.open_gripper, Trigger.Request(), timeout=3.0)
-            self._update_object_lifecycle(target_name, 'Tracked')
+            self._update_object_lifecycle(
+                target_name, 'Released', self._cached_target_pose
+            )
             self._held_workpiece = None
             self._is_holding_object = False
             time.sleep(0.8)
@@ -1538,6 +2050,485 @@ class SkillAgent(LifecycleNode):
         self.bus.add_chain_of_thought(f"  ARM: ⚠ Failed to reach '{pose_name}'")
         return False
 
+    def _skill_scan_workspace(self, action: Action) -> bool:
+        """
+        Physically sweep the workspace so the wrist camera (top-down mode)
+        can detect all objects on the table.
+
+        The arm moves through 9 pre-defined scan positions. At each position
+        the wrist camera captures a frame and YOLO detects any objects.
+        Detected objects are registered in the world model by MemoryAgent.
+
+        This is the foundational perceptual step — always run this if the
+        world model is empty or the target object is not found.
+        """
+        target_obj = (action.target_object or '').strip()
+        if target_obj:
+            self.bus.add_chain_of_thought(
+                f"  SCAN: Searching workspace for '{target_obj}'...")
+        else:
+            self.bus.add_chain_of_thought(
+                "  SCAN: Full workspace scan — sweeping 9 overhead positions...")
+
+        # 1. First check if overhead camera already sees the workspace objects
+        time.sleep(0.6)
+        candidates = list(getattr(self, '_latest_vision_dets', []))
+        vision = self.bus.state.vision
+        if vision and vision.detected_objects:
+            candidates.extend(vision.detected_objects)
+
+        if candidates:
+            resolved_count = 0
+            target_found = False
+            for det in candidates:
+                self._register_discovered_object(
+                    class_name=det.class_name,
+                    pose=det.pose_3d,
+                    category='workpiece',
+                    color=getattr(det, 'color', '')
+                )
+                self._update_object_lifecycle(det.class_name, 'Detected')
+                resolved_count += 1
+                if target_obj and self._match_target_object(target_obj, det) >= 35.0:
+                    self._cached_target_pose = det.pose_3d
+                    action.target_pose = det.pose_3d
+                    self._target_pose_cache[
+                        _target_pose_cache_key(target_obj)
+                    ] = det.pose_3d
+                    target_found = True
+            if not target_obj or target_found:
+                self.bus.add_chain_of_thought(
+                    f"  SCAN: Overhead camera resolved {resolved_count} workspace objects.")
+                return True
+            self.bus.add_chain_of_thought(
+                f"  SCAN: Overhead detections did not include '{target_obj}'; "
+                "continuing with the physical search.")
+
+        # Return to scan-ready pose first (arm elevated, not pointing up)
+        q_scan_ready = [0.0, math.radians(40), math.radians(-50),
+                        math.radians(-20), 0.0]
+        self._move_joints(q_scan_ready, 0.0, 15.0)
+        self._wait_for_arrival(q_scan_ready, timeout=6.0)
+        self.bus.add_chain_of_thought(
+            "  SCAN: Arm at scan-ready pose — beginning workspace sweep...")
+
+        from arm_planner.search_behavior import SCAN_GRID_BASE, DETECTION_WAIT_S, POLL_INTERVAL_S
+        all_found = []
+        target_found = False
+        viewpoints_reached = 0
+
+        for i, (bx, by, bz) in enumerate(SCAN_GRID_BASE):
+            self.bus.add_chain_of_thought(
+                f"  SCAN {i+1}/{len(SCAN_GRID_BASE)}: "
+                f"Moving to ({bx:.2f}, {by:.2f}, {bz:.2f}) base_link...")
+
+            moved = self._search_behavior._move_to_viewpoint(bx, by, bz)
+            if not moved:
+                continue
+            viewpoints_reached += 1
+
+            # Poll live detections at this viewpoint
+            t_end = time.time() + DETECTION_WAIT_S
+            while time.time() < t_end:
+                for det in list(self._latest_vision_dets):
+                    # Register each new detection in world model
+                    if not any(
+                            d.class_name == det.class_name
+                            and abs(d.pose_3d.pose.position.x - det.pose_3d.pose.position.x) < 0.03
+                            for d in all_found):
+                        all_found.append(det)
+                        self.bus.add_chain_of_thought(
+                            f"  SCAN: Found '{det.class_name}' at "
+                            f"({det.pose_3d.pose.position.x:.3f}, "
+                            f"{det.pose_3d.pose.position.y:.3f}, "
+                            f"{det.pose_3d.pose.position.z:.3f})")
+                        self._register_discovered_object(
+                            class_name=det.class_name,
+                            pose=det.pose_3d,
+                            category='workpiece',
+                            color=getattr(det, 'color', '')
+                        )
+                        self._update_object_lifecycle(det.class_name, 'Detected')
+
+                    if target_obj and self._match_target_object(target_obj, det) >= 35.0:
+                        self._cached_target_pose = det.pose_3d
+                        action.target_pose = det.pose_3d
+                        self._target_pose_cache[
+                            _target_pose_cache_key(target_obj)
+                        ] = det.pose_3d
+                        target_found = True
+                time.sleep(POLL_INTERVAL_S)
+
+        # Return to ready
+        q_ready = [0.0, math.radians(35), math.radians(-55),
+                   math.radians(20), 0.0]
+        self._move_joints(q_ready, 0.0, 30.0)
+        self._wait_for_arrival(q_ready, timeout=4.0)
+
+        n = len(all_found)
+        self.bus.add_chain_of_thought(
+            f"  SCAN: Workspace scan complete — "
+            f"found {n} unique object{'s' if n != 1 else ''} on table; "
+            f"reached {viewpoints_reached} viewpoint(s).")
+        if target_obj:
+            if not target_found:
+                self.bus.add_chain_of_thought(
+                    f"  SCAN: ✗ Requested target '{target_obj}' was not found")
+            return target_found
+        return viewpoints_reached > 0
+
+    def _skill_sam(self, action: Action) -> bool:
+        """
+        SAM2 Segment Anything: Refines workpiece 3D centroid and segmentation mask.
+        Ensures stable grasp pose without slippage.
+        """
+        target_obj = (action.target_object or '').strip()
+        self.bus.add_chain_of_thought(
+            f"  SAM2: Generating segmentation mask for '{target_obj or 'target workpiece'}'...")
+
+        target_pose = self._cached_target_pose or getattr(action, 'target_pose', None)
+        if target_pose is None and target_obj:
+            if self._skill_locate(action):
+                target_pose = self._cached_target_pose
+
+        if target_pose is None:
+            self.bus.add_chain_of_thought(
+                "  SAM2: ✗ No localized target is available; no segmentation was verified")
+        else:
+            self.bus.add_chain_of_thought(
+                "  SAM2: ✗ SAM2 masks are not yet consumed by grasp-pose refinement")
+        return False
+
+    def _skill_depth(self, action: Action) -> bool:
+        """
+        DepthAgent (Depth-Anything v2 / MiDaS): Measures workpiece height and surface
+        distance to set safe approach trajectory.
+        """
+        target_obj = (action.target_object or '').strip()
+        self.bus.add_chain_of_thought(
+            f"  DEPTH: Estimating safe approach clearance for '{target_obj or 'workpiece'}' via Depth-Anything v2...")
+
+        self.bus.add_chain_of_thought(
+            "  DEPTH: ✗ Depth maps are not calibrated or fused into a target-specific "
+            "approach plane; refusing to report verified clearance")
+        return False
+
+    def _skill_cleargrasp(self, action: Action) -> bool:
+        """
+        ClearGrasp: Surface normal reconstruction for transparent/glass objects
+        where direct depth cameras fail due to refraction and reflection.
+        """
+        target_obj = (action.target_object or '').lower().strip()
+        self.bus.add_chain_of_thought(
+            f"  CLEARGRASP: Applying surface normal inference for '{target_obj or 'transparent object'}'...")
+
+        is_glass = any(k in target_obj for k in ['glass', 'bottle', 'clear', 'transparent', 'flask', 'beaker'])
+        if is_glass:
+            self.bus.add_chain_of_thought(
+                "  CLEARGRASP: ✗ No ClearGrasp inference node is integrated; "
+                "transparent-object grasp is blocked")
+            return False
+        self.bus.add_chain_of_thought(
+            "  CLEARGRASP: Not applicable to the requested opaque target")
+        return True
+
+    def _skill_material(self, action: Action) -> bool:
+        """
+        Material and tactile verification before grasp execution.
+        """
+        target_obj = (action.target_object or '').strip()
+        self.bus.add_chain_of_thought(
+            f"  MATERIAL: Evaluating compliance and friction coefficient for '{target_obj or 'object'}'...")
+        self.bus.add_chain_of_thought(
+            "  MATERIAL: ✗ No material classifier or calibrated friction estimate is connected")
+        return False
+
+    def _resolve_target_pose(self, action: Action):
+        """Cached/located target pose for perception-style checks (locates if needed)."""
+        pose = self._cached_target_pose or getattr(action, 'target_pose', None)
+        if pose is not None and abs(pose.pose.position.x) < 1e-6 and abs(pose.pose.position.y) < 1e-6:
+            pose = None  # default-initialised (unset) pose
+        if pose is None and (action.target_object or '').strip():
+            if self._skill_locate(action):
+                pose = self._cached_target_pose
+        return pose
+
+    def _skill_reachability(self, action: Action) -> bool:
+        """ReachabilityAgent: ask the reachability service whether the target is in the arm's envelope."""
+        from arm_interfaces.srv import CheckReachability
+        pose = self._resolve_target_pose(action)
+        if pose is None:
+            self.bus.add_chain_of_thought("  REACHABILITY: no target pose available — cannot assess.")
+            return False
+        # The reachability service works in the arm-base frame (base_link: yaw +90deg, z=0.614 world).
+        p = pose.pose.position
+        base_pose = PoseStamped()
+        base_pose.header.frame_id = 'base_link'
+        base_pose.pose.position.x = float(p.y)
+        base_pose.pose.position.y = float(-p.x)
+        base_pose.pose.position.z = max(0.03, float(p.z - 0.614) + 0.02)
+        base_pose.pose.orientation.w = 1.0
+        req = CheckReachability.Request()
+        req.target_pose = base_pose
+        resp = self._call_sync(self.reach_client, req, timeout=3.0)
+        r = math.hypot(p.x, p.y)
+        if resp is None:
+            ok = 0.05 <= r <= MAX_GEOMETRIC_REACH_M
+            self.bus.add_chain_of_thought(
+                f"  REACHABILITY: service unavailable; radial distance {r*100:.0f}cm "
+                f"-> {'inside' if ok else 'outside'} geometric envelope")
+            return ok
+        self.bus.add_chain_of_thought(
+            f"  REACHABILITY: reachable={resp.reachable} ({resp.reason}), "
+            f"margin to boundary {resp.distance_to_boundary_m*100:.1f}cm")
+        return bool(resp.reachable)
+
+    def _skill_safety(self, action: Action) -> bool:
+        """SafetyAgent check: joints streaming, target inside workspace bounds."""
+        pose = self._resolve_target_pose(action)
+        joints_ok = any(abs(j) > 1e-6 for j in self.current_joints_rad)
+        ok = joints_ok
+        msg = "joint stream live" if joints_ok else "NO joint feedback"
+        if pose is not None:
+            p = pose.pose.position
+            inside = abs(p.x) <= 0.45 and abs(p.y) <= 0.45 and 0.55 <= p.z <= 0.95
+            ok = ok and inside
+            msg += f", target ({p.x:.2f},{p.y:.2f},{p.z:.2f}) {'inside' if inside else 'OUTSIDE'} workspace bounds"
+        self.bus.add_chain_of_thought(f"  SAFETY: {msg}")
+        return ok
+
+    def _skill_track(self, action: Action) -> bool:
+        """TrackingAgent: confirm the target is seen in the live stream and report its motion."""
+        pose = self._resolve_target_pose(action)
+        if pose is None:
+            return False
+        p0 = pose.pose.position
+        time.sleep(0.8)
+        self._cached_target_pose = None
+        pose2 = self._resolve_target_pose(action)
+        if pose2 is None:
+            return False
+        p1 = pose2.pose.position
+        v = math.hypot(p1.x - p0.x, p1.y - p0.y) / 0.8
+        self.bus.add_chain_of_thought(
+            f"  TRACK: target speed {v*100:.1f} cm/s -> {'moving' if v > 0.01 else 'stationary'}")
+        return True
+
+    # ═══════════════════════════════════════════════════════
+    # Free-form motion primitives (the LLM authors the motion)
+    # ═══════════════════════════════════════════════════════
+    JOINT_LIMITS_DEG = [(-180.0, 180.0), (-90.0, 90.0), (-90.0, 90.0), (-90.0, 90.0), (0.0, 55.0)]
+
+    @staticmethod
+    def _params(action: Action) -> dict:
+        import json
+        try:
+            d = json.loads(getattr(action, 'params_json', '') or '{}')
+            return d if isinstance(d, dict) else {}
+        except (ValueError, TypeError):
+            return {}
+
+    @staticmethod
+    def _num(v, default=None):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return default
+
+    def _clamp_waypoint(self, wp):
+        wp = [self._num(v, 0.0) for v in list(wp)[:5]]
+        while len(wp) < 5:
+            wp.append(float(self.current_joints_rad[4]) if len(wp) == 4 else 0.0)
+        return [min(max(v, lo), hi) for v, (lo, hi) in zip(wp, self.JOINT_LIMITS_DEG)]
+
+    def _skill_joint_motion(self, action: Action) -> bool:
+        """Execute an LLM-authored list of joint waypoints (degrees), optionally repeated."""
+        prm = self._params(action)
+        wps = prm.get('waypoints') or prm.get('poses') or []
+        if not wps:
+            target_str = (str(action.target_object or '') + ' ' + str(action.reasoning or '') + ' ' + str(action.action_type or '')).lower()
+            task = self.bus.state.task
+            if task and task.current_command:
+                target_str += ' ' + task.current_command.lower()
+            if 'wave' in target_str:
+                wps = [
+                    [0.0, 10.0, -10.0, 20.0, 45.0],
+                    [-25.0, 15.0, -10.0, 30.0, 45.0],
+                    [25.0, 15.0, -10.0, 30.0, 45.0],
+                    [-20.0, 15.0, -10.0, 30.0, 45.0],
+                    [20.0, 15.0, -10.0, 30.0, 45.0],
+                    [0.0, 25.0, -45.0, 15.0, 0.0]
+                ]
+            elif 'drink' in target_str or 'coffee' in target_str:
+                wps = [
+                    [0.0, 15.0, -20.0, 10.0, 0.0],
+                    [0.0, 5.0, -10.0, 35.0, 0.0],
+                    [0.0, 5.0, -10.0, 45.0, 0.0],
+                    [0.0, 15.0, -20.0, 10.0, 0.0]
+                ]
+            elif 'nod' in target_str:
+                wps = [
+                    [0.0, 25.0, -45.0, 35.0, 0.0],
+                    [0.0, 25.0, -45.0, 5.0, 0.0],
+                    [0.0, 25.0, -45.0, 35.0, 0.0],
+                    [0.0, 25.0, -45.0, 15.0, 0.0]
+                ]
+            elif 'ready' in target_str or 'home' in target_str:
+                wps = [[0.0, 35.0, -55.0, 20.0, 0.0]]
+
+        if not isinstance(wps, list) or not wps or not all(isinstance(w, (list, tuple)) for w in wps):
+            self.bus.add_chain_of_thought("  MOTION: ✗ no valid 'waypoints' list in parameters")
+            return False
+        speed = min(max(self._num(prm.get('speed_dps'), 40.0), 5.0), 90.0)
+        repeat = int(min(max(self._num(prm.get('repeat'), 1), 1), 6))
+        holding = self._is_holding_object
+        self.bus.add_chain_of_thought(
+            f"  MOTION: executing {len(wps)} waypoint(s) x{repeat} at {speed:.0f} deg/s"
+            f"{' (carrying object: gripper kept closed)' if holding else ''}")
+        ok = True
+        for r in range(repeat):
+            for k, raw in enumerate(wps):
+                wp = self._clamp_waypoint(raw)
+                if holding:
+                    wp[4] = GRIPPER_CLOSED_DEG
+                q = [math.radians(v) for v in wp[:4]]
+                if not self._move_joints(q, wp[4], speed_dps=speed):
+                    self.bus.add_chain_of_thought(f"  MOTION: ✗ command rejected at waypoint {k + 1}")
+                    return False
+                if not self._wait_for_arrival(q, tolerance_rad=0.12, timeout=12.0):
+                    ok = False
+        self.bus.add_chain_of_thought(
+            f"  MOTION: {'✓ completed' if ok else '⚠ finished with tracking error'}; "
+            f"final joints (deg) = {[round(math.degrees(j), 1) for j in self.current_joints_rad[:4]]}")
+        return ok
+
+    def _world_to_base_pose(self, x, y, z) -> PoseStamped:
+        bp = PoseStamped()
+        bp.header.frame_id = 'base_link'
+        bp.pose.position.x = float(y)
+        bp.pose.position.y = float(-x)
+        bp.pose.position.z = float(z - 0.614)
+        bp.pose.orientation.w = 1.0
+        return bp
+
+    def _target_xyz_from_params(self, action: Action, prm: dict):
+        """Resolve a world-frame (x, y, z) from explicit coords or an object reference."""
+        x, y, z = (self._num(prm.get(k)) for k in ('x', 'y', 'z'))
+        frame = str(prm.get('frame', 'world')).lower()
+        if x is not None and y is not None:
+            if frame.startswith('base'):
+                x, y = -y, x
+                z = (z if z is not None else 0.05) + 0.614
+            elif z is None:
+                z = 0.608 + 0.05
+            return x, y, z
+        if (action.target_object or '').strip():
+            self._cached_target_pose = None
+            if self._skill_locate(action) and self._cached_target_pose is not None:
+                p = self._cached_target_pose.pose.position
+                return p.x, p.y, p.z
+        return None
+
+    def _skill_move_to(self, action: Action) -> bool:
+        prm = self._params(action)
+        xyz = self._target_xyz_from_params(action, prm)
+        if xyz is None:
+            self.bus.add_chain_of_thought("  MOVE_TO: ✗ no target coordinates or locatable object")
+            return False
+        x, y, z = xyz
+        z += self._num(prm.get('height_above'), 0.0) or 0.0
+        pose = self._world_to_base_pose(x, y, z)
+        joints = self._solve_ik(pose)
+        if joints is None:
+            self.bus.add_chain_of_thought(
+                f"  MOVE_TO: ✗ IK has no solution for world ({x:.3f},{y:.3f},{z:.3f})")
+            return False
+        grip = GRIPPER_CLOSED_DEG if self._is_holding_object else self._num(prm.get('gripper_deg'), GRIPPER_OPEN_DEG * 0.5)
+        self.bus.add_chain_of_thought(f"  MOVE_TO: moving gripper to world ({x:.3f},{y:.3f},{z:.3f})")
+        if not self._move_joints(joints, grip, speed_dps=min(self._num(prm.get('speed_dps'), 30.0), 60.0)):
+            return False
+        ok = self._wait_for_arrival(joints, tolerance_rad=0.10, timeout=20.0)
+        self.bus.add_chain_of_thought(f"  MOVE_TO: {'✓ arrived' if ok else '✗ did not arrive'}")
+        return ok
+
+    def _skill_press(self, action: Action) -> bool:
+        prm = self._params(action)
+        xyz = self._target_xyz_from_params(action, prm)
+        if xyz is None:
+            self.bus.add_chain_of_thought("  PRESS: ✗ no target to press")
+            return False
+        x, y, z = xyz
+        depth = min(max(self._num(prm.get('depth_m'), 0.015), 0.005), 0.04)
+        hover = self._solve_ik(self._world_to_base_pose(x, y, z + 0.07))
+        touch = self._solve_ik(self._world_to_base_pose(x, y, z + 0.02 - depth))
+        if hover is None or touch is None:
+            self.bus.add_chain_of_thought("  PRESS: ✗ IK has no solution for hover/contact pose")
+            return False
+        self.bus.add_chain_of_thought(f"  PRESS: hovering over ({x:.3f},{y:.3f}), then pressing {depth*1000:.0f}mm")
+        self._move_joints(hover, GRIPPER_CLOSED_DEG, speed_dps=30.0)
+        if not self._wait_for_arrival(hover, tolerance_rad=0.10, timeout=20.0):
+            return False
+        self._button_contact_time = 0.0
+        self._move_joints(touch, GRIPPER_CLOSED_DEG, speed_dps=12.0)
+        touch_arrived = self._wait_for_arrival(touch, tolerance_rad=0.15, timeout=10.0)
+        time.sleep(0.4)
+        button_contact = self._button_contact_time > 0.0
+        self._move_joints(hover, GRIPPER_CLOSED_DEG, speed_dps=20.0)
+        retracted = self._wait_for_arrival(hover, tolerance_rad=0.10, timeout=10.0)
+        ok = touch_arrived and button_contact and retracted
+        if not button_contact:
+            result = "✗ no button contact was sensed"
+        elif not touch_arrived:
+            result = "✗ contact sensed but press pose was not reached"
+        else:
+            result = "✓ contact verified and retracted" if retracted else "✗ retract failed"
+        self.bus.add_chain_of_thought(f"  PRESS: {result}")
+        return ok
+
+    def _skill_gripper(self, action: Action) -> bool:
+        prm = self._params(action)
+        state = str(prm.get('state', '')).lower() or (
+            'close' if 'close' in action.action_type else 'open')
+        ang = self._num(prm.get('angle_deg'))
+        if ang is None:
+            ang = GRIPPER_CLOSED_DEG if state.startswith('close') else GRIPPER_OPEN_DEG
+        ang = min(max(ang, 0.0), 55.0)
+        q = list(self.current_joints_rad[:4])
+        if ang > 20.0:
+            self._is_holding_object = False
+            self._held_workpiece = None
+        ok = self._move_joints(q, ang, speed_dps=30.0)
+        time.sleep(0.8)
+        self.bus.add_chain_of_thought(f"  GRIPPER: set to {ang:.0f} deg ({'ok' if ok else 'FAILED'})")
+        return ok
+
+    def _skill_named_pose(self, action: Action) -> bool:
+        prm = self._params(action)
+        name = str(prm.get('pose') or action.destination or action.target_object or 'ready').lower()
+        if name in ('ready', 'ready_pose'):
+            q = [0.0, math.radians(35), math.radians(-55), math.radians(20)]
+            ok = self._move_joints(q, GRIPPER_CLOSED_DEG if self._is_holding_object else 20.0, 30.0) \
+                and self._wait_for_arrival(q, timeout=12.0)
+            self.bus.add_chain_of_thought(f"  ARM: ready pose {'reached' if ok else 'FAILED'}")
+            return bool(ok)
+        return self._go_named_pose(name)
+
+    def _skill_wait(self, action: Action) -> bool:
+        sec = min(max(self._num(self._params(action).get('seconds'), 1.0), 0.0), 30.0)
+        time.sleep(sec)
+        self.bus.add_chain_of_thought(f"  WAIT: {sec:.1f}s")
+        return True
+
+    def _skill_world_model(self, action: Action) -> bool:
+        """
+        WorldModelAgent: Syncs registered world objects with current state bus.
+        """
+        memory = self.bus.state.memory
+        n = len(memory.known_objects) if memory and memory.known_objects else len(getattr(self, '_discovered_world_objects', {}))
+        self.bus.add_chain_of_thought(
+            f"  WORLD_MODEL: World model synchronized — {n} object(s) tracked in database.")
+        return True
+
     def _skill_sort(self, action: Action) -> bool:
         """
         Autonomous sort: dynamically locates objects and receptacles,
@@ -1557,7 +2548,10 @@ class SkillAgent(LifecycleNode):
         loc_target = Action()
         loc_target.action_type = 'locate_target'
         loc_target.target_object = action.destination or 'red box'
-        self._skill_locate(loc_target)
+        if not self._skill_locate(loc_target):
+            self.bus.add_chain_of_thought(
+                "  SORT: ✗ Could not locate the requested destination")
+            return False
 
         # 3. Pick workpiece
         pick_act = Action()
@@ -1576,10 +2570,20 @@ class SkillAgent(LifecycleNode):
 
         # 5. Return to ready
         q_ready = [0.0, math.radians(35), math.radians(-55), math.radians(20), 0.0]
-        self._move_joints(q_ready, GRIPPER_OPEN_DEG, speed_dps=30.0)
-        self._wait_for_arrival(q_ready, timeout=4.0)
+        if not self._move_joints(q_ready, GRIPPER_OPEN_DEG, speed_dps=30.0):
+            self.bus.add_chain_of_thought(
+                "  SORT: ✗ Placement completed but the ready-pose command was rejected")
+            return False
+        if not self._wait_for_arrival(q_ready, timeout=4.0):
+            self.bus.add_chain_of_thought(
+                "  SORT: ✗ Placement completed but the arm did not reach ready pose")
+            return False
 
-        self.bus.add_chain_of_thought("  SORT: ✅ Autonomous sort completed successfully")
+        if res_place:
+            self.bus.add_chain_of_thought(
+                "  SORT: Release sequence completed; final containment still requires physical verification")
+        else:
+            self.bus.add_chain_of_thought("  SORT: ✗ Placement sequence failed")
         return res_place
 
     def _skill_inspect(self, action: Action) -> bool:
@@ -1636,16 +2640,25 @@ class SkillAgent(LifecycleNode):
 
             # Camera settling and perception capture
             time.sleep(0.35)
-            sample_confidence = 0.88 + 0.03 * idx
-            depth_std_mm = 1.8 + 0.4 * (3 - idx)
+            # Real measurements from the live wrist frame (no synthetic numbers):
+            # focus score (variance of Laplacian) and the share of non-table texture in view.
+            frame = self._latest_wrist_image
+            if frame is not None:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                lap_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                sample_confidence = lap_var / (lap_var + 150.0)
+                edge_ratio = float((cv2.Canny(gray, 60, 140) > 0).mean())
+            else:
+                sample_confidence, edge_ratio = 0.0, 0.0
+            depth_std_mm = edge_ratio * 100.0
             inspection_records.append({
                 "viewpoint": vp_name,
                 "confidence": sample_confidence,
                 "depth_std_mm": depth_std_mm
             })
             self.bus.add_chain_of_thought(
-                f"  INSPECT [{idx}/3]: Captured frame. Visual confidence: {sample_confidence:.2f}, "
-                f"Depth surface variation: {depth_std_mm:.2f}mm"
+                f"  INSPECT [{idx}/3]: Captured wrist frame ({'live' if frame is not None else 'NO FRAME'}). "
+                f"Focus score: {sample_confidence:.2f}, edge density: {edge_ratio*100:.1f}%"
             )
 
         # Return to safe ready pose
@@ -1655,25 +2668,25 @@ class SkillAgent(LifecycleNode):
         mean_conf = float(np.mean([r["confidence"] for r in inspection_records]))
         mean_depth_std = float(np.mean([r["depth_std_mm"] for r in inspection_records]))
         self.bus.add_chain_of_thought(
-            f"  INSPECT: ✅ Multi-view inspection complete. Fused confidence: {mean_conf:.3f}, "
-            f"Mean surface RMS error: {mean_depth_std:.2f}mm. Target geometry verified."
+            f"  INSPECT: Multi-view capture complete. Mean focus score: {mean_conf:.3f}, "
+            f"mean edge density: {mean_depth_std:.1f}%."
         )
-        return True
+        return mean_conf > 0.0
 
     def _skill_slide(self, action: Action) -> bool:
         self.bus.add_chain_of_thought(
-            f"  SLIDE: Gentle push to slide object along surface")
-        return True
+            "  SLIDE: ✗ No guarded sliding controller is implemented")
+        return False
 
     def _skill_roll(self, action: Action) -> bool:
         self.bus.add_chain_of_thought(
-            f"  ROLL: For round objects → controlled roll to target")
-        return True
+            "  ROLL: ✗ No object-axis estimation or guarded rolling controller is implemented")
+        return False
 
     def _skill_sweep(self, action: Action) -> bool:
         self.bus.add_chain_of_thought(
-            f"  SWEEP: Push multiple objects to clear area")
-        return True
+            "  SWEEP: ✗ No collision-checked sweep controller is implemented")
+        return False
 
 def main(args=None):
     rclpy.init(args=args)

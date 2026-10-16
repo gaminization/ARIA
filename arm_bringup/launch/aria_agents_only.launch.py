@@ -85,7 +85,7 @@ def generate_launch_description():
     tracking_agent    = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='tracking_agent',    name='tracking_agent',    output='screen')])
     affordance_agent  = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='affordance_agent',  name='affordance_agent',  output='screen')])
     attention_agent   = TimerAction(period=5.0, actions=[Node(package='arm_agents', executable='attention_agent',   name='attention_agent',   output='screen')])
-    planning_agent    = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='planning_agent',    name='planning_agent',    output='screen')])
+    planning_agent    = TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='llm_planning_agent', name='llm_planning_agent', output='screen')])
     reachability_agent= TimerAction(period=5.5, actions=[Node(package='arm_agents', executable='reachability_agent',name='reachability_agent',output='screen')])
     skill_agent       = TimerAction(period=6.0, actions=[Node(package='arm_agents', executable='skill_agent',       name='skill_agent',       output='screen')])
     control_agent     = TimerAction(period=6.0, actions=[Node(package='arm_agents', executable='control_agent',     name='control_agent',     output='screen')])

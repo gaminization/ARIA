@@ -1,6 +1,8 @@
-# Request: command all 6 joints simultaneously
-# Order: [waist, shoulder, elbow, wrist_pitch, wrist_roll, gripper]
-float64[] angles_deg        # Target angles in degrees (length 6)
+# Request order is [waist, shoulder, elbow, wrist_pitch, gripper] (length 5).
+# The manual-control service also accepts a deprecated six-value order
+# [waist, shoulder, elbow, wrist_pitch, nonexistent wrist_roll, gripper] for compatibility;
+# the nonexistent wrist-roll value is ignored.
+float64[] angles_deg        # Target angles in degrees
 float64 speed_deg_per_s     # Max speed in degrees/second (capped at 90)
 ---
 # Response
