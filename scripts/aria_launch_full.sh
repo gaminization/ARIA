@@ -19,6 +19,7 @@ ENABLE_GUI="false"
 LAUNCH_DASHBOARD=true
 DASHBOARD_PORT=8000
 USE_TMUX=true
+ENABLE_OPENVLA=false
 
 print_usage() {
     cat << 'EOF'
@@ -31,12 +32,14 @@ Options:
   -p, --port <PORT>      Dashboard web port (default: 8000)
   --no-dashboard         Launch simulation & multi-agent stack without dashboard
   --no-tmux              Launch directly in foreground/subshell (without tmux)
+  --openvla              Enable OpenVLA-7B policy execution backend
   --status               Show health and status of active ARIA nodes and services
   --stop                 Cleanly stop all running ARIA, Gazebo, and dashboard processes
   -h, --help             Show this help message
 
 Examples:
   ./scripts/aria_launch_full.sh                    # Headless sim + 15 agents + dashboard
+  ./scripts/aria_launch_full.sh --openvla          # Full stack with OpenVLA-7B backend
   ./scripts/aria_launch_full.sh --gui              # Launch with Gazebo 3D GUI window
   ./scripts/aria_launch_full.sh -w industrial -g  # Industrial workcell with GUI
   ./scripts/aria_launch_full.sh --status           # Check running nodes & topics
@@ -151,6 +154,10 @@ while [[ $# -gt 0 ]]; do
             USE_TMUX=false
             shift
             ;;
+        --openvla)
+            ENABLE_OPENVLA=true
+            shift
+            ;;
         --status)
             check_status
             exit 0
@@ -201,6 +208,7 @@ echo "  Target World:   $WORLD_NAME"
 echo "  Gazebo 3D GUI:  $ENABLE_GUI"
 echo "  Dashboard:      $([ "$LAUNCH_DASHBOARD" = true ] && echo "port $DASHBOARD_PORT" || echo "disabled")"
 echo "  Mode:           $([ "$USE_TMUX" = true ] && echo "tmux background sessions" || echo "direct subshell")"
+echo "  OpenVLA-7B:     $([ "$ENABLE_OPENVLA" = true ] && echo "enabled (ARIA_OPENVLA_FORCE_LOAD=1)" || echo "disabled")"
 echo "─────────────────────────────────────────────────────────"
 
 # Clean previous sessions
@@ -212,7 +220,11 @@ if [ "$USE_TMUX" = true ]; then
     tmux start-server
     sleep 0.5
     tmux new-session -d -s aria_sim -x 220 -y 50
-    tmux send-keys -t aria_sim "cd \"$ARIA_ROOT\" && export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
+    VLA_ENV=""
+    if [ "$ENABLE_OPENVLA" = true ]; then
+        VLA_ENV="export ARIA_OPENVLA_FORCE_LOAD=1 ARIA_USE_OPENVLA=1 ARIA_ROOT=\"$ARIA_ROOT\" && "
+    fi
+    tmux send-keys -t aria_sim "cd \"$ARIA_ROOT\" && ${VLA_ENV}export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
     tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=\"$WORLD_NAME\" gui:=\"$ENABLE_GUI\" 2>&1 | tee /tmp/aria_launch.log" Enter
 
     echo "✅ Simulation + multi-agent stack started in tmux session 'aria_sim'"
@@ -274,6 +286,12 @@ else
         exit 0
     }
     trap cleanup SIGINT SIGTERM EXIT
+
+    if [ "$ENABLE_OPENVLA" = true ]; then
+        export ARIA_OPENVLA_FORCE_LOAD=1
+        export ARIA_USE_OPENVLA=1
+        export ARIA_ROOT="$ARIA_ROOT"
+    fi
 
     echo "Starting simulation & multi-agent stack..."
     ros2 launch arm_bringup aria_full_u3.launch.py world:="$WORLD_NAME" gui:="$ENABLE_GUI" 2>&1 | tee /tmp/aria_launch.log &

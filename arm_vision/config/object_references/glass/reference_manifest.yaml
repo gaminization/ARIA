@@ -1,0 +1,5 @@
+class_name: glass
+mesh_path: mesh.obj
+source_mesh: arm_description/meshes/objects/plastic_glass_norm.obj
+format: wavefront_obj
+has_normals: true

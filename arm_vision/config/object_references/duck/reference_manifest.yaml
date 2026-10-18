@@ -1,0 +1,5 @@
+class_name: duck
+mesh_path: mesh.obj
+source_mesh: arm_description/meshes/bullet/duck_norm.obj
+format: wavefront_obj
+has_normals: true

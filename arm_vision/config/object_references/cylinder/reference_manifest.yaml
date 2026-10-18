@@ -1,0 +1,5 @@
+class_name: cylinder
+mesh_path: mesh.obj
+source_mesh: arm_description/meshes/bullet/cylinder_norm.obj
+format: wavefront_obj
+has_normals: true

@@ -1,0 +1,5 @@
+class_name: banana
+mesh_path: mesh.obj
+source_mesh: arm_description/meshes/bullet/banana_norm.obj
+format: wavefront_obj
+has_normals: true

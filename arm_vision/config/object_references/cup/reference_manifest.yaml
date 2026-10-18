@@ -1,0 +1,5 @@
+class_name: cup
+mesh_path: mesh.obj
+source_mesh: arm_description/meshes/objects/ycb_mug/ycb_mug_norm.obj
+format: wavefront_obj
+has_normals: true

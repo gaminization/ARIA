@@ -1,0 +1,5 @@
+class_name: cube
+mesh_path: mesh.obj
+source_mesh: arm_description/meshes/bullet/cube.obj
+format: wavefront_obj
+has_normals: true

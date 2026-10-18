@@ -1,0 +1,5 @@
+class_name: bottle
+mesh_path: mesh.obj
+source_mesh: arm_description/meshes/objects/fuze_bottle_norm.obj
+format: wavefront_obj
+has_normals: true
