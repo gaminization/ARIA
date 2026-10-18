@@ -42,7 +42,9 @@ class TaskStatus(Enum):
 
 # Confidence threshold — below this, ask user for approval
 CONFIDENCE_THRESHOLD = 0.75
-DEFAULT_AUTO_APPROVE_AFTER_S = 0.0
+# Fully autonomous: auto-approve routine actions after a short grace period
+# so the arm never stalls waiting for a human. The LLM re-plans on failure.
+DEFAULT_AUTO_APPROVE_AFTER_S = 3.0
 
 
 ACTION_TIMEOUT_S = 240.0

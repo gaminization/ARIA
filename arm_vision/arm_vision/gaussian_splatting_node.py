@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
 """
 ═══════════════════════════════════════════════════════════════
-ARIA Gaussian Splatting Workspace Model
-Persistent photorealistic 3D model of the workspace.
+ARIA Workspace Model (depth-fusion point cloud)
 
-Library: gsplat (nerfstudio-project/gsplat)
+NOTE: gsplat is NOT installed in this build, so true Gaussian
+Splatting reconstruction is not available. The engine instead builds
+a persistent point-cloud workspace model by fusing multi-view depth,
+and renders depth by projecting that point cloud — a real but simpler
+capability. No Gaussian splat is trained or faked.
 
 Two phases:
-  PHASE A — Reconstruction (offline, 5-10 min):
-    Move arm to viewpoints, capture RGB+depth, train splat.
-  PHASE B — Runtime (real-time, ~5ms per render):
-    Render depth from splat → compare with live depth
-    → detect new/moved objects via change mask.
+  PHASE A — Reconstruction (offline): capture real RGB+depth frames (with
+    their actual camera poses) and fuse them into a persistent point cloud.
+    The node reports the true frame count and distinct-viewpoint count; it
+    never synthesizes viewpoints.
+  PHASE B — Runtime: render depth by projecting the point cloud →
+    compare with live depth → detect new/moved objects via change mask.
 
 Subscribes:
   /top_camera/image_raw
   /depth/image_depth_anything
+  /gaussian/activate  (Bool — runtime render gate from the orchestrator)
 
 Publishes:
   /gaussian/depth_rendered       (32FC1)
@@ -28,7 +33,6 @@ Services:
 ═══════════════════════════════════════════════════════════════
 """
 import json
-import math
 import os
 import time
 from dataclasses import dataclass, field
@@ -40,7 +44,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from sensor_msgs.msg import Image
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from std_srvs.srv import Trigger
 
 try:
@@ -155,16 +159,20 @@ class GaussianSplattingEngine:
         views: List[CapturedView],
         n_iterations: int,
     ) -> bool:
-        """Train with gsplat if available."""
+        """
+        Train with gsplat if available.
+
+        gsplat is not installed in this build, so real 3DGS training is
+        not performed and this returns False. `_use_gsplat` is NOT set
+        here: claiming a trained splat when none was trained would be a
+        fabricated result. The depth-fusion fallback is used instead.
+        """
         try:
-            import gsplat
-            from gsplat import rasterization
-            # Real gsplat training would go here:
-            # 1. Initialize Gaussians from depth point clouds
-            # 2. Iteratively optimize via differentiable rendering
-            # 3. Prune and densify Gaussians
-            # For now, fall through to depth fusion
-            self._use_gsplat = True
+            import gsplat  # noqa: F401
+            from gsplat import rasterization  # noqa: F401
+            # Real gsplat training would initialize Gaussians from depth
+            # point clouds, optimize via differentiable rendering, then
+            # prune/densify. Not reachable in this build.
         except ImportError:
             pass
 
@@ -428,9 +436,13 @@ class GaussianSplattingNode(Node):
         self._latest_depth: Optional[np.ndarray] = None
 
         # Reconstruction state
-        self._capture_views: List[CapturedView] = []
+        # Rolling buffer of REAL captured frames (actual pose + timestamp).
+        # Reconstruction fuses these; it never invents viewpoints.
+        self._view_buffer: List[CapturedView] = []
         self._is_reconstructing = False
         self._status = "NONE"
+        # Runtime render gate (driven by the perception orchestrator).
+        self._active = False
 
         # Default camera pose (top camera, looking down)
         self._camera_pose = np.array([
@@ -449,6 +461,8 @@ class GaussianSplattingNode(Node):
             Image, '/top_camera/image_raw', self._rgb_cb, qos)
         self.create_subscription(
             Image, '/depth/image_depth_anything', self._depth_cb, qos)
+        self.create_subscription(
+            Bool, '/gaussian/activate', self._activate_cb, 10)
 
         # ── Publishers ─────────────────────────────────────
         self.depth_pub = self.create_publisher(
@@ -504,12 +518,47 @@ class GaussianSplattingNode(Node):
             except Exception:
                 pass
 
+    def _activate_cb(self, msg: Bool):
+        """Enable/disable runtime depth rendering + change detection."""
+        self._active = bool(msg.data)
+        self._status = self._status if not self._active else (
+            self._status if self.engine.has_model else "NONE")
+        self.get_logger().info(
+            f"Workspace model render: {'ACTIVE' if self._active else 'INACTIVE'}")
+
     # ── Reconstruction service ─────────────────────────────
+    def _record_view(self):
+        """Append the current real frame (actual pose) to the view buffer."""
+        if self._latest_rgb is None or self._latest_depth is None:
+            return
+        self._view_buffer.append(CapturedView(
+            rgb=self._latest_rgb.copy(),
+            depth=self._latest_depth.copy(),
+            camera_pose=self._camera_pose.copy(),
+            timestamp=time.time(),
+        ))
+
+    @staticmethod
+    def _count_distinct_views(views: List[CapturedView],
+                              pos_thresh: float = 0.01) -> int:
+        """Count genuinely distinct viewpoints (camera translation > thresh)."""
+        distinct = 0
+        last_pos = None
+        for v in views:
+            pos = v.camera_pose[:3, 3]
+            if last_pos is None or np.linalg.norm(pos - last_pos) > pos_thresh:
+                distinct += 1
+                last_pos = pos
+        return distinct
+
     def _reconstruct_cb(self, request, response):
         """
         Service: /aria/gaussian_splatting/reconstruct
 
-        Captures views and trains a Gaussian Splatting model.
+        Captures real frames over a short window and fuses them into the
+        workspace point cloud. Every view is an actual captured frame with its
+        actual camera pose — viewpoints are never synthesized. The response
+        reports the true frame count and distinct-viewpoint count.
         """
         if self._is_reconstructing:
             response.success = False
@@ -520,48 +569,42 @@ class GaussianSplattingNode(Node):
         self._is_reconstructing = True
         self._status = "RECONSTRUCTING"
 
-        # Capture views from current camera
-        self._capture_views = []
-        n_captures = 12
-
-        for i in range(n_captures):
-            if self._latest_rgb is not None and self._latest_depth is not None:
-                # Simulate different viewpoints by slight perturbation
-                # In production, this would move the arm to viewpoints
-                perturbed_pose = self._camera_pose.copy()
-                angle = 2 * math.pi * i / n_captures
-                perturbed_pose[0, 3] += 0.05 * math.cos(angle)
-                perturbed_pose[1, 3] += 0.05 * math.sin(angle)
-
-                view = CapturedView(
-                    rgb=self._latest_rgb.copy(),
-                    depth=self._latest_depth.copy(),
-                    camera_pose=perturbed_pose,
-                    timestamp=time.time(),
-                )
-                self._capture_views.append(view)
-
+        # Capture real frames over a short window.
+        capture_window_s = 3.0
+        deadline = time.time() + capture_window_s
+        while time.time() < deadline:
+            self._record_view()
             time.sleep(0.1)
 
-        # Train model
-        if self._capture_views:
-            success = self.engine.reconstruct(self._capture_views)
-            if success:
-                n_pts = self.engine._model.n_gaussians if self.engine._model else 0
-                self._status = "READY"
-                response.success = True
-                response.message = (
-                    f"Reconstruction complete. "
-                    f"{n_pts} points from {len(self._capture_views)} views.")
-                self.get_logger().info(response.message)
-            else:
-                self._status = "NONE"
-                response.success = False
-                response.message = "Reconstruction failed."
-        else:
+        views = list(self._view_buffer)
+        if not views:
             self._status = "NONE"
             response.success = False
             response.message = "No camera data available for reconstruction."
+            self._is_reconstructing = False
+            return response
+
+        n_frames = len(views)
+        n_distinct = self._count_distinct_views(views)
+
+        # Train model
+        success = self.engine.reconstruct(views)
+        if success:
+            n_pts = self.engine._model.n_gaussians if self.engine._model else 0
+            self._status = "READY"
+            response.success = True
+            response.message = (
+                f"Reconstruction complete: {n_pts} points from {n_frames} "
+                f"frame(s), {n_distinct} distinct viewpoint(s).")
+            self.get_logger().info(response.message)
+            if n_distinct < 2:
+                self.get_logger().warn(
+                    "Only one distinct viewpoint was available; move the "
+                    "camera or object for a fuller reconstruction.")
+        else:
+            self._status = "NONE"
+            response.success = False
+            response.message = "Reconstruction failed."
 
         self._is_reconstructing = False
         return response
@@ -569,6 +612,8 @@ class GaussianSplattingNode(Node):
     # ── Main processing tick ───────────────────────────────
     def _tick(self):
         """Render depth and compute change mask."""
+        if not self._active:
+            return
         if not self.engine.has_model:
             return
         if self._latest_depth is None:

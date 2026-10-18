@@ -165,6 +165,10 @@ class RecoveryManager:
         return handler(failure, task)
 
     # ── Strategy implementations ───────────────────────────
+    # Each handler performs a real action and returns True only when it
+    # can verify the outcome. Handlers that cannot verify success return
+    # False — a recovery that cannot be verified must not be reported as
+    # successful.
     def _recovery_re_detect(self, f, t):
         self.bus.add_chain_of_thought("  → Waiting for fresh perception frame...")
         time.sleep(1.0)
@@ -184,41 +188,68 @@ class RecoveryManager:
         return False
 
     def _recovery_adjust_offset(self, f, t):
-        self.bus.add_chain_of_thought("  → Adjusting grasp offset by +2mm...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Adjust grasp offset: NOT IMPLEMENTED — no grasp-offset "
+            "adjustment service is wired. Reporting failure.")
+        return False
 
     def _recovery_different_angle(self, f, t):
-        self.bus.add_chain_of_thought("  → Rotating approach by +15°...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Different approach angle: NOT IMPLEMENTED — no approach-rotation "
+            "service is wired. Reporting failure.")
+        return False
 
     def _recovery_lower_arm(self, f, t):
-        self.bus.add_chain_of_thought("  → Lowering arm to table level...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Lower arm: NOT IMPLEMENTED — no height-adjustment service is wired. "
+            "Reporting failure.")
+        return False
 
     def _recovery_re_grasp(self, f, t):
-        self.bus.add_chain_of_thought("  → Re-grasping from current position...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Re-grasp: NOT IMPLEMENTED — no re-grasp service is wired. "
+            "Reporting failure.")
+        return False
 
     def _recovery_increase_grip(self, f, t):
-        self.bus.add_chain_of_thought("  → Increasing grip force threshold...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Increase grip force: NOT IMPLEMENTED — no grip-force service is wired. "
+            "Reporting failure.")
+        return False
 
     def _recovery_fallback_solver(self, f, t):
-        self.bus.add_chain_of_thought("  → Switching to fallback IK solver...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Fallback IK solver: NOT IMPLEMENTED — no fallback solver is wired. "
+            "Reporting failure.")
+        return False
 
     def _recovery_rotate_approach(self, f, t):
-        self.bus.add_chain_of_thought("  → Trying ±15° approach rotation...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Rotate approach: NOT IMPLEMENTED — no approach-rotation service is wired. "
+            "Reporting failure.")
+        return False
 
     def _recovery_active_perception(self, f, t):
-        self.bus.add_chain_of_thought("  → Moving camera for better view...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Active perception: NOT IMPLEMENTED — no viewpoint-planning service is wired. "
+            "Reporting failure.")
+        return False
 
     def _recovery_wait_frames(self, f, t):
         self.bus.add_chain_of_thought("  → Waiting 2s for fresh frames...")
         time.sleep(2.0)
-        return True
+        # Verify a fresh detection actually arrived; do not assume it did.
+        target = (t.action_queue[0].target_object if t.action_queue else '').lower().strip()
+        vision = self.bus.state.vision
+        if vision and vision.detected_objects:
+            for obj in vision.detected_objects:
+                if target and (target in obj.class_name.lower() or obj.class_name.lower() in target):
+                    self.bus.add_chain_of_thought(
+                        f"  → Fresh detection confirmed '{obj.class_name}'.")
+                    return True
+        self.bus.add_chain_of_thought(
+            "  → Wait frames: no fresh detection of the target arrived.")
+        return False
 
     def _recovery_ask_user(self, f, t):
         t.awaiting_user_approval = True
@@ -227,8 +258,10 @@ class RecoveryManager:
         return False  # Needs user input
 
     def _recovery_search(self, f, t):
-        self.bus.add_chain_of_thought("  → Triggering multi-phase search...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Search behavior: NOT IMPLEMENTED — no search service is wired. "
+            "Reporting failure.")
+        return False
 
     def _recovery_request_approval(self, f, t):
         t.awaiting_user_approval = True
@@ -241,8 +274,10 @@ class RecoveryManager:
         return False  # Can't continue
 
     def _recovery_default(self, f, t):
-        self.bus.add_chain_of_thought("  → Default recovery: retry action...")
-        return True
+        self.bus.add_chain_of_thought(
+            "  → Default recovery: NOT IMPLEMENTED — no generic retry service is wired. "
+            "Reporting failure.")
+        return False
 
     def reset(self, task_id: str):
         """Reset retry counters for a task."""
@@ -325,7 +360,7 @@ def build_recovery_actions(task: TaskState, idx: int, plan: Optional[dict]) -> O
                 a.params_json = json.dumps(st.get('params') or {})
             except (TypeError, ValueError):
                 a.params_json = '{}'
-            a.confidence = max(float(failed.confidence), 0.8)
+            a.confidence = float(failed.confidence)
             a.status = 'PENDING'
             a.reasoning = f"recovery: {plan.get('diagnosis', '')}"[:200]
             steps.append(a)
@@ -333,13 +368,13 @@ def build_recovery_actions(task: TaskState, idx: int, plan: Optional[dict]) -> O
         # LLM unavailable: minimal generic recovery — refresh perception, then retry.
         a = Action()
         a.action_type = 'scan_workspace'
-        a.confidence = max(float(failed.confidence), 0.8)
+        a.confidence = float(failed.confidence)
         a.status = 'PENDING'
         a.reasoning = 'recovery: LLM unavailable, refreshing world model before retry'
         steps.append(a)
     if retry:
         clone = copy.deepcopy(failed)
         clone.status = 'PENDING'
-        clone.confidence = max(float(failed.confidence), 0.8)
+        clone.confidence = float(failed.confidence)
         steps.append(clone)
     return steps

@@ -470,8 +470,8 @@ class Stage1Validator(Node):
             ("waist_link", "upper_arm_link"),
             ("upper_arm_link", "forearm_link"),
             ("forearm_link", "wrist_link"),
-            ("wrist_link", "gripper_holder_link"),
-            ("gripper_holder_link", "gear_housing_link"),
+            ("wrist_link", "finger_left_1_link"),
+            ("finger_left_1_link", "finger_right_1_link"),
             ("world", "top_camera_link"),
         ]
 

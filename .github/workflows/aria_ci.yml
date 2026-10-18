@@ -37,7 +37,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-colcon-common-extensions
           rosdep update
-          rosdep install --from-paths . --ignore-src -r -y 2>/dev/null || true
+          rosdep install --from-paths . --ignore-src -r -y
 
       - name: Install Python dependencies
         run: |
@@ -102,29 +102,33 @@ jobs:
       - name: Run IK tests
         run: |
           source /opt/ros/humble/setup.bash
+          source install/setup.bash
           PYTHONPATH="arm_ik:$PYTHONPATH" \
-          python3 -m pytest arm_ik/tests/ -v --timeout=60 || true
+          python3 -m pytest arm_ik/test/ -v --timeout=60
 
       - name: Run planner tests
         run: |
           source /opt/ros/humble/setup.bash
+          source install/setup.bash
           PYTHONPATH="arm_planner:$PYTHONPATH" \
-          python3 -m pytest arm_planner/tests/ -v --timeout=60 || true
+          python3 -m pytest arm_planner/arm_planner/llm_planning_agent_tests.py -v --timeout=60
 
-      - name: Run control tests
+      - name: Run agents + vision tests
         run: |
           source /opt/ros/humble/setup.bash
-          PYTHONPATH="arm_control:$PYTHONPATH" \
-          python3 -m pytest arm_control/tests/ -v --timeout=60 || true
+          source install/setup.bash
+          PYTHONPATH="arm_agents:arm_vision:$PYTHONPATH" \
+          python3 -m pytest arm_agents/test arm_vision/test -v --timeout=60
 
       - name: Coverage report
         run: |
           source /opt/ros/humble/setup.bash
-          PYTHONPATH="arm_ik:arm_planner:arm_control:$PYTHONPATH" \
+          source install/setup.bash
+          PYTHONPATH="arm_ik:arm_planner:arm_agents:arm_vision:$PYTHONPATH" \
           python3 -m pytest \
-            --cov=arm_ik --cov=arm_planner --cov=arm_control \
+            --cov=arm_ik --cov=arm_planner --cov=arm_agents --cov=arm_vision \
             --cov-report=xml --cov-report=term-missing \
-            --timeout=60 || true
+            --timeout=60
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
@@ -167,7 +171,7 @@ jobs:
               'arm_planner.arm_planner.task_manager',
               'arm_planner.arm_planner.state_bus',
               'arm_planner.arm_planner.world_model_db',
-              'arm_control.arm_control.servo_controller',
+              'arm_agents.arm_agents.control_agent',
           ]
           failed = []
           for m in modules:
@@ -198,14 +202,14 @@ jobs:
           source /opt/ros/humble/setup.bash
           source install/setup.bash
           python3 arm_ik/arm_ik/ik_benchmark_node.py \
-            --output benchmark_ik_$(date +%Y%m%d).csv 2>/dev/null || true
+            --output benchmark_ik_$(date +%Y%m%d).csv
 
       - name: Compare to baseline
         run: |
           python3 .github/scripts/compare_benchmarks.py \
             --current benchmark_ik_*.csv \
             --baseline benchmarks/baseline_ik.csv \
-            --threshold 0.10 2>/dev/null || true
+            --threshold 0.10
 
       - name: Upload results
         uses: actions/upload-artifact@v4

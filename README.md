@@ -28,17 +28,17 @@ ARIA eliminates these hardware barriers by delegating complexity to **software i
                      [Joint 5: Gripper Clamp (SG90)]
                                    │
                      [Joint 4: Wrist Pitch (SG90)]
-                                   │  L_forearm = 0.115 m
+                                   │  L_forearm = 0.1275 m
                      [Joint 3: Elbow Pitch (MG995)]
-                                   │  L_upperarm = 0.145 m
+                                   │  L_upperarm = 0.1169 m
                      [Joint 2: Shoulder Pitch (MG995)]
-                                   │  H_base = 0.105 m
+                                   │  H_base = 0.0797 m
                      [Joint 1: Waist Azimuth (MG995)]
                                    │
               ═════════════════════╧═════════════════════ (Optical Table: Z = 0.6081m)
 ```
 
-- **Manipulator Kinematics:** 5-DoF revolute articulated arm with an azimuth base and 3-link planar pitch subsystem.
+- **Manipulator Kinematics:** 4-DoF revolute articulated arm (azimuth base + 3-link planar pitch subsystem) plus a gripper clamp — 5 joints total, no wrist-roll axis.
 - **Actuators:**
   - Joints 1, 2, 3: TowerPro MG995 high-torque metal gear servos ($10\,\text{kg}\cdot\text{cm}$ torque, limited in firmware to $1.50\,\text{rad/s}$).
   - Joints 4, 5: TowerPro SG90 micro servos ($1.8\,\text{kg}\cdot\text{cm}$ torque, limited to $2.50\,\text{rad/s}$).
@@ -47,8 +47,8 @@ ARIA eliminates these hardware barriers by delegating complexity to **software i
   - **Wrist Camera:** ESP32-CAM or Micro USB ($640\times 480$ @ $25\,\text{FPS}$) mounted on link 4 for active perception.
   - **End-Effector IMU:** MPU6050 6-axis accelerometer/gyroscope on the gripper chassis for dynamic tilt, vibration, and collision feedback.
 - **Microcontroller & Servo Power:**
-  - ESP32 running micro-ROS communicating via high-speed serial (`921600 baud`).
-  - PCA9685 16-channel 12-bit PWM driver for jitter-free $50\,\text{Hz}$ servo pulses.
+  - ESP32 running micro-ROS communicating via high-speed serial (`921600 baud`) or WiFi UDP; firmware [directly drives the servos from GPIO](file:///home/gaminizer/Projects/ARIA/esp32_firmware/src/main.cpp).
+  - Optional PCA9685 16-channel 12-bit PWM driver for jitter-free $50\,\text{Hz}$ servo pulses (not required by the default firmware).
   - Isolated $5\text{V} / 10\text{A}$ DC power supply.
 
 *For detailed pinout schematics and wiring guides, see [`docs/HARDWARE_SPECIFICATION.md`](file:///home/gaminizer/Projects/ARIA/docs/HARDWARE_SPECIFICATION.md).*
@@ -148,25 +148,34 @@ $$\alpha = \frac{\frac{1}{Z_{\text{tips}}} - \frac{1}{Z_{\text{ground}}}}{d_{\te
 
 ---
 
-## 5. Kinematics & Constrained Task Manifold $\mathcal{M}_{\text{task}}$
+## 5. Kinematics & Constrained Task Manifold
 
-ARIA operates strictly on the 5-dimensional admissible task manifold $\mathcal{M}_{\text{task}}$:
-$$\mathcal{M}_{\text{task}} = \left\{ \mathbf{T} \in SE(3) \;\middle|\; \mathbf{p} \in \mathcal{W}_{\text{reach}}, \; \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \; \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}], \; \psi_{\text{roll}} = 0 \right\}$$
+ARIA's arm has **4 revolute joints + a gripper** (waist, shoulder, elbow,
+wrist pitch, plus the gripper clamp). There is **no wrist-roll axis**, so the
+task manifold is position + pitch only:
 
-### Closed-Form Algebraic Inverse Kinematics:
-- **Azimuth:** $\theta_1 = \text{atan2}(P_y, P_x)$.
-- **Wrist Center:** $\mathbf{P}_w = \mathbf{P}_{\text{target}} - d_5 [\cos\theta_1 \cos\theta_{\text{pitch}}, \sin\theta_1 \cos\theta_{\text{pitch}}, \sin\theta_{\text{pitch}}]^T$.
-- **Elbow via Law of Cosines:** $\cos\theta_3 = \frac{(r_w)^2 + (z_w)^2 - a_2^2 - a_3^2}{2 a_2 a_3}$. Solves both elbow-up and elbow-down branches, enforcing physical servo travel $[-\pi/2, +\pi/3]$.
-- **Shoulder & Pitch:** $\theta_2 = \text{atan2}(z_w, r_w) - \text{atan2}(a_3 \sin\theta_3, a_2 + a_3 \cos\theta_3)$, $\theta_4 = \theta_{\text{pitch}} - \theta_2 - \theta_3$.
+$$\mathcal{M}_{\text{task}} = \left\{ \mathbf{T} \in SE(3) \;\middle|\; \mathbf{p} \in \mathcal{W}_{\text{reach}}, \; \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \; \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}] \right\}$$
 
-### Benchmark Comparison (100,000 Reachable Poses):
-| Solver Method | Language | 6D Convergence | 5D Constraint Convergence | Solve Latency (ms) | Mean Position Error (mm) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **ARIA Analytical** | Python | **$100.00\%$** | **$100.00\%$** | **$0.080\,\text{ms}$** | **$0.000\,\text{mm}$** |
-| **TRAC-IK** | C++ | $100.00\%$ | $4.30\%$ | $0.290\,\text{ms}$ | $0.022\,\text{mm}$ |
-| **PyKDL** | C++ | $84.98\%$ | $3.62\%$ | $0.134\,\text{ms}$ | $0.021\,\text{mm}$ |
-| **RTB Levenberg-Marquardt**| Python | $99.87\%$ | $3.42\%$ | $3.434\,\text{ms}$ | $0.379\,\text{mm}$ |
-| **scipy least_squares** | Python | — | $4.18\%$ | $371.42\,\text{ms}$ | $0.214\,\text{mm}$ |
+### Numerical Inverse Kinematics (position + pitch)
+The URDF joint chain includes fixed RPY offsets that make a closed-form 2R
+derivation intractable, so `arm_ik` uses **damped Newton–Raphson** on the
+URDF-faithful forward kinematics, seeded from geometric elbow-up / elbow-down
+candidates. It is **not** a closed-form solver, and orientation is only
+partially solved (wrist pitch); `orientation_error_rad` is reported as `0.0`
+by convention and must not be read as a measured residual.
+
+### Measured benchmark (reachable poses, this machine)
+| Solver | Convergence | Mean position error | Solve latency |
+| :--- | :---: | :---: | :---: |
+| **ARIA numerical IK** | 100% (reachable seeds) | ~0.37 mm | ~5 ms |
+| TRAC-IK / PyKDL / RTB / scipy | see `scripts/benchmark_ik_comparison.py` | — | — |
+
+> **Correction.** Earlier revisions of this README described a "closed-form
+> analytical" solver and reported idealised numbers (0.080 ms / 0.000 mm)
+> benchmarked against a *different* kinematic chain (0.105 / 0.145 / 0.115 m)
+> than the actual URDF (0.0797 / 0.1169 / 0.1275 m). Those claims were wrong
+> and have been removed. The baseline solvers are real, but they were scored
+> on the idealised chain; re-benchmarking them against the URDF is pending.
 
 *For kinematic proofs and time-scaling dynamics, see [`docs/KINEMATICS_AND_CONTROL.md`](file:///home/gaminizer/Projects/ARIA/docs/KINEMATICS_AND_CONTROL.md).*
 
@@ -202,7 +211,7 @@ ARIA/
 │   └── AI_UPGRADES_AND_ROADMAP.md
 ├── esp32_firmware/          # PlatformIO C++ firmware for ESP32 micro-ROS & MPU6050
 ├── legacy_synthetic/        # Archived synthetic baseline scripts & comparison datasets
-├── paper_v2/                # IEEE TRO / RA-L manuscript (LaTeX, BibTeX, PDF, Figures)
+├── publications/             # IEEE TRO / RA-L manuscript (LaTeX, BibTeX, PDF, Figures)
 ├── scripts/                 # Real physical benchmark runners and kinematic validators
 └── tests/                   # Regression and unit test suites
 ```

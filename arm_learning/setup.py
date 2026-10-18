@@ -28,6 +28,7 @@ setup(
             'bag_recorder_node = arm_learning.bag_recorder_node:main',
             'bag_indexer = arm_learning.bag_indexer:main',
             'bag_to_dataset = arm_learning.bag_to_dataset:main',
+            'train_pipeline = arm_learning.training.train_pipeline:main',
         ],
     },
 )

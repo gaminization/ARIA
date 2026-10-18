@@ -160,33 +160,32 @@ def verify_effects(action_type: str, before_state: dict,
 
 def _check_precondition(condition: str, target: str,
                         world_model: dict) -> bool:
-    """Check a single precondition against world model."""
+    """
+    Check a single precondition against the world model.
+
+    Only returns True when the precondition is actually verified. Conditions
+    that cannot be checked with the available data return False ("not
+    verified") — they are never assumed to be met, and the caller must treat
+    an unverified precondition as requiring caution or approval.
+    """
     checks = {
         'object_detected': lambda: target in world_model,
-        'object_reachable': lambda: world_model.get(target, {}).get('reachable', True),
-        'gripper_empty': lambda: world_model.get('gripper', {}).get('empty', True),
+        'object_reachable': lambda: world_model.get(target, {}).get('reachable', False),
+        'gripper_empty': lambda: world_model.get('gripper', {}).get('empty', False),
         'object_in_gripper': lambda: not world_model.get('gripper', {}).get('empty', True),
-        'target_reachable': lambda: True,
-        'push_path_clear': lambda: True,
-        'object_graspable': lambda: True,
-        'base_surface_flat': lambda: True,
-        'object_base_flat': lambda: True,
-        'base_stable': lambda: True,
-        'object_on_surface': lambda: True,
-        'path_clear': lambda: True,
-        'low_friction': lambda: True,
         'object_is_round': lambda: world_model.get(target, {}).get('shape', '') in ('sphere', 'cylinder'),
-        'surface_flat': lambda: True,
-        'area_identified': lambda: True,
-        'arm_can_reach_area': lambda: True,
     }
 
-    # Handle parameterized conditions
-    if '<=' in condition:
-        return True  # Would need actual measurements
+    # Parameterized conditions (e.g. "weight<=2.0") need a real measurement;
+    # without one they are unverified, not satisfied.
+    if '<=' in condition or '>=' in condition:
+        return False
 
-    check_fn = checks.get(condition, lambda: True)
+    check_fn = checks.get(condition)
+    if check_fn is None:
+        # Unknown precondition: cannot verify, so it is not met.
+        return False
     try:
-        return check_fn()
+        return bool(check_fn())
     except Exception:
-        return True  # Assume met if can't check
+        return False

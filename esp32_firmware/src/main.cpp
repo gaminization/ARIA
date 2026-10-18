@@ -12,6 +12,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <math.h>
 #include <micro_ros_arduino.h>
 
 #include <rcl/rcl.h>
@@ -31,11 +32,18 @@
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURATION — Edit for your setup
 // ═══════════════════════════════════════════════════════════════
-#define USE_WIFI          true
+// Transport selection. This MUST match the micro_ros_agent invocation
+// in arm_bringup/launch/hardware.launch.py:
+//   USE_WIFI = false → serial agent:  transport:=serial baud:=SERIAL_BAUD
+//   USE_WIFI = true  → WiFi agent:    transport:=wifi
+#define USE_WIFI          false
 #define WIFI_SSID         "YOUR_WIFI_SSID"
 #define WIFI_PASS         "YOUR_WIFI_PASSWORD"
 #define ROS_AGENT_IP      "192.168.1.100"
 #define ROS_AGENT_PORT    8888
+// micro-ROS serial baud rate; must equal the agent's `--baudrate`.
+#define SERIAL_BAUD       921600
+#define LOG_BAUD          115200  // console baud when the UART carries logs
 
 // Servo pins (matching assembly manual wiring diagram)
 #define SERVO_WAIST_PIN        3
@@ -337,11 +345,13 @@ void timer_heartbeat_callback(rcl_timer_t* timer, int64_t last_call_time) {
 
     RCSOFTCHECK(rcl_publish(&pub_heartbeat, &msg_heartbeat, NULL));
 
-    // Also publish health data
-    // [uptime_s, vcc_estimate, adc_valid, feedback_mode, imu_active]
+    // Also publish health data:
+    // [uptime_s, vcc_volts, adc_feedback_enabled, teach_mode_active]
+    // vcc_volts is NaN: the ESP32 has no battery-rail divider wired, so we
+    // do not report a fabricated supply voltage.
     float uptime_s = millis() / 1000.0f;
     msg_health.data.data[0] = uptime_s;
-    msg_health.data.data[1] = 5.0f;  // VCC estimate
+    msg_health.data.data[1] = NAN;
     msg_health.data.data[2] = (servo_mgr.get_feedback_mode() == FEEDBACK_ADC) ? 1.0f : 0.0f;
     msg_health.data.data[3] = teach_mode_active ? 1.0f : 0.0f;
 
@@ -423,7 +433,13 @@ void allocate_messages() {
 // SETUP
 // ═══════════════════════════════════════════════════════════════
 void setup() {
-    Serial.begin(115200);
+    // In serial-transport mode the UART is owned by micro-ROS, so it runs at
+    // SERIAL_BAUD; in WiFi mode it is only used for logs.
+#if USE_WIFI
+    Serial.begin(LOG_BAUD);
+#else
+    Serial.begin(SERIAL_BAUD);
+#endif
     delay(500);
     Serial.println("\n═══════════════════════════════════════");
     Serial.println("  ARIA ESP32 Firmware v1.1.0");

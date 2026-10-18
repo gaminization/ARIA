@@ -21,7 +21,7 @@ services:
       - ./:/aria_ws/src/aria:ro
       - ci_results:/aria_ws/test_results
     network_mode: host
-    command: >
+    command: |
       bash -c "
         source /aria_ws/docker/entrypoint.sh &&
         echo '═══ Running ARIA CI Tests ═══' &&
@@ -31,35 +31,33 @@ services:
         source /aria_ws/install/setup.bash &&
 
         echo '── Stage 2: Unit tests ──' &&
-        python3 -m pytest /aria_ws/src/aria/ -v \
-          --timeout=60 \
-          --ignore=/aria_ws/src/aria/arm_bringup \
-          --ignore=/aria_ws/src/aria/arm_dashboard \
-          -x 2>&1 || true &&
+        source /aria_ws/install/setup.bash &&
+        cd /aria_ws/src/aria &&
+        python3 -m pytest -v --timeout=60 &&
 
         echo '── Stage 3: Import validation ──' &&
         python3 -c '
-import importlib
-modules = [
-    \"arm_ik.arm_ik.ik_node\",
-    \"arm_vision.arm_vision.detection_node\",
-    \"arm_vision.arm_vision.depth_node\",
-    \"arm_planner.arm_planner.task_manager\",
-    \"arm_planner.arm_planner.state_bus\",
-    \"arm_control.arm_control.servo_controller\",
-]
-failed = []
-for m in modules:
-    try:
-        importlib.import_module(m)
-        print(f\"  ✅ {m}\")
-    except Exception as e:
-        print(f\"  ❌ {m}: {e}\")
-        failed.append(m)
-if failed:
-    raise SystemExit(f\"{len(failed)} import(s) failed\")
-print(\"All imports OK\")
-' &&
+        import importlib
+        modules = [
+            \"arm_ik.arm_ik.ik_node\",
+            \"arm_vision.arm_vision.detection_node\",
+            \"arm_vision.arm_vision.depth_node\",
+            \"arm_planner.arm_planner.task_manager\",
+            \"arm_planner.arm_planner.state_bus\",
+            \"arm_agents.arm_agents.control_agent\",
+        ]
+        failed = []
+        for m in modules:
+            try:
+                importlib.import_module(m)
+                print(f\"  ✅ {m}\")
+            except Exception as e:
+                print(f\"  ❌ {m}: {e}\")
+                failed.append(m)
+        if failed:
+            raise SystemExit(f\"{len(failed)} import(s) failed\")
+        print(\"All imports OK\")
+        ' &&
 
         echo '── Stage 4: Validation scripts ──' &&
         python3 /aria_ws/src/aria/arm_bringup/scripts/validate_stage3.py \

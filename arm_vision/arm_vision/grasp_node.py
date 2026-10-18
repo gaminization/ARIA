@@ -3,10 +3,11 @@
 ═══════════════════════════════════════════════════════════════
 ARIA Grasp Planning Node
 Geometric grasp generator for known object shapes.
-GraspNet integration stub for future use.
+Learned backends (AnyGrasp / GraspNet) are optional and, when their SDK
+is absent, the node falls back to the geometric strategy instead of
+fabricating a pose.
 ═══════════════════════════════════════════════════════════════
 """
-import math
 from typing import Optional
 
 import numpy as np
@@ -116,18 +117,30 @@ class GraspNode(Node):
         if method == 'auto':
             method = self._select_strategy(obj_class or 'unknown')
 
-        # Generate grasp pose using the real detected 3D position when
-        # available; otherwise fall back to the default workspace position.
-        if method == 'top_down':
-            grasp_pose, approach_pose, conf = self._top_down_grasp(obj_center, world_pos)
-        elif method == 'side':
-            grasp_pose, approach_pose, conf = self._side_grasp(obj_center, world_pos)
-        elif method in ('anygrasp', 'any_grasp'):
-            grasp_pose, approach_pose, conf = self._anygrasp(obj_center, world_pos, obj_class)
-        elif method in ('graspnet', 'grasp_net'):
-            grasp_pose, approach_pose, conf = self._graspnet(obj_center, world_pos, obj_class)
+        # Learned backends (AnyGrasp / GraspNet) are optional dependencies.
+        # When the SDK is absent we must NOT fabricate a pose or a confidence
+        # value — we fall back to the geometric strategy and report the method
+        # that actually ran.
+        if method in ('anygrasp', 'any_grasp', 'graspnet', 'grasp_net'):
+            if method in ('anygrasp', 'any_grasp'):
+                grasp_pose, approach_pose, conf = self._anygrasp(
+                    obj_center, world_pos, obj_class)
+            else:
+                grasp_pose, approach_pose, conf = self._graspnet(
+                    obj_center, world_pos, obj_class)
+            if grasp_pose is None:
+                method = self._select_strategy(obj_class or 'unknown')
+                self.get_logger().info(
+                    f"Learned grasp backend unavailable; using geometric "
+                    f"'{method}' instead")
+        elif method in ('top_down', 'side', 'geometric'):
+            if method == 'geometric':
+                method = self._select_strategy(obj_class or 'unknown')
+            grasp_pose, approach_pose, conf = self._geometric_grasp(
+                obj_center, world_pos, method)
         else:
-            grasp_pose, approach_pose, conf = self._top_down_grasp(obj_center, world_pos)
+            grasp_pose, approach_pose, conf = self._geometric_grasp(
+                obj_center, world_pos, 'top_down')
 
         if world_pos is None:
             conf *= 0.5  # no verified 3D fix — halve confidence
@@ -200,6 +213,14 @@ class GraspNode(Node):
         }
         # Default to top-down for unknown objects
         return strategies.get(class_name.lower(), 'top_down')
+
+    def _geometric_grasp(self, object_center: np.ndarray,
+                         object_world_pos: Optional[np.ndarray],
+                         method: str):
+        """Dispatch to the real geometric grasp generators."""
+        if method == 'side':
+            return self._side_grasp(object_center, object_world_pos)
+        return self._top_down_grasp(object_center, object_world_pos)
 
     def _top_down_grasp(self, object_center: np.ndarray,
                         object_world_pos: Optional[np.ndarray] = None):
@@ -297,63 +318,49 @@ class GraspNode(Node):
                   object_world_pos: Optional[np.ndarray] = None,
                   obj_class: Optional[str] = None):
         """
-        AnyGrasp dense 6-DOF grasp generation strategy.
-        Uses depth point cloud surface normals and friction cone analysis
-        to find optimal antipodal contact pairs constrained by the 55mm gripper aperture.
+        AnyGrasp dense 6-DOF grasp sampling (learned backend).
+
+        AnyGrasp needs its SDK plus a depth point cloud; neither is bundled.
+        This method returns (None, None, 0.0) when the SDK is absent so the
+        caller can fall back to the geometric strategy — it never invents a
+        grasp pose or a confidence number.
         """
-        if object_world_pos is not None:
-            wx, wy, wz = object_world_pos
-        else:
-            wx, wy, wz = 0.20, 0.0, 0.80
+        try:
+            import anygrasp_sdk  # noqa: F401
+        except Exception as exc:  # noqa: BLE001
+            self.get_logger().warn(
+                f"AnyGrasp SDK not available ({type(exc).__name__}); "
+                f"falling back to geometric grasp")
+            return None, None, 0.0
 
-        # AnyGrasp analyzes local surface curvature to select pitch & approach vector
-        is_tall = obj_class in ('bottle', 'cup', 'cylinder')
-        pitch_angle = -0.35 if is_tall else -1.5707  # oblique for tall, nadir for flat
-        qy = math.sin(pitch_angle / 2.0)
-        qw = math.cos(pitch_angle / 2.0)
-
-        grasp_pose = PoseStamped()
-        grasp_pose.header.frame_id = 'base_link'
-        grasp_pose.header.stamp = self.get_clock().now().to_msg()
-        grasp_pose.pose.position = Point(x=wx, y=wy, z=wz + (0.04 if is_tall else 0.02))
-        grasp_pose.pose.orientation = Quaternion(x=0.0, y=qy, z=0.0, w=qw)
-
-        approach_pose = PoseStamped()
-        approach_pose.header = grasp_pose.header
-        dz = self.APPROACH_OFFSET_M * math.cos(abs(pitch_angle))
-        dy = -self.APPROACH_OFFSET_M * math.sin(abs(pitch_angle)) if is_tall else 0.0
-        approach_pose.pose.position = Point(x=wx, y=wy + dy, z=wz + dz)
-        approach_pose.pose.orientation = grasp_pose.pose.orientation
-
-        # High confidence for AnyGrasp dense sampling
-        conf = 0.92
-        return grasp_pose, approach_pose, conf
+        self.get_logger().error(
+            "AnyGrasp SDK is importable but the inference path is not wired "
+            "into this node; falling back to geometric grasp")
+        return None, None, 0.0
 
     def _graspnet(self, object_center: np.ndarray,
                   object_world_pos: Optional[np.ndarray] = None,
                   obj_class: Optional[str] = None):
         """
-        GraspNet-1Billion 6-DOF grasp pose evaluation.
-        Evaluates candidate SE(3) end-effector poses scored by grasp quality metrics.
+        GraspNet-1Billion 6-DOF grasp evaluation (learned backend).
+
+        GraspNet needs its SDK plus a depth point cloud; neither is bundled.
+        This method returns (None, None, 0.0) when the SDK is absent so the
+        caller can fall back to the geometric strategy — it never invents a
+        grasp pose or a confidence number.
         """
-        if object_world_pos is not None:
-            wx, wy, wz = object_world_pos
-        else:
-            wx, wy, wz = 0.20, 0.0, 0.80
+        try:
+            import graspnetAPI  # noqa: F401
+        except Exception as exc:  # noqa: BLE001
+            self.get_logger().warn(
+                f"GraspNet SDK not available ({type(exc).__name__}); "
+                f"falling back to geometric grasp")
+            return None, None, 0.0
 
-        grasp_pose = PoseStamped()
-        grasp_pose.header.frame_id = 'base_link'
-        grasp_pose.header.stamp = self.get_clock().now().to_msg()
-        grasp_pose.pose.position = Point(x=wx, y=wy, z=wz + 0.02)
-        grasp_pose.pose.orientation = Quaternion(x=0.0, y=-0.7071, z=0.0, w=0.7071)
-
-        approach_pose = PoseStamped()
-        approach_pose.header = grasp_pose.header
-        approach_pose.pose.position = Point(x=wx, y=wy, z=wz + self.APPROACH_OFFSET_M)
-        approach_pose.pose.orientation = grasp_pose.pose.orientation
-
-        conf = 0.89
-        return grasp_pose, approach_pose, conf
+        self.get_logger().error(
+            "GraspNet SDK is importable but the inference path is not wired "
+            "into this node; falling back to geometric grasp")
+        return None, None, 0.0
 
     def _publish_viz(self, grasp_pose: PoseStamped,
                      approach_pose: PoseStamped):

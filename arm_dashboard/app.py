@@ -434,8 +434,8 @@ if ROS_AVAILABLE:
             self.create_subscription(JointState, '/joint_states', self._joint_cb, qos_sensor)
 
             # Cameras
-            self.create_subscription(Image, '/top_camera/image_raw', self._top_cam_cb, qos_sensor)
-            self.create_subscription(Image, '/wrist_camera/image_raw', self._wrist_cam_cb, qos_sensor)
+            self.create_subscription(Image, '/aria/top_camera/image_raw', self._top_cam_cb, qos_sensor)
+            self.create_subscription(Image, '/aria/wrist_camera/image_raw', self._wrist_cam_cb, qos_sensor)
             self.create_subscription(Image, '/side_camera/image_raw', self._side_cam_cb, qos_sensor)
             self.create_subscription(Image, '/detection/image_annotated', self._annotated_cam_cb, qos_sensor)
             self.create_subscription(Image, '/depth/image_colorized', self._depth_cam_cb, qos_sensor)
@@ -503,7 +503,7 @@ if ROS_AVAILABLE:
 
             if not hasattr(self, '_last_cam_time'):
                 self._last_cam_time = {}
-            if now - self._last_cam_time.get(cam_name, 0.0) < 0.040:
+            if now - self._last_cam_time.get(cam_name, 0.0) < 0.033:
                 return None
             self._last_cam_time[cam_name] = now
 

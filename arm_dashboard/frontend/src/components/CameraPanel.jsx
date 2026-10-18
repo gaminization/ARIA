@@ -226,7 +226,7 @@ export default function CameraPanel({
                 </div>
                 {/* GraspNet Score Badge */}
                 <div className="absolute -right-2 top-1 bg-amber-950/90 text-amber-300 border border-amber-700/60 text-[7px] px-1 py-0.5 rounded font-mono shadow-md">
-                  6-DoF 94%
+                  {primaryTarget ? `6-DoF ${(primaryTarget.confidence * 100).toFixed(0)}%` : '6-DoF N/A'}
                 </div>
               </div>
             )}
@@ -505,7 +505,7 @@ export default function CameraPanel({
                 </span>
                 <span className="text-slate-400">{latency}ms</span>
               </div>
-              <div className="text-slate-400 text-[9px]">Ray-plane: fx=1330.59, Table Z=0.6081m</div>
+              <div className="text-slate-400 text-[9px]">Ray-plane: fx=N/A, Table Z=0.6081m</div>
               <div className="text-slate-200 mt-1">
                 {detections.length > 0 ? (
                   <div className="space-y-0.5">
@@ -531,9 +531,9 @@ export default function CameraPanel({
                 </span>
                 <span className="text-emerald-400">METRIC</span>
               </div>
-              <div className="text-slate-400 text-[9px]">Camera-to-table distance: ~0.228m (wrist)</div>
+              <div className="text-slate-400 text-[9px]">Camera-to-table distance: N/A (not measured)</div>
               <div className="text-slate-300 mt-1">
-                Surface planar variance: <span className="text-emerald-400">σ = 0.0018m</span> (Continuous flat table confirmed)
+                Surface planar variance: <span className="text-slate-400">N/A (not measured)</span>
               </div>
               <div className="mt-1 h-1.5 w-full rounded-full bg-gradient-to-r from-blue-700 via-emerald-500 to-amber-500" />
             </div>
@@ -545,15 +545,15 @@ export default function CameraPanel({
                   <Hand className="w-3 h-3 text-amber-400" />
                   GraspNet 6-DoF Synthesizer
                 </span>
-                <span className="text-amber-300 font-bold">94.2% SCORE</span>
+                <span className="text-amber-300 font-bold">N/A</span>
               </div>
               <div className="text-slate-400 text-[9px]">
                 Target: <span className="text-slate-200">{primaryTarget ? primaryTarget.class_name : 'tabletop workpiece'}</span>
               </div>
               <div className="text-slate-300 mt-1 space-y-0.5 text-[9px]">
-                <div>Antipodal normals: n1=[0.98, -0.12, 0.0], n2=[-0.98, 0.12, 0.0]</div>
-                <div>Aperture span: 55mm · Friction cone margin: μ=0.65</div>
-                <div className="text-amber-300">Decision: Top-down vertical grasp with +6.5cm approach offset</div>
+                <div>Antipodal normals: N/A (not measured)</div>
+                <div>Aperture span: N/A · Friction cone margin: N/A</div>
+                <div className="text-amber-300">Decision: N/A (no grasp planner output)</div>
               </div>
             </div>
 

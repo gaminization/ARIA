@@ -109,24 +109,6 @@
     <minDepth>0.002</minDepth>
     <maxVel>0.05</maxVel>
   </gazebo>
-  <!-- Gripper holder: white -->
-  <gazebo reference="gripper_holder_link">
-    <material>Gazebo/White</material>
-    <self_collide>false</self_collide>
-    <kp>50000.0</kp>
-    <kd>10.0</kd>
-    <minDepth>0.002</minDepth>
-    <maxVel>0.05</maxVel>
-  </gazebo>
-  <!-- Gear housing: white -->
-  <gazebo reference="gear_housing_link">
-    <material>Gazebo/White</material>
-    <self_collide>false</self_collide>
-    <kp>50000.0</kp>
-    <kd>10.0</kd>
-    <minDepth>0.002</minDepth>
-    <maxVel>0.05</maxVel>
-  </gazebo>
   <!-- Left finger pair: blue -->
   <!-- Left finger pair: blue -->
   <gazebo reference="finger_left_1_link">

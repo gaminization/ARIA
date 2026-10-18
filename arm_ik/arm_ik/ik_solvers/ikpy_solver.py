@@ -16,8 +16,13 @@ try:
     import ikpy.chain
     import ikpy.link
     IKPY_AVAILABLE = True
-except ImportError:
+    IKPY_IMPORT_ERROR = None
+except Exception as _ikpy_err:  # noqa: BLE001
+    # ikpy pulls in jax, which can raise AttributeError (not ImportError) when
+    # paired with an incompatible numpy. Treat any import failure as
+    # "unavailable" so the node still starts and reports an honest error.
     IKPY_AVAILABLE = False
+    IKPY_IMPORT_ERROR = _ikpy_err
 
 from arm_ik.ik_solvers.aria_analytical_ik import (
     IKResult, SolverConfig, JOINT_LIMITS, forward_kinematics

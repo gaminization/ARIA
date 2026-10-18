@@ -18,12 +18,14 @@ Subscribes:
   /top_camera/image_raw
   /depth/image_depth_anything
   /detection/objects
-  /sam2/masks_json
+  /sam2/masks       (arm_interfaces/SAM2Masks — binary masks per object)
+  /transparent/activate (Bool — gate; only correct depth while active)
 
 Publishes:
   /depth/image_completed        (32FC1 — corrected depth map)
   /perception/transparent_flags (String JSON — per-object flags)
   /perception/depth_quality     (String JSON — per-object confidence)
+  /transparent/status           (String — "active" | "inactive")
 ═══════════════════════════════════════════════════════════════
 """
 import json
@@ -36,8 +38,10 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from sensor_msgs.msg import Image
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from vision_msgs.msg import Detection2DArray
+
+from arm_interfaces.msg import SAM2Masks
 
 try:
     from cv_bridge import CvBridge
@@ -240,10 +244,13 @@ def correct_depth_plane_fitting(
 # ═══════════════════════════════════════════════════════════════
 class ClearGraspModel:
     """
-    Wrapper for ClearGrasp depth completion on transparent objects.
+    ClearGrasp depth completion for transparent objects.
 
-    If ClearGrasp is installed: uses the learned model (~0.6GB).
-    Otherwise: falls back to geometric plane fitting.
+    ClearGrasp is NOT bundled with ARIA and its SDK is not installed here, so
+    this wrapper always falls back to geometric plane fitting. The import is
+    attempted only when explicitly requested; if the real ClearGrasp package is
+    ever installed, wire its inference into `complete_depth`. Until then this
+    class never claims to have run a learned model.
     """
 
     def __init__(self, device: str = 'cuda:0'):
@@ -256,13 +263,15 @@ class ClearGraspModel:
         if self.loaded:
             return True
         try:
-            # Attempt ClearGrasp import
-            from cleargrasp.api import ClearGraspAPI
+            # Real ClearGrasp does not expose `cleargrasp.api.ClearGraspAPI`;
+            # this import is intentionally left as a clearly-marked placeholder
+            # so the fallback path is what actually runs.
+            from cleargrasp.api import ClearGraspAPI  # noqa: F401
             self.model = ClearGraspAPI(device=self.device)
             self.loaded = True
             self._use_real_model = True
             return True
-        except (ImportError, Exception):
+        except Exception:  # noqa: BLE001
             self.loaded = True
             self._use_real_model = False
             return True
@@ -338,7 +347,10 @@ class TransparentObjectNode(Node):
         self._latest_rgb: Optional[np.ndarray] = None
         self._latest_depth: Optional[np.ndarray] = None
         self._latest_detections: Optional[Detection2DArray] = None
-        self._mask_data: dict = {}
+        self._masks: Dict[int, np.ndarray] = {}
+
+        # Activation gate (driven by the perception orchestrator).
+        self._active = False
 
         # Stats
         self._corrections_applied = 0
@@ -356,7 +368,9 @@ class TransparentObjectNode(Node):
             Detection2DArray, '/detection/objects',
             self._detection_cb, 10)
         self.create_subscription(
-            String, '/sam2/masks_json', self._masks_cb, 10)
+            SAM2Masks, '/sam2/masks', self._masks_cb, 10)
+        self.create_subscription(
+            Bool, '/transparent/activate', self._activate_cb, 10)
 
         # ── Publishers ─────────────────────────────────────
         self.depth_pub = self.create_publisher(
@@ -365,6 +379,8 @@ class TransparentObjectNode(Node):
             String, '/perception/transparent_flags', 10)
         self.quality_pub = self.create_publisher(
             String, '/perception/depth_quality', 10)
+        self.status_pub = self.create_publisher(
+            String, '/transparent/status', 10)
 
         # ── Processing timer ───────────────────────────────
         self.create_timer(0.1, self._tick)  # 10 Hz
@@ -391,14 +407,33 @@ class TransparentObjectNode(Node):
     def _detection_cb(self, msg: Detection2DArray):
         self._latest_detections = msg
 
-    def _masks_cb(self, msg: String):
-        try:
-            self._mask_data = json.loads(msg.data)
-        except json.JSONDecodeError:
-            pass
+    def _masks_cb(self, msg: SAM2Masks):
+        """Decode pixel-accurate SAM2 masks for depth correction."""
+        if not self.bridge:
+            return
+        masks: Dict[int, np.ndarray] = {}
+        for i, img in enumerate(msg.masks):
+            if i >= len(msg.object_ids):
+                break
+            try:
+                mask = self.bridge.imgmsg_to_cv2(img, desired_encoding='mono8')
+            except Exception:
+                continue
+            masks[int(msg.object_ids[i])] = (mask > 0).astype(np.uint8) * 255
+        if masks:
+            self._masks = masks
+
+    def _activate_cb(self, msg: Bool):
+        """Enable/disable transparent-depth correction."""
+        self._active = bool(msg.data)
+        status = String()
+        status.data = "active" if self._active else "inactive"
+        self.status_pub.publish(status)
 
     # ── Main processing tick ───────────────────────────────
     def _tick(self):
+        if not self._active:
+            return
         if self._latest_depth is None or self._latest_detections is None:
             return
         if self._latest_rgb is None:
@@ -477,16 +512,12 @@ class TransparentObjectNode(Node):
 
             # ── Correct depth if transparent ───────────────
             if is_transparent:
-                # Create mask for this object
-                mask = np.zeros((h, w), dtype=np.uint8)
-                mask[y1:y2, x1:x2] = 255
-
-                # Try using SAM2 mask if available
-                obj_key = str(obj_id)
-                if obj_key in self._mask_data:
-                    # SAM2 provides mask metadata; use bbox mask
-                    # (full mask data from sam2 node not available via JSON)
-                    pass
+                # Prefer the pixel-accurate SAM2 silhouette; fall back to
+                # the bounding box only when no mask was received.
+                mask = self._masks.get(obj_id)
+                if mask is None or mask.shape[:2] != (h, w):
+                    mask = np.zeros((h, w), dtype=np.uint8)
+                    mask[y1:y2, x1:x2] = 255
 
                 # Apply depth correction
                 result = correct_depth_plane_fitting(
@@ -495,11 +526,11 @@ class TransparentObjectNode(Node):
                     corrected_depth = result
                     any_correction = True
                     self._corrections_applied += 1
-                    depth_quality[str(obj_id)] = 0.70  # Corrected
+                    depth_quality[str(obj_id)] = 0.70  # Corrected (heuristic label)
                 else:
-                    depth_quality[str(obj_id)] = 0.30  # Failed
+                    depth_quality[str(obj_id)] = 0.30  # Failed (heuristic label)
             else:
-                depth_quality[str(obj_id)] = 0.90  # Opaque = high quality
+                depth_quality[str(obj_id)] = 0.90  # Opaque = high quality (heuristic)
 
         # ── Publish results ────────────────────────────────
         if any_correction and self.bridge:

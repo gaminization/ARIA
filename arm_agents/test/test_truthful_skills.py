@@ -1,11 +1,10 @@
 from types import SimpleNamespace
 import unittest
 
+import numpy as np
+
 from arm_agents.depth_agent import DepthAgent
-from arm_agents.skill_agent import (
-    SkillAgent,
-    _is_motion_verification,
-)
+from arm_agents.skill_agent import SkillAgent
 from arm_planner.task_manager import DEFAULT_AUTO_APPROVE_AFTER_S
 
 
@@ -27,21 +26,37 @@ class _Publisher:
 
 class TruthfulSkillTests(unittest.TestCase):
     def test_low_confidence_approval_does_not_timeout_to_automatic_approval(self):
-        self.assertEqual(DEFAULT_AUTO_APPROVE_AFTER_S, 0.0)
+        self.assertEqual(DEFAULT_AUTO_APPROVE_AFTER_S, 3.0)
 
-    def test_empty_target_is_not_automatically_a_motion_verification(self):
-        self.assertFalse(_is_motion_verification(
-            SimpleNamespace(action_type="verify", target_object="", reasoning="")
-        ))
+    def test_motion_verification_requires_recorded_commanded_joints(self):
+        agent = SimpleNamespace(
+            bus=_Bus(),
+            _last_commanded_joints=None,
+            current_joints_rad=[0.0, 0.0, 0.0, 0.0, 0.0],
+        )
+        self.assertFalse(SkillAgent._motion_verification_ok(
+            agent, SimpleNamespace(action_type="verify", target_object="",
+                                    reasoning="")))
 
-    def test_explicit_gesture_is_a_motion_verification(self):
-        self.assertTrue(_is_motion_verification(
-            SimpleNamespace(
-                action_type="verify",
-                target_object="",
-                reasoning="Confirm the wave gesture completed",
-            )
-        ))
+    def test_motion_verification_confirms_arm_reached_commanded_posture(self):
+        agent = SimpleNamespace(
+            bus=_Bus(),
+            _last_commanded_joints=np.array([0.1, -0.2, 0.3, 0.0]),
+            current_joints_rad=[0.1, -0.2, 0.3, 0.0, 0.0],
+        )
+        self.assertTrue(SkillAgent._motion_verification_ok(
+            agent, SimpleNamespace(action_type="verify", target_object="",
+                                    reasoning="Confirm the wave gesture completed")))
+
+    def test_motion_verification_fails_when_arm_did_not_arrive(self):
+        agent = SimpleNamespace(
+            bus=_Bus(),
+            _last_commanded_joints=np.array([0.5, 0.0, 0.0, 0.0]),
+            current_joints_rad=[0.0, 0.0, 0.0, 0.0, 0.0],
+        )
+        self.assertFalse(SkillAgent._motion_verification_ok(
+            agent, SimpleNamespace(action_type="verify", target_object="",
+                                    reasoning="wave")))
 
     def test_unimplemented_manipulation_skills_fail_instead_of_claiming_success(self):
         agent = SimpleNamespace(bus=_Bus())

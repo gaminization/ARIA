@@ -14,6 +14,18 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import Bool
 
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+
+try:
+    from cv_bridge import CvBridge
+    CV_BRIDGE = True
+except ImportError:
+    CV_BRIDGE = False
+
 
 class CameraNode(Node):
     """
@@ -73,8 +85,32 @@ class CameraNode(Node):
                 self._wrist_camera_cb, qos_sensor
             )
         else:
-            # Real mode: OpenCV capture (Stage 4)
-            self.get_logger().warn("Real camera mode — not yet implemented")
+            # Real mode: capture from real devices.
+            # Top camera: local UVC device (Logitech C270).
+            # Wrist camera: ESP32-CAM MJPEG stream over WiFi.
+            self.declare_parameter('top_device', 0)
+            self.declare_parameter('wrist_url', 'http://192.168.4.1:81/stream')
+            self._top_device = int(self.get_parameter('top_device').value)
+            self._wrist_url = str(self.get_parameter('wrist_url').value)
+
+            self._top_cap = None
+            self._wrist_cap = None
+            if CV2_AVAILABLE:
+                self._top_cap = cv2.VideoCapture(self._top_device)
+                if not self._top_cap.isOpened():
+                    self.get_logger().error(
+                        f"Could not open top camera device {self._top_device}")
+                    self._top_cap = None
+                self._wrist_cap = cv2.VideoCapture(self._wrist_url)
+                if not self._wrist_cap.isOpened():
+                    self.get_logger().error(
+                        f"Could not open wrist camera stream {self._wrist_url}")
+                    self._wrist_cap = None
+                if self._top_cap or self._wrist_cap:
+                    self.create_timer(1.0 / 15.0, self._capture_loop)
+            else:
+                self.get_logger().error(
+                    "cv2 not available — real camera mode cannot capture.")
 
         # ── Publishers ─────────────────────────────────────
         self.top_pub = self.create_publisher(
@@ -175,6 +211,31 @@ class CameraNode(Node):
         info.r = list(self.wrist_info.r)
         info.p = list(self.wrist_info.p)
         self.wrist_info_pub.publish(info)
+
+    def _capture_loop(self):
+        """Real mode: grab frames from the devices and publish them."""
+        if CV_BRIDGE:
+            bridge = CvBridge()
+        else:
+            bridge = None
+
+        if self._top_cap is not None:
+            ret, frame = self._top_cap.read()
+            if ret and bridge is not None:
+                msg = bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+                msg.header.stamp = self.get_clock().now().to_msg()
+                msg.header.frame_id = 'top_camera_link'
+                self.top_pub.publish(msg)
+                self.top_camera_last_stamp = msg.header.stamp
+
+        if self._wrist_cap is not None:
+            ret, frame = self._wrist_cap.read()
+            if ret and bridge is not None:
+                msg = bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+                msg.header.stamp = self.get_clock().now().to_msg()
+                msg.header.frame_id = 'wrist_camera_link'
+                self.wrist_pub.publish(msg)
+                self.wrist_camera_last_stamp = msg.header.stamp
 
     def _check_sync(self):
         """Check if both cameras are temporally synchronized."""

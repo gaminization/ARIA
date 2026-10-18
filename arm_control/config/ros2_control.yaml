@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════
 # ros2_control Hardware Parameters
 # Referenced by the URDF <ros2_control> tag hardware params
-# and by the launch file for hardware mode (Stage 4)
+# and by the launch file for hardware mode.
 # ═══════════════════════════════════════════════════════════════
 
 aria_hardware:
@@ -9,9 +9,14 @@ aria_hardware:
     # Mode selection
     use_sim: true            # true = Gazebo sim, false = ESP32 hardware
 
-    # Hardware serial settings (only used when use_sim = false)
-    serial_port: "/dev/ttyUSB0"
-    baud_rate: 115200
+    # micro-ROS bridge topics (only used when use_sim = false). The ESP32
+    # firmware (esp32_firmware/, node 'aria_esp32') exchanges JointState
+    # messages in DEGREES on these topics; the serial/WiFi link itself is
+    # carried by micro_ros_agent (see arm_bringup/launch/hardware.launch.py).
+    command_topic: "/aria/servo_commands"
+    state_topic: "/aria/servo_states"
+    teach_topic: "/aria/teach_mode"
+    state_timeout_s: 1.0     # treat feedback older than this as stale
 
     # Four arm axes followed by the gripper; there is no wrist-roll joint.
     joint_names:

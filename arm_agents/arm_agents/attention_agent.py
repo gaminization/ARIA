@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-═══════════════════════════════════════════════════════════════
+══════════════════════════════════════════════════════════════
 ARIA Attention Agent — LifecycleNode
 Selects perception focus based on task priority.
-Drives ROI-based detection and depth computation.
-═══════════════════════════════════════════════════════════════
+
+Drives:
+  /detection/focus_region (ROI) — consumed by detection_node (YOLO crop)
+  /depth/focus_region   (ROI) — consumed by depth_node (inference crop)
 """
 import rclpy
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn

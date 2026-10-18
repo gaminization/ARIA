@@ -556,75 +556,21 @@ Rules:
         t_start: float,
     ) -> ToolResult:
         """
-        Simulate a tool execution when no real executor is registered.
-        Used for testing and when agents aren't fully connected.
+        No executor is registered for this tool, so it did NOT run.
+
+        Returns an explicit failure. Fabricating a success here would make
+        the planner believe a tool executed when it did not, which is
+        exactly the kind of fake result this project must not produce.
         """
         duration = (time.monotonic() - t_start) * 1000
-
-        simulations = {
-            "detect_object": {
-                "success": True,
-                "data": {
-                    "object_id": 42,
-                    "class_name": tool_args.get('class_name', 'object'),
-                    "position": [0.15, 0.08, 0.03],
-                    "confidence": 0.89,
-                    "color": tool_args.get('color', 'unknown'),
-                },
-            },
-            "check_reachability": {
-                "success": True,
-                "data": {
-                    "reachable": True,
-                    "ik_solution_found": True,
-                    "joint_angles": [0.1, 0.5, -0.3, 0.0, 0.2],
-                },
-            },
-            "get_grasp_strategy": {
-                "success": True,
-                "data": {
-                    "strategy": tool_args.get('strategy_hint', 'top_down'),
-                    "grasp_confidence": 0.85,
-                    "approach_direction": [0, 0, -1],
-                },
-            },
-            "execute_skill": {
-                "success": True,
-                "data": {
-                    "skill": tool_args.get('skill_name', 'unknown'),
-                    "duration_s": 2.5,
-                    "details": "Simulated execution",
-                },
-            },
-            "query_world_model": {
-                "success": True,
-                "data": {
-                    "objects_found": 3,
-                    "results": [
-                        {"name": "red_cube_1", "position": [0.1, 0.05, 0.02]},
-                        {"name": "blue_bottle_2", "position": [0.2, -0.1, 0.05]},
-                        {"name": "white_box_3", "position": [-0.1, 0.15, 0.03]},
-                    ],
-                },
-            },
-            "ask_user": {
-                "success": True,
-                "data": {"response": "Yes, go ahead."},
-            },
-            "move_to_pose": {
-                "success": True,
-                "data": {"reached": True, "final_pose": "ready"},
-            },
-        }
-
-        sim = simulations.get(tool_name, {
-            "success": True,
-            "data": {"simulated": True},
-        })
-
+        logger.warning(
+            f"Tool '{tool_name}' has no registered executor — reporting "
+            f"failure (no simulated result).")
         return ToolResult(
             tool_name=tool_name,
-            success=sim["success"],
-            data=sim.get("data"),
+            success=False,
+            error=(f"No executor registered for tool '{tool_name}'. "
+                   "The tool did not execute; no result is available."),
             duration_ms=duration,
+            data=None,
         )

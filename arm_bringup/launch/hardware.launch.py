@@ -27,6 +27,7 @@ from launch.substitutions import (
     PathJoinSubstitution,
     Command,
     FindExecutable,
+    PythonExpression,
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -64,12 +65,29 @@ def generate_launch_description():
         "dashboard_port", default_value="8080",
         description="Dashboard server port"
     )
+    transport_arg = DeclareLaunchArgument(
+        "transport", default_value="serial",
+        description="ESP32 micro-ROS link: serial | wifi "
+                    "(must match the firmware USE_WIFI setting)"
+    )
+    baud_arg = DeclareLaunchArgument(
+        "baud", default_value="921600",
+        description="Serial baud rate (must match firmware SERIAL_BAUD), "
+                    "used when transport:=serial"
+    )
+    agent_port_arg = DeclareLaunchArgument(
+        "agent_port", default_value="8888",
+        description="micro-ROS UDP port, used when transport:=wifi"
+    )
 
     port = LaunchConfiguration("port")
     feedback = LaunchConfiguration("feedback")
     calibrate = LaunchConfiguration("calibrate")
     teach_mode = LaunchConfiguration("teach_mode")
     use_rviz = LaunchConfiguration("use_rviz")
+    transport = LaunchConfiguration("transport")
+    baud = LaunchConfiguration("baud")
+    agent_port = LaunchConfiguration("agent_port")
 
     # ── Robot description ──────────────────────────────────
     xacro_file = os.path.join(desc_pkg, "urdf", "aria_arm.urdf.xacro")
@@ -97,14 +115,30 @@ def generate_launch_description():
 
     # ═══════════════════════════════════════════════════════
     # 2. MICRO-ROS AGENT (bridges ESP32 ↔ ROS2)
+    #    transport:=serial  → USB-serial link at `baud` (firmware
+    #                          USE_WIFI must be false / SERIAL_BAUD equal)
+    #    transport:=wifi    → UDP link on `agent_port` (firmware USE_WIFI true)
     # ═══════════════════════════════════════════════════════
-    micro_ros_agent = ExecuteProcess(
+    micro_ros_agent_serial = ExecuteProcess(
         cmd=[
             "ros2", "run", "micro_ros_agent", "micro_ros_agent",
-            "serial", "--dev", port,
+            "serial", "--dev", port, "-b", baud,
         ],
         name="micro_ros_agent",
         output="screen",
+        condition=IfCondition(PythonExpression(
+            ["'", transport, "' == 'serial'"])),
+    )
+
+    micro_ros_agent_wifi = ExecuteProcess(
+        cmd=[
+            "ros2", "run", "micro_ros_agent", "micro_ros_agent",
+            "udp4", "--port", agent_port,
+        ],
+        name="micro_ros_agent",
+        output="screen",
+        condition=IfCondition(PythonExpression(
+            ["'", transport, "' == 'wifi'"])),
     )
 
     # ═══════════════════════════════════════════════════════
@@ -311,10 +345,14 @@ def generate_launch_description():
         teach_arg,
         use_rviz_arg,
         dashboard_port_arg,
+        transport_arg,
+        baud_arg,
+        agent_port_arg,
 
         # Core
         robot_state_publisher,
-        micro_ros_agent,
+        micro_ros_agent_serial,
+        micro_ros_agent_wifi,
         servo_sync,
         teach_mode_node,
         rviz2,

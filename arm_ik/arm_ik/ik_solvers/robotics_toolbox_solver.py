@@ -16,8 +16,12 @@ try:
     import roboticstoolbox as rtb
     from spatialmath import SE3
     RTB_AVAILABLE = True
-except ImportError:
+    RTB_IMPORT_ERROR = None
+except Exception as _rtb_err:  # noqa: BLE001
+    # Optional dependency; treat any import failure (not just ImportError) as
+    # "unavailable" so the IK node still starts honestly.
     RTB_AVAILABLE = False
+    RTB_IMPORT_ERROR = _rtb_err
 
 from arm_ik.ik_solvers.aria_analytical_ik import (
     IKResult, SolverConfig, JOINT_LIMITS, forward_kinematics

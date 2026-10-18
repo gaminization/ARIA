@@ -68,7 +68,7 @@ The arm is configured as a **5-Degree-of-Freedom (5-DoF) revolute articulated ar
 ### B. End-Effector MPU6050 IMU
 - **Location:** Mounted on the gripper chassis behind the pinch fingers.
 - **Interface:** I2C Bus (`SDA = GPIO 21`, `SCL = GPIO 22` on ESP32). Address: `0x68`.
-- **Sensors:** 3-axis accelerometer ($\pm 2g$) + 3-axis gyroscope ($\pm 250^\circ/\text{s}$).
+- **Sensors:** 3-axis accelerometer ($\pm 4g$) + 3-axis gyroscope ($\pm 500^\circ/\text{s}$), configured in firmware (`ACCEL_CONFIG`/`GYRO_CONFIG`).
 - **Role:**
   - Measures dynamic tilt angle during payload transport.
   - Detects physical contact collisions via transient acceleration spikes ($> 2.5g$).
@@ -108,17 +108,30 @@ The arm is configured as a **5-Degree-of-Freedom (5-DoF) revolute articulated ar
 > [!CAUTION]
 > **Common Ground Requirement:** The ground lines from the 5V/10A servo supply and the ESP32 microcontroller must be tied together. Failure to establish a common ground will result in severe servo jitter, erratic positioning, and potential damage to logic pins. Never power servos directly from the ESP32 3.3V or 5V rail.
 
+> [!NOTE]
+> **PCA9685 is an optional upgrade.** The shipped firmware
+> ([`esp32_firmware/`](../esp32_firmware/)) drives the five servos **directly
+> from ESP32 GPIOs** via the `ESP32Servo` library (`waist=GPIO3`,
+> `shoulder=GPIO5`, `elbow=GPIO6`, `wrist_pitch=GPIO10`, `gripper=GPIO11`),
+> so no PCA9685 is required. Add the PCA9685 board (I2C `SDA=GPIO21`,
+> `SCL=GPIO22`) only if you want dedicated 12-bit PWM generation; if you do,
+> wire the servos to its channels instead of the GPIOs above.
+
 ---
 
 ## 5. Micro-ROS Firmware Architecture
 
 The ESP32 runs native firmware located in [`esp32_firmware/src/main.cpp`](file:///home/gaminizer/Projects/ARIA/esp32_firmware/src/main.cpp) compiled via PlatformIO:
-- **Transport:** High-speed Serial CDC (`921600 baud`) or WiFi UDP transport to the `micro_ros_agent` ROS 2 container.
-- **Node:** `aria_esp32_hardware_bridge`.
+- **Transport:** USB-serial CDC (`SERIAL_BAUD = 921600`) or WiFi UDP, selected by the firmware `USE_WIFI` define. The baud/UDP settings must match the `microros_agent` started by [`arm_bringup/launch/hardware.launch.py`](file:///home/gaminizer/Projects/ARIA/arm_bringup/launch/hardware.launch.py) (`transport:=serial baud:=921600`, or `transport:=wifi agent_port:=8888`).
+- **Node:** `aria_esp32`.
 - **Subscribed Topics:**
-  - `/joint_commands` (`std_msgs/msg/Float64MultiArray`): Array of 5 joint angles in radians. Firmware applies servo calibration offsets:
-    $$\theta_i^{\text{PWM}} = \theta_i^{\text{zero}} + \text{sign}_i \cdot \theta_i^{\text{rad}} \cdot \left(\frac{2000\,\mu\text{s}}{\pi}\right)$$
+  - `/aria/servo_commands` (`sensor_msgs/msg/JointState`): 5 joint target angles in **degrees**, in canonical order `[waist, shoulder, elbow, wrist_pitch, gripper]`. Firmware clamps to per-joint limits and rate-limits each servo.
+  - `/aria/gripper_command` (`std_msgs/msg/Float32`): $0.0$ = open, $1.0$ = closed.
+  - `/aria/teach_mode` (`std_msgs/msg/Bool`): `true` detaches all servos (limp); `false` re-attaches at the current position.
 - **Published Topics:**
-  - `/joint_states` (`sensor_msgs/msg/JointState` @ $50\,\text{Hz}$): Measured or commanded joint angles.
-  - `/aria/imu/data` (`sensor_msgs/msg/Imu` @ $100\,\text{Hz}$): Accelerometer and angular velocity from the end-effector MPU6050.
-  - `/aria/estop` (`std_msgs/msg/Bool`): Hardware E-STOP button status.
+  - `/aria/servo_states` (`sensor_msgs/msg/JointState` @ $50\,\text{Hz}$): per-joint position (degrees) from ADC feedback or the commanded value if ADC feedback is disabled.
+  - `/aria/imu` (`sensor_msgs/msg/Imu` @ $100\,\text{Hz}$): accelerometer and angular velocity from the end-effector MPU6050.
+  - `/aria/esp32_health` (`std_msgs/msg/Float32MultiArray`): `[uptime_s, vcc_volts, adc_feedback_enabled, teach_mode_active]` ($50\,\text{Hz}$ / $1\,\text{Hz}$ heartbeat).
+  - `/aria/heartbeat` (`std_msgs/msg/Header` @ $1\,\text{Hz}$).
+
+The ROS-side bridge is [`arm_control/scripts/servo_sync_node.py`](file:///home/gaminizer/Projects/ARIA/arm_control/scripts/servo_sync_node.py) (SIM↔REAL mirroring), or the `arm_control/AriaHardwareInterface` ros2_control plugin which bridges the same topics directly; use one or the other, not both.

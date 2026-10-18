@@ -1,13 +1,26 @@
 // ═══════════════════════════════════════════════════════════════
 // ARIA Hardware Interface — Header
 // Sim/Hardware switchable ros2_control SystemInterface
-// In sim: passthrough (Gazebo handles physics via gz_ros2_control)
-// In hardware: communicates with ESP32 via serial JSON protocol
+//
+// In SIM mode the Gazebo physics plugin (gazebo_ros2_control)
+// drives the joints and this class is unused.
+//
+// In HARDWARE mode this class bridges ros2_control to the real
+// ESP32 arm. The ESP32 runs the micro-ROS firmware in
+// `esp32_firmware/` (node `aria_esp32`), so the bridge talks to the
+// exact same topics that firmware exposes:
+//   * publishes /aria/servo_commands (JointState, degrees)
+//   * subscribes /aria/servo_states  (JointState, degrees)
+//   * publishes /aria/teach_mode     (Bool: true = servos limp)
+// The micro_ros_agent (launched by hardware.launch.py) carries those
+// topics over the ESP32's USB-serial or WiFi link.
 // ═══════════════════════════════════════════════════════════════
 #ifndef ARM_CONTROL__ARIA_HARDWARE_INTERFACE_HPP_
 #define ARM_CONTROL__ARIA_HARDWARE_INTERFACE_HPP_
 
+#include <chrono>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -18,6 +31,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/macros.hpp"
 #include "rclcpp_lifecycle/state.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
+#include "std_msgs/msg/bool.hpp"
 
 namespace arm_control
 {
@@ -68,23 +83,35 @@ public:
 
 private:
   // ── Parameters ──────────────────────────────────────────
-  bool use_sim_{true};                        // true = Gazebo, false = ESP32 hardware
-  std::string serial_port_{"/dev/ttyUSB0"};   // Hardware serial port
-  int baud_rate_{115200};                     // Hardware baud rate
+  bool use_sim_{true};                             // true = Gazebo, false = ESP32
+  std::string command_topic_{"/aria/servo_commands"};  // To ESP32 (degrees)
+  std::string state_topic_{"/aria/servo_states"};      // From ESP32 (degrees)
+  std::string teach_topic_{"/aria/teach_mode"};        // To ESP32 (Bool)
+  double state_timeout_s_{1.0};                    // Reject stale feedback
 
-  // ── Joint state storage ─────────────────────────────────
-  std::vector<double> hw_positions_;          // Current positions [rad]
-  std::vector<double> hw_velocities_;         // Current velocities [rad/s]
-  std::vector<double> hw_commands_;           // Commanded positions [rad]
+  // ── Joint state storage (radians / rad/s) ───────────────
+  std::vector<double> hw_positions_;
+  std::vector<double> hw_velocities_;
+  std::vector<double> hw_commands_;
+  std::vector<std::string> hw_joint_names_;
 
-  // ── Hardware serial (for REAL mode, Stage 4) ────────────
-  int serial_fd_{-1};                         // Serial file descriptor
+  // ── micro-ROS bridge (REAL mode) ────────────────────────
+  rclcpp::Node::SharedPtr node_;
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr servo_cmd_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr teach_mode_pub_;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr servo_state_sub_;
 
-  // ── Internal helpers ────────────────────────────────────
-  bool open_serial_port();
-  void close_serial_port();
-  bool send_serial_command(const std::string & cmd);
-  std::string read_serial_response();
+  std::mutex state_mutex_;
+  std::vector<double> latest_positions_;   // radians
+  std::vector<double> latest_velocities_;  // rad/s (NaN = unknown)
+  bool state_received_{false};
+  std::chrono::steady_clock::time_point last_state_time_;
+
+  /// Index of `name` in hw_joint_names_, or -1 when absent.
+  int find_joint(const std::string & name) const;
+
+  /// Called for every /aria/servo_states message.
+  void state_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
 };
 
 }  // namespace arm_control

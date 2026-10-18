@@ -88,6 +88,10 @@ class OpenVLAExecutorNode(LifecycleNode):
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info("OpenVLAExecutor: CONFIGURING")
+        self.get_logger().info(
+            "NOTE: /aria/vla/joint_deltas is consumed by ControlAgent, which "
+            "gates it (requires /aria/vla/active and no e-stop) and executes "
+            "it via /aria/set_all_joints with per-step and joint-limit clamps.")
 
         qos = rclpy.qos.QoSProfile(
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,

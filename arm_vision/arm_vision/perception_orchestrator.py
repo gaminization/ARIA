@@ -15,15 +15,18 @@ Module sets by task type:
 Subscribes:
   /aria/state/task  (current task info)
   /detection/objects
+  /pose_6d/objects          (PoseArray — orientations when 6D is active)
   /perception/transparent_flags
+  /material/predictions     (arm_interfaces/MaterialPredictions — typed)
 
 Publishes:
-  /perception/unified_scene  (String JSON — UnifiedScene)
+  /perception/unified_scene       (arm_interfaces/UnifiedScene — typed)
+  /perception/unified_scene_json  (String JSON — mirror for bag recording)
   /perception/mode           (String — current mode)
   /perception/vram_usage     (String JSON)
 
-Services:
-  /aria/perception/set_mode  (SetPerceptionMode-like)
+Also drives on-demand module activation (Bool) on:
+  /pose_6d/activate, /transparent/activate, /gaussian/activate
 ═══════════════════════════════════════════════════════════════
 """
 import json
@@ -35,9 +38,11 @@ import numpy as np
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from geometry_msgs.msg import PoseArray, Point, Quaternion
 from std_msgs.msg import String, Bool
 from vision_msgs.msg import Detection2DArray
+
+from arm_interfaces.msg import MaterialPredictions, UnifiedScene
 
 try:
     import torch
@@ -179,6 +184,7 @@ class PerceptionOrchestrator(Node):
 
         # Data
         self._latest_detections: Optional[Detection2DArray] = None
+        self._latest_poses: Optional[PoseArray] = None
         self._transparent_flags: dict = {}
         self._material_data: dict = {}
         self._task_type: str = 'pick'
@@ -199,15 +205,20 @@ class PerceptionOrchestrator(Node):
             String, '/perception/transparent_flags',
             self._transparent_cb, 10)
         self.create_subscription(
-            String, '/material/predictions',
+            MaterialPredictions, '/material/predictions',
             self._material_cb, 10)
+        self.create_subscription(
+            PoseArray, '/pose_6d/objects',
+            self._pose_cb, 10)
         self.create_subscription(
             String, '/aria/state/task',
             self._task_cb, 10)
 
         # ── Publishers ─────────────────────────────────────
         self.unified_pub = self.create_publisher(
-            String, '/perception/unified_scene', 10)
+            UnifiedScene, '/perception/unified_scene', 10)
+        self.unified_json_pub = self.create_publisher(
+            String, '/perception/unified_scene_json', 10)
         self.mode_pub = self.create_publisher(
             String, '/perception/mode', 10)
         self.vram_pub = self.create_publisher(
@@ -232,11 +243,15 @@ class PerceptionOrchestrator(Node):
         except json.JSONDecodeError:
             pass
 
-    def _material_cb(self, msg: String):
-        try:
-            self._material_data = json.loads(msg.data)
-        except json.JSONDecodeError:
-            pass
+    def _pose_cb(self, msg: PoseArray):
+        self._latest_poses = msg
+
+    def _material_cb(self, msg: MaterialPredictions):
+        self._material_data = {
+            'object_ids': [int(i) for i in msg.object_ids],
+            'material_classes': list(msg.material_classes),
+            'confidences': [float(c) for c in msg.confidences],
+        }
 
     def _task_cb(self, msg: String):
         """Parse task type from task state topic."""
@@ -343,7 +358,10 @@ class PerceptionOrchestrator(Node):
         self._active_modules = target_modules.copy()
 
     def _publish_unified_scene(self):
-        """Build and publish unified scene from all active perception data."""
+        """Build and publish unified scene from all active perception data.
+
+        Emits a typed arm_interfaces/UnifiedScene plus a JSON mirror.
+        """
         scene = {
             'objects': [],
             'scene_type': 'simple',
@@ -352,9 +370,17 @@ class PerceptionOrchestrator(Node):
             'total_vram_used_gb': self._compute_vram(),
         }
 
+        typed = UnifiedScene()
+        typed.header.stamp = self.get_clock().now().to_msg()
+        typed.header.frame_id = 'base_link'
+
+        pose_6d_active = 'foundation_pose' in self._active_modules
+        typed_poses = self._latest_poses.poses if (
+            pose_6d_active and self._latest_poses is not None) else []
+
         # Populate object data from latest detections
         if self._latest_detections:
-            for det in self._latest_detections.detections:
+            for det_idx, det in enumerate(self._latest_detections.detections):
                 cls_name = 'unknown'
                 conf = 0.0
                 if det.results:
@@ -366,15 +392,9 @@ class PerceptionOrchestrator(Node):
                 except (ValueError, AttributeError):
                     obj_id = -1
 
-                obj_data = {
-                    'id': obj_id,
-                    'class_name': cls_name,
-                    'detection_confidence': float(conf),
-                    'pose_6d_available': 'foundation_pose' in self._active_modules,
-                    'material': 'unknown',
-                    'material_confidence': 0.0,
-                    'depth_confidence': 0.9,
-                }
+                material = 'unknown'
+                material_conf = 0.0
+                depth_conf = 0.9
 
                 # Add material info if available
                 if self._material_data:
@@ -384,19 +404,50 @@ class PerceptionOrchestrator(Node):
                     if obj_id in ids:
                         idx = ids.index(obj_id)
                         if idx < len(mats):
-                            obj_data['material'] = mats[idx]
+                            material = mats[idx]
                         if idx < len(confs):
-                            obj_data['material_confidence'] = confs[idx]
+                            material_conf = confs[idx]
 
                 # Add transparency info
                 obj_key = str(obj_id)
                 if obj_key in self._transparent_flags:
                     flag = self._transparent_flags[obj_key]
                     if isinstance(flag, dict) and flag.get('is_transparent'):
-                        obj_data['depth_confidence'] = 0.5
+                        depth_conf = 0.5
                         scene['scene_type'] = 'transparent_present'
 
+                obj_data = {
+                    'id': obj_id,
+                    'class_name': cls_name,
+                    'detection_confidence': float(conf),
+                    'pose_6d_available': pose_6d_active,
+                    'material': material,
+                    'material_confidence': float(material_conf),
+                    'depth_confidence': float(depth_conf),
+                }
                 scene['objects'].append(obj_data)
+
+                # ── typed message accumulation ─────────────
+                typed.object_ids.append(int(obj_id))
+                typed.class_names.append(cls_name)
+                typed.detection_confidences.append(float(conf))
+                typed.materials.append(material)
+                typed.material_confidences.append(float(material_conf))
+                typed.depth_confidences.append(float(depth_conf))
+
+                if det_idx < len(typed_poses):
+                    p = typed_poses[det_idx]
+                    typed.positions.append(Point(
+                        x=p.position.x, y=p.position.y, z=p.position.z))
+                    typed.orientations.append(Quaternion(
+                        x=p.orientation.x, y=p.orientation.y,
+                        z=p.orientation.z, w=p.orientation.w))
+                    typed.pose_6d_available.append(True)
+                else:
+                    typed.positions.append(Point(x=0.0, y=0.0, z=0.0))
+                    typed.orientations.append(Quaternion(
+                        x=0.0, y=0.0, z=0.0, w=1.0))
+                    typed.pose_6d_available.append(False)
 
         # Set depth source based on active modules
         if 'gaussian_splatting' in self._active_modules:
@@ -404,9 +455,16 @@ class PerceptionOrchestrator(Node):
         if 'cleargrasp' in self._active_modules:
             scene['depth_source'] = 'hybrid'
 
-        msg = String()
-        msg.data = json.dumps(scene)
-        self.unified_pub.publish(msg)
+        typed.scene_type = scene['scene_type']
+        typed.depth_source = scene['depth_source']
+        typed.active_modules = list(self._active_modules)
+        typed.total_vram_used_gb = float(self._compute_vram())
+
+        self.unified_pub.publish(typed)
+
+        mirror = String()
+        mirror.data = json.dumps(scene)
+        self.unified_json_pub.publish(mirror)
 
     def _compute_vram(self) -> float:
         """Compute estimated VRAM usage."""

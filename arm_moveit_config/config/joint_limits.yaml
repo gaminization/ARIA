@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA MoveIt2 Joint Limits (overrides / augments the URDF)
+# Velocity limits reflect the SG90/MG995 servo capabilities and the
+# per-servo speed limits enforced in esp32_firmware/src/servo_manager.cpp.
+# ═══════════════════════════════════════════════════════════════
+
+joint_limits:
+  waist_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 3.0
+  shoulder_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 3.0
+  elbow_joint:
+    has_velocity_limits: true
+    max_velocity: 1.5
+    has_acceleration_limits: true
+    max_acceleration: 3.0
+  wrist_pitch_joint:
+    has_velocity_limits: true
+    max_velocity: 2.5
+    has_acceleration_limits: true
+    max_acceleration: 5.0
+  gripper_joint:
+    has_velocity_limits: true
+    max_velocity: 2.5
+    has_acceleration_limits: true
+    max_acceleration: 5.0

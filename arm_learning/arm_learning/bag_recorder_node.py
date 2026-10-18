@@ -55,6 +55,7 @@ class RecordingMode(str, Enum):
 
 STANDARD_TOPICS = [
     '/joint_states',
+    '/aria/joint_stream',
     '/aria/state/task',
     '/aria/state/health',
     '/detection/objects',

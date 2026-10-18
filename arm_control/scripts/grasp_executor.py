@@ -145,6 +145,19 @@ class GraspExecutor(Node):
             rclpy.spin_once(self, timeout_sec=0.01)
         return False
 
+    def _wait_for_gripper_settle(self, timeout: float = 3.0,
+                                 epsilon_rad: float = 0.02):
+        """Wait until the gripper jaw stops moving (measured, not a fixed sleep)."""
+        start = time.time()
+        last = self.gripper_position
+        while time.time() - start < timeout:
+            time.sleep(0.1)
+            rclpy.spin_once(self, timeout_sec=0.01)
+            if abs(self.gripper_position - last) < epsilon_rad:
+                return True
+            last = self.gripper_position
+        return False
+
     async def _execute_cb(self, goal_handle):
         """
         Execute full grasp pipeline.
@@ -159,12 +172,9 @@ class GraspExecutor(Node):
             self._publish_feedback(goal_handle, "Getting object pose", 10.0)
             self._log_reasoning(
                 "Step 1 — Object Localization",
-                "Using hybrid coordinate system. "
-                "Querying /detection/objects and /depth/object_positions."
+                "Hybrid coordinate system: object pose is resolved by the "
+                "grasp planner (/aria/grasp/plan) from detection + depth."
             )
-            # In full implementation: query coordinate_transformer
-            # For now: use grasp planner which handles detection lookup
-            time.sleep(0.5)
 
             # ── STEP 2: Plan grasp pose ───────────────────
             self._publish_feedback(goal_handle, "Planning grasp", 20.0)
@@ -217,7 +227,7 @@ class GraspExecutor(Node):
 
             # Open gripper first
             self._call_service_sync(self.open_gripper_client, Trigger.Request())
-            time.sleep(1.0)
+            self._wait_for_gripper_settle()
 
             move_req = SetAllJoints.Request()
             move_req.angles_deg = [
@@ -234,7 +244,12 @@ class GraspExecutor(Node):
                 goal_handle.abort()
                 return result
 
-            self._wait_for_motion(approach_joints)
+            if not self._wait_for_motion(approach_joints):
+                self._log_reasoning("FAIL", "Approach motion did not converge")
+                result.success = False
+                result.failure_reason = "Approach motion did not converge"
+                goal_handle.abort()
+                return result
             self._log_reasoning("Step 4", "Reached approach pose")
 
             # ── STEP 5: Descend to grasp pose ─────────────
@@ -260,14 +275,19 @@ class GraspExecutor(Node):
             move_req.speed_deg_per_s = 15.0  # Slow descent
 
             self._call_service_sync(self.set_joints_client, move_req)
-            self._wait_for_motion(grasp_joints, timeout=10.0)
+            if not self._wait_for_motion(grasp_joints, timeout=10.0):
+                self._log_reasoning("FAIL", "Descent to grasp pose did not converge")
+                result.success = False
+                result.failure_reason = "Descent to grasp pose did not converge"
+                goal_handle.abort()
+                return result
             self._log_reasoning("Step 5", "Reached grasp pose")
 
             # ── STEP 6: Close gripper ─────────────────────
             self._publish_feedback(goal_handle, "Closing gripper", 70.0)
 
             self._call_service_sync(self.close_gripper_client, Trigger.Request())
-            time.sleep(1.5)  # Allow gripper to fully close
+            self._wait_for_gripper_settle()
 
             self._log_reasoning(
                 "Step 6 — Gripper Close",
@@ -281,31 +301,57 @@ class GraspExecutor(Node):
             gripper_deg = self.gripper_position * 180.0 / math.pi
             grasp_detected = gripper_deg > 2.0  # Not fully closed
 
-            if grasp_detected:
+            if not grasp_detected:
                 self._log_reasoning(
-                    "Step 7 — Grasp Verified",
-                    f"Object detected between fingers. "
-                    f"Gripper: {gripper_deg:.1f}°"
-                )
-            else:
-                self._log_reasoning(
-                    "Step 7 — WARNING",
-                    "Gripper fully closed — may have missed object"
-                )
+                    "Step 7 — FAIL",
+                    "Gripper fully closed — no object between the fingers")
+                result.success = False
+                result.failure_reason = "Grasp not detected (gripper fully closed)"
+                goal_handle.abort()
+                return result
+
+            self._log_reasoning(
+                "Step 7 — Grasp Verified",
+                f"Object detected between fingers. Gripper: {gripper_deg:.1f}°")
 
             # ── STEP 8: Lift object ───────────────────────
             self._publish_feedback(goal_handle, "Lifting object", 90.0)
 
-            # Move back to approach pose (5cm lift)
+            # Return to the pre-grasp (approach) pose to lift clear of the table
             move_req.angles_deg = [
                 float(a * 180.0 / math.pi) for a in approach_joints
             ] + [1.0]  # Keep gripper closed
             move_req.speed_deg_per_s = 15.0
 
-            self._call_service_sync(self.set_joints_client, move_req)
-            self._wait_for_motion(approach_joints, timeout=10.0)
+            lift_resp = self._call_service_sync(self.set_joints_client, move_req)
+            if lift_resp is None or not lift_resp.success:
+                self._log_reasoning("Step 8 — FAIL", "Lift command was rejected")
+                result.success = False
+                result.failure_reason = "Lift motion command rejected"
+                goal_handle.abort()
+                return result
+            if not self._wait_for_motion(approach_joints, timeout=10.0):
+                self._log_reasoning("Step 8 — FAIL", "Lift motion did not converge")
+                result.success = False
+                result.failure_reason = "Lift motion did not converge"
+                goal_handle.abort()
+                return result
 
-            self._log_reasoning("Step 8", "Object lifted 10cm")
+            # Confirm the object is still held after the lift (jaw still open
+            # by more than a fully-closed gripper would be).
+            held_deg = self.gripper_position * 180.0 / math.pi
+            if held_deg <= 2.0:
+                self._log_reasoning(
+                    "Step 8 — FAIL",
+                    "Object was lost during the lift (gripper closed)")
+                result.success = False
+                result.failure_reason = "Object lost during lift"
+                goal_handle.abort()
+                return result
+
+            self._log_reasoning(
+                "Step 8",
+                f"Lift complete; object still held (jaw at {held_deg:.1f}°)")
 
             # ── SUCCESS ───────────────────────────────────
             self._publish_feedback(goal_handle, "Grasp complete", 100.0)

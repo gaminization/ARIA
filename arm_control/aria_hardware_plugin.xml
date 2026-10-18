@@ -5,7 +5,9 @@
     <description>
       ARIA Hardware Interface: Sim/Hardware switchable system interface for the ARIA 5-DoF arm.
       In sim mode, acts as passthrough (Gazebo handles physics).
-      In hardware mode, communicates with ESP32 via serial JSON protocol.
+      In hardware mode, bridges ros2_control to the ESP32 micro-ROS firmware
+      (node 'aria_esp32'): it publishes /aria/servo_commands (degrees) and
+      subscribes /aria/servo_states (degrees), converting to/from radians.
     </description>
   </class>
 </library>

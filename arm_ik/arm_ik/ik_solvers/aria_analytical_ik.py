@@ -2,10 +2,20 @@
 """
 arm_ik/arm_ik/ik_solvers/aria_analytical_ik.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Closed-Form Analytical IK for the ARIA 5-DoF Arm
-Ground-truth model derived from aria_arm.urdf.xacro and validated against
-Gazebo TF reads on 20 configs (max Δ ≤ 1.1 mm, mean Δ ≤ 0.85 mm).
+Numerical IK for the ARIA 5-DoF Arm (Newton-Raphson with finite-difference
+Jacobian on the URDF-faithful forward kinematics).
 
+This is NOT a closed-form analytical solver: the URDF joint chain includes
+fixed RPY offsets that make a closed-form 2R derivation intractable. Instead,
+closed-form seed candidates are generated geometrically (two waist azimuths ×
+two elbow branches) and then refined with damped Newton-Raphson iterations on
+the FK residual. Ground-truth model derived from aria_arm.urdf.xacro and
+validated against Gazebo TF reads on 20 configs (max Δ ≤ 1.1 mm, mean Δ ≤ 0.85 mm).
+
+SolverConfig.tolerance_m defaults to 1 mm; the solver reports the actual
+position error in IKResult.position_error_m. Orientation is only partially
+solved (wrist pitch); there is no wrist-roll axis, so IKResult.orientation_error_rad
+is reported as 0.0 by convention and must not be read as a measured residual.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 KINEMATIC GROUND TRUTH (from URDF joint transforms at q=0, base_link frame)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

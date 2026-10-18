@@ -61,17 +61,13 @@ RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
     python3-rosdep \
     && rm -rf /var/lib/apt/lists/*
 
-# Gazebo Harmonic + ros_gz bridge
-RUN wget https://packages.osrfoundation.org/gazebo.gpg \
-    -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] \
-    http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" \
-    > /etc/apt/sources.list.d/gazebo-stable.list && \
-    apt-get update && apt-get install -y --no-install-recommends \
-    gz-harmonic \
-    ros-humble-ros-gz \
-    ros-humble-ros-gz-bridge \
-    ros-humble-ros-gz-sim \
+# Gazebo Classic 11 (gazebo_ros + gazebo_ros2_control) — matches the
+# libgazebo_ros2_control / GazeboSimSystem plugins used by the URDF and the
+# arm_bringup sim launch files. (Gazebo Classic is also pulled in by
+# ros-humble-desktop-full; these packages make the dependency explicit.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-gazebo-ros-pkgs \
+    ros-humble-gazebo-ros2-control \
     && rm -rf /var/lib/apt/lists/*
 
 # Initialize rosdep
@@ -89,8 +85,8 @@ RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.s
     rm /tmp/miniconda.sh
 ENV PATH="/opt/conda/bin:${PATH}"
 
-# Create aria conda environment
-COPY docker/environment.yaml /tmp/environment.yaml
+# Create aria conda environment (from the repo-root environment.yml)
+COPY environment.yml /tmp/environment.yaml
 RUN conda env create -f /tmp/environment.yaml || \
     conda create -n aria python=3.10 -y
 
@@ -180,7 +176,7 @@ WORKDIR /aria_ws
 RUN source /opt/ros/humble/setup.bash && \
     cd /aria_ws && \
     colcon build --symlink-install \
-    --cmake-args -DCMAKE_BUILD_TYPE=Release 2>&1 || true
+    --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 # Copy entrypoint
 COPY docker/entrypoint.sh /aria_ws/docker/entrypoint.sh

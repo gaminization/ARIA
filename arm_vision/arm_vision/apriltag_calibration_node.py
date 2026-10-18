@@ -15,12 +15,24 @@ import yaml
 import rclpy
 from rclpy.node import Node
 from std_srvs.srv import Trigger
-from sensor_msgs.msg import JointState
+from sensor_msgs.msg import JointState, Image
 from geometry_msgs.msg import TransformStamped
 
 from tf2_ros import Buffer, TransformListener
 
 from arm_ik.ik_solvers.aria_analytical_ik import forward_kinematics
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+
+try:
+    from cv_bridge import CvBridge
+    CV_BRIDGE = True
+except ImportError:
+    CV_BRIDGE = False
 
 
 class AprilTagCalibrationNode(Node):
@@ -59,6 +71,7 @@ class AprilTagCalibrationNode(Node):
         self.current_joints = np.zeros(len(self.JOINT_NAMES))
         self.calibration_offsets = np.zeros(len(self.JOINT_NAMES))
         self.calibration_valid = False
+        self._latest_tag_position = None   # tag position in base_link (m)
 
         # Config path
         self.declare_parameter('offsets_path', '')
@@ -75,6 +88,31 @@ class AprilTagCalibrationNode(Node):
                 )
         self.offsets_path = path
 
+        # AprilTag detection parameters
+        self.declare_parameter('tag_size', 0.03)       # metres
+        self.declare_parameter('camera_frame', 'top_camera_link')
+        self.tag_size = float(self.get_parameter('tag_size').value)
+        self.camera_frame = str(self.get_parameter('camera_frame').value)
+        # Top-camera intrinsics (default); override via a camera_info topic
+        # in a full calibration pipeline.
+        self._camera_matrix = np.array(
+            [[525.0, 0.0, 320.0], [0.0, 525.0, 240.0], [0.0, 0.0, 1.0]],
+            dtype=np.float64)
+
+        self._detector = None
+        if CV2_AVAILABLE:
+            try:
+                dictionary = cv2.aruco.getPredefinedDictionary(
+                    cv2.aruco.DICT_APRILTAG_36h11)
+                parameters = cv2.aruco.DetectorParameters()
+                self._detector = cv2.aruco.ArucoDetector(dictionary, parameters)
+            except Exception as e:
+                self.get_logger().warn(f"Could not create AprilTag detector: {e}")
+                self._detector = None
+        else:
+            self.get_logger().warn(
+                "cv2 not available — AprilTag detection is disabled.")
+
         # Load existing offsets if available
         if os.path.exists(self.offsets_path):
             self._load_offsets()
@@ -89,6 +127,17 @@ class AprilTagCalibrationNode(Node):
             self._joint_state_cb, 10
         )
 
+        # Camera subscriber for real AprilTag detection
+        self._bridge = CvBridge() if CV_BRIDGE else None
+        if self._detector is not None and self._bridge is not None:
+            self.image_sub = self.create_subscription(
+                Image, '/top_camera/image_raw', self._image_cb, 10)
+        else:
+            self.image_sub = None
+            self.get_logger().warn(
+                "AprilTag calibration needs cv2 + cv_bridge; visual "
+                "measurements will not be available.")
+
         # Services
         self.create_service(
             Trigger, '/aria/calibrate', self._calibrate_cb)
@@ -96,6 +145,63 @@ class AprilTagCalibrationNode(Node):
             Trigger, '/aria/verify_calibration', self._verify_cb)
 
         self.get_logger().info("Calibration node ready")
+
+    def _image_cb(self, msg: Image):
+        """Detect AprilTags and store the first tag's position in base_link."""
+        if self._detector is None:
+            return
+        try:
+            cv_image = self._bridge.imgmsg_to_cv2(
+                msg, desired_encoding='bgr8')
+        except Exception as e:
+            self.get_logger().warn(f"Image decode failed: {e}")
+            return
+
+        gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+        corners, ids, _ = self._detector.detectMarkers(gray)
+        if ids is None or len(ids) == 0:
+            return
+
+        # Estimate the first detected tag's pose in the camera frame.
+        try:
+            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
+                corners, self.tag_size, self._camera_matrix,
+                np.zeros(5))
+        except Exception as e:
+            self.get_logger().warn(f"Tag pose estimation failed: {e}")
+            return
+
+        rvec = rvecs[0].reshape(3)
+        tvec = tvecs[0].reshape(3)
+        R, _ = cv2.Rodrigues(rvec)
+        T_cam_tag = np.eye(4)
+        T_cam_tag[:3, :3] = R
+        T_cam_tag[:3, 3] = tvec
+
+        # Transform tag position from camera frame to base_link.
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                'base_link', self.camera_frame, rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=1.0))
+            t = tf.transform.translation
+            q = tf.transform.rotation
+            R_bc = self._quat_to_R(q.x, q.y, q.z, q.w)
+            T_bc = np.eye(4)
+            T_bc[:3, :3] = R_bc
+            T_bc[:3, 3] = np.array([t.x, t.y, t.z])
+            tag_pos = (T_bc @ T_cam_tag)[:3, 3]
+            self._latest_tag_position = tag_pos
+        except Exception as e:
+            self.get_logger().warn(
+                f"TF lookup {self.camera_frame}→base_link failed: {e}")
+
+    @staticmethod
+    def _quat_to_R(x, y, z, w):
+        return np.array([
+            [1 - 2*(y*y + z*z), 2*(x*y - z*w),     2*(x*z + y*w)],
+            [2*(x*y + z*w),     1 - 2*(x*x + z*z), 2*(y*z - x*w)],
+            [2*(x*z - y*w),     2*(y*z + x*w),     1 - 2*(x*x + y*y)],
+        ])
 
     def _joint_state_cb(self, msg: JointState):
         """Update current joint positions."""
@@ -146,19 +252,18 @@ class AprilTagCalibrationNode(Node):
 
     def _get_visual_end_effector_position(self) -> np.ndarray:
         """
-        Get visual end-effector position via AprilTag detection.
-        In sim: use TF lookup for tool_frame.
+        Return the last AprilTag-derived position in base_link, or None.
+
+        This is a real visual measurement: it comes from cv2.aruco detection
+        on the top camera plus a TF transform. If no tag has been detected
+        (or detection/TF is unavailable), it returns None so the caller
+        knows there is no measurement.
         """
-        try:
-            transform = self.tf_buffer.lookup_transform(
-                'world', 'tool_frame', rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0)
-            )
-            pos = transform.transform.translation
-            return np.array([pos.x, pos.y, pos.z])
-        except Exception as e:
-            self.get_logger().warn(f"TF lookup failed: {e}")
+        if self._latest_tag_position is None:
+            self.get_logger().warn(
+                "No AprilTag measurement available (detection or TF failed).")
             return None
+        return self._latest_tag_position
 
     def _calibrate_cb(self, request, response):
         """

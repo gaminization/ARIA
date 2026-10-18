@@ -84,16 +84,6 @@ def _attachment_matches_target(target_name: str, message: str) -> bool:
     return bool(requested and attached and requested.issubset(attached))
 
 
-def _is_motion_verification(action: Action) -> bool:
-    context = " ".join((
-        str(getattr(action, "action_type", "")),
-        str(getattr(action, "target_object", "")),
-        str(getattr(action, "reasoning", "")),
-    )).lower()
-    context_tokens = set(re.findall(r"[a-z0-9]+", context))
-    return bool(context_tokens & {"arm", "wave", "motion", "gesture"})
-
-
 class SkillRecord:
     """Tracks per-skill performance."""
     def __init__(self):
@@ -128,6 +118,8 @@ class SkillAgent(LifecycleNode):
         'locate', 'plan_grasp', 'execute_grasp', 'lift',
         'transport', 'verify', 'scan_workspace',
         'sam', 'depth', 'cleargrasp', 'material', 'world_model',
+        # In-hand manipulation
+        'rotate_in_hand', 'reposition_grip', 'flip', 'slide_to_tip',
     ]
 
     SKILL_ALIAS_MAP = SKILL_ALIAS_MAP
@@ -148,6 +140,8 @@ class SkillAgent(LifecycleNode):
         self._cached_stack_approach_pose: Optional[PoseStamped] = None
         self._held_workpiece: Optional[str] = None
         self._is_holding_object = False
+        # Last arm joints we commanded; used to verify motions actually landed.
+        self._last_commanded_joints: Optional[np.ndarray] = None
         self._gazebo_model_poses: Dict[str, PoseStamped] = {}
         self._executing = False
         self._pending_task = None
@@ -201,6 +195,11 @@ class SkillAgent(LifecycleNode):
             BoolMsg, '/visual_servo/converged', self._servo_converged_cb, 10)
         self.create_subscription(
             BoolMsg, '/aria/conveyor/part_present', self._part_present_cb, 10, callback_group=self.cb_group)
+
+        # In-hand manipulation (wrist-pitch reorientation, grip repositioning,
+        # 180° flip, slide-to-tip) driven by IMU + wrist-camera feedback.
+        from arm_agents.in_hand_manipulation import InHandManipulation
+        self.in_hand = InHandManipulation(self, self.bus)
 
         self.current_joints_rad = [0.0] * 5
         from sensor_msgs.msg import JointState as JointStateMsg, Image as ImageMsg
@@ -503,6 +502,10 @@ class SkillAgent(LifecycleNode):
             'reachability': self._skill_reachability,
             'safety': self._skill_safety,
             'track': self._skill_track,
+            'rotate_in_hand': self._skill_rotate_in_hand,
+            'reposition_grip': self._skill_reposition_grip,
+            'flip': self._skill_flip,
+            'slide_to_tip': self._skill_slide_to_tip,
         }
         handler = dispatch.get(skill_name)
         if handler is None:
@@ -616,7 +619,39 @@ class SkillAgent(LifecycleNode):
         if gripper_deg > 20.0:
             self._call_sync(self.gripper_detach, Trigger.Request(), timeout=2.0)
             self._call_sync(self.open_gripper, Trigger.Request(), timeout=2.0)
+        if resp and resp.success:
+            # Record what we commanded so motion verification can confirm the
+            # arm actually reached it (instead of trusting the action text).
+            self._last_commanded_joints = np.array(
+                [float(a) for a in joint_angles_rad[:4]])
         return bool(resp and resp.success)
+
+    def _motion_verification_ok(self, action: Action) -> bool:
+        """
+        Verify a non-grasp motion (wave, press, gesture, ...) actually completed
+        by checking the arm reached the joints that were commanded for it.
+
+        Returns False when there is nothing verifiable - this method never
+        assumes success from the action's wording.
+        """
+        target = getattr(self, '_last_commanded_joints', None)
+        if target is None:
+            self.bus.add_chain_of_thought(
+                "  VERIFY: ✗ no commanded joint target recorded — cannot "
+                "confirm motion completed")
+            return False
+        current = np.array(self.current_joints_rad[:4])
+        err = float(np.max(np.abs(current - np.asarray(target))))
+        tol = 0.10  # rad (~5.7 deg)
+        if err < tol:
+            self.bus.add_chain_of_thought(
+                f"  VERIFY: ✓ arm reached commanded posture (max joint error "
+                f"{math.degrees(err):.1f}°)")
+            return True
+        self.bus.add_chain_of_thought(
+            f"  VERIFY: ✗ arm did not reach commanded posture (max joint "
+            f"error {math.degrees(err):.1f}°)")
+        return False
 
     def _wait_for_arrival(self, joint_angles_rad: list,
                          tolerance_rad: float = 0.08, timeout: float = 18.0) -> bool:
@@ -662,7 +697,6 @@ class SkillAgent(LifecycleNode):
                 "  PICK: ⚠ Visual servo timed out — proceeding with current alignment")
 
         self._call_sync(self.servo_deactivate_client, Trigger.Request(), timeout=3.0)
-        return True
         return self.servo_converged
 
     def _skill_pick(self, action: Action) -> bool:
@@ -682,8 +716,15 @@ class SkillAgent(LifecycleNode):
         requested = (action.target_object or 'workpiece').lower().strip()
         if self._held_workpiece is not None:
             if requested and (requested in self._held_workpiece.lower() or self._held_workpiece.lower() in requested):
-                self.bus.add_chain_of_thought(f"  PICK: ✓ Workpiece '{self._held_workpiece}' is already securely held in gripper")
-                return True
+                # Confirm the hold is still real before short-circuiting.
+                if self._skill_verify(action):
+                    self.bus.add_chain_of_thought(f"  PICK: ✓ Workpiece '{self._held_workpiece}' is already securely held in gripper")
+                    return True
+                self.bus.add_chain_of_thought(
+                    f"  PICK: ⚠ previously-held '{self._held_workpiece}' no longer "
+                    f"verifies as held — re-picking")
+                self._held_workpiece = None
+                self._is_holding_object = False
             else:
                 self.bus.add_chain_of_thought(f"  PICK: Gripper holds '{self._held_workpiece}', releasing before picking requested '{requested}'")
                 self._call_sync(self.gripper_detach, Trigger.Request(), timeout=2.0)
@@ -1751,7 +1792,7 @@ class SkillAgent(LifecycleNode):
                 return False
             self.bus.add_chain_of_thought(f"  VERIFY: ✓ '{target_name}' held securely in gripper")
             return True
-        if _is_motion_verification(action):
+        if self._motion_verification_ok(action):
             self.bus.add_chain_of_thought(f"  VERIFY: ✓ Motion completed — arm in valid verified posture")
             return True
         if gap_deg > 2.0 and grip < math.radians(GRIPPER_OPEN_DEG) * 0.35:
@@ -2034,6 +2075,18 @@ class SkillAgent(LifecycleNode):
             time.sleep(0.8)
             self._move_joints(align_joints, GRIPPER_OPEN_DEG, speed_dps=20.0)
             self._wait_for_arrival(align_joints, timeout=18.0)
+
+            # Verify the block was actually released: the gripper jaw must be
+            # near the open position before we claim the stack succeeded.
+            open_rad = math.radians(GRIPPER_OPEN_DEG)
+            cur_grip = float(self.current_joints_rad[4])
+            if abs(cur_grip - open_rad) > math.radians(15.0):
+                self.bus.add_chain_of_thought(
+                    f"  STACK: ✗ gripper did not open after release "
+                    f"(jaw {math.degrees(cur_grip):.1f}° vs open "
+                    f"{GRIPPER_OPEN_DEG}°) — block may still be held")
+                return False
+
             self.bus.add_chain_of_thought("  STACK: ✓ Successfully placed block onto Jenga tower stack")
 
         return True
@@ -2315,6 +2368,60 @@ class SkillAgent(LifecycleNode):
         return True
 
     # ═══════════════════════════════════════════════════════
+    # In-hand manipulation skills
+    # ═══════════════════════════════════════════════════════
+    def _sync_in_hand_holding(self):
+        """Keep the in-hand executor aware of the current grasp state."""
+        if getattr(self, 'in_hand', None) is not None:
+            self.in_hand.set_holding(self._is_holding_object)
+
+    def _skill_rotate_in_hand(self, action: Action) -> bool:
+        """Reorient the held object about the wrist-pitch axis."""
+        self._sync_in_hand_holding()
+        if not self._is_holding_object:
+            self.bus.add_chain_of_thought(
+                "  IN-HAND: rotate_in_hand requires a held object")
+            return False
+        params = self._params(action)
+        angle_deg = self._num(params.get('angle_deg', params.get('angle')), 45.0)
+        axis = str(params.get('axis', 'y')).lower()
+        return bool(self.in_hand.rotate_in_hand(angle_deg, axis=axis))
+
+    def _skill_reposition_grip(self, action: Action) -> bool:
+        """Slide the held object within the fingers (forward/backward)."""
+        self._sync_in_hand_holding()
+        if not self._is_holding_object:
+            self.bus.add_chain_of_thought(
+                "  IN-HAND: reposition_grip requires a held object")
+            return False
+        params = self._params(action)
+        offset_mm = self._num(
+            params.get('offset_mm', params.get('distance_mm')), 5.0)
+        direction = str(params.get('direction', 'forward')).lower()
+        return bool(self.in_hand.reposition_grip(offset_mm, direction))
+
+    def _skill_flip(self, action: Action) -> bool:
+        """Flip the held object ~180° in hand."""
+        self._sync_in_hand_holding()
+        if not self._is_holding_object:
+            self.bus.add_chain_of_thought(
+                "  IN-HAND: flip requires a held object")
+            return False
+        return bool(self.in_hand.flip_object())
+
+    def _skill_slide_to_tip(self, action: Action) -> bool:
+        """Slide the held object toward the fingertips."""
+        self._sync_in_hand_holding()
+        if not self._is_holding_object:
+            self.bus.add_chain_of_thought(
+                "  IN-HAND: slide_to_tip requires a held object")
+            return False
+        params = self._params(action)
+        extension_mm = self._num(
+            params.get('target_extension_mm', params.get('distance_mm')), 10.0)
+        return bool(self.in_hand.slide_to_tip(extension_mm))
+
+    # ═══════════════════════════════════════════════════════
     # Free-form motion primitives (the LLM authors the motion)
     # ═══════════════════════════════════════════════════════
     JOINT_LIMITS_DEG = [(-180.0, 180.0), (-90.0, 90.0), (-90.0, 90.0), (-90.0, 90.0), (0.0, 55.0)]
@@ -2521,12 +2628,39 @@ class SkillAgent(LifecycleNode):
 
     def _skill_world_model(self, action: Action) -> bool:
         """
-        WorldModelAgent: Syncs registered world objects with current state bus.
+        WorldModel: report the authoritative object count from the world model
+        DB alongside the live memory state. Returns False when no world model
+        DB is available, so the planner can react instead of assuming success.
         """
         memory = self.bus.state.memory
-        n = len(memory.known_objects) if memory and memory.known_objects else len(getattr(self, '_discovered_world_objects', {}))
+        n_mem = len(memory.known_objects) if memory and memory.known_objects else 0
+
+        db_paths = [
+            '/home/gaminizer/Projects/ARIA/build/arm_planner/data/world_model.db',
+            '/home/gaminizer/Projects/ARIA/arm_bringup/data/world_model.db',
+            '/home/gaminizer/Projects/ARIA/install/arm_bringup/share/arm_bringup/data/world_model.db',
+            '/home/gaminizer/Projects/ARIA/arm_planner/data/world_model.db',
+        ]
+        n_db = None
+        for db_p in db_paths:
+            try:
+                conn = sqlite3.connect(db_p)
+                row = conn.execute('SELECT COUNT(*) FROM objects').fetchone()
+                conn.close()
+                n_db = int(row[0]) if row else 0
+                break
+            except Exception:
+                continue
+
+        if n_db is None:
+            self.bus.add_chain_of_thought(
+                "  WORLD_MODEL: ✗ no world model database found — world model "
+                "unavailable")
+            return False
+
         self.bus.add_chain_of_thought(
-            f"  WORLD_MODEL: World model synchronized — {n} object(s) tracked in database.")
+            f"  WORLD_MODEL: world model available — {n_db} object(s) in DB, "
+            f"{n_mem} in live memory")
         return True
 
     def _skill_sort(self, action: Action) -> bool:

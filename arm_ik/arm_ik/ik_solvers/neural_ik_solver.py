@@ -26,8 +26,11 @@ try:
     import torch.optim as optim
     from torch.utils.data import DataLoader, TensorDataset
     TORCH_AVAILABLE = True
-except ImportError:
+    TORCH_IMPORT_ERROR = None
+except Exception as _torch_err:  # noqa: BLE001
+    # Optional dependency; treat any import failure as "unavailable".
     TORCH_AVAILABLE = False
+    TORCH_IMPORT_ERROR = _torch_err
 
 from arm_ik.ik_solvers.aria_analytical_ik import (
     IKResult, SolverConfig, JOINT_LIMITS, forward_kinematics

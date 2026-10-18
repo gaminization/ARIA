@@ -2,22 +2,42 @@
 """
 ═══════════════════════════════════════════════════════════════
 ARIA VLA Benchmark
-Runs standardized tasks against all VLA backends + baseline.
-Reports success rate, execution time, smoothness.
+
+Evaluates VLA backends the only way an evaluation may be run:
+by measuring what actually happened.
+
+What this benchmark measures (real, always):
+  * whether a backend loads its weights           -> load_ok
+  * whether it produces a valid action            -> action_ok
+  * wall-clock inference latency                  -> inference_ms
+  * the dimensionality of the emitted action      -> action_dim
+
+What this benchmark does NOT do:
+  * It never invents a task success rate, a final positioning
+    error, or a trajectory smoothness score from a random
+    number generator, a difficulty prior, or a task-name hash.
+
+Task success can only be reported when a real closed-loop
+rollout is supplied (a Gazebo-backed `rollout_fn`, or an
+equivalent measured evaluator). Without one, the success
+columns are emitted as "unmeasured" and the report says so
+explicitly. A benchmark that cannot measure is expected to
+report that it cannot measure, not to synthesise a result.
+
+Backends: LeRobot ACT, OpenVLA, Pi0, Gr00t-N1 (see vla_interface.py)
 ═══════════════════════════════════════════════════════════════
 """
 import time
-import math
 import os
 import csv
-from typing import Dict, List, Optional
+import argparse
+from typing import List, Optional, Callable
 from dataclasses import dataclass, field
 
 import numpy as np
 
 from arm_vla.vla_interface import (
-    VLAInterface, VLAInput, VLAOutput,
-    LeRobotBackend, OpenVLABackend,
+    VLAInterface, VLAInput,
 )
 
 
@@ -66,40 +86,94 @@ BENCHMARK_TASKS: List[BenchmarkTask] = [
 ]
 
 
+# ═══════════════════════════════════════════════════════════════
+# Result structures
+# ═══════════════════════════════════════════════════════════════
+
 @dataclass
 class TaskResult:
-    """Result of a single benchmark task."""
+    """
+    Result of a single benchmark task.
+
+    `measured` distinguishes a real observation from an absence of
+    evidence. When `measured` is False the numeric outcome fields
+    (`success`, `final_error_m`, `smoothness`) are None and must be
+    rendered as "unmeasured" rather than as a number.
+    """
     task_name: str
     backend_name: str
-    success: bool
-    duration_s: float
-    final_error_m: float
-    smoothness: float       # lower = smoother (jerk metric)
-    n_steps: int
-    inference_ms: float
+    measured: bool
+    success: Optional[bool] = None
+    duration_s: float = 0.0
+    final_error_m: Optional[float] = None
+    smoothness: Optional[float] = None
+    n_steps: int = 0
+    inference_ms: float = 0.0
+    action_dim: int = 0
+    load_ok: bool = False
+    action_ok: bool = False
     failure_reason: str = ""
+
+    def outcome_str(self) -> str:
+        if not self.measured:
+            return "unmeasured"
+        return "success" if self.success else "failure"
 
 
 @dataclass
 class BenchmarkReport:
-    """Aggregate benchmark report."""
+    """Aggregate benchmark report for one backend."""
     backend_name: str
+    available: bool
     total_tasks: int
-    successes: int
-    success_rate: float
-    avg_duration_s: float
-    avg_smoothness: float
-    avg_inference_ms: float
+    measured_tasks: int
+    successes: Optional[int]          # None when nothing was measured
+    success_rate: Optional[float]     # None when nothing was measured
+    avg_duration_s: float = 0.0
+    avg_inference_ms: float = 0.0
     results: List[TaskResult] = field(default_factory=list)
 
     def summary_line(self) -> str:
+        if not self.available:
+            return f"{self.backend_name}: unavailable (model not loaded) — not measured"
+        if self.measured_tasks == 0:
+            return (
+                f"{self.backend_name}: loaded, inference={self.avg_inference_ms:.0f}ms "
+                f"| task success NOT measured (no simulator/dataset rollout)"
+            )
         return (
             f"{self.backend_name}: "
-            f"{self.success_rate:.0%} success | "
+            f"{self.success_rate:.0%} success over {self.measured_tasks} "
+            f"measured task(s) | "
             f"{self.avg_duration_s:.1f}s avg | "
-            f"{self.avg_inference_ms:.0f}ms inference | "
-            f"smoothness={self.avg_smoothness:.4f}"
+            f"{self.avg_inference_ms:.0f}ms inference"
         )
+
+
+# ═══════════════════════════════════════════════════════════════
+# Rollout contract
+# ═══════════════════════════════════════════════════════════════
+
+@dataclass
+class RolloutOutcome:
+    """
+    The result of a REAL closed-loop rollout of one task.
+
+    A rollout function must only return an outcome it actually
+    observed in a simulator or on hardware. It must never be a
+    fabricated dict of priors.
+    """
+    success: bool
+    final_error_m: float
+    n_steps: int
+    duration_s: float
+    smoothness: Optional[float] = None
+    failure_reason: str = ""
+
+
+# A rollout_fn executes one task end-to-end and returns a measured
+# RolloutOutcome. Signature: (task, backend) -> RolloutOutcome.
+RolloutFn = Callable[[BenchmarkTask, object], RolloutOutcome]
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -108,58 +182,60 @@ class BenchmarkReport:
 
 class RuleBasedBaseline:
     """
-    Rule-based planning baseline for comparison.
-    Uses Stage 2 IK + grasp pipeline (no VLA).
+    Rule-based planning baseline (Stage 2 IK + grasp pipeline, no VLA).
+
+    This class owns no model. It can only report a task outcome when
+    a real rollout function is supplied by the caller. Without one,
+    `execute_task` returns an explicitly unmeasured result — it never
+    guesses a success or an error.
     """
 
-    def __init__(self):
+    def __init__(self, rollout_fn: Optional[RolloutFn] = None):
         self.name = "RuleBasedBaseline"
+        self.rollout_fn = rollout_fn
 
     def execute_task(self, task: BenchmarkTask,
-                     sim_state: dict) -> TaskResult:
+                     sim_state: Optional[dict] = None) -> TaskResult:
         """
-        Simulate rule-based execution.
+        Measure one baseline task via the supplied rollout.
 
-        Pipeline: detect → IK → plan → execute → verify
-        Success depends on object visibility and reachability.
+        With no rollout function this returns measured=False: the
+        baseline is present and routable but was not evaluated here.
         """
         t0 = time.time()
 
-        # Simulated pipeline delays
-        detect_time = 0.15    # YOLO inference
-        ik_time = 0.01        # analytical IK
-        plan_time = 0.20      # MoveIt planning
-        execute_time = 2.0    # arm motion
+        if self.rollout_fn is None:
+            return TaskResult(
+                task_name=task.name,
+                backend_name=self.name,
+                measured=False,
+                duration_s=time.time() - t0,
+                load_ok=True,
+                failure_reason=(
+                    "not measured: no simulator/dataset rollout was "
+                    "supplied, so no success or error can be reported"),
+            )
 
-        total_time = detect_time + ik_time + plan_time + execute_time
-
-        # Simulate success based on difficulty
-        success_probs = {"easy": 0.95, "medium": 0.85, "hard": 0.70}
-        success_prob = success_probs.get(task.difficulty, 0.7)
-
-        # Deterministic for reproducibility: use task name hash
-        rng = np.random.RandomState(hash(task.name) % 2**31)
-        success = rng.random() < success_prob
-
-        final_error = rng.uniform(0.005, 0.025) if success else rng.uniform(0.05, 0.15)
-
-        # Generate smooth trajectory (low jerk for rule-based)
-        n_steps = int(total_time * 30)  # 30Hz
-        trajectory = np.linspace(0, 1, n_steps).reshape(-1, 1) * np.ones((1, 5))
-        jerk = np.mean(np.abs(np.diff(trajectory, n=3, axis=0))) if n_steps > 3 else 0.0
-
-        duration = time.time() - t0 + total_time
+        outcome = self.rollout_fn(task, self)
+        trajectory = getattr(outcome, "trajectory", None)
+        smoothness = outcome.smoothness
+        if smoothness is None and trajectory is not None and len(trajectory) > 3:
+            jerk = np.diff(np.asarray(trajectory), n=3, axis=0)
+            smoothness = float(np.mean(np.abs(jerk)))
 
         return TaskResult(
             task_name=task.name,
             backend_name=self.name,
-            success=success,
-            duration_s=duration,
-            final_error_m=final_error,
-            smoothness=float(jerk),
-            n_steps=n_steps,
-            inference_ms=ik_time * 1000,
-            failure_reason="" if success else "Simulated baseline failure",
+            measured=True,
+            success=bool(outcome.success),
+            duration_s=float(outcome.duration_s),
+            final_error_m=float(outcome.final_error_m),
+            smoothness=smoothness,
+            n_steps=int(outcome.n_steps),
+            inference_ms=0.0,
+            load_ok=True,
+            action_ok=bool(outcome.success),
+            failure_reason=outcome.failure_reason,
         )
 
 
@@ -169,102 +245,125 @@ class RuleBasedBaseline:
 
 class VLATaskExecutor:
     """
-    Executes a benchmark task using a VLA backend.
-    Simulates closed-loop execution in sim.
+    Evaluates a VLA backend.
+
+    Two independent measurements are performed:
+
+      1. Availability: run the backend on a real observation and
+         record whether it emitted a valid action plus its latency.
+         This is always real and is always reported.
+
+      2. Task outcome: delegated to a real `rollout_fn` when one is
+         provided. Without a rollout the success/error columns stay
+         unmeasured.
     """
 
-    def __init__(self, vla: VLAInterface):
+    def __init__(self, vla: VLAInterface,
+                 rollout_fn: Optional[RolloutFn] = None,
+                 observation_provider: Optional[Callable[[BenchmarkTask], "object"]] = None):
         self.vla = vla
+        self.rollout_fn = rollout_fn
+        self.observation_provider = observation_provider
 
-    def execute_task(self, task: BenchmarkTask,
-                     sim_state: dict) -> TaskResult:
+    def _build_input(self, task: BenchmarkTask) -> VLAInput:
+        """Build a VLA input from a real observation if one is provided."""
+        top = None
+        wrist = None
+        joints = np.zeros(4, dtype=np.float32)
+        gripper = 0.0
+        if self.observation_provider is not None:
+            obs = self.observation_provider(task)
+            top = getattr(obs, "top_camera_image", None)
+            wrist = getattr(obs, "wrist_camera_image", None)
+            joints = np.asarray(getattr(obs, "joint_positions", joints),
+                                dtype=np.float32)
+            gripper = float(getattr(obs, "gripper_position", 0.0))
+        return VLAInput(
+            top_camera_image=top,
+            wrist_camera_image=wrist,
+            joint_positions=joints,
+            gripper_position=gripper,
+            instruction=task.instruction,
+            timestep=0,
+        )
+
+    def probe_backend(self, task: BenchmarkTask) -> TaskResult:
         """
-        Run a task with the VLA backend in simulation.
-
-        Steps:
-          1. Capture initial observation
-          2. Loop: predict → apply → observe (30Hz)
-          3. Check termination (success/timeout/failure)
+        Measure real inference behaviour on one task. Never fabricates
+        a success: `measured` is False and `success` is None.
         """
         t0 = time.time()
         backend_name = self.vla.active_name
-
-        joint_positions = np.zeros(4)
-        trajectory: List[np.ndarray] = [joint_positions.copy()]
-        n_steps = 0
-        max_steps = int(task.timeout_s * 30)  # 30Hz
-
-        # Simulated object position
-        obj_pos = np.array(task.target_position)
-
-        for step in range(max_steps):
-            n_steps += 1
-
-            # Build VLA input
-            vla_input = VLAInput(
-                top_camera_image=np.zeros((480, 640, 3), dtype=np.uint8),
-                wrist_camera_image=np.zeros((480, 640, 3), dtype=np.uint8),
-                joint_positions=joint_positions.copy(),
-                instruction=task.instruction,
-                timestep=step,
-            )
-
-            # Get prediction
-            output = self.vla.predict(vla_input)
-
-            if output.confidence < 0.1:
-                break  # Backend not functional
-
-            # Apply action
-            if output.is_delta:
-                joint_positions = joint_positions + output.joint_commands * 0.033
-            else:
-                joint_positions = output.joint_commands
-
-            # Clamp joints
-            joint_positions = np.clip(joint_positions, -1.57, 3.14)
-            trajectory.append(joint_positions.copy())
-
-            # Simulated FK for end-effector position
-            # (simplified: linear interpolation toward target)
-            progress = min(1.0, step / 60.0)
-            ee_pos = np.array([0.15, 0.0, 0.35]) * (1 - progress) + obj_pos * progress
-
-            # Check success: close enough to target
-            error = float(np.linalg.norm(ee_pos - obj_pos))
-            if error < task.success_threshold_m and step > 30:
-                break
-
-            # Check timeout
-            if time.time() - t0 > task.timeout_s:
-                break
-
+        vla_input = self._build_input(task)
+        output = self.vla.predict(vla_input)
         duration = time.time() - t0
 
-        # Compute metrics
-        traj = np.array(trajectory)
-        smoothness = 0.0
-        if len(traj) > 3:
-            jerk = np.diff(traj, n=3, axis=0)
-            smoothness = float(np.mean(np.abs(jerk)))
-
-        # Final error (simulated)
-        rng = np.random.RandomState(hash(task.name + backend_name) % 2**31)
-        success_prob = {"easy": 0.75, "medium": 0.60, "hard": 0.40}
-        sp = success_prob.get(task.difficulty, 0.5)
-        success = rng.random() < sp
-        final_error = rng.uniform(0.01, 0.03) if success else rng.uniform(0.05, 0.20)
+        command = np.atleast_1d(
+            np.asarray(output.joint_commands, dtype=np.float32))
+        action_ok = bool(command.size >= 4 and np.all(np.isfinite(command)))
+        notes: List[str] = []
+        if vla_input.wrist_camera_image is None and \
+                vla_input.top_camera_image is None:
+            notes.append("no camera frame supplied")
+        if not action_ok:
+            notes.append(f"backend returned no usable action "
+                         f"(reason: {output.reasoning or 'n/a'})")
 
         return TaskResult(
             task_name=task.name,
             backend_name=backend_name,
-            success=success,
-            duration_s=duration,
-            final_error_m=final_error,
-            smoothness=smoothness,
-            n_steps=n_steps,
+            measured=False,
+            success=None,
+            final_error_m=None,
+            smoothness=None,
+            n_steps=0,
             inference_ms=self.vla.get_stats().get("avg_inference_ms", 0.0),
-            failure_reason="" if success else f"VLA {backend_name} did not converge",
+            action_dim=int(command.size),
+            load_ok=True,
+            action_ok=action_ok,
+            duration_s=duration,
+            failure_reason="; ".join(notes) if notes else
+            "inference measured; task success requires a simulator rollout",
+        )
+
+    def execute_task(self, task: BenchmarkTask,
+                     sim_state: Optional[dict] = None) -> TaskResult:
+        """
+        Measure one VLA task.
+
+        Without a rollout function this degrades to `probe_backend`
+        (real inference measurement, unmeasured outcome). With one, the
+        task is executed closed-loop and the outcome is reported as
+        measured.
+        """
+        if self.rollout_fn is None:
+            return self.probe_backend(task)
+
+        t0 = time.time()
+        backend_name = self.vla.active_name
+        outcome = self.rollout_fn(task, self.vla)
+        duration = time.time() - t0
+
+        trajectory = getattr(outcome, "trajectory", None)
+        smoothness = outcome.smoothness
+        if smoothness is None and trajectory is not None and len(trajectory) > 3:
+            jerk = np.diff(np.asarray(trajectory), n=3, axis=0)
+            smoothness = float(np.mean(np.abs(jerk)))
+
+        return TaskResult(
+            task_name=task.name,
+            backend_name=backend_name,
+            measured=True,
+            success=bool(outcome.success),
+            duration_s=float(outcome.duration_s) if outcome.duration_s else duration,
+            final_error_m=float(outcome.final_error_m),
+            smoothness=smoothness,
+            n_steps=int(outcome.n_steps),
+            inference_ms=self.vla.get_stats().get("avg_inference_ms", 0.0),
+            action_dim=4,
+            load_ok=True,
+            action_ok=True,
+            failure_reason=outcome.failure_reason,
         )
 
 
@@ -274,14 +373,19 @@ class VLATaskExecutor:
 
 class VLABenchmark:
     """
-    Runs full VLA benchmark: all backends + baseline on all tasks.
+    Runs the VLA benchmark.
 
     Output:
-      Console: summary table
+      Console: per-backend summary (unmeasured outcomes are labelled as such)
       CSV: detailed results (arm_planner/logs/vla_benchmark.csv)
+
+    The CSV always carries a `measured` column so downstream analysis
+    cannot silently treat an unmeasured row as a success or failure.
     """
 
-    def __init__(self, output_dir: str = ""):
+    def __init__(self, output_dir: str = "",
+                 rollout_fn: Optional[RolloutFn] = None,
+                 observation_provider: Optional[Callable] = None):
         if not output_dir:
             output_dir = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -289,31 +393,23 @@ class VLABenchmark:
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
 
+        self.rollout_fn = rollout_fn
+        self.observation_provider = observation_provider
         self.vla = VLAInterface()
-        self.baseline = RuleBasedBaseline()
+        self.baseline = RuleBasedBaseline(rollout_fn=rollout_fn)
         self.reports: List[BenchmarkReport] = []
 
     def run(self, tasks: Optional[List[BenchmarkTask]] = None,
             backends: Optional[List[str]] = None) -> List[BenchmarkReport]:
-        """
-        Run the full benchmark.
-
-        Args:
-            tasks: list of tasks (default: all 10 standard tasks)
-            backends: list of backend names to test
-
-        Returns:
-            List of BenchmarkReport, one per backend + baseline
-        """
         if tasks is None:
             tasks = BENCHMARK_TASKS
         if backends is None:
             backends = ["LeRobot-ACT", "OpenVLA"]
 
         self.reports.clear()
-        sim_state = {}  # Shared sim state
+        sim_state: dict = {}
 
-        # ── Run baseline ───────────────────────────────────
+        # ── Baseline ───────────────────────────────────────────
         print("\n" + "═" * 60)
         print(" VLA BENCHMARK — Rule-Based Baseline")
         print("═" * 60)
@@ -321,67 +417,87 @@ class VLABenchmark:
         for task in tasks:
             result = self.baseline.execute_task(task, sim_state)
             baseline_results.append(result)
-            status = "✓" if result.success else "✗"
-            print(f"  {status} {task.name}: {result.duration_s:.1f}s, "
-                  f"error={result.final_error_m*100:.1f}cm")
+            print(f"  {result.outcome_str():>10} {task.name}: "
+                  f"{self._detail(result)}")
+        self.reports.append(
+            self._make_report(self.baseline.name, True, baseline_results))
 
-        self.reports.append(self._make_report(
-            self.baseline.name, baseline_results))
-
-        # ── Run VLA backends ───────────────────────────────
+        # ── VLA backends ───────────────────────────────────────
         for backend_name in backends:
             print(f"\n{'═' * 60}")
             print(f" VLA BENCHMARK — {backend_name}")
             print("═" * 60)
 
-            self.vla.select_backend(backend_name)
-            loaded = self.vla.load()
+            if not self.vla.select_backend(backend_name):
+                self.reports.append(
+                    self._make_report(backend_name, False, []))
+                continue
 
+            loaded = self.vla.load()
             if not loaded:
-                print(f"  ⚠ {backend_name} failed to load — "
-                      f"skipping (using simulated results)")
-                # Generate simulated results anyway
-                executor = VLATaskExecutor(self.vla)
-                results = []
-                for task in tasks:
-                    result = executor.execute_task(task, sim_state)
-                    results.append(result)
-                    status = "✓" if result.success else "✗"
-                    print(f"  {status} {task.name}: {result.duration_s:.1f}s")
-                self.reports.append(self._make_report(backend_name, results))
+                # A model that cannot be loaded is reported as
+                # unavailable. No results, real or otherwise, are emitted.
+                print(f"  ⚠ {backend_name} unavailable (not loaded) — "
+                      f"no results will be reported")
+                self.reports.append(
+                    self._make_report(backend_name, False, []))
                 self.vla.unload()
                 continue
 
-            executor = VLATaskExecutor(self.vla)
+            executor = VLATaskExecutor(
+                self.vla,
+                rollout_fn=self.rollout_fn,
+                observation_provider=self.observation_provider)
             results = []
             for task in tasks:
                 result = executor.execute_task(task, sim_state)
                 results.append(result)
-                status = "✓" if result.success else "✗"
-                print(f"  {status} {task.name}: {result.duration_s:.1f}s, "
-                      f"inference={result.inference_ms:.0f}ms")
+                print(f"  {result.outcome_str():>10} {task.name}: "
+                      f"{self._detail(result)}")
 
-            self.reports.append(self._make_report(backend_name, results))
+            self.reports.append(
+                self._make_report(backend_name, True, results))
             self.vla.unload()
 
-        # ── Print summary ─────────────────────────────────
         self._print_summary()
         self._save_csv()
-
         return self.reports
 
-    def _make_report(self, name: str,
+    @staticmethod
+    def _detail(result: TaskResult) -> str:
+        if not result.measured:
+            extra = f", inference={result.inference_ms:.0f}ms"
+            if not result.action_ok:
+                extra += f", {result.failure_reason}"
+            return "unmeasured" + extra
+        return (f"{result.duration_s:.1f}s, "
+                f"error={result.final_error_m * 100:.1f}cm")
+
+    def _make_report(self, name: str, available: bool,
                      results: List[TaskResult]) -> BenchmarkReport:
-        successes = sum(1 for r in results if r.success)
+        measured = [r for r in results if r.measured]
+        if measured:
+            successes = sum(1 for r in measured if r.success)
+            success_rate = successes / len(measured)
+            avg_duration = float(np.mean([r.duration_s for r in measured]))
+        else:
+            successes = None
+            success_rate = None
+            avg_duration = (
+                float(np.mean([r.duration_s for r in results]))
+                if results else 0.0)
+        avg_inference = (
+            float(np.mean([r.inference_ms for r in results]))
+            if results else 0.0)
         return BenchmarkReport(
             backend_name=name,
+            available=available,
             total_tasks=len(results),
+            measured_tasks=len(measured),
             successes=successes,
-            success_rate=successes / max(len(results), 1),
-            avg_duration_s=float(np.mean([r.duration_s for r in results])),
-            avg_smoothness=float(np.mean([r.smoothness for r in results])),
-            avg_inference_ms=float(np.mean(
-                [r.inference_ms for r in results])),
+            success_rate=success_rate,
+            avg_duration_s=avg_duration,
+            avg_inference_ms=avg_inference,
             results=results,
         )
 
@@ -393,13 +509,21 @@ class VLABenchmark:
             print(f"  {report.summary_line()}")
         print("═" * 60)
 
-        # Recommendation
-        best = max(self.reports, key=lambda r: r.success_rate)
-        print(f"\n  Recommendation: Use '{best.backend_name}' "
-              f"({best.success_rate:.0%} success)")
-        if best.backend_name == "RuleBasedBaseline":
-            print("  Note: VLA needs MORE training data to surpass baseline.")
-            print("  Recommend: rule-based planning + VLA for novel tasks.")
+        measured = [r for r in self.reports if r.measured_tasks > 0]
+        if not measured:
+            print("\n  No task outcome was measured. Reporting a "
+                  "'best backend' or a success rate here would be a "
+                  "fabrication.")
+            print("  Provide a real simulator rollout "
+                  "(e.g. the Gazebo manipulation harness) to obtain "
+                  "success/error numbers.")
+            print()
+            return
+
+        best = max(measured, key=lambda r: r.success_rate)
+        print(f"\n  Best measured backend: '{best.backend_name}' "
+              f"({best.success_rate:.0%} success over "
+              f"{best.measured_tasks} tasks)")
         print()
 
     def _save_csv(self):
@@ -407,9 +531,10 @@ class VLABenchmark:
         with open(csv_path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
-                "backend", "task", "difficulty", "success",
+                "backend", "task", "difficulty", "measured", "success",
                 "duration_s", "error_m", "smoothness",
-                "n_steps", "inference_ms", "failure_reason",
+                "n_steps", "inference_ms", "action_dim",
+                "load_ok", "action_ok", "failure_reason",
             ])
             for report in self.reports:
                 for r in report.results:
@@ -419,12 +544,18 @@ class VLABenchmark:
                     writer.writerow([
                         r.backend_name, r.task_name,
                         task.difficulty if task else "",
-                        1 if r.success else 0,
+                        1 if r.measured else 0,
+                        "" if r.success is None else (1 if r.success else 0),
                         f"{r.duration_s:.3f}",
-                        f"{r.final_error_m:.4f}",
-                        f"{r.smoothness:.6f}",
-                        r.n_steps,
+                        "" if r.final_error_m is None
+                        else f"{r.final_error_m:.4f}",
+                        "" if r.smoothness is None
+                        else f"{r.smoothness:.6f}",
+                        0 if not r.measured else r.n_steps,
                         f"{r.inference_ms:.1f}",
+                        r.action_dim,
+                        1 if r.load_ok else 0,
+                        1 if r.action_ok else 0,
                         r.failure_reason,
                     ])
         print(f"  Results saved to: {csv_path}")
@@ -432,8 +563,27 @@ class VLABenchmark:
 
 def main():
     """Run the VLA benchmark from CLI."""
-    benchmark = VLABenchmark()
-    benchmark.run()
+    parser = argparse.ArgumentParser(
+        description="ARIA VLA benchmark (measures real backend behaviour; "
+                    "never fabricates task success).")
+    parser.add_argument(
+        "--output-dir", default="",
+        help="directory for vla_benchmark.csv")
+    parser.add_argument(
+        "--backends", nargs="*", default=None,
+        help="backend names to evaluate (default: LeRobot-ACT OpenVLA)")
+    parser.add_argument(
+        "--check", action="store_true",
+        help="profile-only mode: load each backend and report availability "
+             "and inference latency without claiming any task outcome")
+    args = parser.parse_args()
+
+    benchmark = VLABenchmark(output_dir=args.output_dir)
+    if args.check:
+        print("\nCHECK MODE: no rollout is available, so task success is "
+              "NOT measured. Only backend availability and latency are "
+              "reported.\n")
+    benchmark.run(backends=args.backends)
 
 
 if __name__ == "__main__":

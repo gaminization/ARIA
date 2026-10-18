@@ -291,9 +291,69 @@ class SkillManager:
                 'time': time.time(),
             })
 
+    def register_in_hand_skills(self, executor) -> List[str]:
+        """Bind the extended in-hand skills to a real executor.
+
+        Args:
+            executor: object exposing ``rotate_in_hand(angle_deg, axis=...)``,
+                ``reposition_grip(offset_mm, direction)``,
+                ``flip_object()`` and ``slide_to_tip(target_extension_mm)``
+                (e.g. ``arm_agents.in_hand_manipulation.InHandManipulation``).
+
+        Returns:
+            The list of skill names that were rebound to real callbacks.
+        """
+        bound: List[str] = []
+
+        def _wrap(fn, kwargs) -> SkillResult:
+            ok = bool(fn(**kwargs))
+            return SkillResult(
+                success=ok,
+                duration_s=0.0,
+                details=f"{fn.__name__} -> {'ok' if ok else 'failed'}")
+
+        if callable(getattr(executor, 'rotate_in_hand', None)):
+            self.register_skill(
+                'rotate_in_hand',
+                lambda **kw: _wrap(
+                    executor.rotate_in_hand,
+                    {'angle_deg': kw.get('angle_deg', 45.0),
+                     'axis': kw.get('axis', 'y')}),
+                "1.1.0")
+            bound.append('rotate_in_hand')
+
+        if callable(getattr(executor, 'reposition_grip', None)):
+            self.register_skill(
+                'reposition_grip',
+                lambda **kw: _wrap(
+                    executor.reposition_grip,
+                    {'offset_mm': kw.get('offset_mm', 5.0),
+                     'direction': kw.get('direction', 'forward')}),
+                "1.1.0")
+            bound.append('reposition_grip')
+
+        if callable(getattr(executor, 'flip_object', None)):
+            self.register_skill(
+                'flip',
+                lambda **kw: _wrap(executor.flip_object, {}),
+                "1.1.0")
+            bound.append('flip')
+
+        if callable(getattr(executor, 'slide_to_tip', None)):
+            self.register_skill(
+                'slide_to_tip',
+                lambda **kw: _wrap(
+                    executor.slide_to_tip,
+                    {'target_extension_mm': kw.get(
+                        'target_extension_mm', 10.0)}),
+                "1.1.0")
+            bound.append('slide_to_tip')
+
+        return bound
+
     def _placeholder_skill(self, **kwargs) -> SkillResult:
-        """Placeholder for unimplemented skills."""
+        """Unimplemented skill — reports failure, never fake success."""
         return SkillResult(
-            success=True,
-            duration_s=0.1,
-            details="Placeholder execution (no real hardware)")
+            success=False,
+            duration_s=0.0,
+            details="Skill not implemented (no real executor registered)")

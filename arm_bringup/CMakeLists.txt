@@ -38,6 +38,7 @@ install(PROGRAMS
   scripts/test_tester_world.py
   scripts/industrial_workcell_node.py
   scripts/activate_agents.py
+  scripts/ensure_controllers.py
   scripts/conveyor_part_spawner.py
   scripts/test_industrial_workcell.py
   DESTINATION lib/${PROJECT_NAME}

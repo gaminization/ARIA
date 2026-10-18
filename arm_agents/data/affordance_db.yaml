@@ -3,4 +3,4 @@ cup:
   avoid:
   - interior
   grasp: rim_and_body
-  success_rate: 0.9748985134465579
+  success_rate: 0.9786637364295742

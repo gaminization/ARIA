@@ -14,7 +14,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, RegionOfInterest
 from std_msgs.msg import Float64MultiArray
 
 try:
@@ -91,6 +91,9 @@ class DepthNode(Node):
 
         self._processing = False
 
+        # Attention-driven focus region (ROI). None/full-frame = no crop.
+        self._focus_roi: Optional[RegionOfInterest] = None
+
         # Performance tracking
         self.frame_count = 0
         self.total_da_ms = 0.0
@@ -104,6 +107,11 @@ class DepthNode(Node):
         self.image_sub = self.create_subscription(
             Image, self.camera_topic, self._image_cb, qos
         )
+        # AttentionAgent focus ROI: crops the input so depth is computed at
+        # higher effective resolution around the task-relevant region.
+        self.create_subscription(
+            RegionOfInterest, '/depth/focus_region',
+            self._focus_roi_cb, 10)
         self.get_logger().info(
             f"Depth node subscribing to: {self.camera_topic} (throttled at {sys_config.depth_max_rate_hz} Hz)")
 
@@ -196,6 +204,47 @@ class DepthNode(Node):
 
         return depth_relative * scale
 
+    def _focus_roi_cb(self, msg: RegionOfInterest):
+        """Store the attention focus ROI (0-size = no crop)."""
+        self._focus_roi = msg
+
+    def _resolve_focus_crop(self, width: int, height: int) -> tuple:
+        """Return (x0, y0, x1, y1) inference crop for the current focus ROI."""
+        roi = self._focus_roi
+        if roi is None or roi.width <= 0 or roi.height <= 0:
+            return 0, 0, width, height
+        x0 = max(0, int(roi.x_offset))
+        y0 = max(0, int(roi.y_offset))
+        x1 = min(width, x0 + int(roi.width))
+        y1 = min(height, y0 + int(roi.height))
+        if x1 - x0 < 16 or y1 - y0 < 16:
+            return 0, 0, width, height
+        if (x1 - x0) >= width * 0.98 and (y1 - y0) >= height * 0.98:
+            return 0, 0, width, height
+        return x0, y0, x1, y1
+
+    @staticmethod
+    def _embed_full_frame(
+        depth_crop: np.ndarray,
+        cropped: bool,
+        x0: int, y0: int, x1: int, y1: int,
+        h_full: int, w_full: int,
+    ) -> np.ndarray:
+        """Place a cropped depth map back into a full-frame float32 map.
+
+        Pixels outside the focus ROI are set to NaN ("no data") so consumers
+        do not mistake un-modelled regions for valid depth.
+        """
+        if not cropped or depth_crop is None:
+            return depth_crop
+        if depth_crop.shape[:2] != (y1 - y0, x1 - x0):
+            depth_crop = cv2.resize(
+                depth_crop, (x1 - x0, y1 - y0),
+                interpolation=cv2.INTER_LINEAR)
+        full = np.full((h_full, w_full), np.nan, dtype=np.float32)
+        full[y0:y1, x0:x1] = depth_crop.astype(np.float32)
+        return full
+
     def _image_cb(self, msg: Image):
         """Process incoming frame with depth models."""
         if self.bridge is None:
@@ -206,11 +255,16 @@ class DepthNode(Node):
 
         self._processing = True
         try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
+            cv_image_full = self.bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
         except Exception as e:
             self.get_logger().error(f"CV bridge error: {e}")
             self._processing = False
             return
+
+        h_full, w_full = cv_image_full.shape[:2]
+        x0, y0, x1, y1 = self._resolve_focus_crop(w_full, h_full)
+        cropped = (x0, y0, x1, y1) != (0, 0, w_full, h_full)
+        cv_image = cv_image_full[y0:y1, x0:x1] if cropped else cv_image_full
 
         try:
             h, w = cv_image.shape[:2]
@@ -257,6 +311,11 @@ class DepthNode(Node):
                             interpolation=cv2.INTER_LINEAR
                         )
 
+                    # Re-embed into the full frame when cropped.
+                    da_depth_metric = self._embed_full_frame(
+                        da_depth_metric, cropped, x0, y0, x1, y1,
+                        h_full, w_full)
+
                     # Publish as 32FC1
                     depth_msg = self.bridge.cv2_to_imgmsg(
                         da_depth_metric.astype(np.float32), encoding='32FC1'
@@ -293,6 +352,10 @@ class DepthNode(Node):
                     )
                     midas_depth_metric = self._relative_to_metric(depth_norm, h)
 
+                    midas_depth_metric = self._embed_full_frame(
+                        midas_depth_metric, cropped, x0, y0, x1, y1,
+                        h_full, w_full)
+
                     depth_msg = self.bridge.cv2_to_imgmsg(
                         midas_depth_metric.astype(np.float32), encoding='32FC1'
                     )
@@ -312,9 +375,12 @@ class DepthNode(Node):
             # ── Colorized depth visualization ──────────────────
             active_depth = da_depth_metric if da_depth_metric is not None else midas_depth_metric
             if self.publish_colorized and active_depth is not None and CV2_AVAILABLE:
-                depth_vis = (active_depth - active_depth.min()) / (
-                    active_depth.max() - active_depth.min() + 1e-8
-                )
+                d_min = np.nanmin(active_depth)
+                d_max = np.nanmax(active_depth)
+                if not np.isfinite(d_min) or not np.isfinite(d_max):
+                    d_min, d_max = 0.0, 1.0
+                depth_vis = (active_depth - d_min) / (d_max - d_min + 1e-8)
+                depth_vis = np.nan_to_num(depth_vis, nan=0.0)
                 depth_vis = (depth_vis * 255).astype(np.uint8)
                 colorized = cv2.applyColorMap(depth_vis, cv2.COLORMAP_MAGMA)
 

@@ -13,15 +13,14 @@ Backward compatible: if SAM2/material data unavailable,
 falls back to the original class-based affordance lookup.
 
 Subscribes:
-  /sam2/masks_json
-  /material/predictions
+  /sam2/masks            (arm_interfaces/SAM2Masks — object silhouettes)
+  /material/predictions  (arm_interfaces/MaterialPredictions — typed)
   /detection/objects
 
 Services:
   /aria/affordance/get_grasp_v2  (GetAffordanceGrasp)
 ═══════════════════════════════════════════════════════════════
 """
-import json
 import math
 import os
 from typing import Dict, List, Optional, Tuple
@@ -32,10 +31,16 @@ import rclpy
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from vision_msgs.msg import Detection2DArray
-from std_msgs.msg import String
 
 from arm_interfaces.srv import GetAffordanceGrasp
+from arm_interfaces.msg import SAM2Masks, MaterialPredictions
 from arm_planner.state_bus import StateBus
+
+try:
+    from cv_bridge import CvBridge
+    CV_BRIDGE = True
+except ImportError:
+    CV_BRIDGE = False
 
 try:
     import cv2
@@ -175,6 +180,44 @@ APPROACH_QUATERNIONS = {
 }
 
 
+def _mask_props(mask: np.ndarray) -> dict:
+    """Derive mask geometry (centroid, axes, area) from a binary mask."""
+    if mask is None or not CV2_AVAILABLE:
+        return {}
+    if np.count_nonzero(mask) < 10:
+        return {}
+
+    contours, _ = cv2.findContours(
+        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return {}
+
+    largest = max(contours, key=cv2.contourArea)
+    area = cv2.contourArea(largest)
+    if area < 10:
+        return {}
+
+    (cx_r, cy_r), (w_rect, h_rect), angle = cv2.minAreaRect(largest)
+    if w_rect < h_rect:
+        w_rect, h_rect = h_rect, w_rect
+        angle += 90
+
+    M = cv2.moments(largest)
+    if M["m00"] > 0:
+        cx = int(M["m10"] / M["m00"])
+        cy = int(M["m01"] / M["m00"])
+    else:
+        cx, cy = int(cx_r), int(cy_r)
+
+    return {
+        'major_axis_angle': float(angle % 180),
+        'aspect_ratio': float(w_rect / max(h_rect, 1)),
+        'centroid': (cx, cy),
+        'area': float(area),
+        'min_rect_size': (float(w_rect), float(h_rect)),
+    }
+
+
 # ═══════════════════════════════════════════════════════════════
 # Handle detection from mask
 # ═══════════════════════════════════════════════════════════════
@@ -311,6 +354,7 @@ class AffordanceAgentV2(LifecycleNode):
         self.grasp_history: list = []
         self._mask_data: dict = {}
         self._material_data: dict = {}
+        self.bridge = CvBridge() if CV_BRIDGE else None
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info("AffordanceAgentV2: CONFIGURING")
@@ -333,9 +377,10 @@ class AffordanceAgentV2(LifecycleNode):
 
         # Subscribers for enhanced data
         self.create_subscription(
-            String, '/sam2/masks_json', self._masks_cb, 10)
+            SAM2Masks, '/sam2/masks', self._masks_cb, 10)
         self.create_subscription(
-            String, '/material/predictions', self._material_cb, 10)
+            MaterialPredictions, '/material/predictions',
+            self._material_cb, 10)
 
         return TransitionCallbackReturn.SUCCESS
 
@@ -348,17 +393,40 @@ class AffordanceAgentV2(LifecycleNode):
         return TransitionCallbackReturn.SUCCESS
 
     # ── Data callbacks ─────────────────────────────────────
-    def _masks_cb(self, msg: String):
-        try:
-            self._mask_data = json.loads(msg.data)
-        except json.JSONDecodeError:
-            pass
+    def _masks_cb(self, msg: SAM2Masks):
+        """Decode SAM2 silhouettes into mask geometry keyed by object id."""
+        if not CV_BRIDGE or self.bridge is None:
+            return
+        data: dict = {}
+        for i, img in enumerate(msg.masks):
+            if i >= len(msg.object_ids):
+                break
+            try:
+                mask = self.bridge.imgmsg_to_cv2(img, desired_encoding='mono8')
+            except Exception:
+                continue
+            props = _mask_props(mask)
+            if props:
+                props['class_name'] = (
+                    msg.class_names[i] if i < len(msg.class_names) else '')
+                props['confidence'] = (
+                    float(msg.confidences[i])
+                    if i < len(msg.confidences) else 0.0)
+                data[str(int(msg.object_ids[i]))] = props
+        if data:
+            self._mask_data = data
 
-    def _material_cb(self, msg: String):
-        try:
-            self._material_data = json.loads(msg.data)
-        except json.JSONDecodeError:
-            pass
+    def _material_cb(self, msg: MaterialPredictions):
+        """Store typed material predictions as a parallel-array dict."""
+        self._material_data = {
+            'object_ids': [int(i) for i in msg.object_ids],
+            'material_classes': list(msg.material_classes),
+            'confidences': [float(c) for c in msg.confidences],
+            'grip_force_scales': [float(v) for v in msg.grip_force_scales],
+            'approach_speed_scales': [
+                float(v) for v in msg.approach_speed_scales],
+            'special_notes': list(msg.special_notes),
+        }
 
     # ── Database persistence ───────────────────────────────
     def _load_db(self):

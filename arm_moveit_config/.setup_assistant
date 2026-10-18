@@ -1,0 +1,9 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: arm_description
+    relative_path: urdf/aria_arm.urdf.xacro
+  SRDF:
+    relative_path: config/aria_arm.srdf
+  CONFIG:
+    author_name: ARIA Team
+    author_email: aria@aria.dev

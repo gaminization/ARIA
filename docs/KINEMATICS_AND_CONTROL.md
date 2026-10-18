@@ -2,20 +2,20 @@
 
 ## 1. Kinematic Structure & Authoritative URDF Mapping
 
-Project ARIA employs a 5-Degree-of-Freedom (5-DoF) revolute serial chain. The base link is fixed to the workcell frame at $[0.0, 0.0, 0.614]\,\text{m}$ with a $90^\circ$ yaw offset. The mechanical structure consists of:
-- **Joint 1 (Waist):** Revolute about vertical $Z$-axis.
-- **Joints 2, 3, and 4 (Shoulder, Elbow, Wrist Pitch):** Planar revolute joints whose rotation axes are strictly parallel to each other and perpendicular to Joint 1.
-- **Joint 5 (Wrist Roll / Gripper):** Revolute along the tool longitudinal axis.
+Project ARIA employs a **4-DoF** revolute serial chain plus a gripper
+(clamp). There is **no wrist-roll axis**, so the task manifold is position
++ pitch only:
+
+$$\mathcal{M}_{\text{task}} = \left\{ \mathbf{T} \in SE(3) \;\middle|\; \mathbf{p} \in \mathcal{W}_{\text{reach}}, \; \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \; \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}] \right\}$$
 
 ### Craig Modified Denavit-Hartenberg (MDH) Parameters (Table III):
 
 | Joint $i$ | Link Description | $\alpha_{i-1}$ | $a_{i-1}$ (m) | $d_i$ (m) | $\theta_i^{\text{DH}}$ Range (rad) | Servo Travel | Affine Offset $\theta_{\text{offset}}$ | Max Velocity $\dot{q}_{\max}$ |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1** | Waist (Azimuth) | $0$ | $0.000$ | $0.105$ | $[-\pi/2, +\pi/2]$ | $[0^\circ, 180^\circ]$ | $90^\circ$ ($\pi/2$) | $1.50\,\text{rad/s}$ |
-| **2** | Shoulder (Pitch) | $+\pi/2$ | $0.014$ | $0.000$ | $[-\pi/2, +\pi/2]$ | $[0^\circ, 180^\circ]$ | $90^\circ$ ($\pi/2$) | $1.50\,\text{rad/s}$ |
-| **3** | Elbow (Pitch) | $0$ | $0.145$ | $0.000$ | $[-\pi/2, +\pi/3]$ | $[0^\circ, 150^\circ]$ | $90^\circ$ ($\pi/2$) | $1.50\,\text{rad/s}$ |
-| **4** | Wrist Pitch | $0$ | $0.115$ | $0.000$ | $[-\pi/2, +\pi/2]$ | $[0^\circ, 180^\circ]$ | $90^\circ$ ($\pi/2$) | $1.50\,\text{rad/s}$ |
-| **5** | Wrist Roll / Tool | $-\pi/2$ | $0.000$ | $0.095$ | $[-\pi/2, +\pi/2]$ | $[0^\circ, 180^\circ]$ | $90^\circ$ ($\pi/2$) | $2.50\,\text{rad/s}$ |
+| **1** | Waist (Azimuth) | $0$ | $0.000$ | $0.0797$ | $[-\pi/2, +\pi/2]$ | $[0^\circ, 180^\circ]$ | $0^\circ$ | $1.50\,\text{rad/s}$ |
+| **2** | Shoulder (Pitch) | $+\pi/2$ | $0.014$ | $0.000$ | $[-\pi/2, +\pi/2]$ | $[0^\circ, 180^\circ]$ | $0^\circ$ | $1.50\,\text{rad/s}$ |
+| **3** | Elbow (Pitch) | $0$ | $0.1169$ | $0.000$ | $[-\pi/2, +\pi/2]$ | $[0^\circ, 150^\circ]$ | $0^\circ$ | $1.50\,\text{rad/s}$ |
+| **4** | Wrist Pitch | $0$ | $0.1275$ | $0.000$ | $[-\pi/2, +\pi/2]$ | $[0^\circ, 180^\circ]$ | $0^\circ$ | $1.50\,\text{rad/s}$ |
 
 ---
 
@@ -61,10 +61,23 @@ $$\mathcal{M}_{\text{task}} = \left\{ \mathbf{T} \in SE(3) \;\middle|\; \mathbf{
 7. **Joint Limits Verification:**
    Enforce physical servo travel bounds, specifically the asymmetric mechanical stop $\theta_3 \in [-\pi/2, +\pi/3]$. If the primary elbow-up solution violates limits, the solver evaluates the elbow-down solution. If both fail, the pose is deterministically rejected as out-of-limits without iterative divergence.
 
-### Benchmarked Performance (100,000 Reachable Poses):
-- **Recovery Rate:** **$100.00\%$** ($100{,}000 / 100{,}000$).
-- **Mean Residual Position Error:** **$0.0000\,\text{mm}$** (maximum $< 10^{-6}\,\text{mm}$).
-- **Solve Latency:** Mean **$0.0802\,\text{ms}$** ($80.2\,\mu\text{s}$), p99 **$0.195\,\text{ms}$**.
+### Benchmarked performance (reachable poses, 100 seeds on this machine)
+- **Recovery Rate:** **100.00%** (100/100 poses within 1 mm error, using geometric seeds)
+- **Mean position error:** ~0.37 mm (mean across converged seeds)
+- **Solve latency:** ~5 ms mean on RTX 5060 / Intel i7 (no GPU used for IK)
+
+> **Note.** Earlier revisions of this benchmark compared ARIA's IK against
+> TRAC-IK, PyKDL, RTB and scipy on a kinematic model with link lengths
+> 0.105 / 0.145 / 0.115 / 0.095 m, which does **not** match the actual URDF
+> (0.0797 / 0.1169 / 0.1275 m). The ARIA solver was the only method that
+> correctly used the URDF, and self-reported its error; the other solvers'
+> numbers on that page are therefore not directly comparable.
+
+The 100% convergence figure reflects performance on **known-reachable seeds**.
+The solver reports actual position error via `IKResult.position_error_m`; the
+value is not zero but ~0.37 mm mean. There is **no wrist-roll axis**, so
+`orientation_error_rad` is `0.0` by convention and must not be read as a
+measured residual.
 
 ---
 

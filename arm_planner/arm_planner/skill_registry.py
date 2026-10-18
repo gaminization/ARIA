@@ -22,6 +22,11 @@ SKILL_ALIAS_MAP = {
     'execute_sweep': 'sweep', 'sweep': 'sweep',
     'execute_slide': 'slide', 'slide': 'slide',
     'execute_roll': 'roll', 'roll': 'roll',
+    # In-hand manipulation (arm_agents.in_hand_manipulation)
+    'rotate_in_hand': 'rotate_in_hand', 'rotate_held': 'rotate_in_hand',
+    'reposition_grip': 'reposition_grip', 'regrip': 'reposition_grip',
+    'flip': 'flip', 'flip_object': 'flip',
+    'slide_to_tip': 'slide_to_tip', 'extend_in_hand': 'slide_to_tip',
     'capture_views': 'inspect', 'inspect': 'inspect',
     # Workspace physical scan (ScanAgent or LLM plan)
     'scan_workspace': 'scan_workspace', 'search_workspace': 'scan_workspace',

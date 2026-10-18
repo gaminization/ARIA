@@ -69,10 +69,14 @@ class SysConfig:
                 free_mem, _ = torch.cuda.mem_get_info(0)
                 self.free_vram_gb = free_mem / (1024 ** 3)
             except Exception:
+                # Could not query the device: report unknown rather than
+                # inventing VRAM numbers.
                 self.device = "cuda:0"
-                self.gpu_name = "CUDA Generic"
-                self.total_vram_gb = 7.5
-                self.free_vram_gb = 6.0
+                self.gpu_name = "CUDA (query failed)"
+                self.total_vram_gb = 0.0
+                self.free_vram_gb = 0.0
+                self.hardware_tier = "UNKNOWN"
+                return
         else:
             self.device = "cpu"
             self.gpu_name = "CPU Only"

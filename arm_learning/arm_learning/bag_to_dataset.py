@@ -91,12 +91,9 @@ def extract_episodes_from_bag(
     """
     Extract task episodes from a ROS2 bag.
 
-    This is a simplified parser that reads the bag using
-    ros2 bag API or direct SQLite access.
-
-    In practice, this uses rosbag2_py for full bag reading.
-    For offline testing, we parse the metadata and generate
-    placeholder episodes.
+    Reads the bag with ``rosbag2_py`` (real observations, states and
+    commands). When ``rosbag2_py`` is unavailable no episodes can be
+    extracted and an empty list is returned rather than fabricating data.
     """
     episodes = []
     meta = parse_bag_metadata(bag_path)
@@ -106,36 +103,140 @@ def extract_episodes_from_bag(
     n_failures = len(failure_events)
     n_successes = task_count - n_failures
 
-    # Try using rosbag2_py for real bag reading
+    # Real bag reading requires rosbag2_py. If it is unavailable we
+    # cannot extract real observations/actions, so we return nothing
+    # rather than fabricating placeholder episodes.
     try:
         from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions
         return _extract_with_rosbag2(
             bag_path, success_only, target_fps, meta)
     except ImportError:
+        print(
+            "  ⚠ rosbag2_py unavailable — cannot read the bag. "
+            "No episodes extracted (refusing to fabricate data). "
+            "Install the ROS 2 rosbag2 stack to convert real bags.")
+        return []
+
+
+# Canonical ARIA joint order (must match the URDF / control stack).
+ARIA_JOINT_NAMES = [
+    'waist_joint', 'shoulder_joint', 'elbow_joint',
+    'wrist_pitch_joint', 'gripper_joint',
+]
+
+# Topic that carries *commanded* joint targets (the action signal).
+COMMAND_TOPIC = '/aria/joint_stream'
+TOP_IMAGE_TOPIC = '/top_camera/image_raw'
+WRIST_IMAGE_TOPIC = '/wrist_camera/image_raw'
+
+
+def _order_joints(msg) -> Optional[np.ndarray]:
+    """Return joint positions reordered into canonical ARIA order.
+
+    Falls back to the raw ``position`` order when the message carries no
+    joint names. Returns ``None`` when the message does not contain a full
+    canonical joint set — we never guess missing joints.
+    """
+    position = getattr(msg, 'position', None)
+    if position is None or len(position) == 0:
+        return None
+    names = list(getattr(msg, 'name', []) or [])
+    if not names:
+        if len(position) < len(ARIA_JOINT_NAMES):
+            return None
+        return np.asarray(
+            position[:len(ARIA_JOINT_NAMES)], dtype=np.float32)
+    index = {n: i for i, n in enumerate(names)}
+    if not all(name in index for name in ARIA_JOINT_NAMES):
+        return None
+    return np.asarray(
+        [position[index[name]] for name in ARIA_JOINT_NAMES],
+        dtype=np.float32)
+
+
+def _imgmsg_to_rgb(msg) -> Optional[np.ndarray]:
+    """Convert a ``sensor_msgs/Image`` to an ``(H, W, 3)`` uint8 RGB array.
+
+    Uses ``cv_bridge`` when available and falls back to a manual decode of
+    the common raw encodings. Returns ``None`` on failure — no fabricating
+    an image.
+    """
+    try:
+        import cv_bridge
+        bridge = cv_bridge.CvBridge()
+        rgb = bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
+        return np.ascontiguousarray(rgb)
+    except Exception:
         pass
 
-    # Fallback: create placeholder episodes from metadata
-    for i in range(task_count):
-        is_success = i < n_successes
+    try:
+        enc = (getattr(msg, 'encoding', '') or '').lower()
+        h, w = int(msg.height), int(msg.width)
+        step = int(msg.step) if msg.step else w * 3
+        raw = np.frombuffer(msg.data, dtype=np.uint8)
+        if enc in ('rgb8', 'bgr8'):
+            arr = raw.reshape(h, step)[:, :w * 3].reshape(h, w, 3)
+            if enc == 'bgr8':
+                arr = arr[:, :, ::-1]
+            return np.ascontiguousarray(arr)
+        if enc in ('mono8', '8uc1'):
+            gray = raw.reshape(h, step)[:, :w]
+            return np.repeat(gray[:, :, None], 3, axis=2)
+    except Exception:
+        return None
+    return None
 
-        if success_only and not is_success:
+
+def _decode_images(
+    records: List[Tuple[int, bytes]],
+    msg_type,
+    deserialize,
+) -> List[Tuple[float, np.ndarray]]:
+    """Deserialize image records into ``(timestamp_s, (H, W, 3) rgb)``."""
+    out: List[Tuple[float, np.ndarray]] = []
+    dropped = 0
+    for t, data in records:
+        try:
+            rgb = _imgmsg_to_rgb(deserialize(data, msg_type))
+        except Exception:
+            rgb = None
+        if rgb is None:
+            dropped += 1
             continue
+        out.append((t / 1e9, rgb))
+    if dropped:
+        print(f"  ⚠ Skipped {dropped} undecodable image frame(s)")
+    out.sort(key=lambda x: x[0])
+    return out
 
-        n_frames = target_fps * 5  # Assume 5 seconds per task
-        episode = Episode(
-            episode_id=i,
-            images_top=[np.zeros((240, 320, 3), dtype=np.uint8)] * n_frames,
-            images_wrist=[np.zeros((240, 320, 3), dtype=np.uint8)] * n_frames,
-            joint_states=[np.zeros(6, dtype=np.float32)] * n_frames,
-            joint_commands=[np.zeros(6, dtype=np.float32)] * n_frames,
-            timestamps=list(np.linspace(0, 5, n_frames)),
-            success=is_success,
-            task_label=meta.get('task_label', 'pick_and_place'),
-            object_class='unknown',
-        )
-        episodes.append(episode)
 
-    return episodes
+def _nearest_image(
+    images: List[Tuple[float, np.ndarray]],
+    t: float,
+    tolerance: float,
+) -> Optional[np.ndarray]:
+    """Return the image closest in time to ``t`` within ``tolerance``.
+
+    ``images`` must be sorted by timestamp. Returns ``None`` when no frame
+    is close enough (caller decides whether to drop the frame).
+    """
+    if not images:
+        return None
+    # Binary search for the insertion point.
+    import bisect
+    times = [x[0] for x in images]
+    i = bisect.bisect_left(times, t)
+    best = None
+    best_dt = None
+    for j in (i - 1, i):
+        if 0 <= j < len(images):
+            dt = abs(images[j][0] - t)
+            if best_dt is None or dt < best_dt:
+                best_dt = dt
+                best = images[j][1]
+    if best_dt is not None and best_dt <= tolerance:
+        return best
+    return None
 
 
 def _extract_with_rosbag2(
@@ -144,11 +245,22 @@ def _extract_with_rosbag2(
     target_fps: int,
     meta: dict,
 ) -> List[Episode]:
-    """Extract episodes using rosbag2_py (when available)."""
+    """Extract one episode per bag using rosbag2_py.
+
+    Reads:
+      * observation state  ← ``/joint_states`` (real measured positions)
+      * action             ← ``/aria/joint_stream`` (real recorded commands)
+      * observations       ← ``/top_camera/image_raw`` + ``/wrist_camera/image_raw``
+
+    When the bag contains no command topic we fall back to the *next
+    observed state* as the action target (the standard imitation-from-
+    observation target). That target is a real measurement — never a
+    fabricated or zero-filled command — and we say so explicitly so it can
+    never be mistaken for a recorded command stream.
+    """
     from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions
     from rclpy.serialization import deserialize_message
-    from sensor_msgs.msg import Image
-    from sensor_msgs.msg import JointState
+    from sensor_msgs.msg import Image, JointState
 
     reader = SequentialReader()
     storage_options = StorageOptions(uri=bag_path, storage_id='sqlite3')
@@ -157,45 +269,118 @@ def _extract_with_rosbag2(
         output_serialization_format='cdr')
     reader.open(storage_options, converter_options)
 
-    # Collect all messages by topic
-    messages = {
+    wanted = {
         '/joint_states': [],
-        '/top_camera/image_raw': [],
-        '/wrist_camera/image_raw': [],
-        '/aria/state/task': [],
+        COMMAND_TOPIC: [],
+        TOP_IMAGE_TOPIC: [],
+        WRIST_IMAGE_TOPIC: [],
     }
-
     while reader.has_next():
         topic, data, t = reader.read_next()
-        if topic in messages:
-            messages[topic].append((t, data))
+        if topic in wanted:
+            wanted[topic].append((t, data))
 
-    # Segment by task start/end events
-    episodes = []
-    # Simplified: treat entire bag as one episode
-    n_joints = len(messages['/joint_states'])
-    if n_joints > 0:
-        episode = Episode(
-            episode_id=0,
-            images_top=[],
-            images_wrist=[],
-            joint_states=[],
-            joint_commands=[],
-            timestamps=[],
-            success=True,
-        )
+    # ── Real observed joint states ─────────────────────────
+    states: List[Tuple[float, np.ndarray]] = []
+    for t, data in wanted['/joint_states']:
+        try:
+            pos = _order_joints(deserialize_message(data, JointState))
+        except Exception:
+            pos = None
+        if pos is not None:
+            states.append((t / 1e9, pos))
+    states.sort(key=lambda x: x[0])
+    if len(states) < 2:
+        print("  ⚠ Bag has no usable /joint_states sequence — "
+              "no episodes extracted.")
+        return []
 
-        for t, data in messages['/joint_states']:
-            msg = deserialize_message(data, JointState)
-            episode.joint_states.append(
-                np.array(msg.position[:6], dtype=np.float32))
-            episode.joint_commands.append(
-                np.array(msg.position[:6], dtype=np.float32))
-            episode.timestamps.append(t / 1e9)
+    # ── Recorded commands (action) ─────────────────────────
+    commands: List[Tuple[float, np.ndarray]] = []
+    for t, data in wanted[COMMAND_TOPIC]:
+        try:
+            pos = _order_joints(deserialize_message(data, JointState))
+        except Exception:
+            pos = None
+        if pos is not None:
+            commands.append((t / 1e9, pos))
+    commands.sort(key=lambda x: x[0])
+    use_recorded_commands = len(commands) > 0
+    if not use_recorded_commands:
+        print("  ⚠ No recorded command topic "
+              f"({COMMAND_TOPIC}) in bag — using next observed state as the "
+              "action target (state-derived, NOT a recorded command).")
 
-        episodes.append(episode)
+    # ── Observations ───────────────────────────────────────
+    top_images = _decode_images(wanted[TOP_IMAGE_TOPIC], Image,
+                                deserialize_message)
+    wrist_images = _decode_images(wanted[WRIST_IMAGE_TOPIC], Image,
+                                  deserialize_message)
+    image_tol = max(0.1, 3.0 / max(target_fps, 1))
+    if top_images:
+        print(f"  Decoded {len(top_images)} top-camera frame(s)")
+    if wrist_images:
+        print(f"  Decoded {len(wrist_images)} wrist-camera frame(s)")
 
-    return episodes
+    # ── Align frames onto the joint-state timeline ─────────
+    episode = Episode(
+        episode_id=0,
+        images_top=[],
+        images_wrist=[],
+        joint_states=[],
+        joint_commands=[],
+        timestamps=[],
+        success=len(meta.get('failure_events', [])) == 0,
+        task_label=str(meta.get('recording_mode', '')),
+        object_class=','.join(meta.get('objects_in_scene', []) or []),
+    )
+
+    cmd_i = 0
+    for i, (t, state) in enumerate(states):
+        # Resolve the action for this frame.
+        if use_recorded_commands:
+            # Zero-order hold: the controller keeps the last command until
+            # a new one arrives.
+            while (cmd_i + 1 < len(commands)
+                   and commands[cmd_i + 1][0] <= t):
+                cmd_i += 1
+            if commands[cmd_i][0] > t:
+                # No command has been issued yet at this instant.
+                continue
+            action = commands[cmd_i][1]
+        else:
+            if i + 1 >= len(states):
+                # Last frame has no successor to act toward.
+                continue
+            action = states[i + 1][1]
+
+        # Resolve observations (only enforced for cameras present in bag).
+        top_img = _nearest_image(top_images, t, image_tol) \
+            if top_images else None
+        wrist_img = _nearest_image(wrist_images, t, image_tol) \
+            if wrist_images else None
+        if top_images and top_img is None:
+            continue
+        if wrist_images and wrist_img is None:
+            continue
+
+        episode.joint_states.append(state)
+        episode.joint_commands.append(action)
+        episode.timestamps.append(t)
+        if top_img is not None:
+            episode.images_top.append(top_img)
+        if wrist_img is not None:
+            episode.images_wrist.append(wrist_img)
+
+    if not episode.joint_states:
+        print("  ⚠ No aligned frames could be extracted from the bag.")
+        return []
+
+    if success_only and not episode.success:
+        print("  Skipping failed episode (--success-only)")
+        return []
+
+    return [episode]
 
 
 # ═══════════════════════════════════════════════════════════════

@@ -252,13 +252,17 @@ class SyntheticOutcomeVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def checks_script(filepath: str) -> List[Tuple[int, str]]:
+def checks_script(filepath: str, require_data_real: bool = True) -> List[Tuple[int, str]]:
     with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # Only inspect scripts that write to or reference data/real
-    if "data/real" not in content and "DATA_REAL_DIR" not in content and "data_real" not in content:
-        return []
+    # Historically only scripts writing to `data/real/` were inspected.
+    # The linter now also covers the ARM packages and benchmark scripts,
+    # so callers may pass require_data_real=False.
+    if require_data_real:
+        if ("data/real" not in content and "DATA_REAL_DIR" not in content
+                and "data_real" not in content):
+            return []
 
     try:
         tree = ast.parse(content, filename=filepath)
@@ -274,41 +278,77 @@ def checks_script(filepath: str) -> List[Tuple[int, str]]:
     return visitor.violations
 
 
+# Directories covered by the wider sweep (package source + all scripts).
+SCAN_DIRS = [
+    "scripts",
+    "arm_vla",
+    "arm_planner",
+    "arm_agents",
+    "arm_vision",
+    "arm_control",
+    "arm_ik",
+    "arm_learning",
+    "arm_dashboard",
+    "arm_bringup",
+    "arm_moveit_config",
+]
+
+_EXCLUDE_DIR_NAMES = {
+    "build", "install", "third_party", "__pycache__", "node_modules",
+    "legacy_synthetic", ".git",
+}
+
+
+def _iter_scan_files():
+    """Yield package/benchmark Python files to inspect (deduplicated)."""
+    seen = set()
+    for base_rel in SCAN_DIRS:
+        base = os.path.join(WORKSPACE_ROOT, base_rel)
+        if not os.path.isdir(base):
+            continue
+        for root, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d not in _EXCLUDE_DIR_NAMES]
+            for file in sorted(files):
+                if not file.endswith(".py"):
+                    continue
+                if file.startswith("test_") or file.endswith("_test.py"):
+                    continue
+                path = os.path.abspath(os.path.join(root, file))
+                if path in seen:
+                    continue
+                seen.add(path)
+                yield path
+
+
 def main() -> int:
     print("=" * 80)
     print("PROJECT ARIA: SCIENTIFIC INTEGRITY LINTER (check_no_synthetic_outcomes.py)")
-    print("Enforcing zero synthetic outcomes in data/real/ scripts.")
+    print("Enforcing zero synthetic outcomes in result-producing code")
+    print("(scripts/ and all ARM package modules).")
     print("=" * 80)
 
     total_checked = 0
     total_violations = 0
     all_violations: Dict[str, List[Tuple[int, str]]] = {}
 
-    for root, _, files in os.walk(SCRIPTS_DIR):
-        for file in sorted(files):
-            if file.endswith(".py"):
-                path = os.path.join(root, file)
-                rel_path = os.path.relpath(path, WORKSPACE_ROOT)
-                # Check if file targets data/real
-                with open(path, "r", encoding="utf-8") as f:
-                    c = f.read()
-                if "data/real" in c or "DATA_REAL_DIR" in c:
-                    total_checked += 1
-                    violations = checks_script(path)
-                    if violations:
-                        all_violations[rel_path] = violations
-                        total_violations += len(violations)
-                        print(f"  [FAIL] {rel_path} ({len(violations)} violations)")
-                    else:
-                        print(f"  [PASS] {rel_path}")
+    for path in _iter_scan_files():
+        rel_path = os.path.relpath(path, WORKSPACE_ROOT)
+        total_checked += 1
+        violations = checks_script(path, require_data_real=False)
+        if violations:
+            all_violations[rel_path] = violations
+            total_violations += len(violations)
+            print(f"  [FAIL] {rel_path} ({len(violations)} violations)")
 
     print("-" * 80)
     if total_violations == 0:
-        print(f"SUCCESS: Checked {total_checked} active scripts targeting data/real/. Zero synthetic outcomes found.")
+        print(f"SUCCESS: Checked {total_checked} source files. "
+              "Zero synthetic outcomes found.")
         print("=" * 80)
         return 0
     else:
-        print(f"FAILED: Found {total_violations} synthetic outcome violation(s) across {len(all_violations)} file(s):")
+        print(f"FAILED: Found {total_violations} synthetic outcome violation(s) "
+              f"across {len(all_violations)} file(s):")
         for fpath, viols in all_violations.items():
             print(f"\n  File: {fpath}")
             for lineno, msg in viols:

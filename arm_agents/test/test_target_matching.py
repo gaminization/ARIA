@@ -4,7 +4,12 @@ import time
 import unittest
 
 import numpy as np
-from ikpy.chain import Chain
+try:
+    from ikpy.chain import Chain
+    IKPY_AVAILABLE = True
+except Exception:  # noqa: BLE001 — ikpy pulls in jax, which can fail
+    Chain = None
+    IKPY_AVAILABLE = False
 from arm_planner.msg import WorldObject
 from arm_agents.skill_agent import (
     SkillAgent,
@@ -38,6 +43,7 @@ class TargetMatchingTests(unittest.TestCase):
             _target_pose_cache_key("sorting_dish"),
         )
 
+    @unittest.skipUnless(IKPY_AVAILABLE, "ikpy/jax unavailable in this environment")
     def test_top_down_grasp_and_approach_poses_are_kinematically_reachable(self):
         urdf_path = (
             Path(__file__).resolve().parents[2]

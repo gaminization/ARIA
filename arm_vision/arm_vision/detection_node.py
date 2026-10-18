@@ -17,7 +17,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, RegionOfInterest
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose2D
 from vision_msgs.msg import (
@@ -60,6 +60,11 @@ class DetectionNode(Node):
     Runs at 30fps on RTX 5060 with fp16.
     Publishes 2D detections with tracking IDs (ByteTrack).
     """
+
+    # Heuristic tabletop segmentation is not a learned detector. Its score is
+    # an uncalibrated prior, deliberately kept well below real model
+    # confidences so downstream consumers treat it as low-trust.
+    HEURISTIC_SEGMENTATION_CONFIDENCE = 0.6
 
     def __init__(self):
         super().__init__('detection_node')
@@ -116,6 +121,9 @@ class DetectionNode(Node):
         self.bridge = CvBridge() if CV_BRIDGE else None
         self._processing = False
 
+        # Attention-driven focus region (ROI). Empty/full-frame = no crop.
+        self._focus_roi: Optional[RegionOfInterest] = None
+
         # Tracking state
         self.track_id_map: Dict[int, int] = {}  # YOLO ID → persistent ID
         self.active_tracks: Dict[int, tuple] = {}  # track_id → (cx, cy, class_name, last_seen_time)
@@ -136,6 +144,11 @@ class DetectionNode(Node):
             Image, self.camera_topic,
             self._image_cb, qos
         )
+        # AttentionAgent publishes a per-task focus ROI; when set we crop
+        # before inference and map boxes back to full-frame coordinates.
+        self.create_subscription(
+            RegionOfInterest, '/detection/focus_region',
+            self._focus_roi_cb, 10)
         self.get_logger().info(
             f"Detection subscribing to camera: {self.camera_topic}")
 
@@ -287,6 +300,33 @@ class DetectionNode(Node):
         except Exception:
             return None
 
+    def _focus_roi_cb(self, msg: RegionOfInterest):
+        """Store the attention focus ROI (full-frame or 0-size = no crop)."""
+        self._focus_roi = msg
+
+    def _resolve_focus_crop(
+        self, width: int, height: int
+    ) -> tuple:
+        """Return (x0, y0, x1, y1) inference crop for the current focus ROI.
+
+        Returns the full frame when no usable ROI is set, so behaviour is
+        unchanged without an AttentionAgent.
+        """
+        roi = self._focus_roi
+        if roi is None or roi.width <= 0 or roi.height <= 0:
+            return 0, 0, width, height
+
+        x0 = max(0, int(roi.x_offset))
+        y0 = max(0, int(roi.y_offset))
+        x1 = min(width, x0 + int(roi.width))
+        y1 = min(height, y0 + int(roi.height))
+        # Ignore degenerate or near-full-frame crops.
+        if x1 - x0 < 16 or y1 - y0 < 16:
+            return 0, 0, width, height
+        if (x1 - x0) >= width * 0.98 and (y1 - y0) >= height * 0.98:
+            return 0, 0, width, height
+        return x0, y0, x1, y1
+
     def _image_cb(self, msg: Image):
         """Process incoming camera frame with YOLO and physical color extraction."""
         if self.model is None or self.bridge is None:
@@ -303,11 +343,20 @@ class DetectionNode(Node):
             self._processing = False
             return
 
+        img_h_full, img_w_full = cv_image.shape[:2]
+        dx, dy = 0, 0
+        x0, y0, x1r, y1r = self._resolve_focus_crop(img_w_full, img_h_full)
+        if (x0, y0, x1r, y1r) != (0, 0, img_w_full, img_h_full):
+            dx, dy = x0, y0
+            infer_image = cv_image[y0:y1r, x0:x1r]
+        else:
+            infer_image = cv_image
+
         try:
             t_start = time.perf_counter()
 
             results = self.model.predict(
-                cv_image,
+                infer_image,
                 verbose=False,
                 device=self.device,
                 conf=self.conf_threshold,
@@ -337,6 +386,9 @@ class DetectionNode(Node):
                 raw_boxes = []
                 for box in result.boxes:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    # Map cropped-ROI coords back to full-frame coordinates.
+                    x1, x2 = x1 + dx, x2 + dx
+                    y1, y2 = y1 + dy, y2 + dy
                     cls_id = int(box.cls[0])
                     confidence = float(box.conf[0])
                     class_name = self.model.names.get(cls_id, f"class_{cls_id}").lower()
@@ -477,7 +529,7 @@ class DetectionNode(Node):
                         cx = bx + bw / 2.0
                         # Central station (|cx - center| < 55px) is the Jenga Tower; side positions are loose blocks
                         cls = 'jenga_tower' if abs(cx - img_w / 2.0) < 55.0 else 'jenga_block'
-                        segmented_candidates.append((cls, 'wood', bx, by, bw, bh, 0.96))
+                        segmented_candidates.append((cls, 'wood', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
 
                 # Blue items (conveyor workpieces and tabletop objects)
                 mask_blue = (cv2.inRange(hsv, (86, 60, 40), (135, 255, 255)) & table_mask)
@@ -489,10 +541,10 @@ class DetectionNode(Node):
                     min_dim = min(bw, bh)
                     min_area = int(220 * area_scale) if is_industrial else 350
                     if min_area <= area <= 4000 and aspect < 2.2 and min_dim >= 18:
-                        segmented_candidates.append(('workpiece', 'blue', bx, by, bw, bh, 0.95))
-                        segmented_candidates.append(('cylinder', 'blue', bx, by, bw, bh, 0.94))
+                        segmented_candidates.append(('workpiece', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
+                        segmented_candidates.append(('cylinder', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
                     elif 4000 <= area < 7500 and not is_industrial:
-                        segmented_candidates.append(('mug', 'blue', bx, by, bw, bh, 0.92))
+                        segmented_candidates.append(('mug', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
 
                 # Red box / reject bin container AND red cube / tabletop objects
                 mask_red = ((cv2.inRange(hsv, (0, 70, 50), (10, 255, 255)) |
@@ -502,10 +554,10 @@ class DetectionNode(Node):
                     area = cv2.contourArea(c)
                     bx, by, bw, bh = cv2.boundingRect(c)
                     if area > 4000:
-                        segmented_candidates.append(('box', 'red', bx, by, bw, bh, 0.95))
+                        segmented_candidates.append(('box', 'red', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
                     elif int(180 * area_scale) <= area <= 4000 and min(bw, bh) >= 16:
-                        segmented_candidates.append(('cube', 'red', bx, by, bw, bh, 0.95))
-                        segmented_candidates.append(('block', 'red', bx, by, bw, bh, 0.94))
+                        segmented_candidates.append(('cube', 'red', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
+                        segmented_candidates.append(('block', 'red', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
 
                 # Yellow items (yellow block, banana, cube)
                 mask_yellow = (cv2.inRange(hsv, (20, 70, 60), (38, 255, 255)) & table_mask)
@@ -515,8 +567,8 @@ class DetectionNode(Node):
                     bx, by, bw, bh = cv2.boundingRect(c)
                     if (int(180 * area_scale) <= area <= 5000 and min(bw, bh) >= 16
                             and max(bw, bh) / min(bw, bh) <= 2.2):
-                        segmented_candidates.append(('block', 'yellow', bx, by, bw, bh, 0.95))
-                        segmented_candidates.append(('cube', 'yellow', bx, by, bw, bh, 0.94))
+                        segmented_candidates.append(('block', 'yellow', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
+                        segmented_candidates.append(('cube', 'yellow', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
 
                 # Green items (green block / sphere)
                 mask_green = (cv2.inRange(hsv, (38, 60, 40), (82, 255, 255)) & table_mask)
@@ -526,7 +578,7 @@ class DetectionNode(Node):
                     bx, by, bw, bh = cv2.boundingRect(c)
                     if (int(180 * area_scale) <= area <= 5000 and min(bw, bh) >= 16
                             and max(bw, bh) / min(bw, bh) <= 2.2):
-                        segmented_candidates.append(('block', 'green', bx, by, bw, bh, 0.95))
+                        segmented_candidates.append(('block', 'green', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
 
                 # Merge segmented candidates
                 for cls_name, color, bx, by, bw, bh, conf in segmented_candidates:
@@ -586,7 +638,7 @@ class DetectionNode(Node):
                             det.bbox.size_y = float(bh)
                             hyp = ObjectHypothesisWithPose()
                             hyp.hypothesis.class_id = "plate|white"
-                            hyp.hypothesis.score = 0.92
+                            hyp.hypothesis.score = self.HEURISTIC_SEGMENTATION_CONFIDENCE
                             det.results.append(hyp)
                             det.id = str(self._assign_frame_track_id(
                                 cx, cy, "plate|white", None, frame_track_ids,

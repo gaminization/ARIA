@@ -393,6 +393,30 @@ class ExperimentTracker:
         self._backend.log_metrics(metrics)
         self._backend.end_run()
 
+    # ── Epoch-wise training logging ────────────────────────
+    def start_training_run(self, run_name: str, params: dict) -> str:
+        """Open a training run and log its hyper-parameters."""
+        run_id = self._backend.start_run(
+            run_name, tags={'type': 'training'})
+        self._backend.log_params(params)
+        return run_id
+
+    def log_training_epoch(self, epoch: int, metrics: dict):
+        """Log one epoch of training metrics."""
+        self._backend.log_metrics(metrics, step=epoch)
+
+    def finish_training_run(
+        self, metrics: dict, artifacts: Optional[List[str]] = None
+    ):
+        """Log final metrics + artifacts and close the run."""
+        self._backend.log_metrics(metrics)
+        for path in (artifacts or []):
+            try:
+                self._backend.log_artifact(path)
+            except Exception:
+                pass
+        self._backend.end_run()
+
     # ── Calibration ────────────────────────────────────────
     def log_calibration(
         self, before_error_mm: float, after_error_mm: float

@@ -14,6 +14,7 @@ from launch.actions import (
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
 from launch_ros.actions import Node, LifecycleNode
 from ament_index_python.packages import get_package_share_directory
 
@@ -26,6 +27,11 @@ def generate_launch_description():
     dashboard_port = DeclareLaunchArgument(
         'dashboard_port', default_value='8000',
         description='Dashboard server port')
+    use_advanced_perception = DeclareLaunchArgument(
+        'use_advanced_perception', default_value='true',
+        description='Launch SAM2, 6D pose, transparent-object, material '
+                    'recognition, Gaussian-splatting and the orchestrator'
+    )
 
     # ── Package paths ──────────────────────────────────────
     bringup_dir = get_package_share_directory('arm_bringup')
@@ -99,6 +105,40 @@ def generate_launch_description():
             name='visual_servo_node',
             output='screen',
         )],
+    )
+
+    # ═══════════════════════════════════════════════════════
+    # Advanced Perception Stack (SAM2 / 6D pose / transparent /
+    # material / Gaussian-splatting / orchestrator)
+    # ═══════════════════════════════════════════════════════
+    advanced_perception = TimerAction(
+        period=3.0,
+        actions=[
+            Node(package='arm_vision', executable='sam2_node',
+                 name='sam2_node', output='screen',
+                 parameters=[{'use_sim_time': True}],
+                 condition=IfCondition(LaunchConfiguration('use_advanced_perception'))),
+            Node(package='arm_vision', executable='material_recognition_node',
+                 name='material_recognition_node', output='screen',
+                 parameters=[{'use_sim_time': True}],
+                 condition=IfCondition(LaunchConfiguration('use_advanced_perception'))),
+            Node(package='arm_vision', executable='transparent_object_node',
+                 name='transparent_object_node', output='screen',
+                 parameters=[{'use_sim_time': True}],
+                 condition=IfCondition(LaunchConfiguration('use_advanced_perception'))),
+            Node(package='arm_vision', executable='pose_6d_node',
+                 name='pose_6d_node', output='screen',
+                 parameters=[{'auto_trigger': True, 'use_sim_time': True}],
+                 condition=IfCondition(LaunchConfiguration('use_advanced_perception'))),
+            Node(package='arm_vision', executable='gaussian_splatting_node',
+                 name='gaussian_splatting_node', output='screen',
+                 parameters=[{'use_sim_time': True}],
+                 condition=IfCondition(LaunchConfiguration('use_advanced_perception'))),
+            Node(package='arm_vision', executable='perception_orchestrator',
+                 name='perception_orchestrator', output='screen',
+                 parameters=[{'use_sim_time': True}],
+                 condition=IfCondition(LaunchConfiguration('use_advanced_perception'))),
+        ],
     )
 
     # ═══════════════════════════════════════════════════════
@@ -226,6 +266,7 @@ def generate_launch_description():
     return LaunchDescription([
         use_sim,
         dashboard_port,
+        use_advanced_perception,
 
         # Stage 1
         stage1_sim,
@@ -236,6 +277,7 @@ def generate_launch_description():
         ik_node,
         grasp_node,
         visual_servo_node,
+        advanced_perception,
 
         # Stage 3 — 15 agents
         vision_agent,

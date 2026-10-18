@@ -1,0 +1,29 @@
+# ═══════════════════════════════════════════════════════════════
+# ARIA MoveIt2 Controller Management
+# MoveIt executes planned trajectories through the ros2_control
+# JointTrajectoryController named `joint_trajectory_controller`
+# (defined in arm_control/config/aria_controllers.yaml and driven by
+# Gazebo Classic in sim, or the ESP32 bridge on hardware).
+# ═══════════════════════════════════════════════════════════════
+
+trajectory_execution:
+  allowed_execution_duration_scaling: 1.2
+  allowed_goal_duration_margin: 0.5
+  allowed_start_tolerance: 0.01
+
+moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
+moveit_simple_controller_manager:
+  controller_names:
+    - joint_trajectory_controller
+
+  joint_trajectory_controller:
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
+      - waist_joint
+      - shoulder_joint
+      - elbow_joint
+      - wrist_pitch_joint
+      - gripper_joint

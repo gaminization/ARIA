@@ -2,18 +2,26 @@
 """
 ═══════════════════════════════════════════════════════════════
 ARIA SAM2 Segmentation Node
-Segment Anything Model v2 — pixel-accurate object masks.
+Segment Anything Model v2 — per-object binary masks and annotated image.
 
 Model: SAM2-tiny (smallest, fastest, 0.5GB VRAM)
 Always on — runs on every YOLO detection update.
 
 Input:  YOLO bounding boxes as box prompts
-Output: Per-object binary masks + annotated image
+Output: Per-object binary masks as a typed arm_interfaces/SAM2Masks message
+        (mono8 images, one per object) on /sam2/masks, plus a JSON metadata
+        mirror on /sam2/masks_json and an annotated image on /sam2/image_masked.
+
+/sam2/masks carries the pixel-accurate masks so downstream consumers
+(pose_6d_node, transparent_object_node, grasp_node_v2, affordance_agent_v2)
+receive real silhouettes instead of re-deriving them from bounding boxes.
+/sam2/masks_json is kept as a lightweight metadata mirror for bag recording
+and consumers that only need confidence / centroid / axis-angle.
 
 Improvements over bounding boxes:
-  1. Better grasp planning (actual object silhouette)
+  1. Better grasp planning (object silhouette from mask geometry)
   2. Better depth estimation (mean within mask, not bbox center)
-  3. Better affordance (locate handle sub-regions)
+  3. Better affordance (locate handle sub-regions from mask)
   4. Occlusion handling (partial mask → estimate full shape)
 
 Subscribes:
@@ -21,9 +29,10 @@ Subscribes:
   /detection/objects (YOLO detections)
 
 Publishes:
-  /sam2/masks       (arm_interfaces/SAM2Masks)
-  /sam2/masks_json  (String — serialized mask data)
+  /sam2/masks       (arm_interfaces/SAM2Masks — binary masks per object)
+  /sam2/masks_json  (String — serialized mask metadata per object)
   /sam2/image_masked (Image — RGB with colored overlays)
+  /sam2/status      (String — e.g. "active", "fallback")
 ═══════════════════════════════════════════════════════════════
 """
 import json
@@ -38,6 +47,8 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from vision_msgs.msg import Detection2DArray
+
+from arm_interfaces.msg import SAM2Masks
 
 try:
     from cv_bridge import CvBridge
@@ -411,6 +422,8 @@ class SAM2Node(Node):
             self._detection_cb, 10)
 
         # ── Publishers ─────────────────────────────────────
+        self.masks_pub = self.create_publisher(
+            SAM2Masks, '/sam2/masks', 10)
         self.masks_json_pub = self.create_publisher(
             String, '/sam2/masks_json', 10)
         self.masked_img_pub = self.create_publisher(
@@ -533,6 +546,11 @@ class SAM2Node(Node):
         json_msg.data = json.dumps(mask_summary)
         self.masks_json_pub.publish(json_msg)
 
+        # Publish pixel-accurate masks as a typed message so downstream
+        # consumers can use the real silhouette (not just JSON metadata).
+        self._publish_typed_masks(
+            mask_results, obj_ids, class_names, confidences, areas, msg.header)
+
         # Publish annotated image
         if CV2_AVAILABLE and self.bridge:
             annotated = self._draw_masks(
@@ -547,6 +565,42 @@ class SAM2Node(Node):
 
         sys_config.periodic_cache_clear()
         self._processing = False
+
+    def _publish_typed_masks(
+        self,
+        mask_results: List[Tuple[np.ndarray, float]],
+        obj_ids: List[int],
+        class_names: List[str],
+        confidences: List[float],
+        areas: List[float],
+        header,
+    ):
+        """Publish binary masks as an arm_interfaces/SAM2Masks message.
+
+        Each mask is encoded as a mono8 Image (255 = object). Without
+        cv_bridge the typed message cannot be built, so we skip it and keep
+        the JSON mirror as the only synchronous output.
+        """
+        if not CV_BRIDGE or self.bridge is None:
+            return
+
+        msg = SAM2Masks()
+        msg.header = header
+        for i, (mask, conf) in enumerate(mask_results):
+            mono = (mask > 0).astype(np.uint8) * 255
+            try:
+                img_msg = self.bridge.cv2_to_imgmsg(mono, encoding='mono8')
+            except Exception:
+                continue
+            img_msg.header = header
+            msg.masks.append(img_msg)
+            msg.object_ids.append(int(obj_ids[i]))
+            msg.confidences.append(float(confidences[i]))
+            msg.class_names.append(str(class_names[i]))
+            msg.mask_areas.append(float(areas[i]))
+
+        if msg.masks:
+            self.masks_pub.publish(msg)
 
     def _draw_masks(
         self,

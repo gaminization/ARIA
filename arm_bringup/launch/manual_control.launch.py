@@ -27,7 +27,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             "use_rviz": "true",
-            "use_gz_gui": "true",
+            "gui": "true",
         }.items(),
     )
 

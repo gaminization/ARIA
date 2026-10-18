@@ -7,6 +7,16 @@ install(DIRECTORY config/
   DESTINATION share/${PROJECT_NAME}/config
 )
 
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
+# MoveIt Setup Assistant metadata: tells MoveItConfigsBuilder where the
+# URDF (arm_description) and SRDF live.
+install(FILES .setup_assistant
+  DESTINATION share/${PROJECT_NAME}
+)
+
 install(PROGRAMS
   scripts/cable_scene_updater.py
   DESTINATION lib/${PROJECT_NAME}

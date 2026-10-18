@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
 ═══════════════════════════════════════════════════════════════
-ARIA 6D Pose Estimation Node — FoundationPose
+ARIA 6D Pose Estimation Node
 Full position + orientation per detected object.
 
-Loaded on demand (~2GB VRAM). Triggered for objects that
-require orientation knowledge (tool use, assembly, insertion).
+Mode actually provided: geometry-based PCA on the depth point cloud
+within the object's mask. FoundationPose is NOT available in this
+build (it requires per-object meshes that ARIA does not ship), so no
+FoundationPose path is advertised or faked.
 
-Two modes:
-  A) Texture-based: uses reference images (known objects)
-  B) Geometry-based: uses depth + mask only (any object)
+Confidence is derived from measured input quality (valid-depth fraction
+× mask coverage), not a constant.
 
 Publishes:
   /pose_6d/objects         (PoseArray)
@@ -19,9 +20,11 @@ Subscribes:
   /top_camera/image_raw
   /depth/image_depth_anything
   /detection/objects
-  /sam2/masks  (from SAM2Node)
+  /sam2/masks       (arm_interfaces/SAM2Masks — binary masks per object)
+  /sam2/masks_json  (String JSON — SAM2 mask metadata per object)
 ═══════════════════════════════════════════════════════════════
 """
+import json
 import math
 import os
 import time
@@ -40,6 +43,8 @@ from geometry_msgs.msg import (
 from visualization_msgs.msg import Marker, MarkerArray
 from vision_msgs.msg import Detection2DArray
 from std_msgs.msg import String, Bool
+
+from arm_interfaces.msg import SAM2Masks
 
 try:
     from cv_bridge import CvBridge
@@ -153,22 +158,26 @@ def _estimate_pose_from_depth_and_mask(
     depth_map: np.ndarray,
     mask: np.ndarray,
     camera_intrinsics: np.ndarray,
-) -> Optional[np.ndarray]:
+) -> Tuple[Optional[np.ndarray], float]:
     """
     Geometry-based 6D pose estimation from depth + mask.
 
     Uses PCA on the 3D point cloud within the mask to determine
     the object's principal axes → orientation.
 
-    Returns 4×4 SE(3) transformation or None.
+    Returns (T, quality):
+        T:       4×4 SE(3) transformation or None
+        quality: measured confidence in [0, 1], derived from the fraction of
+                 mask pixels with valid depth and the mask's image coverage.
+                 0.0 when the input is too sparse to estimate a pose.
     """
     if depth_map is None or mask is None:
-        return None
+        return None, 0.0
 
     # Get mask pixels
     ys, xs = np.where(mask > 0)
     if len(xs) < 20:
-        return None
+        return None, 0.0
 
     # Back-project to 3D using camera intrinsics
     fx, fy = camera_intrinsics[0, 0], camera_intrinsics[1, 1]
@@ -176,8 +185,9 @@ def _estimate_pose_from_depth_and_mask(
 
     depths = depth_map[ys, xs].astype(np.float64)
     valid = depths > 0.01  # Filter invalid depths
-    if np.sum(valid) < 10:
-        return None
+    n_valid = int(np.sum(valid))
+    if n_valid < 10:
+        return None, 0.0
 
     xs_v = xs[valid].astype(np.float64)
     ys_v = ys[valid].astype(np.float64)
@@ -211,7 +221,12 @@ def _estimate_pose_from_depth_and_mask(
     T[:3, :3] = eigenvectors
     T[:3, 3] = centroid
 
-    return T
+    # Measured quality: valid-depth fraction × mask coverage, both in [0, 1].
+    valid_fraction = n_valid / max(len(xs), 1)
+    coverage = len(xs) / max(mask.size, 1)
+    quality = float(np.clip(valid_fraction * coverage, 0.0, 1.0))
+
+    return T, quality
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -319,40 +334,37 @@ class FoundationPoseModel:
         mask: np.ndarray,
         class_name: str,
     ) -> Tuple[Optional[np.ndarray], float]:
-        """Use real FoundationPose model."""
-        # Load reference images if available
-        if class_name and class_name not in self._ref_cache:
-            refs = _load_reference_images(class_name)
-            if refs:
-                self._ref_cache[class_name] = refs
+        """
+        FoundationPose path.
 
-        try:
-            # FoundationPose inference
-            # In production, this calls the FoundationPose API:
-            #   pose = self.model.register(
-            #       K=self.intrinsics, rgb=rgb, depth=depth,
-            #       ob_mask=mask, iteration=5)
-            #   pose = self.model.track_one(
-            #       rgb=rgb, depth=depth, K=self.intrinsics, iteration=2)
-
-            # For now, use geometry-based as FoundationPose requires
-            # specific build setup — the integration point is here
-            return self._estimate_geometry(depth, mask)
-        except Exception:
-            return self._estimate_geometry(depth, mask)
+        FoundationPose requires a per-object mesh to run; ARIA does not ship
+        meshes, so this path cannot produce a pose. It reports failure
+        honestly rather than silently falling back to the geometry estimator
+        (which would mislabel a geometry result as a FoundationPose result).
+        """
+        self.get_logger().warn(
+            "FoundationPose requires a per-object mesh; none is available for "
+            f"'{class_name or 'object'}'. Reporting no pose.")
+        return None, 0.0
 
     def _estimate_geometry(
         self,
         depth: np.ndarray,
         mask: np.ndarray,
     ) -> Tuple[Optional[np.ndarray], float]:
-        """Geometry-based fallback using PCA on depth point cloud."""
-        T = _estimate_pose_from_depth_and_mask(
+        """
+        Geometry-based 6D pose estimation from depth + mask.
+
+        Confidence is derived from the measured quality of the input: the
+        fraction of mask pixels that have valid depth, and the fraction of the
+        image the mask covers. It is 0.0 when the input is too sparse to
+        estimate anything.
+        """
+        T, quality = _estimate_pose_from_depth_and_mask(
             depth, mask, self.intrinsics)
-        if T is not None:
-            confidence = 0.70  # Lower confidence for geometry-based
-            return T, confidence
-        return None, 0.0
+        if T is None:
+            return None, 0.0
+        return T, quality
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -403,7 +415,8 @@ class Pose6DNode(Node):
         self._latest_rgb: Optional[np.ndarray] = None
         self._latest_depth: Optional[np.ndarray] = None
         self._latest_detections: Optional[Detection2DArray] = None
-        self._latest_masks: Optional[dict] = None  # {object_id: mask_array}
+        self._latest_masks: Optional[Dict[int, np.ndarray]] = None  # typed SAM2 masks
+        self._latest_mask_meta: Dict[int, dict] = {}  # JSON metadata mirror
 
         # State
         self._active = False  # Activated by orchestrator
@@ -426,11 +439,14 @@ class Pose6DNode(Node):
             Detection2DArray, '/detection/objects',
             self._detection_cb, 10)
 
-        # SAM2 masks — subscribed as Image array
-        # (Custom message parsed from /sam2/masks topic)
+        # SAM2 masks — typed message carrying real pixel masks.
+        self.create_subscription(
+            SAM2Masks, '/sam2/masks',
+            self._masks_cb, 10)
+        # Lightweight metadata mirror (confidence / centroid / axis angle).
         self.create_subscription(
             String, '/sam2/masks_json',
-            self._masks_cb, 10)
+            self._masks_json_cb, 10)
 
         # Activation control
         self.create_subscription(
@@ -470,18 +486,37 @@ class Pose6DNode(Node):
     def _detection_cb(self, msg: Detection2DArray):
         self._latest_detections = msg
 
-    def _masks_cb(self, msg: String):
-        """Parse SAM2 mask data from JSON topic."""
-        import json
+    def _masks_cb(self, msg: SAM2Masks):
+        """Decode pixel-accurate SAM2 masks from the typed message."""
+        if not CV_BRIDGE or self.bridge is None:
+            return
+        masks: Dict[int, np.ndarray] = {}
+        for i, img in enumerate(msg.masks):
+            if i >= len(msg.object_ids):
+                break
+            try:
+                mask = self.bridge.imgmsg_to_cv2(img, desired_encoding='mono8')
+            except Exception:
+                continue
+            masks[int(msg.object_ids[i])] = (mask > 0).astype(np.uint8) * 255
+        if masks:
+            self._latest_masks = masks
+
+    def _masks_json_cb(self, msg: String):
+        """Parse SAM2 mask metadata mirror (no pixel masks in this topic)."""
         try:
             data = json.loads(msg.data)
-            self._latest_masks = {}
-            for obj_id_str, mask_data in data.items():
-                obj_id = int(obj_id_str)
-                mask = np.array(mask_data, dtype=np.uint8)
-                self._latest_masks[obj_id] = mask
-        except (json.JSONDecodeError, ValueError):
-            pass
+        except json.JSONDecodeError:
+            return
+        if not isinstance(data, dict):
+            return
+        meta: Dict[int, dict] = {}
+        for obj_id_str, entry in data.items():
+            try:
+                meta[int(obj_id_str)] = entry if isinstance(entry, dict) else {}
+            except (TypeError, ValueError):
+                continue
+        self._latest_mask_meta = meta
 
     def _activate_cb(self, msg: Bool):
         """Enable/disable 6D pose estimation."""

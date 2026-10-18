@@ -689,7 +689,10 @@ class LLMPlanningAgent(LifecycleNode):
     def _cross_check_plan(self, plan: dict) -> dict:
         """
         Cross-check plan against current world model.
-        Adjust confidence if referenced objects don't exist.
+        If the plan references objects the world model has not seen AND does
+        not already begin by scanning, prepend a scan_workspace step so the
+        robot physically searches instead of stalling on a locate that can
+        never succeed.
         """
         memory = self.bus.state.memory
         known_names = set()
@@ -707,21 +710,33 @@ class LLMPlanningAgent(LifecycleNode):
                     if val.lower() not in known_names and val != 'null':
                         unknown_refs += 1
 
-        # Referencing objects the world model has not seen yet is expected when the plan
-        # itself starts by locating/scanning for them, so only penalise plans that do not.
+        # Does the plan already discover objects (scan/locate/pick/sort)?
         discovers = any(
             resolve_executable(a.get('skill'), a.get('agent')) in (
                 'locate', 'scan_workspace', 'pick', 'sort')
             for a in plan.get('actions', []))
-        if unknown_refs > 0 and not discovers and plan['confidence'] > 0.5:
-            # Reduce confidence if referencing unknown objects
-            reduction = min(0.2, unknown_refs * 0.05)
-            plan['confidence'] = max(0.3, plan['confidence'] - reduction)
-            if not plan.get('ambiguity_notes'):
-                plan['ambiguity_notes'] = ""
-            plan['ambiguity_notes'] += (
-                f" Note: {unknown_refs} object references not found in "
-                f"world model — may need to locate first.")
+
+        if unknown_refs > 0 and not discovers:
+            # Prepend a workspace scan so the robot searches for the objects
+            # instead of stalling on a locate that can never succeed.
+            scan_action = {
+                'step': 0,
+                'agent': 'SkillAgent',
+                'skill': 'scan_workspace',
+                'parameters': {},
+                'reasoning': 'World model is empty — scan the workspace to discover objects before locating.',
+                'preconditions': [],
+                'expected_outcome': 'workspace objects detected and registered',
+            }
+            plan['actions'] = [scan_action] + plan.get('actions', [])
+            for i, a in enumerate(plan['actions']):
+                a['step'] = i + 1
+            plan['ambiguity_notes'] = (plan.get('ambiguity_notes', '') +
+                f" Prepended scan_workspace: {unknown_refs} object references "
+                f"not found in world model.").strip()
+            self.bus.add_chain_of_thought(
+                f"LLM_PLANNING: world model empty — prepended scan_workspace "
+                f"({unknown_refs} unknown object refs)")
 
         # Set requires_approval based on final confidence
         if plan['confidence'] < self.client.config.get(
@@ -927,6 +942,15 @@ class _RuleBasedFallback:
         # Expand template
         template = self.TASK_TEMPLATES.get(
             canonical_verb, self.TASK_TEMPLATES['pick'])
+
+        # If the world model is empty, scan first so the robot searches
+        # instead of stalling on a locate that can never succeed.
+        memory = bus.state.memory
+        world_empty = not (memory and memory.known_objects)
+        if world_empty and template and template[0] != 'scan_workspace':
+            template = ['scan_workspace'] + template
+            bus.add_chain_of_thought(
+                "RULE_BASED: world model empty — prepended scan_workspace")
 
         subgoals = []
         actions = []

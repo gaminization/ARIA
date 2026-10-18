@@ -3,13 +3,20 @@
 // Sim/Hardware switchable ros2_control SystemInterface
 //
 // SIM mode:  passthrough — Gazebo handles physics via GazeboSimSystem.
-//            This class is used as a fallback/placeholder; in practice,
-//            gz_ros2_control loads GazeboSimSystem directly.
-// REAL mode: communicates with ESP32 via serial JSON protocol (Stage 4).
+//            This class is only reached if it is loaded instead of
+//            gazebo_ros2_control; it then simulates perfect tracking.
+// REAL mode: bridges ros2_control to the ESP32 micro-ROS firmware
+//            (node `aria_esp32`, see esp32_firmware/). It publishes
+//            /aria/servo_commands (JointState, degrees) and subscribes
+//            /aria/servo_states (JointState, degrees), converting to and
+//            from the radians that ros2_control uses. This is an
+//            alternative to running arm_control/scripts/servo_sync_node.py;
+//            use one or the other, not both.
 // ═══════════════════════════════════════════════════════════════
 #include "arm_control/aria_hardware_interface.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -20,6 +27,18 @@
 
 namespace arm_control
 {
+
+namespace
+{
+constexpr double kPi = 3.14159265358979323846;
+constexpr double kDegPerRad = 180.0 / kPi;
+constexpr double kRadPerDeg = kPi / 180.0;
+
+rclcpp::Logger logger()
+{
+  return rclcpp::get_logger("AriaHardwareInterface");
+}
+}  // namespace
 
 // ═══════════════════════════════════════════════════════════════
 // on_init — Load parameters from URDF <ros2_control> tag
@@ -33,32 +52,34 @@ hardware_interface::CallbackReturn AriaHardwareInterface::on_init(
     return hardware_interface::CallbackReturn::ERROR;
   }
 
-  // Parse parameters from URDF hardware tag
+  // Parse parameters from the URDF hardware tag.
   if (info.hardware_parameters.count("use_sim")) {
     use_sim_ = (info.hardware_parameters.at("use_sim") == "true");
   }
-  if (info.hardware_parameters.count("serial_port")) {
-    serial_port_ = info.hardware_parameters.at("serial_port");
+  if (info.hardware_parameters.count("command_topic")) {
+    command_topic_ = info.hardware_parameters.at("command_topic");
   }
-  if (info.hardware_parameters.count("baud_rate")) {
-    baud_rate_ = std::stoi(info.hardware_parameters.at("baud_rate"));
+  if (info.hardware_parameters.count("state_topic")) {
+    state_topic_ = info.hardware_parameters.at("state_topic");
+  }
+  if (info.hardware_parameters.count("teach_topic")) {
+    teach_topic_ = info.hardware_parameters.at("teach_topic");
+  }
+  if (info.hardware_parameters.count("state_timeout_s")) {
+    state_timeout_s_ = std::stod(info.hardware_parameters.at("state_timeout_s"));
   }
 
-  // Validate joint configuration
+  // Validate joint configuration.
   if (info.joints.size() != NUM_JOINTS) {
     RCLCPP_ERROR(
-      rclcpp::get_logger("AriaHardwareInterface"),
-      "Expected %zu joints, got %zu", NUM_JOINTS, info.joints.size());
+      logger(), "Expected %zu joints, got %zu", NUM_JOINTS, info.joints.size());
     return hardware_interface::CallbackReturn::ERROR;
   }
 
-  // Validate interfaces for each joint
   for (const auto & joint : info.joints) {
-    // Exactly 1 command interface (position)
     if (joint.command_interfaces.size() != 1) {
       RCLCPP_ERROR(
-        rclcpp::get_logger("AriaHardwareInterface"),
-        "Joint '%s' must have exactly 1 command interface, got %zu",
+        logger(), "Joint '%s' must have exactly 1 command interface, got %zu",
         joint.name.c_str(), joint.command_interfaces.size());
       return hardware_interface::CallbackReturn::ERROR;
     }
@@ -66,29 +87,31 @@ hardware_interface::CallbackReturn AriaHardwareInterface::on_init(
       hardware_interface::HW_IF_POSITION)
     {
       RCLCPP_ERROR(
-        rclcpp::get_logger("AriaHardwareInterface"),
-        "Joint '%s' command interface must be 'position'",
+        logger(), "Joint '%s' command interface must be 'position'",
         joint.name.c_str());
       return hardware_interface::CallbackReturn::ERROR;
     }
-    // Exactly 2 state interfaces (position, velocity)
     if (joint.state_interfaces.size() != 2) {
       RCLCPP_ERROR(
-        rclcpp::get_logger("AriaHardwareInterface"),
-        "Joint '%s' must have exactly 2 state interfaces, got %zu",
+        logger(), "Joint '%s' must have exactly 2 state interfaces, got %zu",
         joint.name.c_str(), joint.state_interfaces.size());
       return hardware_interface::CallbackReturn::ERROR;
     }
   }
 
-  // Initialize state/command vectors
-  hw_positions_.resize(NUM_JOINTS, 0.0);
-  hw_velocities_.resize(NUM_JOINTS, 0.0);
-  hw_commands_.resize(NUM_JOINTS, 0.0);
+  hw_joint_names_.clear();
+  for (const auto & joint : info.joints) {
+    hw_joint_names_.push_back(joint.name);
+  }
+
+  hw_positions_.assign(NUM_JOINTS, 0.0);
+  hw_velocities_.assign(NUM_JOINTS, 0.0);
+  hw_commands_.assign(NUM_JOINTS, 0.0);
+  latest_positions_.assign(NUM_JOINTS, 0.0);
+  latest_velocities_.assign(NUM_JOINTS, std::nan(""));
 
   RCLCPP_INFO(
-    rclcpp::get_logger("AriaHardwareInterface"),
-    "ARIA Hardware Interface: mode = %s",
+    logger(), "ARIA Hardware Interface: mode = %s",
     use_sim_ ? "SIM" : "HARDWARE");
 
   return hardware_interface::CallbackReturn::SUCCESS;
@@ -102,42 +125,38 @@ hardware_interface::CallbackReturn AriaHardwareInterface::on_configure(
 {
   if (use_sim_) {
     RCLCPP_INFO(
-      rclcpp::get_logger("AriaHardwareInterface"),
-      "Sim mode: using Gazebo joint states (no serial connection)");
-  } else {
-    RCLCPP_INFO(
-      rclcpp::get_logger("AriaHardwareInterface"),
-      "Hardware mode: opening serial port %s at %d baud",
-      serial_port_.c_str(), baud_rate_);
+      logger(), "Sim mode: Gazebo (gz_ros2_control) drives the joints; "
+      "no ESP32 bridge created");
+    return hardware_interface::CallbackReturn::SUCCESS;
+  }
 
-    if (!open_serial_port()) {
-      RCLCPP_ERROR(
-        rclcpp::get_logger("AriaHardwareInterface"),
-        "Failed to open serial port %s", serial_port_.c_str());
-      return hardware_interface::CallbackReturn::ERROR;
-    }
+  RCLCPP_INFO(
+    logger(), "Hardware mode: bridging to ESP32 micro-ROS node via "
+    "'%s' (cmd) / '%s' (state)",
+    command_topic_.c_str(), state_topic_.c_str());
 
-    // Ping ESP32 to verify connection
-    if (!send_serial_command("{\"cmd\": \"ping\"}")) {
-      RCLCPP_ERROR(
-        rclcpp::get_logger("AriaHardwareInterface"),
-        "ESP32 did not respond to ping");
-      close_serial_port();
-      return hardware_interface::CallbackReturn::ERROR;
-    }
+  if (!rclcpp::ok()) {
+    RCLCPP_ERROR(
+      logger(), "rclcpp is not initialised; cannot create the ESP32 bridge");
+    return hardware_interface::CallbackReturn::ERROR;
+  }
 
-    std::string response = read_serial_response();
-    if (response.find("pong") == std::string::npos) {
-      RCLCPP_ERROR(
-        rclcpp::get_logger("AriaHardwareInterface"),
-        "ESP32 ping response invalid: %s", response.c_str());
-      close_serial_port();
-      return hardware_interface::CallbackReturn::ERROR;
-    }
-
-    RCLCPP_INFO(
-      rclcpp::get_logger("AriaHardwareInterface"),
-      "ESP32 connected successfully");
+  try {
+    node_ = rclcpp::Node::make_shared("aria_hardware_interface");
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+    servo_cmd_pub_ = node_->create_publisher<sensor_msgs::msg::JointState>(
+      command_topic_, qos);
+    teach_mode_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
+      teach_topic_, qos);
+    servo_state_sub_ = node_->create_subscription<sensor_msgs::msg::JointState>(
+      state_topic_, qos,
+      [this](sensor_msgs::msg::JointState::SharedPtr msg) {
+        this->state_callback(msg);
+      });
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(logger(), "Failed to create ESP32 bridge: %s", e.what());
+    node_.reset();
+    return hardware_interface::CallbackReturn::ERROR;
   }
 
   return hardware_interface::CallbackReturn::SUCCESS;
@@ -149,21 +168,18 @@ hardware_interface::CallbackReturn AriaHardwareInterface::on_configure(
 hardware_interface::CallbackReturn AriaHardwareInterface::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // Initialize commands to current positions
   for (size_t i = 0; i < NUM_JOINTS; ++i) {
     hw_commands_[i] = hw_positions_[i];
   }
 
   if (use_sim_) {
-    RCLCPP_INFO(
-      rclcpp::get_logger("AriaHardwareInterface"),
-      "Sim mode activated: controllers handled by launch system");
-  } else {
-    // Enable servo torque and move to home position
-    RCLCPP_INFO(
-      rclcpp::get_logger("AriaHardwareInterface"),
-      "Hardware mode activated: enabling servo torque");
-    send_serial_command("{\"cmd\": \"enable_torque\"}");
+    RCLCPP_INFO(logger(), "Sim mode activated: controllers handled by launch");
+  } else if (teach_mode_pub_) {
+    // Engage servo torque (teach_mode=false re-attaches the servos).
+    std_msgs::msg::Bool engage;
+    engage.data = false;
+    teach_mode_pub_->publish(engage);
+    RCLCPP_INFO(logger(), "Hardware mode activated: servos engaged");
   }
 
   return hardware_interface::CallbackReturn::SUCCESS;
@@ -176,15 +192,13 @@ hardware_interface::CallbackReturn AriaHardwareInterface::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   if (use_sim_) {
-    RCLCPP_INFO(
-      rclcpp::get_logger("AriaHardwareInterface"),
-      "Sim mode deactivated");
-  } else {
-    // Disable servo torque for safe power-off
-    RCLCPP_INFO(
-      rclcpp::get_logger("AriaHardwareInterface"),
-      "Hardware mode: disabling servo torque (safe power-off)");
-    send_serial_command("{\"cmd\": \"disable_torque\"}");
+    RCLCPP_INFO(logger(), "Sim mode deactivated");
+  } else if (teach_mode_pub_) {
+    // Relax the servos so the arm can be moved by hand (safe power-off).
+    std_msgs::msg::Bool relax;
+    relax.data = true;
+    teach_mode_pub_->publish(relax);
+    RCLCPP_INFO(logger(), "Hardware mode: servos relaxed (safe power-off)");
   }
 
   return hardware_interface::CallbackReturn::SUCCESS;
@@ -196,9 +210,10 @@ hardware_interface::CallbackReturn AriaHardwareInterface::on_deactivate(
 hardware_interface::CallbackReturn AriaHardwareInterface::on_cleanup(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  if (!use_sim_ && serial_fd_ >= 0) {
-    close_serial_port();
-  }
+  servo_state_sub_.reset();
+  servo_cmd_pub_.reset();
+  teach_mode_pub_.reset();
+  node_.reset();
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
@@ -245,27 +260,48 @@ hardware_interface::return_type AriaHardwareInterface::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
   if (use_sim_) {
-    // In sim mode, GazeboSimSystem handles read() directly.
-    // This code path is only reached if using this plugin instead of
-    // GazeboSimSystem. In that case, simulate perfect tracking:
+    // In sim mode, GazeboSimSystem handles read() directly. This path is
+    // only reached if this plugin is used instead; simulate perfect
+    // tracking so controllers still behave.
     for (size_t i = 0; i < NUM_JOINTS; ++i) {
       double prev_pos = hw_positions_[i];
-      hw_positions_[i] = hw_commands_[i];  // Perfect tracking in sim
+      hw_positions_[i] = hw_commands_[i];
       if (period.seconds() > 0.0) {
         hw_velocities_[i] = (hw_positions_[i] - prev_pos) / period.seconds();
       }
     }
-  } else {
-    // HARDWARE MODE: Read from ESP32 serial
-    // Parse JSON: {"pos": [j1..j5], "vel": [v1..v5], "ts": timestamp}
-    // Implementation in Stage 4
-    std::string response = read_serial_response();
-    if (!response.empty()) {
-      // TODO(Stage 4): Parse JSON response into hw_positions_, hw_velocities_
-      RCLCPP_DEBUG(
-        rclcpp::get_logger("AriaHardwareInterface"),
-        "Serial read: %s", response.c_str());
+    return hardware_interface::return_type::OK;
+  }
+
+  if (!node_) {
+    return hardware_interface::return_type::OK;
+  }
+
+  // Pump the bridge callbacks (the controller_manager does not spin it).
+  rclcpp::spin_some(node_);
+
+  std::lock_guard<std::mutex> lock(state_mutex_);
+  const bool fresh = state_received_ &&
+    (std::chrono::steady_clock::now() - last_state_time_) <=
+    std::chrono::duration<double>(state_timeout_s_);
+
+  if (!fresh) {
+    RCLCPP_WARN_THROTTLE(
+      logger(), *node_->get_clock(), 2000,
+      "No fresh /aria/servo_states feedback from the ESP32 "
+      "(holding last known joint positions). Is the micro-ROS agent up?");
+    return hardware_interface::return_type::OK;
+  }
+
+  for (size_t i = 0; i < NUM_JOINTS; ++i) {
+    double prev_pos = hw_positions_[i];
+    hw_positions_[i] = latest_positions_[i];
+
+    double v = latest_velocities_[i];
+    if (!std::isfinite(v) && period.seconds() > 0.0) {
+      v = (hw_positions_[i] - prev_pos) / period.seconds();
     }
+    hw_velocities_[i] = std::isfinite(v) ? v : 0.0;
   }
 
   return hardware_interface::return_type::OK;
@@ -278,61 +314,90 @@ hardware_interface::return_type AriaHardwareInterface::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   if (use_sim_) {
-    // In sim mode, GazeboSimSystem handles write() directly.
-    // No additional action needed; commands are already in hw_commands_
-    // which GazeboSimSystem reads via the command interfaces.
-  } else {
-    // HARDWARE MODE: Send to ESP32
-    // Format: {"cmd": [waist, shoulder, elbow, wrist_pitch, gripper]}
-    // Implementation in Stage 4
-    char cmd_buf[256];
-    snprintf(
-      cmd_buf, sizeof(cmd_buf),
-      "{\"cmd\": [%.4f, %.4f, %.4f, %.4f, %.4f]}",
-      hw_commands_[0], hw_commands_[1], hw_commands_[2],
-      hw_commands_[3], hw_commands_[4]);
-    send_serial_command(std::string(cmd_buf));
+    // GazeboSimSystem reads hw_commands_ via the command interfaces.
+    return hardware_interface::return_type::OK;
   }
 
+  if (!servo_cmd_pub_) {
+    return hardware_interface::return_type::OK;
+  }
+
+  // hw_commands_ are radians; the firmware expects degrees in the
+  // canonical joint order (it indexes by position, ignoring names).
+  sensor_msgs::msg::JointState cmd;
+  cmd.header.stamp = node_->now();
+  cmd.name.reserve(NUM_JOINTS);
+  cmd.position.reserve(NUM_JOINTS);
+
+  for (const auto & name : JOINT_NAMES) {
+    const int idx = find_joint(name);
+    cmd.name.push_back(name);
+    if (idx >= 0) {
+      cmd.position.push_back(hw_commands_[idx] * kDegPerRad);
+    } else {
+      cmd.position.push_back(std::nan(""));
+    }
+  }
+
+  servo_cmd_pub_->publish(cmd);
   return hardware_interface::return_type::OK;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Serial port helpers — Skeleton for Stage 4 hardware integration
+// find_joint — index of a joint name in the hardware info
 // ═══════════════════════════════════════════════════════════════
-bool AriaHardwareInterface::open_serial_port()
+int AriaHardwareInterface::find_joint(const std::string & name) const
 {
-  // TODO(Stage 4): Open serial port with termios configuration
-  // serial_fd_ = open(serial_port_.c_str(), O_RDWR | O_NOCTTY);
-  // Configure baud rate, 8N1, no flow control
-  RCLCPP_WARN(
-    rclcpp::get_logger("AriaHardwareInterface"),
-    "Serial port open: NOT IMPLEMENTED (Stage 4)");
-  return false;
-}
-
-void AriaHardwareInterface::close_serial_port()
-{
-  if (serial_fd_ >= 0) {
-    // close(serial_fd_);
-    serial_fd_ = -1;
+  const auto it = std::find(hw_joint_names_.begin(), hw_joint_names_.end(), name);
+  if (it == hw_joint_names_.end()) {
+    return -1;
   }
+  return static_cast<int>(std::distance(hw_joint_names_.begin(), it));
 }
 
-bool AriaHardwareInterface::send_serial_command(const std::string & cmd)
+// ═══════════════════════════════════════════════════════════════
+// state_callback — store ESP32 servo feedback (degrees → radians)
+// ═══════════════════════════════════════════════════════════════
+void AriaHardwareInterface::state_callback(
+  const sensor_msgs::msg::JointState::SharedPtr msg)
 {
-  if (serial_fd_ < 0) {
-    return false;
+  std::lock_guard<std::mutex> lock(state_mutex_);
+
+  const size_t n = msg->position.size();
+  if (msg->name.empty()) {
+    // Unnamed feedback: assume canonical order.
+    for (size_t i = 0; i < NUM_JOINTS && i < n; ++i) {
+      latest_positions_[i] = msg->position[i] * kRadPerDeg;
+    }
+  } else {
+    for (size_t k = 0; k < msg->name.size() && k < n; ++k) {
+      const int idx = find_joint(msg->name[k]);
+      if (idx >= 0) {
+        latest_positions_[idx] = msg->position[k] * kRadPerDeg;
+      }
+    }
   }
-  // TODO(Stage 4): write(serial_fd_, cmd.c_str(), cmd.size());
-  (void)cmd;
-  return true;
-}
 
-std::string AriaHardwareInterface::read_serial_response()
-{
-  // TODO(Stage 4): Read from serial_fd_ with timeout
-  return "";
+  // Velocity is optional; leave NaN when the firmware does not report it.
+  if (msg->velocity.size() == msg->position.size()) {
+    if (msg->name.empty()) {
+      for (size_t i = 0; i < NUM_JOINTS && i < msg->velocity.size(); ++i) {
+        latest_velocities_[i] = msg->velocity[i] * kRadPerDeg;
+      }
+    } else {
+      for (size_t k = 0; k < msg->name.size() && k < msg->velocity.size(); ++k) {
+        const int idx = find_joint(msg->name[k]);
+        if (idx >= 0) {
+          latest_velocities_[idx] = msg->velocity[k] * kRadPerDeg;
+        }
+      }
+    }
+  } else {
+    std::fill(latest_velocities_.begin(), latest_velocities_.end(), std::nan(""));
+  }
+
+  state_received_ = true;
+  last_state_time_ = std::chrono::steady_clock::now();
 }
 
 }  // namespace arm_control

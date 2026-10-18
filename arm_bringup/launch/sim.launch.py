@@ -149,28 +149,22 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # 4. CONTROLLER LOADING (via controller_manager spawner)
+    # 4. CONTROLLER LOADING (robust, verified bring-up)
+    #    Handles transient controller-manager stalls by converging the
+    #    controller state machine and verifying via list_controllers,
+    #    instead of aborting the launch on a single spawner timeout.
     # ═══════════════════════════════════════════════════════
-    load_jsb = Node(
-        package="controller_manager",
-        executable="spawner",
+    load_controllers = Node(
+        package="arm_bringup",
+        executable="ensure_controllers.py",
+        name="ensure_controllers",
+        output="screen",
         arguments=[
             "joint_state_broadcaster",
-            "--controller-manager-timeout", "30",
-            "--service-call-timeout", "60",
-        ],
-        output="screen",
-    )
-
-    load_jtc = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=[
             "joint_trajectory_controller",
-            "--controller-manager-timeout", "30",
-            "--service-call-timeout", "60",
+            "--timeout", "60",
+            "--max-attempts", "5",
         ],
-        output="screen",
     )
 
     # ═══════════════════════════════════════════════════════
@@ -184,19 +178,11 @@ def generate_launch_description():
         parameters=[{"use_sim_time": True}],
     )
 
-    def _after_jsb_exit(event, _context):
+    def _after_controllers_exit(event, _context):
         if event.returncode != 0:
             return [
-                LogInfo(msg="ERROR: Joint state broadcaster failed; refusing to start ARIA."),
-                Shutdown(reason="joint_state_broadcaster spawner failed"),
-            ]
-        return [load_jtc]
-
-    def _after_jtc_exit(event, _context):
-        if event.returncode != 0:
-            return [
-                LogInfo(msg="ERROR: Joint trajectory controller failed; refusing to report ARIA ready."),
-                Shutdown(reason="joint_trajectory_controller spawner failed"),
+                LogInfo(msg="ERROR: Controllers failed to reach 'active'; refusing to report ARIA ready."),
+                Shutdown(reason="controller bring-up failed"),
             ]
         return [
             manual_control,
@@ -232,24 +218,17 @@ def generate_launch_description():
         robot_state_publisher,
         spawn_robot,
 
-        # Chain: after spawn completes, load JSB
+        # Chain: after spawn completes, bring up controllers (verified)
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=spawn_robot,
-                on_exit=[load_jsb],
-            )
-        ),
-        # Chain: after JSB, load JTC
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=load_jsb,
-                on_exit=_after_jsb_exit,
+                on_exit=[load_controllers],
             )
         ),
         RegisterEventHandler(
             event_handler=OnProcessExit(
-                target_action=load_jtc,
-                on_exit=_after_jtc_exit,
+                target_action=load_controllers,
+                on_exit=_after_controllers_exit,
             )
         ),
 

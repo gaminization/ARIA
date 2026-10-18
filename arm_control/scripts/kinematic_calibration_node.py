@@ -152,10 +152,10 @@ class KinematicCalibrationNode(Node):
         self.get_logger().info(f"Saved offsets to {self.offsets_path}")
 
     def _get_visual_position(self) -> np.ndarray:
-        """Get visual end-effector position via TF."""
+        """Get visual end-effector (wrist_link) position via TF in base_link."""
         try:
             tf = self.tf_buffer.lookup_transform(
-                'world', 'tool_frame', rclpy.time.Time(),
+                'base_link', 'wrist_link', rclpy.time.Time(),
                 timeout=rclpy.duration.Duration(seconds=1.0)
             )
             return np.array([
