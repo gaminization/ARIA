@@ -124,9 +124,11 @@ export default function CameraPanel({
   // Stream mapping helper
   const getStreamSrc = (feedName) => {
     if (feedName === 'depth') {
+      // The depth panel must only ever show a real depth/heatmap stream —
+      // never the plain wrist RGB feed.
       return cameraStreams.depth
         ? `data:image/jpeg;base64,${cameraStreams.depth}`
-        : (cameraStreams.annotated ? `data:image/jpeg;base64,${cameraStreams.annotated}` : null);
+        : null;
     }
     return cameraStreams[feedName]
       ? `data:image/jpeg;base64,${cameraStreams[feedName]}`
@@ -721,15 +723,17 @@ export default function CameraPanel({
               </div>
 
               <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black">
-                {getStreamSrc('depth') || getStreamSrc('wrist') ? (
+                {getStreamSrc('depth') ? (
                   <img
-                    src={getStreamSrc('depth') || getStreamSrc('wrist')}
-                    alt="Depth & CV Pipeline Feed"
+                    src={getStreamSrc('depth')}
+                    alt="Metric depth heatmap (Turbo colormap)"
                     className="w-full h-full object-contain"
                   />
                 ) : (
                   <div className="text-center font-mono text-[10px] text-slate-600">
-                    DEPTH PIPELINE READY
+                    DEPTH HEATMAP UNAVAILABLE
+                    <br />
+                    <span className="text-[9px] text-slate-700">awaiting depth sensor / pipeline</span>
                   </div>
                 )}
               </div>

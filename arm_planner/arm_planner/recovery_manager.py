@@ -365,13 +365,26 @@ def build_recovery_actions(task: TaskState, idx: int, plan: Optional[dict]) -> O
             a.reasoning = f"recovery: {plan.get('diagnosis', '')}"[:200]
             steps.append(a)
     else:
-        # LLM unavailable: minimal generic recovery — refresh perception, then retry.
-        a = Action()
-        a.action_type = 'scan_workspace'
-        a.confidence = float(failed.confidence)
-        a.status = 'PENDING'
-        a.reasoning = 'recovery: LLM unavailable, refreshing world model before retry'
-        steps.append(a)
+        # LLM unavailable: minimal generic recovery. If the failed step names a
+        # target object, refresh its pose with a locate (which resolves from the
+        # simulator ground-truth model states when perception is unavailable) and
+        # only fall back to a full workspace scan when there is no target to locate.
+        if failed.target_object:
+            a = Action()
+            a.action_type = 'locate'
+            a.target_object = failed.target_object
+            a.confidence = float(failed.confidence)
+            a.status = 'PENDING'
+            a.reasoning = ('recovery: LLM unavailable, refreshing target pose '
+                           'before retry')
+            steps.append(a)
+        else:
+            a = Action()
+            a.action_type = 'scan_workspace'
+            a.confidence = float(failed.confidence)
+            a.status = 'PENDING'
+            a.reasoning = 'recovery: LLM unavailable, refreshing world model before retry'
+            steps.append(a)
     if retry:
         clone = copy.deepcopy(failed)
         clone.status = 'PENDING'

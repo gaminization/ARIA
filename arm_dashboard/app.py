@@ -439,6 +439,18 @@ if ROS_AVAILABLE:
             self.create_subscription(Image, '/side_camera/image_raw', self._side_cam_cb, qos_sensor)
             self.create_subscription(Image, '/detection/image_annotated', self._annotated_cam_cb, qos_sensor)
             self.create_subscription(Image, '/depth/image_colorized', self._depth_cam_cb, qos_sensor)
+            # Ground-truth depth heatmap. The Gazebo wrist camera always publishes a
+            # real depth image in simulation, so the dashboard can colourise it itself
+            # and the "heatmap" panel never falls back to the plain wrist RGB feed even
+            # when the heavy monocular Depth-Anything node is not running.
+            self.create_subscription(Image, '/wrist_camera/depth/image_raw', self._gazebo_depth_cb, qos_sensor)
+            # Direct Gazebo camera topics (simulation only). The /aria/* relay above
+            # runs camera_node as an extra hop and roughly halves the achievable frame
+            # rate for the 1080p feeds, so we also subscribe to the raw source topics and
+            # let whichever copy arrives freshest win. On hardware these topics have no
+            # publishers and the /aria/* relay remains the sole source.
+            self.create_subscription(Image, '/top_camera/image_raw', self._top_cam_cb, qos_sensor)
+            self.create_subscription(Image, '/wrist_camera/image_raw', self._wrist_cam_cb, qos_sensor)
 
             # Dialogue & Visual Servo
             self.create_subscription(String, '/aria/dialogue/output', self._dialogue_cb, 10)
@@ -555,6 +567,86 @@ if ROS_AVAILABLE:
         def _depth_cam_cb(self, msg):
             try:
                 grid = self._encode_image(msg, 'depth')
+                if grid is not None:
+                    state.depth_camera_jpeg = grid
+            except Exception:
+                pass
+
+        def _colorize_depth(self, msg, cam_name='depth', target_w=640, target_h=360, quality=80):
+            """Convert a raw depth image (32FC1 / 16UC1) into a TURBO heatmap JPEG."""
+            import cv2
+            import numpy as np
+            from cv_bridge import CvBridge
+            from collections import defaultdict
+
+            now = time.time()
+            if not hasattr(self, '_cam_times'):
+                self._cam_times = defaultdict(lambda: deque(maxlen=20))
+
+            times = self._cam_times[cam_name]
+            times.append(now)
+            if len(times) >= 2:
+                fps = (len(times) - 1) / max(times[-1] - times[0], 0.001)
+            else:
+                fps = 0.0
+
+            with state._lock:
+                state.camera_stats[cam_name] = {
+                    "fps": round(fps, 1),
+                    "width": int(getattr(msg, 'width', 640)),
+                    "height": int(getattr(msg, 'height', 360)),
+                }
+
+            if not hasattr(self, '_last_cam_time'):
+                self._last_cam_time = {}
+            if now - self._last_cam_time.get(cam_name, 0.0) < 0.033:
+                return None
+            self._last_cam_time[cam_name] = now
+
+            if not hasattr(self, '_bridge'):
+                self._bridge = CvBridge()
+            try:
+                raw = self._bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+            except Exception:
+                return None
+
+            enc = (getattr(msg, 'encoding', '') or '').upper()
+            arr = np.asarray(raw)
+            try:
+                if enc.startswith('16U') or enc.startswith('MONO16'):
+                    depth = arr.astype(np.float32) / 1000.0  # mm -> m
+                else:
+                    depth = arr.astype(np.float32)
+            except Exception:
+                return None
+
+            depth = np.nan_to_num(depth, nan=0.0, posinf=0.0, neginf=0.0)
+            valid = depth[depth > 0.01]
+            if valid.size == 0:
+                return None
+
+            lo = float(np.percentile(valid, 2))
+            hi = float(np.percentile(valid, 98))
+            if hi <= lo:
+                hi = lo + 1e-3
+            norm = np.clip((depth - lo) / (hi - lo), 0.0, 1.0)
+            norm[depth <= 0.01] = 0.0
+            norm8 = (norm * 255.0).astype(np.uint8)
+
+            try:
+                color = cv2.applyColorMap(norm8, cv2.COLORMAP_TURBO)
+            except Exception:
+                color = cv2.applyColorMap(norm8, cv2.COLORMAP_JET)
+            color[depth <= 0.01] = (0, 0, 0)
+
+            if target_w and target_h and (color.shape[1] != target_w or color.shape[0] != target_h):
+                color = cv2.resize(color, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
+            ok, jpeg = cv2.imencode('.jpg', color, [cv2.IMWRITE_JPEG_QUALITY, quality])
+            return jpeg.tobytes() if ok else None
+
+        def _gazebo_depth_cb(self, msg):
+            try:
+                grid = self._colorize_depth(msg, 'depth')
                 if grid is not None:
                     state.depth_camera_jpeg = grid
             except Exception:
@@ -701,6 +793,7 @@ class TargetRequest(BaseModel):
 class SimulationLaunchRequest(BaseModel):
     world: Optional[str] = "aria_tester_workspace.world"
     gui: Optional[bool] = False
+    synthetic: Optional[bool] = False
 
 # Global Simulation Process Tracking
 sim_process: Optional[subprocess.Popen] = None
@@ -1025,8 +1118,9 @@ async def launch_simulation(req: SimulationLaunchRequest):
     global sim_process, sim_world, sim_start_time
     world = req.world or "aria_tester_workspace.world"
     gui_flag = "true" if req.gui else "false"
+    synth_flag = "true" if req.synthetic else "false"
 
-    state.add_cot(f"[SIMULATION] Orchestrating Gazebo startup: world={world}, gui={gui_flag}...")
+    state.add_cot(f"[SIMULATION] Orchestrating Gazebo startup: world={world}, gui={gui_flag}, synthetic={synth_flag}...")
 
     # Stop any existing simulation first
     try:
@@ -1049,7 +1143,7 @@ async def launch_simulation(req: SimulationLaunchRequest):
     launch_script = (
         f"source /opt/ros/humble/setup.bash 2>/dev/null || true; "
         f"[ -f '{setup_bash}' ] && source '{setup_bash}' 2>/dev/null || true; "
-        f"exec ros2 launch arm_bringup aria_full_u3.launch.py world:={world} gui:={gui_flag}"
+        f"exec ros2 launch arm_bringup aria_full_u3.launch.py world:={world} gui:={gui_flag} synthetic:={synth_flag}"
     )
 
     try:
@@ -1122,6 +1216,133 @@ async def stop_simulation():
     state.add_cot("[SIMULATION] ✓ Simulation cleanly halted.")
     return {"success": True, "message": "Simulation halted successfully"}
 
+@app.post("/api/simulation/kill")
+async def kill_simulation():
+    """FULL KILL: terminate Gazebo + every ROS 2 node/agent, clear POSIX shared
+    memory (/dev/shm) and free RAM. The dashboard stays running so the operator
+    can relaunch a fresh workcell."""
+    global sim_process, sim_start_time
+    state.add_cot("[SIMULATION] ⛔ FULL KILL — terminating ROS 2, Gazebo, agents; clearing shared memory...")
+
+    # 1. Kill the tracked launch process group (if it was started from the dashboard)
+    if sim_process is not None:
+        try:
+            os.killpg(os.getpgid(sim_process.pid), signal.SIGKILL)
+        except Exception:
+            pass
+        sim_process = None
+
+    # 2. Reap every ARIA / ROS 2 / Gazebo process (never the dashboard itself)
+    kill_patterns = [
+        "ros2 launch arm_bringup", "aria_full_u3", "aria_synthetic",
+        "/install/arm_", "ros2 bag record", "ros2 bag play",
+        "gzserver", "gzclient", "gazebo",
+        "robot_state_publisher", "controller_manager", "spawn_entity.py",
+        "camera_node", "depth_node", "detection_node",
+        "task_manager", "memory_manager", "health_monitor",
+    ]
+    killed = 0
+    for pat in kill_patterns:
+        try:
+            res = subprocess.run(["pkill", "-9", "-f", pat], timeout=2)
+            if res.returncode == 0:
+                killed += 1
+        except Exception:
+            pass
+
+    # 3. Stop the ROS 2 CLI daemon so stale discovery state is dropped
+    try:
+        subprocess.run(["ros2", "daemon", "stop"], timeout=4)
+    except Exception:
+        pass
+
+    # 4. Clear POSIX shared memory (FastRTPS / Gazebo) → reclaims /dev/shm space
+    #    Anything the dashboard itself currently maps is preserved so its own
+    #    DDS/telemetry survives the teardown.
+    protected = set()
+    try:
+        with open("/proc/self/maps", "r", errors="replace") as maps_f:
+            for line in maps_f:
+                idx = line.find("/dev/shm/")
+                if idx != -1:
+                    protected.add(os.path.basename(line[idx:].strip()))
+    except Exception:
+        pass
+
+    shm_freed = 0
+    shm_cleared = 0
+    try:
+        for entry in os.listdir("/dev/shm"):
+            if entry in protected:
+                continue
+            fp = os.path.join("/dev/shm", entry)
+            try:
+                if os.path.isfile(fp):
+                    shm_freed += os.path.getsize(fp)
+                    os.remove(fp)
+                    shm_cleared += 1
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # 5. Flush dirty pages so reclaimed RAM returns to the OS
+    try:
+        subprocess.run(["sync"], timeout=3)
+    except Exception:
+        pass
+
+    # 6. Clear world model SQLite databases to remove stale object data
+    world_model_db_paths = [
+        '/home/gaminizer/Projects/ARIA/build/arm_planner/data/world_model.db',
+        '/home/gaminizer/Projects/ARIA/arm_planner/data/world_model.db',
+        '/home/gaminizer/Projects/ARIA/install/arm_agents/lib/python3.10/arm_planner/data/world_model.db',
+        '/home/gaminizer/Projects/ARIA/install/arm_planner/lib/data/world_model.db',
+    ]
+    db_cleared = 0
+    for db_p in world_model_db_paths:
+        try:
+            if os.path.exists(db_p):
+                conn = sqlite3.connect(db_p)
+                conn.execute("DELETE FROM objects")
+                conn.execute("DELETE FROM spatial_relations")
+                conn.commit()
+                conn.close()
+                db_cleared += 1
+        except Exception:
+            pass
+
+    sim_start_time = None
+
+    # 6. Reset dashboard telemetry (ROS is offline; models are unloaded with their processes)
+    with state._lock:
+        state.ros_connected = False
+        state.joint_positions = [0.0] * len(JOINT_NAMES)
+        state.target_joint_positions = [0.0] * len(JOINT_NAMES)
+        state.top_camera_jpeg = None
+        state.top_camera_hd_jpeg = None
+        state.wrist_camera_jpeg = None
+        state.wrist_camera_hd_jpeg = None
+        state.side_camera_jpeg = None
+        state.side_camera_hd_jpeg = None
+        state.depth_camera_jpeg = None
+        state.annotated_camera_jpeg = None
+        state.memory_state["known_objects"] = []
+        for key in state.camera_stats:
+            state.camera_stats[key] = {"fps": 0.0, "width": None, "height": None}
+
+    freed_mb = shm_freed / 1e6
+    state.add_cot(
+        f"[SIMULATION] ✓ FULL KILL complete — {killed} process groups signalled, "
+        f"{freed_mb:.1f} MB shared memory freed ({shm_cleared} segments). ROS 2 is offline."
+    )
+    return {
+        "success": True,
+        "message": "Simulation and ROS 2 fully terminated",
+        "killed_groups": killed,
+        "shm_freed_bytes": shm_freed,
+    }
+
 @app.get("/api/simulation/logs")
 async def get_simulation_logs(lines: int = 50):
     """Retrieve recent simulation launcher stdout/stderr logs."""
@@ -1165,7 +1386,7 @@ async def get_camera_snapshot(cam_name: str, res: Optional[str] = "grid"):
         elif cam in ("side", "inspection"):
             jpeg = state.side_camera_hd_jpeg or state.side_camera_jpeg
         elif cam in ("depth", "annotated"):
-            jpeg = state.annotated_camera_jpeg or state.depth_camera_jpeg or state.wrist_camera_hd_jpeg
+            jpeg = state.depth_camera_jpeg or state.annotated_camera_jpeg or state.wrist_camera_hd_jpeg
         else:
             raise HTTPException(status_code=404, detail="Unknown camera")
     else:
@@ -1174,7 +1395,7 @@ async def get_camera_snapshot(cam_name: str, res: Optional[str] = "grid"):
         elif cam in ("wrist", "gripper"):
             jpeg = state.wrist_camera_jpeg
         elif cam in ("depth", "annotated"):
-            jpeg = state.annotated_camera_jpeg or state.depth_camera_jpeg or state.wrist_camera_jpeg
+            jpeg = state.depth_camera_jpeg or state.annotated_camera_jpeg or state.wrist_camera_jpeg
         elif cam in ("side", "inspection"):
             jpeg = state.side_camera_jpeg
         else:

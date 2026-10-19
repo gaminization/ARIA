@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Square, RefreshCw, Layers, Monitor, CheckCircle, AlertTriangle, Cpu } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Square, RefreshCw, Layers, Monitor, CheckCircle, AlertTriangle, Cpu, Power } from 'lucide-react';
 
 const DEFAULT_WORLDS = [
   { id: 'aria_tester_workspace.world', name: 'Standard Tester Workspace', description: '80x60cm optical table with colorful benchmark workpieces' },
@@ -11,9 +11,14 @@ export default function SimulationControlPanel() {
   const [worlds, setWorlds] = useState(DEFAULT_WORLDS);
   const [selectedWorld, setSelectedWorld] = useState('aria_tester_workspace.world');
   const [launchGui, setLaunchGui] = useState(false);
+  const [launchSynthetic, setLaunchSynthetic] = useState(false);
   const [simStatus, setSimStatus] = useState({ running: false, world: '', uptime_s: 0, pid: null });
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  // Tracks whether the operator has manually picked a world. Until then the
+  // 3-second status poll may sync the selection to the running world, but once
+  // the operator chooses, polling must never yank the selection back.
+  const userSelectedRef = useRef(false);
 
   const fetchStatus = async () => {
     try {
@@ -21,7 +26,7 @@ export default function SimulationControlPanel() {
       if (res.ok) {
         const data = await res.json();
         setSimStatus(data);
-        if (data.world) setSelectedWorld(data.world);
+        if (data.world && !userSelectedRef.current) setSelectedWorld(data.world);
       }
     } catch (e) {
       // ignore
@@ -56,7 +61,7 @@ export default function SimulationControlPanel() {
       const res = await fetch('/api/simulation/launch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ world: selectedWorld, gui: launchGui }),
+        body: JSON.stringify({ world: selectedWorld, gui: launchGui, synthetic: launchSynthetic }),
       });
       const data = await res.json();
       setFeedback(data.success ? `✓ ${data.message}` : `✗ ${data.message}`);
@@ -78,6 +83,27 @@ export default function SimulationControlPanel() {
       await fetchStatus();
     } catch (err) {
       setFeedback('✗ Termination error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleKill = async () => {
+    const ok = window.confirm(
+      'FULL KILL SIMULATION\n\nThis terminates Gazebo and every ROS 2 node/agent, clears shared memory (/dev/shm) and frees RAM.\n\nContinue?'
+    );
+    if (!ok) return;
+    setActionLoading(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/simulation/kill', { method: 'POST' });
+      const data = await res.json();
+      setFeedback(data.success
+        ? `✓ ${data.message} (${(data.shm_freed_bytes / 1e6).toFixed(1)} MB shm freed)`
+        : `✗ ${data.message}`);
+      await fetchStatus();
+    } catch (err) {
+      setFeedback('✗ Full-kill error');
     } finally {
       setActionLoading(false);
     }
@@ -112,7 +138,7 @@ export default function SimulationControlPanel() {
               {worlds.map((w) => (
                 <div
                   key={w.id}
-                  onClick={() => setSelectedWorld(w.id)}
+                  onClick={() => { userSelectedRef.current = true; setSelectedWorld(w.id); }}
                   className={`p-3 rounded border cursor-pointer transition-all ${
                     selectedWorld === w.id
                       ? 'bg-cyan-950/40 border-cyan-500 text-white'
@@ -146,8 +172,25 @@ export default function SimulationControlPanel() {
             />
           </div>
 
+          {/* Synthetic Demonstration Mode Option */}
+          <div className="p-3 bg-[#0a0c11] rounded border border-[#252a38] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-cyan-400" />
+              <div>
+                <div className="text-xs font-bold text-cyan-300">Synthetic Runs Mode (Fast Demonstrator)</div>
+                <div className="text-[10px] text-slate-400">Direct physical execution: sorting, stacking, gestures & drops</div>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={launchSynthetic}
+              onChange={(e) => setLaunchSynthetic(e.target.checked)}
+              className="w-4 h-4 rounded accent-cyan-500 cursor-pointer"
+            />
+          </div>
+
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex items-center gap-2 pt-2">
             <button
               onClick={handleLaunch}
               disabled={actionLoading}
@@ -163,6 +206,15 @@ export default function SimulationControlPanel() {
             >
               <Square className="w-3.5 h-3.5 fill-current" />
               STOP SIMULATION
+            </button>
+            <button
+              onClick={handleKill}
+              disabled={actionLoading}
+              title="Kill everything: Gazebo + all ROS 2 nodes, clear shared memory and free RAM"
+              className="py-2.5 px-4 bg-orange-950/80 hover:bg-orange-900 border border-orange-700 text-orange-300 text-xs font-bold rounded flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+            >
+              <Power className="w-3.5 h-3.5" />
+              KILL ALL
             </button>
           </div>
 

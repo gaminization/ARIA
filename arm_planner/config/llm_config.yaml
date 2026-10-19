@@ -10,6 +10,17 @@ preferred_model: "llama3.1:8b-instruct-q4_K_M"
 # If Ollama is unavailable, fall back to rule-based PlanningAgent
 fallback_to_rulebased: true
 
+# ── Gemini offloading ──────────────────────────────────────
+# Set GEMINI_API_KEY to enable Google Gemini inference.
+# Leave empty to use local Ollama only.
+GEMINI_API_KEY: ""
+
+# Mode control:
+#   ENABLE_GEMINI: auto (default) — use Gemini if key set, else local
+#   ENABLE_GEMINI: true     — always use Gemini (if key set, else error)
+#   ENABLE_GEMINI: false    — always use local Ollama
+ENABLE_GEMINI: auto
+
 # ── Generation parameters ──────────────────────────────────
 temperature: 0.1          # Low temperature for deterministic planning
 timeout_s: 90.0           # Max seconds per LLM call (allows 8B model prefill + generation on CPU/GPU)

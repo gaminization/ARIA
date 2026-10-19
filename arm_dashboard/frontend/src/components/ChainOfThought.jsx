@@ -23,7 +23,15 @@ export default function ChainOfThought({ logs = [] }) {
   };
 
   const copyToClipboard = () => {
-    const text = logs.map((l) => (typeof l === 'string' ? l : l.text || '')).join('\n');
+    const text = filteredLogs
+      .map((l) => {
+        const body = typeof l === 'string' ? l : l.text || '';
+        const ts = l && l.time
+          ? new Date(l.time * 1000).toISOString().substr(11, 12)
+          : '';
+        return ts ? `[${ts}] ${body}` : body;
+      })
+      .join('\n');
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -51,7 +59,7 @@ export default function ChainOfThought({ logs = [] }) {
   });
 
   return (
-    <div className="panel-card h-full flex flex-col bg-[#13161e] border border-[#252a38] rounded-md overflow-hidden select-none">
+    <div className="panel-card h-full flex flex-col bg-[#13161e] border border-[#252a38] rounded-md overflow-hidden select-text">
       {/* Header */}
       <div className="h-9 px-3 border-b border-[#252a38] flex items-center justify-between bg-[#0e1017]">
         <div className="flex items-center gap-2">
@@ -108,7 +116,7 @@ export default function ChainOfThought({ logs = [] }) {
 
             return (
               <div key={idx} className="flex items-start gap-2 hover:bg-white/[0.02] px-1 py-0.5 rounded">
-                <span className="text-slate-500 select-none shrink-0 font-mono text-[10px]">[{ts}]</span>
+                <span className="text-slate-500 shrink-0 font-mono text-[10px]">[{ts}]</span>
                 <span className={`break-all ${color}`}>{rawText}</span>
               </div>
             );

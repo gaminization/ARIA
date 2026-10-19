@@ -20,6 +20,7 @@ LAUNCH_DASHBOARD=true
 DASHBOARD_PORT=8000
 USE_TMUX=true
 ENABLE_OPENVLA=false
+SYNTHETIC_MODE=false
 
 print_usage() {
     cat << 'EOF'
@@ -32,6 +33,7 @@ Options:
   -p, --port <PORT>      Dashboard web port (default: 8000)
   --no-dashboard         Launch simulation & multi-agent stack without dashboard
   --no-tmux              Launch directly in foreground/subshell (without tmux)
+  -s, --synthetic        Launch in fast synthetic mode (rapid demonstration of industrial & tester suites)
   --openvla              Enable OpenVLA-7B policy execution backend
   --status               Show health and status of active ARIA nodes and services
   --stop                 Cleanly stop all running ARIA, Gazebo, and dashboard processes
@@ -39,6 +41,9 @@ Options:
 
 Examples:
   ./scripts/aria_launch_full.sh                    # Headless sim + 15 agents + dashboard
+  ./scripts/aria_launch_full.sh --synthetic        # Rapid synthetic demonstration suite
+  ./scripts/aria_launch_full.sh -s -w industrial   # Industrial synthetic suite
+  ./scripts/aria_launch_full.sh -s --gui           # Synthetic demo with Gazebo 3D GUI
   ./scripts/aria_launch_full.sh --openvla          # Full stack with OpenVLA-7B backend
   ./scripts/aria_launch_full.sh --gui              # Launch with Gazebo 3D GUI window
   ./scripts/aria_launch_full.sh -w industrial -g  # Industrial workcell with GUI
@@ -64,6 +69,20 @@ stop_all() {
     pkill -9 -f "arm_planner" 2>/dev/null || true
     pkill -9 -f "arm_learning" 2>/dev/null || true
     rm -f /dev/shm/fastrtps* /dev/shm/sem.fastrtps* 2>/dev/null || true
+
+    # Clear world model SQLite databases to ensure clean restart
+    world_model_db_paths=(
+        "/home/gaminizer/Projects/ARIA/build/arm_planner/data/world_model.db"
+        "/home/gaminizer/Projects/ARIA/arm_planner/data/world_model.db"
+        "/home/gaminizer/Projects/ARIA/install/arm_agents/lib/python3.10/arm_planner/data/world_model.db"
+        "/home/gaminizer/Projects/ARIA/install/arm_planner/lib/data/world_model.db"
+    )
+    for db_p in "${world_model_db_paths[@]}"; do
+        if [ -f "$db_p" ]; then
+            sqlite3 "$db_p" "DELETE FROM objects; DELETE FROM spatial_relations;" 2>/dev/null || true
+        fi
+    done
+
     echo "✅ All ARIA processes stopped and shared memory cleaned."
 }
 
@@ -154,6 +173,10 @@ while [[ $# -gt 0 ]]; do
             USE_TMUX=false
             shift
             ;;
+        -s|--synthetic)
+            SYNTHETIC_MODE="true"
+            shift
+            ;;
         --openvla)
             ENABLE_OPENVLA=true
             shift
@@ -208,6 +231,7 @@ echo "  Target World:   $WORLD_NAME"
 echo "  Gazebo 3D GUI:  $ENABLE_GUI"
 echo "  Dashboard:      $([ "$LAUNCH_DASHBOARD" = true ] && echo "port $DASHBOARD_PORT" || echo "disabled")"
 echo "  Mode:           $([ "$USE_TMUX" = true ] && echo "tmux background sessions" || echo "direct subshell")"
+echo "  Stack:          $([ "$SYNTHETIC_MODE" = true ] && echo "SYNTHETIC DEMONSTRATION" || echo "AUTONOMOUS 15-AGENT STACK")"
 echo "  OpenVLA-7B:     $([ "$ENABLE_OPENVLA" = true ] && echo "enabled (ARIA_OPENVLA_FORCE_LOAD=1)" || echo "disabled")"
 echo "─────────────────────────────────────────────────────────"
 
@@ -225,7 +249,7 @@ if [ "$USE_TMUX" = true ]; then
         VLA_ENV="export ARIA_OPENVLA_FORCE_LOAD=1 ARIA_USE_OPENVLA=1 ARIA_ROOT=\"$ARIA_ROOT\" && "
     fi
     tmux send-keys -t aria_sim "cd \"$ARIA_ROOT\" && ${VLA_ENV}export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
-    tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=\"$WORLD_NAME\" gui:=\"$ENABLE_GUI\" 2>&1 | tee /tmp/aria_launch.log" Enter
+    tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=\"$WORLD_NAME\" gui:=\"$ENABLE_GUI\" synthetic:=\"$SYNTHETIC_MODE\" 2>&1 | tee /tmp/aria_launch.log" Enter
 
     echo "✅ Simulation + multi-agent stack started in tmux session 'aria_sim'"
 
@@ -294,7 +318,7 @@ else
     fi
 
     echo "Starting simulation & multi-agent stack..."
-    ros2 launch arm_bringup aria_full_u3.launch.py world:="$WORLD_NAME" gui:="$ENABLE_GUI" 2>&1 | tee /tmp/aria_launch.log &
+    ros2 launch arm_bringup aria_full_u3.launch.py world:="$WORLD_NAME" gui:="$ENABLE_GUI" synthetic:="$SYNTHETIC_MODE" 2>&1 | tee /tmp/aria_launch.log &
     SIM_PID=$!
 
     if [ "$LAUNCH_DASHBOARD" = true ]; then

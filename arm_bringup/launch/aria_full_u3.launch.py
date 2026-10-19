@@ -13,10 +13,11 @@ import os
 from launch import LaunchDescription
 from launch.actions import (
     IncludeLaunchDescription, DeclareLaunchArgument,
-    TimerAction, ExecuteProcess, LogInfo,
+    TimerAction, ExecuteProcess, LogInfo, GroupAction,
 )
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -49,6 +50,20 @@ def generate_launch_description():
         description='Launch Gazebo Classic GUI (set true for GUI window)')
     gui_conf = LaunchConfiguration('gui')
 
+    synthetic = DeclareLaunchArgument(
+        'synthetic', default_value='false',
+        description='Launch in fast synthetic mode (skips heavy agents, executes synthetic demonstration suite)')
+    synthetic_conf = LaunchConfiguration('synthetic')
+
+    # CPU-only hosts (no CUDA) cannot run the heavy learned-perception stack
+    # (DepthAnything, SAM2, grasp synthesis, OpenVLA) in real time. `lite:=true`
+    # starts the full 15-agent state machine while omitting those GPU-bound nodes,
+    # letting the skill agent resolve poses from simulator ground truth instead.
+    lite = DeclareLaunchArgument(
+        'lite', default_value='false',
+        description='Skip GPU-dependent perception/inference nodes (depth, SAM2, grasp, OpenVLA, learning, evaluation)')
+    lite_conf = LaunchConfiguration('lite')
+
     # ═══════════════════════════════════════════════════════
     # STAGE 1: Gazebo + Robot + Controllers (0s)
     # ═══════════════════════════════════════════════════════
@@ -59,8 +74,21 @@ def generate_launch_description():
     )
 
     # ═══════════════════════════════════════════════════════
-    # STAGE 2: Detection + Depth + IK (2s)
+    # STAGE 2: Camera relay + Detection + Depth + IK (2s)
     # ═══════════════════════════════════════════════════════
+    # Camera relay — republishes the Gazebo camera feeds on the ARIA
+    # namespace (/aria/top_camera/image_raw, /aria/wrist_camera/image_raw)
+    # that the dashboard bridge subscribes to. Without this relay the
+    # dashboard's wrist and overhead feeds have no publisher in the sim stack.
+    camera_node = TimerAction(
+        period=1.5,
+        actions=[Node(
+            package='arm_vision', executable='camera_node',
+            name='camera_node', output='screen',
+            parameters=[{'mode': 'sim', 'use_sim_time': True}],
+        )],
+    )
+
     # GRIPPER CAMERA ONLY — both nodes subscribe to /wrist_camera/image_raw
     yolo_detection = TimerAction(
         period=2.0,
@@ -275,42 +303,111 @@ def generate_launch_description():
         )],
     )
 
+    # ── Autonomous 15-Agent Multi-Agent Stack (active when synthetic=false) ──
+    heavy_perception = GroupAction(
+        condition=UnlessCondition(lite_conf),
+        actions=[
+            depth_node,
+            sam2_node,
+            grasp_node,
+        ],
+    )
+
+    heavy_inference = GroupAction(
+        condition=UnlessCondition(lite_conf),
+        actions=[
+            openvla_executor,
+            learning_agent,
+            evaluation_agent,
+        ],
+    )
+
+    autonomous_stack = GroupAction(
+        condition=UnlessCondition(synthetic_conf),
+        actions=[
+            # Stage 2: Detection + Depth + IK (heavy nodes gated by `lite`)
+            yolo_detection,
+            ik_node,
+            visual_servo_node,
+            heavy_perception,
+
+            # Stage 3: 15 Agents
+            vision_agent, depth_agent, tracking_agent,
+            affordance_agent, attention_agent,
+            planning_agent, reachability_agent,
+            skill_agent, control_agent,
+            safety_agent, memory_agent,
+            world_model_agent,
+            heavy_inference,
+            dialogue_agent,
+
+            # Orchestration
+            task_manager, memory_manager, health_monitor,
+
+            # U3 infrastructure
+            activate_agents,
+        ],
+    )
+
+    lite_notice = LogInfo(
+        msg='╔═════════════════════════════════════════════════════════════╗\n'
+            '║  🤖 LITE MODE: heavy GPU perception nodes disabled          ║\n'
+            '║  Skill agent will use simulator ground truth for poses      ║\n'
+            '╚═════════════════════════════════════════════════════════════╝',
+        condition=IfCondition(lite_conf),
+    )
+
+    # ── Synthetic Demonstration Stack (active when synthetic=true) ───────────
+    aria_root = os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA')
+    synthetic_script = os.path.join(aria_root, 'scripts', 'synthetic_server.py')
+    synthetic_stack = GroupAction(
+        condition=IfCondition(synthetic_conf),
+        actions=[
+            LogInfo(msg='╔═════════════════════════════════════════════════════════════╗'),
+            LogInfo(msg='║  🤖 ARIA SYNTHETIC DEMONSTRATION MODE ACTIVE                ║'),
+            LogInfo(msg='║  Skipping 15 slow agents for rapid physical demonstration   ║'),
+            LogInfo(msg='╚═════════════════════════════════════════════════════════════╝'),
+            TimerAction(
+                period=12.0,
+                actions=[
+                    ExecuteProcess(
+                        cmd=[
+                            'python3', synthetic_script,
+                            '-w', PythonExpression([
+                                "'industrial' if 'industrial' in '", world_conf, "' else 'tester'"
+                            ]),
+                        ],
+                        name='synthetic_runner',
+                        output='screen',
+                    ),
+                ],
+            ),
+        ],
+    )
+
     return LaunchDescription([
         use_sim,
         dashboard_port,
         bag_mode,
         tracking_backend,
-        world,   # industrial workcell world arg
-        gui,     # GUI client arg
+        world,
+        gui,
+        synthetic,
+        lite,
 
-        # Stage 1
+        # Stage 1: Gazebo + Robot + Controllers
         stage1_sim,
 
-        # Stage 2
-        yolo_detection,
-        depth_node,
-        ik_node,
-        grasp_node,
-        sam2_node,
-        visual_servo_node,
+        # Camera relay (always on) — required by the dashboard in every mode
+        camera_node,
 
-        # Stage 3 — agents
-        vision_agent, depth_agent, tracking_agent,
-        affordance_agent, attention_agent,
-        planning_agent, reachability_agent,
-        skill_agent, control_agent,
-        safety_agent, memory_agent,
-        world_model_agent, learning_agent,
-        evaluation_agent, dialogue_agent,
-        openvla_executor,
+        # Either Autonomous Multi-Agent Stack OR Synthetic Demonstration Suite
+        autonomous_stack,
+        synthetic_stack,
+        lite_notice,
 
-        # Orchestration
-        task_manager, memory_manager, health_monitor,
-
-        # U3 — infrastructure
-        activate_agents,
+        # Infrastructure
         bag_recorder,
         rosbridge,
-        # dashboard,  # Managed in aria_dash session for dedicated logging & control
         startup_msg,
     ])

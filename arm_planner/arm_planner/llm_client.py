@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 """
 ═══════════════════════════════════════════════════════════════
-ARIA LLM Client — Async Ollama Wrapper
+ARIA LLM Client — Async Ollama/Wrappers with Gemini Offloading
 Handles: model loading/unloading, structured JSON output,
 function calling schema, timeout/retry, fallback detection.
-
-Ollama API: http://localhost:11434
-
-VRAM Management:
-  RTX 5060 has 8GB. Llama 3.1 8B Q4_K_M uses ~5GB.
-  LLM loads when planning, unloads during execution to
-  free VRAM for YOLO + depth models.
-═══════════════════════════════════════════════════════════════
+Supports two modes:
+  - local:  Ollama running on localhost:11434 (default, works without GPU)
+  - gemini: Google Gemini API (requires GEMINI_API_KEY in config)
+════════════════════════════════════════════════════════════════
 """
 import asyncio
 import json
@@ -22,26 +18,33 @@ import time
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import aiohttp
-import yaml
 
 logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════
 # Configuration
-# ═══════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════
 def _find_config_path() -> str:
-    """Locate llm_config.yaml in source tree, ament share dir, or ARIA_ROOT."""
+    """Locate llm_config.yaml (or .py) in source tree, ament share dir, or ARIA_ROOT."""
     here = os.path.dirname(os.path.abspath(__file__))
-    candidates = [os.path.join(os.path.dirname(here), 'config', 'llm_config.yaml')]
+    candidates = [
+        os.path.join(os.path.dirname(here), 'config', 'llm_config.yaml'),
+        os.path.join(os.path.dirname(here), 'config', 'llm_config.py'),
+    ]
     try:
         from ament_index_python.packages import get_package_share_directory
         candidates.append(os.path.join(
             get_package_share_directory('arm_planner'), 'config', 'llm_config.yaml'))
+        candidates.append(os.path.join(
+            get_package_share_directory('arm_planner'), 'config', 'llm_config.py'))
     except Exception:
         pass
     candidates.append(os.path.join(
         os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'),
         'arm_planner', 'config', 'llm_config.yaml'))
+    candidates.append(os.path.join(
+        os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'),
+        'arm_planner', 'config', 'llm_config.py'))
     for c in candidates:
         if os.path.exists(c):
             return c
@@ -52,18 +55,43 @@ _CONFIG_PATH = _find_config_path()
 
 
 def _load_config() -> dict:
-    """Load LLM configuration from YAML file."""
-    try:
-        with open(_CONFIG_PATH, 'r') as f:
-            return yaml.safe_load(f) or {}
-    except FileNotFoundError:
-        logger.warning("llm_config.yaml not found, using defaults")
-        return {}
+    """Load LLM configuration from YAML or Python config file."""
+    if _CONFIG_PATH.endswith('.yaml') or _CONFIG_PATH.endswith('.yml'):
+        import yaml
+        try:
+            with open(_CONFIG_PATH, 'r') as f:
+                return yaml.safe_load(f) or {}
+        except FileNotFoundError:
+            logger.warning(f"{_CONFIG_PATH} not found, using defaults")
+            return {}
+    else:
+        # Python config file
+        try:
+            with open(_CONFIG_PATH, 'r') as f:
+                exec_globals = {}
+                exec(f.read(), exec_globals)
+                return exec_globals
+        except FileNotFoundError:
+            logger.warning(f"{_CONFIG_PATH} not found, using defaults")
+            return {}
+
+
+# ── Runtime mode detection ────────────────────────────────────
+def _detect_mode(config: dict) -> Literal["local", "gemini"]:
+    """Determine the LLM mode from config flags."""
+    enable = config.get('ENABLE_GEMINI', 'auto').lower()
+    key = config.get('GEMINI_API_KEY', '')
+    if enable == 'true':
+        return 'gemini'
+    if enable == 'false':
+        return 'local'
+    # auto: use Gemini if key available, else local
+    return 'gemini' if key else 'local'
 
 
 # ═══════════════════════════════════════════════════════════════
 # Model Registry
-# ═══════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════
 SUPPORTED_MODELS: Dict[str, Dict[str, Any]] = {
     "llama3.1:8b-instruct-q4_K_M": {
         "vram_gb": 5.0,
@@ -88,17 +116,21 @@ SUPPORTED_MODELS: Dict[str, Dict[str, Any]] = {
 
 # ═══════════════════════════════════════════════════════════════
 # OllamaClient
-# ═══════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════
 class OllamaClient:
     """
-    Thin async wrapper around Ollama local inference server.
+    Async wrapper around Ollama local inference server with Gemini offloading.
+
+    Modes:
+      - local:   Send requests to http://localhost:11434 (Ollama)
+      - gemini:  Send requests to Google Gemini API
 
     Features:
       - Lazy model loading with VRAM headroom checks
       - Explicit unloading to free VRAM during execution
       - Structured JSON mode with validation and retry
       - Health checking with fast timeout
-      - VRAM usage monitoring via nvidia-smi
+      - Automatic mode switching based on config
     """
 
     def __init__(
@@ -112,6 +144,13 @@ class OllamaClient:
         self._session: Optional[aiohttp.ClientSession] = None
         self._load_lock = asyncio.Lock()
 
+        # Detect mode and set up accordingly
+        self.mode = _detect_mode(self.config)
+        self._gemini_key = self.config.get('GEMINI_API_KEY', '')
+        self._gemini_endpoint = self.config.get(
+            'GEMINI_ENDPOINT',
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent')
+
         # Config values with defaults
         self.default_model = self.config.get(
             'preferred_model', 'llama3.1:8b-instruct-q4_K_M')
@@ -121,6 +160,9 @@ class OllamaClient:
         self.vram_headroom = self.config.get('vram_headroom_gb', 2.5)
         self.unload_after_planning = self.config.get(
             'unload_after_planning', True)
+
+        logger.info(f"LLM mode: {self.mode} (local={self.mode == 'local'}, "
+                    f"gemini_key_set={bool(self._gemini_key)})")
 
     # ── Session management ─────────────────────────────────
     async def _get_session(self) -> aiohttp.ClientSession:
@@ -139,22 +181,27 @@ class OllamaClient:
     # ── Health Check ───────────────────────────────────────
     async def is_available(self) -> bool:
         """
-        Quick health check: GET /api/tags
-        Returns True if Ollama server is running and responsive.
+        Quick health check: for local, GET /api/tags;
+        for gemini, check if API key is configured.
         Fast timeout: 2 seconds.
         """
-        try:
-            session = await self._get_session()
-            async with session.get(
-                f"{self.base_url}/api/tags",
-                timeout=aiohttp.ClientTimeout(total=2.0),
-            ) as resp:
-                return resp.status == 200
-        except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
-            return False
+        if self.mode == 'local':
+            try:
+                session = await self._get_session()
+                async with session.get(
+                    f"{self.base_url}/api/tags",
+                    timeout=aiohttp.ClientTimeout(total=2.0),
+                ) as resp:
+                    return resp.status == 200
+            except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
+                return False
+        else:  # gemini
+            return bool(self._gemini_key)
 
     async def list_local_models(self) -> List[str]:
-        """List all models available locally in Ollama."""
+        """List all models available locally in Ollama (local mode only)."""
+        if self.mode != 'local':
+            return []
         try:
             session = await self._get_session()
             async with session.get(
@@ -169,7 +216,9 @@ class OllamaClient:
             return []
 
     async def get_running_models(self) -> List[str]:
-        """List models currently loaded in memory via Ollama /api/ps."""
+        """List models currently loaded in memory via Ollama /api/ps (local mode only)."""
+        if self.mode != 'local':
+            return []
         try:
             session = await self._get_session()
             async with session.get(
@@ -186,17 +235,16 @@ class OllamaClient:
     # ── VRAM Management ────────────────────────────────────
     async def get_vram_usage(self) -> Dict[str, float]:
         """
-        Returns current VRAM usage info via nvidia-smi.
+        Returns current VRAM usage info via nvidia-smi (local mode only).
 
-        Returns:
-            {
-                "total_gb": float,
-                "used_gb": float,
-                "free_gb": float,
-            }
+        Returns a dict with total/used/free GB. Returns zeros if nvidia-smi
+        not available (e.g. no GPU in container).
         """
+        if self.mode != 'local':
+            return {"total_gb": 0, "used_gb": 0, "free_gb": 0}
         try:
-            result = await asyncio.get_event_loop().run_in_executor(
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
                 None,
                 lambda: subprocess.run(
                     ['nvidia-smi',
@@ -221,10 +269,13 @@ class OllamaClient:
 
     async def _check_vram_headroom(self, model_name: str) -> bool:
         """
-        Check if there is enough VRAM headroom to load a model.
+        Check if there is enough VRAM headroom to load a model (local mode only).
         Returns True if safe to proceed.
         """
-        # If model is already loaded in Ollama, no extra VRAM is needed
+        if self.mode != 'local':
+            # In gemini mode, we don't check VRAM — always allow
+            return True
+
         running = await self.get_running_models()
         if any(model_name in r or r in model_name for r in running):
             return True
@@ -258,7 +309,7 @@ class OllamaClient:
     # ── Model Loading / Unloading ──────────────────────────
     async def load_model(self, model_name: str) -> bool:
         """
-        Explicitly pre-load model into VRAM.
+        Explicitly pre-load model into VRAM (local mode only).
 
         Uses Ollama /api/generate with an empty prompt and
         keep_alive=-1 to load the model persistently.
@@ -319,11 +370,16 @@ class OllamaClient:
 
     async def unload_model(self, model_name: Optional[str] = None) -> bool:
         """
-        Explicitly unload model to free VRAM.
-        Uses keep_alive=0 to force immediate unload.
+        Explicitly unload model to free VRAM (local mode only).
 
+        Uses keep_alive=0 to force immediate unload.
         Called after planning is complete and execution begins.
         """
+        if self.mode != 'local':
+            # In gemini mode, there's nothing to unload from VRAM
+            logger.info("Gemini mode: nothing to unload from VRAM")
+            return True
+
         target = model_name or self._loaded_model
         if not target:
             return True
@@ -375,7 +431,7 @@ class OllamaClient:
             prompt:          User prompt
             model:           Model name (defaults to config preferred)
             system_prompt:   System instructions
-            images:          Base64-encoded images (for Qwen VL)
+            images:          Base64-encoded images (for vision models)
             response_format: "text" or "json" (strict JSON mode)
             temperature:     Sampling temperature (low = deterministic)
             timeout_s:       Request timeout in seconds
@@ -385,6 +441,32 @@ class OllamaClient:
             (response_text, success)
             On failure: ("", False) — caller handles fallback.
         """
+        model = model or self.default_model
+        temperature = temperature if temperature is not None else self.default_temperature
+        timeout_s = timeout_s or self.default_timeout
+        max_retries = max_retries if max_retries is not None else self.default_retries
+
+        if self.mode == 'gemini':
+            return await self._generate_gemini(
+                prompt, model, system_prompt, images,
+                response_format, temperature, timeout_s, max_retries)
+        else:
+            return await self._generate_ollama(
+                prompt, model, system_prompt, images,
+                response_format, temperature, timeout_s, max_retries)
+
+    async def _generate_ollama(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        system_prompt: str = "",
+        images: Optional[List[str]] = None,
+        response_format: Literal["text", "json"] = "text",
+        temperature: Optional[float] = None,
+        timeout_s: Optional[float] = None,
+        max_retries: Optional[int] = None,
+    ) -> Tuple[str, bool]:
+        """Generate via local Ollama server."""
         model = model or self.default_model
         temperature = temperature if temperature is not None else self.default_temperature
         timeout_s = timeout_s or self.default_timeout
@@ -492,6 +574,115 @@ class OllamaClient:
             f"Last error: {last_error}")
         return ("", False)
 
+    async def _generate_gemini(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        system_prompt: str = "",
+        images: Optional[List[str]] = None,
+        response_format: Literal["text", "json"] = "text",
+        temperature: Optional[float] = None,
+        timeout_s: Optional[float] = None,
+        max_retries: Optional[int] = None,
+    ) -> Tuple[str, bool]:
+        """Generate via Google Gemini API."""
+        import base64
+
+        model = model or self.default_model
+        temperature = temperature if temperature is not None else self.default_temperature
+        timeout_s = timeout_s or self.default_timeout
+        max_retries = max_retries if max_retries is not None else self.default_retries
+
+        if not self._gemini_key:
+            logger.error("Gemini API key not configured")
+            return ("", False)
+
+        # Gemini model name (flash is fast and cheap)
+        gemini_model = "gemini-1.5-flash"
+
+        # Build the request payload
+        contents = [{"role": "user", "parts": [{"text": prompt}]}]
+
+        # Add system prompt if provided
+        if system_prompt:
+            contents.insert(0, {"role": "user", "parts": [{"text": system_prompt}]})
+
+        # Build URL with key
+        url = f"{self._gemini_endpoint}?key={self._gemini_key}"
+
+        # Payload
+        payload = {
+            "model": gemini_model,
+            "contents": contents,
+            "temperature": temperature,
+            "max_output_tokens": 1024,
+        }
+
+        # Retry loop
+        last_error = ""
+        for attempt in range(max_retries + 1):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        url,
+                        json=payload,
+                        timeout=aiohttp.ClientTimeout(total=timeout_s),
+                    ) as resp:
+                        if resp.status != 200:
+                            body = await resp.text()
+                            last_error = f"HTTP {resp.status}: {body[:200]}"
+                            logger.warning(
+                                f"Generate attempt {attempt+1} failed: "
+                                f"{last_error}")
+                            continue
+
+                        data = await resp.json()
+                        # Gemini response structure
+                        if data.get("candidates") and data["candidates"][0].get("content"):
+                            response_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                        else:
+                            last_error = "Unexpected Gemini response structure"
+                            logger.warning(f"Generate attempt {attempt+1}: {last_error}")
+                            continue
+
+                        logger.info(
+                            f"Gemini generated {len(response_text)} chars "
+                            f"in attempt {attempt+1}")
+
+                        # JSON validation if requested
+                        if response_format == "json":
+                            valid, response_text = self._validate_json(
+                                response_text)
+                            if not valid and attempt < max_retries:
+                                # Re-prompt with correction
+                                # For Gemini, we just retry with the same prompt
+                                logger.warning(
+                                    "Invalid JSON response, retrying")
+                                continue
+                            elif not valid:
+                                return ("", False)
+
+                        return (response_text, True)
+
+            except asyncio.TimeoutError:
+                last_error = f"Timeout after {timeout_s}s"
+                logger.warning(
+                    f"Gemini generate attempt {attempt+1} timed out "
+                    f"after {timeout_s}s")
+            except aiohttp.ClientError as e:
+                last_error = str(e)
+                logger.warning(
+                    f"Gemini generate attempt {attempt+1} error: {e}")
+            except Exception as e:
+                last_error = str(e)
+                logger.error(f"Unexpected Gemini error: {e}")
+                break
+
+        logger.error(
+            f"All {max_retries+1} Gemini generate attempts failed. "
+            f"Last error: {last_error}")
+        return ("", False)
+
     # ── Chat-style generation (for multi-turn) ─────────────
     async def chat(
         self,
@@ -507,7 +698,7 @@ class OllamaClient:
 
         Args:
             messages: List of {"role": "system"|"user"|"assistant",
-                               "content": "..."}
+                       "content": "..."}
             model:    Model name
             response_format: "text" or "json"
 
@@ -519,57 +710,67 @@ class OllamaClient:
         timeout_s = timeout_s or self.default_timeout
         max_retries = max_retries if max_retries is not None else self.default_retries
 
-        if self._loaded_model != model:
-            loaded = await self.load_model(model)
-            if not loaded:
-                return ("", False)
+        if self.mode == 'gemini':
+            # Convert messages to Gemini format
+            gemini_contents = []
+            system_text = None
+            for msg in messages:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if role == "system":
+                    system_text = content
+                else:
+                    gemini_contents.append({"role": role, "parts": [{"text": content}]})
 
-        payload: Dict[str, Any] = {
-            "model": model,
-            "messages": messages,
-            "stream": False,
-            "options": {
+            # Build payload
+            gemini_payload = {
+                "model": "gemini-1.5-flash",
+                "contents": gemini_contents,
                 "temperature": temperature,
-                "num_predict": 4096,
-            },
-        }
-        if response_format == "json":
-            payload["format"] = "json"
+                "max_output_tokens": 1024,
+            }
 
-        for attempt in range(max_retries + 1):
-            try:
-                session = await self._get_session()
-                async with session.post(
-                    f"{self.base_url}/api/chat",
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=timeout_s),
-                ) as resp:
-                    if resp.status != 200:
-                        continue
-                    data = await resp.json()
-                    content = data.get("message", {}).get(
-                        "content", "").strip()
+            url = f"{self._gemini_endpoint}?key={self._gemini_key}"
 
-                    if response_format == "json":
-                        valid, content = self._validate_json(content)
-                        if not valid and attempt < max_retries:
-                            messages.append({
-                                "role": "user",
-                                "content": (
-                                    "Your response was not valid JSON. "
-                                    "Respond ONLY with a valid JSON object."
-                                ),
-                            })
+            for attempt in range(max_retries + 1):
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(
+                            url,
+                            json=gemini_payload,
+                            timeout=aiohttp.ClientTimeout(total=timeout_s),
+                        ) as resp:
+                            if resp.status != 200:
+                                continue
+                            data = await resp.json()
+                            if data.get("candidates") and data["candidates"][0].get("content"):
+                                content = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                                return (content, True)
                             continue
-                        elif not valid:
-                            return ("", False)
+                except (asyncio.TimeoutError, aiohttp.ClientError):
+                    continue
 
-                    return (content, True)
+            return ("", False)
+        else:
+            # Local Ollama chat
+            # Convert messages to Ollama format
+            formatted_prompt = ""
+            for msg in messages:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if role == "system":
+                    formatted_prompt += f"<system>{content}</system>\n"
+                elif role == "user":
+                    formatted_prompt += f"<user>{content}</user>\n"
+                elif role == "assistant":
+                    formatted_prompt += f"<assistant>{content}</assistant>\n"
 
-            except (aiohttp.ClientError, asyncio.TimeoutError):
-                continue
-
-        return ("", False)
+            return await self._generate_ollama(
+                formatted_prompt, model=model,
+                response_format=response_format,
+                temperature=temperature,
+                timeout_s=timeout_s,
+                max_retries=max_retries)
 
     # ── JSON validation ────────────────────────────────────
     @staticmethod
@@ -616,5 +817,6 @@ class OllamaClient:
 
     def __repr__(self) -> str:
         return (
-            f"OllamaClient(base_url={self.base_url!r}, "
-            f"loaded={self._loaded_model!r})")
+            f"OllamaClient(base_url={self.base_url!r}, mode={self.mode!r}, "
+            f"loaded={self._loaded_model!r}, "
+            f"gemini_key_set={bool(self._gemini_key)})")

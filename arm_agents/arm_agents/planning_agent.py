@@ -30,6 +30,10 @@ VERB_SYNONYMS = {
     'slide': ['slide', 'move'],
     'sweep': ['sweep', 'clear', 'clean'],
     'roll': ['roll'],
+    # Gestures (mapped to joint_motion for autonomous execution)
+    'wave': ['wave'],
+    'nod': ['nod'],
+    'shake': ['shake'],
 }
 
 # Template: verb → list of action types
@@ -46,6 +50,10 @@ TASK_TEMPLATES: Dict[str, List[str]] = {
     'slide': ['locate', 'plan_slide_path', 'execute_slide', 'verify'],
     'sweep': ['identify_area', 'plan_sweep', 'execute_sweep'],
     'roll': ['locate', 'plan_roll', 'execute_roll', 'verify'],
+    # Gestures map to a single joint_motion action
+    'wave': ['joint_motion'],
+    'nod': ['joint_motion'],
+    'shake': ['joint_motion'],
 }
 
 # Color words for object matching
@@ -135,6 +143,33 @@ class PlanningAgent(LifecycleNode):
             action.destination = target or ''
             action.confidence = subgoal['confidence']
             action.status = 'PENDING'
+            # Set waypoints for joint_motion gestures
+            if action_type == 'joint_motion':
+                gesture = (obj or '').lower().strip()
+                if gesture == 'wave':
+                    # Wave: rightward waist swing + wrist pitch oscillation
+                    q0 = [0.0, math.radians(25.0), math.radians(-45.0), math.radians(15.0), 0.0]
+                    q1 = [0.0, math.radians(-25.0), math.radians(-45.0), math.radians(-15.0), 0.0]
+                    q2 = [0.0, math.radians(25.0), math.radians(-45.0), math.radians(15.0), 0.0]
+                    waypoints = [q0, q1, q2]
+                    # Repeat 3 cycles for a natural wave
+                    action.params_json = json.dumps({'waypoints': waypoints * 3, 'repeat': 1})
+                elif gesture == 'nod':
+                    # Nod: wrist pitch oscillation
+                    q0 = [0.0, math.radians(25.0), math.radians(-45.0), math.radians(35.0), 0.0]
+                    q1 = [0.0, math.radians(25.0), math.radians(-45.0), math.radians(5.0), 0.0]
+                    waypoints = [q0, q1]
+                    action.params_json = json.dumps({'waypoints': waypoints * 3, 'repeat': 1})
+                elif gesture == 'shake':
+                    # Shake: waist yaw oscillation
+                    q0 = [math.radians(-25.0), math.radians(25.0), math.radians(-45.0), math.radians(15.0), 0.0]
+                    q1 = [math.radians( 25.0), math.radians(25.0), math.radians(-45.0), math.radians(15.0), 0.0]
+                    waypoints = [q0, q1]
+                    action.params_json = json.dumps({'waypoints': waypoints * 3, 'repeat': 1})
+                else:
+                    action.params_json = json.dumps({'waypoints': [], 'repeat': 1})
+            else:
+                action.params_json = json.dumps({})
             action.reasoning = subgoal['reasoning']
             actions.append(action)
 
@@ -219,7 +254,14 @@ class PlanningAgent(LifecycleNode):
                 prep_word = word
                 break
 
-        if prep_idx >= 0:
+        # Gestures (wave, nod, shake) do not have objects or targets;
+        # bypass preposition splitting to avoid extracting unrelated nouns
+        # from the prepositional phrase (e.g. "to the camera" in "Wave to the camera").
+        is_gesture = canonical_verb in ('wave', 'nod', 'shake')
+        if is_gesture:
+            obj = None
+            target = None
+        elif prep_idx >= 0:
             obj_words = remaining[:prep_idx]
             target_words = remaining[prep_idx + 1:]
             # Remove "to" duplicates like "next to"
@@ -237,8 +279,43 @@ class PlanningAgent(LifecycleNode):
 
         # When stacking without explicit preposition (e.g. "stack the jenga tower"),
         # automatically decouple into picking the loose block and stacking onto the tower
+        # Also handle cases where "jenga tower" appears earlier in the command
         canonical_verb = self._get_canonical_verb(verb) if verb else 'pick'
-        if canonical_verb == 'stack' or verb == 'stack':
+        is_stack = canonical_verb == 'stack' or verb == 'stack'
+        if is_stack:
+            # Check original command for jenga/tower references
+            has_jenga = 'jenga' in command
+            has_tower = 'tower' in command
+            
+            if target is None and (has_jenga or has_tower):
+                # "jenga tower" or "tower" reference exists in command
+                if has_jenga and has_tower:
+                    target = 'jenga tower'
+                    # Extract object: if "jenga block" or similar mentioned after stack
+                    remaining_after_stack = [w for w in words if w not in {'jenga', 'tower'}]
+                    if remaining_after_stack:
+                        obj = remaining_after_stack[-1]  # last mentioned object
+                    else:
+                        obj = 'block'
+                elif has_jenga:
+                    target = 'jenga tower'
+                    obj = 'jenga block'
+                elif has_tower:
+                    target = 'tower'
+                    # Look for object near "tower" in original words
+                    tower_idx = None
+                    for i, w in enumerate(words):
+                        if w == 'tower':
+                            tower_idx = i
+                            break
+                    if tower_idx is not None and tower_idx > 0:
+                        obj = ' '.join(words[:tower_idx])
+                        # Remove "the" etc that might be captured
+                        obj = obj.replace('the ', '').replace('a ', '')
+                    else:
+                        obj = 'block'
+            
+            # Original decoupling logic for stack without preposition
             if target is None:
                 if obj and ('tower' in obj or 'jenga' in obj):
                     target = 'jenga tower'
@@ -294,6 +371,8 @@ class PlanningAgent(LifecycleNode):
             'execute_sweep': "Execute sweep",
             'plan_roll': f"Plan roll for '{obj}'",
             'execute_roll': f"Roll '{obj}' to target",
+            # Gesture actions
+            'joint_motion': "Execute a sequence of joint waypoints (degrees).",
         }
 
         reasoning = {
@@ -303,6 +382,7 @@ class PlanningAgent(LifecycleNode):
             'lift': "Lifting 10cm to clear surface.",
             'transport': f"Moving to '{target}' while maintaining grip.",
             'place': "Descending and releasing at target.",
+            'joint_motion': f"Executing gesture waypoints for '{obj}'.",
         }
 
         return {

@@ -27,19 +27,29 @@ from arm_planner.msg import WorldObject
 # z = height above table (table surface ≈ -0.006m in base frame).
 # The arm sweeps these positions so the wrist camera acts as a top-down sensor.
 # Grid covers the full hemispherical workspace of the 5-DoF arm.
+# Positive y values scan to the "back" (behind the robot), negative y to the "front".
 SCAN_GRID_BASE = [
-    # Row 1 — near row (r ≈ 0.15 m, table forward)
-    ( 0.08, -0.13, 0.20),   # near-left
-    ( 0.00, -0.15, 0.20),   # near-center
-    (-0.08, -0.13, 0.20),   # near-right
-    # Row 2 — mid row (r ≈ 0.18 m, table center)
-    ( 0.09, -0.16, 0.18),   # mid-left
-    ( 0.00, -0.18, 0.18),   # mid-center
-    (-0.09, -0.16, 0.18),   # mid-right
-    # Row 3 — far row (r ≈ 0.21 m, table far)
-    ( 0.09, -0.19, 0.16),   # far-left
-    ( 0.00, -0.21, 0.16),   # far-center
-    (-0.09, -0.19, 0.16),   # far-right
+    # Row 1 — near row (r ≈ 0.15 m)
+    ( 0.08, -0.13, 0.20),   # near-left  (front-left)
+    ( 0.00, -0.15, 0.20),   # near-center (front-center)
+    (-0.08, -0.13, 0.20),   # near-right (front-right)
+    ( 0.08,  0.13, 0.20),   # near-left  (back-left)
+    ( 0.00,  0.15, 0.20),   # near-center (back-center)
+    (-0.08,  0.13, 0.20),   # near-right (back-right)
+    # Row 2 — mid row (r ≈ 0.18 m)
+    ( 0.09, -0.16, 0.18),   # mid-left  (front-left)
+    ( 0.00, -0.18, 0.18),   # mid-center (front-center)
+    (-0.09, -0.16, 0.18),   # mid-right (front-right)
+    ( 0.09,  0.16, 0.18),   # mid-left  (back-left)
+    ( 0.00,  0.18, 0.18),   # mid-center (back-center)
+    (-0.09,  0.16, 0.18),   # mid-right (back-right)
+    # Row 3 — far row (r ≈ 0.21 m)
+    ( 0.09, -0.19, 0.16),   # far-left  (front-left)
+    ( 0.00, -0.21, 0.16),   # far-center (front-center)
+    (-0.09, -0.19, 0.16),   # far-right (front-right)
+    ( 0.09,  0.19, 0.16),   # far-left  (back-left)
+    ( 0.00,  0.21, 0.16),   # far-center (back-center)
+    (-0.09,  0.19, 0.16),   # far-right (back-right)
 ]
 
 # Detection wait time per viewpoint (seconds) — time for YOLO to process frame

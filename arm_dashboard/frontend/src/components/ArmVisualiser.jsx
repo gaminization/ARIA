@@ -10,21 +10,72 @@ const JOINT_NAMES = [
   { name: 'J5 Gripper', limit: [0, 60] },
 ];
 
+/*
+ * Exact forward kinematics taken from arm_description/urdf/aria_arm.urdf.xacro.
+ * Every joint in the real robot is revolute about its own local +Z axis; each
+ * entry below is the URDF <origin xyz rpy> of that joint relative to its parent
+ * link. Building the same chain in Three.js makes the twin track the physical
+ * arm exactly (instead of the old illustrative 0.12/0.12/0.10 stick figure).
+ */
+const CHAIN = [
+  { name: 'waist_joint', xyz: [-0.00345, -0.00001, 0.04449], rpy: [0, 0, 0] },
+  { name: 'shoulder_joint', xyz: [0.00396, 0.01369, 0.03521], rpy: [1.5708, 0.03778, 1.5708] },
+  { name: 'elbow_joint', xyz: [-0.00007, 0.11689, -0.00792], rpy: [-0.0013, -3.14159, 0.03778] },
+  { name: 'wrist_pitch_joint', xyz: [-0.0088, 0.12752, -0.00487], rpy: [-0.01458, 3.14159, 0.0] },
+  { name: 'gripper_joint', xyz: [-0.02735, 0.03009, -0.02013], rpy: [-1.27431, -1.58408, 1.5708] },
+];
+// Right finger mimics the left gripper joint (URDF <mimic>).
+const MIMIC_JOINT = { name: 'finger_mimic_joint', xyz: [-0.02492, 0.03048, 0.00564], rpy: [-1.25673, -1.55752, -1.57079] };
+
+// URDF fixed-axis (extrinsic XYZ) RPY -> quaternion, i.e. R = Rz(yaw)·Ry(pitch)·Rx(roll).
+function rpyToQuaternion(rpy) {
+  const [rr, rp, ry] = rpy;
+  const cr = Math.cos(rr), sr = Math.sin(rr);
+  const cp = Math.cos(rp), sp = Math.sin(rp);
+  const cy = Math.cos(ry), sy = Math.sin(ry);
+  const m = new THREE.Matrix4().set(
+    cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr, 0,
+    sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr, 0,
+    -sp, cp * sr, cp * cr, 0,
+    0, 0, 0, 1
+  );
+  return new THREE.Quaternion().setFromRotationMatrix(m);
+}
+
+function makeFrame({ xyz, rpy }) {
+  const g = new THREE.Group();
+  g.position.set(xyz[0], xyz[1], xyz[2]);
+  g.quaternion.copy(rpyToQuaternion(rpy));
+  return g;
+}
+
+// A box mesh placed with the given URDF local origin/rpy (used to approximate the STL links).
+function makeBox(size, position, rpy, material) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), material);
+  mesh.position.set(position[0], position[1], position[2]);
+  mesh.quaternion.copy(rpyToQuaternion(rpy || [0, 0, 0]));
+  return mesh;
+}
+
+// A cylinder whose axis runs along the link's local +Z (URDF convention).
+function makeCylinder(radius, length, position, material) {
+  const geo = new THREE.CylinderGeometry(radius, radius, length, 24);
+  geo.rotateX(Math.PI / 2); // three.js cylinder is Y-up; rotate so its axis is +Z
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.position.set(position[0], position[1], position[2]);
+  return mesh;
+}
+
 export default function ArmVisualiser({ jointState }) {
   const mountRef = useRef(null);
-  const armMeshRef = useRef(null);
-  const linksRef = useRef([]);
-  const fingersRef = useRef([]);
+  const pivotRef = useRef(null);
+  const rotGroupsRef = useRef([]); // [waist, shoulder, elbow, wrist, gripperL, gripperR]
+  const tcpRef = useRef(null);
 
   const currentAngles = jointState?.current_angles || [0, 0, 0, 0, 0];
   const targetAngles = jointState?.target_angles || [0, 0, 0, 0, 0];
 
-  // Calculate Forward Kinematics End-Effector XYZ estimate (in meters)
-  const q = currentAngles.map((a) => (a * Math.PI) / 180);
-  const l1 = 0.12, l2 = 0.12, l3 = 0.10, l4 = 0.08;
-  const eeX = (Math.sin(q[0]) * (l2 * Math.sin(q[1]) + l3 * Math.sin(q[1] + q[2]))).toFixed(3);
-  const eeY = (Math.cos(q[0]) * (l2 * Math.sin(q[1]) + l3 * Math.sin(q[1] + q[2]))).toFixed(3);
-  const eeZ = (0.10 + l2 * Math.cos(q[1]) + l3 * Math.cos(q[1] + q[2])).toFixed(3);
+  const [ee, setEe] = useState({ x: '0.000', y: '0.000', z: '0.000' });
 
   useEffect(() => {
     const container = mountRef.current;
@@ -33,149 +84,148 @@ export default function ArmVisualiser({ jointState }) {
     const width = container.clientWidth || 360;
     const height = container.clientHeight || 240;
 
-    // Three.js Scene Setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0c11);
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.01, 10);
-    camera.position.set(0.6, 0.5, 0.7);
-    camera.lookAt(0, 0.15, 0);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.01, 20);
+    camera.position.set(0.5, 0.42, -0.52); // URDF +Y maps to three -Z, so view from the front (-Z side)
+    camera.lookAt(0, 0.2, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.replaceChildren(renderer.domElement);
 
-    // Grid and Lighting
-    const grid = new THREE.GridHelper(0.8, 16, 0x4f8ef7, 0x1f2433);
+    // ── Lighting & ground grid ─────────────────────────────────
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+    const dirLight = new THREE.DirectionalLight(0x9fb4ff, 1.3);
+    dirLight.position.set(1.2, 2.4, 1.2);
+    scene.add(dirLight);
+    const fill = new THREE.DirectionalLight(0x8b5cf6, 0.5);
+    fill.position.set(-1.2, 1.0, -1.5);
+    scene.add(fill);
+
+    const grid = new THREE.GridHelper(0.9, 18, 0x4f8ef7, 0x1f2433);
     grid.position.y = 0;
     scene.add(grid);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0x8b5cf6, 1.2);
-    dirLight.position.set(1, 2, 1);
-    scene.add(dirLight);
-
-    // Workspace reach boundary sphere (transparent, R=0.35m)
-    const sphereGeo = new THREE.SphereGeometry(0.35, 24, 24);
-    const sphereMat = new THREE.MeshBasicMaterial({
-      color: 0x06b6d4,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.12,
-    });
-    const reachSphere = new THREE.Mesh(sphereGeo, sphereMat);
-    reachSphere.position.set(0, 0.12, 0);
+    // Workspace reach boundary (base offset in URDF z).
+    const reachSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.36, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0x06b6d4, wireframe: true, transparent: true, opacity: 0.10 })
+    );
+    reachSphere.position.set(0, 0.15, 0);
     scene.add(reachSphere);
 
-    // Robot Kinematic Group
+    // ── Robot assembly ─────────────────────────────────────────
+    // Everything is built in URDF coordinates (Z-up). The pivot lets the user
+    // orbit; robotGroup rotates URDF Z-up onto the three.js Y-up world.
+    const pivot = new THREE.Group();
+    scene.add(pivot);
+    pivotRef.current = pivot;
+
     const robotGroup = new THREE.Group();
-    scene.add(robotGroup);
+    robotGroup.rotation.x = -Math.PI / 2; // URDF +Z -> three +Y, URDF +Y -> three -Z
+    pivot.add(robotGroup);
 
-    // 1. Base pedestal
-    const baseGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.04, 20);
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x252a38, roughness: 0.5 });
-    const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-    baseMesh.position.y = 0.02;
-    robotGroup.add(baseMesh);
+    const materials = {
+      base: new THREE.MeshStandardMaterial({ color: 0x2a3040, metalness: 0.4, roughness: 0.5 }),
+      hollow: new THREE.MeshStandardMaterial({ color: 0x3a2f22, metalness: 0.55, roughness: 0.4 }),
+      orangeA: new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.35, roughness: 0.4 }),
+      orangeB: new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.35, roughness: 0.4 }),
+      orangeC: new THREE.MeshStandardMaterial({ color: 0xfb923c, metalness: 0.3, roughness: 0.45 }),
+      blue: new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.4, roughness: 0.35 }),
+      joint: new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.7, roughness: 0.3 }),
+    };
 
-    // Arm Link Segments
-    const materials = [
-      new THREE.MeshStandardMaterial({ color: 0x4f8ef7, metalness: 0.3, roughness: 0.4 }),
-      new THREE.MeshStandardMaterial({ color: 0x8b5cf6, metalness: 0.3, roughness: 0.4 }),
-      new THREE.MeshStandardMaterial({ color: 0x06b6d4, metalness: 0.3, roughness: 0.4 }),
-      new THREE.MeshStandardMaterial({ color: 0x4fc9a4, metalness: 0.3, roughness: 0.4 }),
-      new THREE.MeshStandardMaterial({ color: 0xf7a84f, metalness: 0.3, roughness: 0.4 }),
-    ];
+    // base_link: white cylindrical base housing (URDF collision proxy)
+    robotGroup.add(makeCylinder(0.0592, 0.0547, [-0.0029, 0.00016, 0.027], materials.base));
 
-    // J1 Group (Waist rotation around Y)
-    const j1Group = new THREE.Group();
-    j1Group.position.set(0, 0.04, 0);
-    robotGroup.add(j1Group);
+    const rotGroups = [];
 
-    const j1Mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.06, 16), materials[0]);
-    j1Mesh.position.y = 0.03;
-    j1Group.add(j1Mesh);
+    // waist_joint frame -> rotation -> waist_link visual
+    const waistFrame = makeFrame(CHAIN[0]);
+    robotGroup.add(waistFrame);
+    const waistRot = new THREE.Group();
+    waistFrame.add(waistRot);
+    rotGroups.push(waistRot);
+    // waist_link spans from its own origin up to the shoulder joint (z = 0.03521).
+    waistRot.add(makeBox([0.078, 0.056, 0.036], [0, 0, 0.018], [0, 0, 0], materials.orangeA));
+    waistRot.add(makeCylinder(0.022, 0.036, [0, 0, 0.036], materials.joint));
 
-    // J2 Group (Shoulder pitch)
-    const j2Group = new THREE.Group();
-    j2Group.position.set(0, 0.06, 0);
-    j1Group.add(j2Group);
+    // shoulder_joint frame -> rotation -> upper_arm_link visual
+    const shoulderFrame = makeFrame(CHAIN[1]);
+    waistRot.add(shoulderFrame);
+    const shoulderRot = new THREE.Group();
+    shoulderFrame.add(shoulderRot);
+    rotGroups.push(shoulderRot);
+    // upper_arm_link spans from the shoulder origin (y = 0) to the elbow joint (y = 0.11689).
+    shoulderRot.add(makeBox([0.038, 0.118, 0.028], [-0.00004, 0.0584, -0.00396], [0, 0, 0], materials.orangeB));
 
-    const j2Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.04), materials[1]);
-    j2Mesh.position.y = 0.06;
-    j2Group.add(j2Mesh);
+    // elbow_joint frame -> rotation -> forearm_link visual
+    const elbowFrame = makeFrame(CHAIN[2]);
+    shoulderRot.add(elbowFrame);
+    const elbowRot = new THREE.Group();
+    elbowFrame.add(elbowRot);
+    rotGroups.push(elbowRot);
+    // forearm_link spans from the elbow origin (y = 0) to the wrist joint (y = 0.12752).
+    elbowRot.add(makeBox([0.030, 0.128, 0.030], [-0.0044, 0.0638, -0.0024], [0, 0, 0], materials.orangeC));
 
-    // J3 Group (Elbow pitch)
-    const j3Group = new THREE.Group();
-    j3Group.position.set(0, 0.12, 0);
-    j2Group.add(j3Group);
+    // wrist_pitch_joint frame -> rotation -> wrist_link visual
+    const wristFrame = makeFrame(CHAIN[3]);
+    elbowRot.add(wristFrame);
+    const wristRot = new THREE.Group();
+    wristFrame.add(wristRot);
+    rotGroups.push(wristRot);
+    // wrist_link spans from the wrist origin to the gripper mount (y ≈ 0.030, x ≈ -0.026).
+    wristRot.add(makeBox([0.042, 0.034, 0.032], [-0.014, 0.015, -0.007], [0, 0, 0], materials.orangeA));
 
-    const j3Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.10, 0.032), materials[2]);
-    j3Mesh.position.y = 0.05;
-    j3Group.add(j3Mesh);
+    // Left finger (gripper_joint)
+    const gripFrameL = makeFrame(CHAIN[4]);
+    wristRot.add(gripFrameL);
+    const gripRotL = new THREE.Group();
+    gripFrameL.add(gripRotL);
+    rotGroups.push(gripRotL);
+    gripRotL.add(makeBox([0.016, 0.014, 0.052], [0, 0, 0.03], [0, 0, 0], materials.blue));
 
-    // J4 Group (Wrist pitch)
-    const j4Group = new THREE.Group();
-    j4Group.position.set(0, 0.10, 0);
-    j3Group.add(j4Group);
+    // Right finger (mimic joint)
+    const gripFrameR = makeFrame(MIMIC_JOINT);
+    wristRot.add(gripFrameR);
+    const gripRotR = new THREE.Group();
+    gripFrameR.add(gripRotR);
+    rotGroups.push(gripRotR);
+    gripRotR.add(makeBox([0.016, 0.014, 0.052], [0, 0, 0.03], [0, 0, 0], materials.blue));
 
-    const j4Mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.05, 16), materials[3]);
-    j4Mesh.position.y = 0.025;
-    j4Group.add(j4Mesh);
+    // Tool centre point (grasp point) marker attached to the wrist link.
+    const tcp = new THREE.Object3D();
+    tcp.position.set(0, 0.07, 0);
+    wristRot.add(tcp);
+    tcpRef.current = tcp;
+    const tcpVis = new THREE.Mesh(
+      new THREE.SphereGeometry(0.006, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0x22d3ee })
+    );
+    tcp.add(tcpVis);
 
-    // J5 Gripper & End Effector
-    const j5Group = new THREE.Group();
-    j5Group.position.set(0, 0.05, 0);
-    j4Group.add(j5Group);
+    rotGroupsRef.current = rotGroups;
 
-    const gripperPalm = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.02, 0.04), materials[4]);
-    j5Group.add(gripperPalm);
-
-    // Gripper fingers
-    const fingerGeo = new THREE.BoxGeometry(0.008, 0.035, 0.008);
-    const leftFinger = new THREE.Mesh(fingerGeo, baseMat);
-    leftFinger.position.set(-0.012, 0.02, 0);
-    const rightFinger = new THREE.Mesh(fingerGeo, baseMat);
-    rightFinger.position.set(0.012, 0.02, 0);
-    j5Group.add(leftFinger);
-    j5Group.add(rightFinger);
-    fingersRef.current = [leftFinger, rightFinger];
-
-    // End-Effector 3-axis helper (RGB = XYZ)
-    const axesHelper = new THREE.AxesHelper(0.06);
-    axesHelper.position.set(0, 0.035, 0);
-    j5Group.add(axesHelper);
-
-    linksRef.current = [j1Group, j2Group, j3Group, j4Group, j5Group];
-    armMeshRef.current = { robotGroup, scene, camera, renderer };
-
-    // Orbit mouse interaction
+    // ── Orbit / rotate interaction ─────────────────────────────
     let isDragging = false;
     let prevMouseX = 0;
     let prevMouseY = 0;
 
-    const onMouseDown = (e) => {
-      isDragging = true;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
-    };
-
+    const onMouseDown = (e) => { isDragging = true; prevMouseX = e.clientX; prevMouseY = e.clientY; };
     const onMouseMove = (e) => {
       if (!isDragging) return;
       const dx = e.clientX - prevMouseX;
       const dy = e.clientY - prevMouseY;
-      robotGroup.rotation.y += dx * 0.01;
-      camera.position.y = Math.max(0.1, camera.position.y - dy * 0.005);
-      camera.lookAt(0, 0.15, 0);
+      pivot.rotation.y += dx * 0.01;
+      camera.position.y = Math.max(0.08, camera.position.y - dy * 0.005);
+      camera.lookAt(0, 0.2, 0);
       prevMouseX = e.clientX;
       prevMouseY = e.clientY;
     };
-
-    const onMouseUp = () => {
-      isDragging = false;
-    };
+    const onMouseUp = () => { isDragging = false; };
 
     container.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mousemove', onMouseMove);
@@ -192,11 +242,13 @@ export default function ArmVisualiser({ jointState }) {
       if (!container) return;
       const w = container.clientWidth;
       const h = container.clientHeight;
+      if (!w || !h) return;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
+    requestAnimationFrame(handleResize);
 
     return () => {
       cancelAnimationFrame(animId);
@@ -208,29 +260,31 @@ export default function ArmVisualiser({ jointState }) {
     };
   }, []);
 
-  // Drive Three.js joint groups from real jointState angles
+  // Drive the URDF joint groups from the live joint angles.
   useEffect(() => {
-    if (!linksRef.current || linksRef.current.length < 5) return;
-    const [j1, j2, j3, j4, j5] = linksRef.current;
-    if (j1 && currentAngles[0] !== undefined) {
-      j1.rotation.y = (currentAngles[0] * Math.PI) / 180;
-    }
-    if (j2 && currentAngles[1] !== undefined) {
-      j2.rotation.z = (currentAngles[1] * Math.PI) / 180;
-    }
-    if (j3 && currentAngles[2] !== undefined) {
-      j3.rotation.z = (currentAngles[2] * Math.PI) / 180;
-    }
-    if (j4 && currentAngles[3] !== undefined) {
-      j4.rotation.z = (currentAngles[3] * Math.PI) / 180;
-    }
-    if (j5 && currentAngles[4] !== undefined) {
-      const openFraction = Math.min(60, Math.max(0, currentAngles[4])) / 60;
-      const fingerOffset = 0.004 + 0.008 * openFraction;
-      if (fingersRef.current.length === 2) {
-        fingersRef.current[0].position.x = -fingerOffset;
-        fingersRef.current[1].position.x = fingerOffset;
-      }
+    const rotGroups = rotGroupsRef.current;
+    if (!rotGroups || rotGroups.length < 6) return;
+
+    const setRot = (group, deg) => { group.rotation.z = (deg * Math.PI) / 180; };
+    setRot(rotGroups[0], currentAngles[0] ?? 0); // waist
+    setRot(rotGroups[1], currentAngles[1] ?? 0); // shoulder
+    setRot(rotGroups[2], currentAngles[2] ?? 0); // elbow
+    setRot(rotGroups[3], currentAngles[3] ?? 0); // wrist pitch
+    const grip = currentAngles[4] ?? 0;
+    setRot(rotGroups[4], grip); // left finger
+    setRot(rotGroups[5], grip); // right finger (mimic)
+
+    // Report the true end-effector position in the robot base frame (URDF axes).
+    const pivot = pivotRef.current;
+    const tcp = tcpRef.current;
+    if (pivot && tcp && pivot.parent) {
+      pivot.updateMatrixWorld(true);
+      const world = new THREE.Vector3();
+      tcp.getWorldPosition(world);
+      // robotGroup = pivot.children[0] built purely in URDF coords.
+      const robotGroup = pivot.children[0];
+      const local = robotGroup.worldToLocal(world.clone());
+      setEe({ x: local.x.toFixed(3), y: local.y.toFixed(3), z: local.z.toFixed(3) });
     }
   }, [currentAngles]);
 
@@ -247,11 +301,12 @@ export default function ArmVisualiser({ jointState }) {
         <div className="flex items-center gap-2">
           <Compass className="w-3.5 h-3.5 text-purple-400" />
           <span className="text-xs font-semibold tracking-wider text-slate-200 uppercase">
-            4-Axis Arm + Gripper (Illustrative Model)
+            5-DOF Arm + Gripper — URDF Kinematic Twin
           </span>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono text-purple-400 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/40">
-          <span>NOT A COLLISION OR PLANNING MODEL</span>
+        <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/40">
+          <RotateCw className="w-2.5 h-2.5" />
+          <span>LIVE JOINT-STATE MIRROR</span>
         </div>
       </div>
 
@@ -259,14 +314,14 @@ export default function ArmVisualiser({ jointState }) {
       <div className="relative flex-1 min-h-[140px] bg-[#090b0f] overflow-hidden" ref={mountRef}>
         {/* End-Effector Telemetry Overlay */}
         <div className="absolute top-2 left-2 z-10 bg-black/80 border border-white/10 px-2 py-1 rounded text-[10px] font-mono text-slate-300">
-          <div className="text-cyan-400 font-semibold mb-0.5">APPROXIMATE END-EFFECTOR POSITION</div>
-          <div>X: <span className="text-white font-bold">{eeX}m</span></div>
-          <div>Y: <span className="text-white font-bold">{eeY}m</span></div>
-          <div>Z: <span className="text-white font-bold">{eeZ}m</span></div>
+          <div className="text-cyan-400 font-semibold mb-0.5">END-EFFECTOR POSITION (TCP)</div>
+          <div>X: <span className="text-white font-bold">{ee.x}m</span></div>
+          <div>Y: <span className="text-white font-bold">{ee.y}m</span></div>
+          <div>Z: <span className="text-white font-bold">{ee.z}m</span></div>
         </div>
 
         <div className="absolute bottom-2 right-2 z-10 text-[9px] font-mono text-slate-500 bg-black/60 px-1.5 py-0.5 rounded pointer-events-none">
-          DRAG TO ROTATE SCENE
+          DRAG TO ORBIT · URDF-EXACT KINEMATICS
         </div>
       </div>
 

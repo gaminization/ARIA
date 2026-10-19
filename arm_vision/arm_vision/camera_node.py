@@ -63,6 +63,41 @@ class CameraNode(Node):
         self.declare_parameter('mode', 'sim')
         self.mode = self.get_parameter('mode').value
 
+        # Device parameters are only used in real/hardware mode. Declare them
+        # with defaults up front so they can be read (and overridden) in every
+        # mode without raising ParameterNotDeclaredException. In sim mode they
+        # are simply unused. This keeps the sim relay able to start even when
+        # no hardware parameters are supplied.
+        for _param, _default in (
+            ('camera_id', -1),
+            ('top_device', 0),
+            ('wrist_url', 'http://192.168.4.1:81/stream'),
+        ):
+            if not self.has_parameter(_param):
+                self.declare_parameter(_param, _default)
+
+        # Support camera_id parameter from hardware launch (maps to top_device/wrist_url)
+        # Hardware launch convention:
+        #   camera_id = 0 → top camera, use device index 0
+        #   camera_id = 1 → wrist camera, use default ESP32 URL (not a device index)
+        #   camera_id absent (-1) → use original top_device/wrist_url parameters
+        camera_id = self.get_parameter('camera_id').value
+        if camera_id == 0:
+            # Use camera_id as top device index, keep default wrist URL
+            self.get_logger().info("Using camera_id=0 as top_device index")
+            self._top_device = camera_id
+            self._wrist_url = self.get_parameter('wrist_url').value
+        elif camera_id == 1:
+            # camera_id=1 for wrist camera: use original defaults (ESP32 URL)
+            # This preserves the launch file intent: "Or ESP32-CAM HTTP stream URL"
+            self.get_logger().info("Using camera_id=1: keeping default camera parameters")
+            self._top_device = self.get_parameter('top_device').value
+            self._wrist_url = self.get_parameter('wrist_url').value
+        else:
+            # No/unknown camera_id: fall back to original parameters
+            self._top_device = self.get_parameter('top_device').value
+            self._wrist_url = self.get_parameter('wrist_url').value
+
         # Timestamp tracking for synchronization
         self.top_camera_last_stamp = None
         self.wrist_camera_last_stamp = None
@@ -88,10 +123,8 @@ class CameraNode(Node):
             # Real mode: capture from real devices.
             # Top camera: local UVC device (Logitech C270).
             # Wrist camera: ESP32-CAM MJPEG stream over WiFi.
-            self.declare_parameter('top_device', 0)
-            self.declare_parameter('wrist_url', 'http://192.168.4.1:81/stream')
-            self._top_device = int(self.get_parameter('top_device').value)
-            self._wrist_url = str(self.get_parameter('wrist_url').value)
+            self._top_device = int(self._top_device)
+            self._wrist_url = str(self._wrist_url)
 
             self._top_cap = None
             self._wrist_cap = None

@@ -73,18 +73,16 @@ def generate_launch_description():
     use_orchestrator = LaunchConfiguration('use_orchestrator')
 
     # ── Camera Node ────────────────────────────────────────
+    # Republish the Gazebo camera feeds on the ARIA namespace used by the
+    # dashboard. The /aria/* publisher names must NOT be remapped back onto
+    # the raw topics, otherwise the relay publishes onto its own inputs and
+    # the dashboard never receives a top/wrist frame.
     camera_node = Node(
         package='arm_vision',
         executable='camera_node',
         name='camera_node',
         parameters=[{'mode': 'sim', 'use_sim_time': True}],
         output='screen',
-        remappings=[
-            ('/aria/top_camera/image_raw', '/top_camera/image_raw'),
-            ('/aria/wrist_camera/image_raw', '/wrist_camera/image_raw'),
-            ('/aria/top_camera/camera_info', '/top_camera/camera_info'),
-            ('/aria/wrist_camera/camera_info', '/wrist_camera/camera_info'),
-        ],
     )
 
     # ── Detection Node ─────────────────────────────────────

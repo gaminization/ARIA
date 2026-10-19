@@ -99,16 +99,15 @@ def generate_launch_description():
     # ═══════════════════════════════════════════════════════
     # STAGE 2: Base perception (2s)
     # ═══════════════════════════════════════════════════════
+    # Camera relay — republishes the Gazebo camera feeds on the ARIA
+    # namespace that the dashboard bridge subscribes to. Do NOT remap its
+    # /aria/* publishers back onto the raw topics: that would redirect the
+    # relay onto its own inputs, so no /aria feed is ever produced and the
+    # dashboard has nothing to display.
     camera_node = TimerAction(period=2.0, actions=[Node(
         package='arm_vision', executable='camera_node',
         name='camera_node', output='screen',
-        parameters=[{'mode': 'sim', 'use_sim_time': True}],
-        remappings=[
-            ('/aria/top_camera/image_raw', '/top_camera/image_raw'),
-            ('/aria/wrist_camera/image_raw', '/wrist_camera/image_raw'),
-            ('/aria/top_camera/camera_info', '/top_camera/camera_info'),
-            ('/aria/wrist_camera/camera_info', '/wrist_camera/camera_info'),
-        ])])
+        parameters=[{'mode': 'sim', 'use_sim_time': True}])])
 
     detection_node = TimerAction(period=2.0, actions=[Node(
         package='arm_vision', executable='detection_node',

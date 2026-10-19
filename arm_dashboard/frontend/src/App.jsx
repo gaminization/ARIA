@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, ShieldAlert, Wifi, Cpu, Activity, Clock, Layers, Camera, Map, BarChart3, Terminal, Monitor, Maximize2 } from 'lucide-react';
+import { Bot, ShieldAlert, Wifi, Cpu, Activity, Clock, Layers, Camera, Map, BarChart3, Terminal, Monitor, Maximize2, Power } from 'lucide-react';
 import CameraPanel from './components/CameraPanel';
 import ArmVisualiser from './components/ArmVisualiser';
 import TaskControl from './components/TaskControl';
@@ -252,6 +252,18 @@ export default function App() {
     }
   };
 
+  const handleKillSim = async () => {
+    const ok = window.confirm(
+      'FULL KILL SIMULATION\n\nThis terminates Gazebo and every ROS 2 node/agent, clears shared memory (/dev/shm) and frees RAM. The dashboard stays open so you can relaunch a fresh workcell.\n\nContinue?'
+    );
+    if (!ok) return;
+    try {
+      await fetch('/api/simulation/kill', { method: 'POST' });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleReset = async () => {
     try {
       await fetch('/api/reset', { method: 'POST' });
@@ -333,13 +345,15 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right: Permanent E-STOP & Reset */}
+        {/* Right: Permanent E-STOP & Full Simulation Kill */}
         <div className="flex items-center gap-2">
           <button
-            onClick={handleReleaseEStop}
-            className="px-2.5 py-1 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 text-xs font-mono font-bold rounded border border-emerald-700/60 shadow-sm flex items-center gap-1 tracking-wider transition-all cursor-pointer"
+            onClick={handleKillSim}
+            className="px-2.5 py-1 bg-orange-950/80 hover:bg-orange-900 text-orange-300 text-xs font-mono font-bold rounded border border-orange-700/60 shadow-sm flex items-center gap-1 tracking-wider transition-all cursor-pointer"
+            title="Kill the entire simulation: stop Gazebo + all ROS 2 nodes, clear shared memory and free RAM"
           >
-            CLEAR E-STOP
+            <Power className="w-3 h-3" />
+            KILL SIM
           </button>
           <button
             onClick={handleEStop}
@@ -569,8 +583,8 @@ export default function App() {
         )}
 
         {currentPage === 'tasks' && (
-          <div className="h-full w-full grid grid-cols-12 gap-2">
-            <div className="col-span-12 md:col-span-5 h-full">
+          <div className="h-full w-full min-h-0 grid grid-cols-12 grid-rows-1 gap-2 overflow-hidden">
+            <div className="col-span-12 md:col-span-5 h-full min-h-0 overflow-hidden">
               <TaskControl
                 taskState={systemState?.task}
                 onSendCommand={handleSendCommand}
@@ -580,18 +594,18 @@ export default function App() {
                 onReset={handleReset}
               />
             </div>
-            <div className="col-span-12 md:col-span-7 h-full">
+            <div className="col-span-12 md:col-span-7 h-full min-h-0 overflow-hidden">
               <ChainOfThought logs={systemState?.cot || []} />
             </div>
           </div>
         )}
 
         {currentPage === 'telemetry' && (
-          <div className="h-full w-full grid grid-cols-12 gap-2">
-            <div className="col-span-12 md:col-span-6 h-full">
+          <div className="h-full w-full min-h-0 grid grid-cols-12 grid-rows-1 gap-2 overflow-hidden">
+            <div className="col-span-12 md:col-span-6 h-full min-h-0 overflow-hidden">
               <MetricsPanel />
             </div>
-            <div className="col-span-12 md:col-span-6 h-full">
+            <div className="col-span-12 md:col-span-6 h-full min-h-0 overflow-hidden">
               <HealthPanel healthState={systemState?.health} />
             </div>
           </div>

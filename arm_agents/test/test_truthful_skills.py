@@ -66,10 +66,35 @@ class TruthfulSkillTests(unittest.TestCase):
             SkillAgent._skill_pull,
             SkillAgent._skill_slide,
             SkillAgent._skill_roll,
-            SkillAgent._skill_sweep,
         ):
             with self.subTest(skill=skill.__name__):
                 self.assertFalse(skill(agent, action))
+
+    def test_sweep_reports_failure_when_motion_is_not_possible(self):
+        """The workspace sweep must not claim success if it cannot reach viewpoints."""
+        bus = _Bus()
+        agent = SimpleNamespace(
+            bus=bus,
+            _move_joints=lambda *_args, **_kwargs: False,
+            _wait_for_arrival=lambda *_args, **_kwargs: True,
+            _latest_vision_dets=[],
+            _register_discovered_object=lambda **_kwargs: None,
+            _update_object_lifecycle=lambda *_args, **_kwargs: None,
+        )
+        self.assertFalse(SkillAgent._skill_sweep(agent, SimpleNamespace(target_object="")))
+
+    def test_sweep_succeeds_only_after_reaching_viewpoints(self):
+        """A sweep that reaches viewpoints and sees nothing must still succeed."""
+        bus = _Bus()
+        agent = SimpleNamespace(
+            bus=bus,
+            _move_joints=lambda *_args, **_kwargs: True,
+            _wait_for_arrival=lambda *_args, **_kwargs: True,
+            _latest_vision_dets=[],
+            _register_discovered_object=lambda **_kwargs: None,
+            _update_object_lifecycle=lambda *_args, **_kwargs: None,
+        )
+        self.assertTrue(SkillAgent._skill_sweep(agent, SimpleNamespace(target_object="")))
 
     def test_lift_refuses_unplanned_joint_fallback_when_ik_fails(self):
         bus = _Bus()

@@ -212,55 +212,60 @@ export default function WorldMap({ memoryState, visionState, jointState }) {
     }
 
     // 2. Optical Table & Workcell Geometry
-    // Optical Table Surface (+X region: 0.0 to 0.35m, Y: -0.32 to +0.32m)
-    const tableLeft = toCanvasX(0.01);
-    const tableTop = toCanvasY(0.32);
-    const tableW = toCanvasX(0.35) - tableLeft;
-    const tableH = toCanvasY(-0.32) - tableTop;
+    // The four workcell zones are only drawn once the robot has actually swept
+    // the environment and marked objects. Before that the world model is empty.
+    const hasMapped = displayObjects.length > 0;
+    if (hasMapped) {
+      // Optical Table Surface (+X region: 0.0 to 0.35m, Y: -0.32 to +0.32m)
+      const tableLeft = toCanvasX(0.01);
+      const tableTop = toCanvasY(0.32);
+      const tableW = toCanvasX(0.35) - tableLeft;
+      const tableH = toCanvasY(-0.32) - tableTop;
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
-    ctx.fillRect(tableLeft, tableTop, tableW, tableH);
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(tableLeft, tableTop, tableW, tableH);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+      ctx.fillRect(tableLeft, tableTop, tableW, tableH);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(tableLeft, tableTop, tableW, tableH);
 
-    // Left Pedestal & Bin Zone
-    const leftPedX = toCanvasX(-0.25);
-    const leftPedY = toCanvasY(0.26);
-    const leftPedW = toCanvasX(-0.10) - leftPedX;
-    const leftPedH = toCanvasY(0.10) - leftPedY;
-    ctx.fillStyle = 'rgba(30, 27, 46, 0.5)';
-    ctx.fillRect(leftPedX, leftPedY, leftPedW, leftPedH);
-    ctx.strokeStyle = 'rgba(168, 85, 247, 0.35)';
-    ctx.strokeRect(leftPedX, leftPedY, leftPedW, leftPedH);
+      // Left Pedestal & Bin Zone
+      const leftPedX = toCanvasX(-0.25);
+      const leftPedY = toCanvasY(0.26);
+      const leftPedW = toCanvasX(-0.10) - leftPedX;
+      const leftPedH = toCanvasY(0.10) - leftPedY;
+      ctx.fillStyle = 'rgba(30, 27, 46, 0.5)';
+      ctx.fillRect(leftPedX, leftPedY, leftPedW, leftPedH);
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.35)';
+      ctx.strokeRect(leftPedX, leftPedY, leftPedW, leftPedH);
 
-    // Right Pedestal & Bin Zone
-    const rightPedX = toCanvasX(-0.25);
-    const rightPedY = toCanvasY(-0.10);
-    const rightPedW = toCanvasX(-0.10) - rightPedX;
-    const rightPedH = toCanvasY(-0.26) - rightPedY;
-    ctx.fillStyle = 'rgba(20, 35, 30, 0.5)';
-    ctx.fillRect(rightPedX, rightPedY, rightPedW, rightPedH);
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
-    ctx.strokeRect(rightPedX, rightPedY, rightPedW, rightPedH);
+      // Right Pedestal & Bin Zone
+      const rightPedX = toCanvasX(-0.25);
+      const rightPedY = toCanvasY(-0.10);
+      const rightPedW = toCanvasX(-0.10) - rightPedX;
+      const rightPedH = toCanvasY(-0.26) - rightPedY;
+      ctx.fillStyle = 'rgba(20, 35, 30, 0.5)';
+      ctx.fillRect(rightPedX, rightPedY, rightPedW, rightPedH);
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+      ctx.strokeRect(rightPedX, rightPedY, rightPedW, rightPedH);
 
-    // Rear Jenga & Sorting Tray
-    const rearX = toCanvasX(-0.28);
-    const rearY = toCanvasY(0.08);
-    const rearW = toCanvasX(-0.14) - rearX;
-    const rearH = toCanvasY(-0.08) - rearY;
-    ctx.fillStyle = 'rgba(35, 30, 20, 0.5)';
-    ctx.fillRect(rearX, rearY, rearW, rearH);
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
-    ctx.strokeRect(rearX, rearY, rearW, rearH);
+      // Rear Jenga & Sorting Tray
+      const rearX = toCanvasX(-0.28);
+      const rearY = toCanvasY(0.08);
+      const rearW = toCanvasX(-0.14) - rearX;
+      const rearH = toCanvasY(-0.08) - rearY;
+      ctx.fillStyle = 'rgba(35, 30, 20, 0.5)';
+      ctx.fillRect(rearX, rearY, rearW, rearH);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+      ctx.strokeRect(rearX, rearY, rearW, rearH);
 
-    // Workcell zone annotations
-    ctx.fillStyle = '#475569';
-    ctx.font = '7.5px monospace';
-    ctx.fillText('OPTICAL TABLE WORKSPACE (+X)', tableLeft + 6, tableTop + 11);
-    ctx.fillText('PEDESTAL L', leftPedX + 4, leftPedY + 10);
-    ctx.fillText('PEDESTAL R', rightPedX + 4, rightPedY + 10);
-    ctx.fillText('REAR TRAY', rearX + 4, rearY + 10);
+      // Workcell zone annotations
+      ctx.fillStyle = '#475569';
+      ctx.font = '7.5px monospace';
+      ctx.fillText('OPTICAL TABLE WORKSPACE (+X)', tableLeft + 6, tableTop + 11);
+      ctx.fillText('PEDESTAL L', leftPedX + 4, leftPedY + 10);
+      ctx.fillText('PEDESTAL R', rightPedX + 4, rightPedY + 10);
+      ctx.fillText('REAR TRAY', rearX + 4, rearY + 10);
+    }
 
     // 3. Radar Distance Range Rings (0.10m, 0.20m, 0.30m, 0.38m limit)
     const rings = [
@@ -510,7 +515,10 @@ export default function WorldMap({ memoryState, visionState, jointState }) {
       ctx.fillStyle = '#64748b';
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('Scanning workcell environment...', originX, originY - 35);
+      ctx.fillText('WORLD MODEL EMPTY', originX, originY - 42);
+      ctx.fillStyle = '#475569';
+      ctx.font = '8px monospace';
+      ctx.fillText('AWAITING SWEEP SEARCH & SURROUNDINGS ANALYSIS', originX, originY - 28);
       ctx.textAlign = 'start';
     }
 

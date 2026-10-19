@@ -70,19 +70,52 @@ export default function TaskControl({ taskState, onSendCommand, onApprove, onRej
                 type="text"
                 value={inputCmd}
                 onChange={(e) => setInputCmd(e.target.value)}
-                placeholder="Enter autonomous command (e.g. 'Pick the yellow banana')..."
-                disabled={awaitingApproval}
+                placeholder="Enter command (e.g. 'Wave', 'Stack Jenga', 'Sort boxes', 'Pick mug by handle')..."
+                disabled={awaitingApproval || status === 'EXECUTING'}
                 className="flex-1 bg-[#0a0c11] border border-[#252a38] rounded px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
               />
               <button
                 type="submit"
-                disabled={awaitingApproval || !inputCmd.trim()}
+                disabled={awaitingApproval || status === 'EXECUTING' || !inputCmd.trim()}
                 className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded text-xs font-semibold flex items-center gap-1 transition-colors"
               >
                 <Play className="w-3 h-3 fill-current" />
                 SEND
               </button>
             </form>
+
+            {/* Quick Prompt Pills for Fast Demonstrations */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none select-none">
+              <span className="text-[9px] font-mono text-cyan-400 font-semibold uppercase shrink-0">Prompts:</span>
+              {[
+                { label: 'Wave', p: 'wave' },
+                { label: 'Nod/No', p: 'nod and shake head' },
+                { label: 'Coffee', p: 'drink coffee' },
+                { label: 'Mug Handle', p: 'pick up the mug using its handle' },
+                { label: 'Stack Mugs', p: 'stack the mugs on top of each other' },
+                { label: 'Banana in Pan', p: 'put the banana in the pan' },
+                { label: 'Orange in Glass', p: 'put the orange ball in the glass' },
+                { label: 'Duck in Bowl', p: 'put smaller object into bigger (duck in bowl)' },
+                { label: 'Stack Jenga', p: 'stack the jenga tower' },
+                { label: 'Pick All (15)', p: 'pick up every object in the world' },
+                { label: 'Sort Color', p: 'sort objects based on color' },
+                { label: 'Sort Boxes', p: 'sort the boxes on conveyor' },
+                { label: 'Stack Boxes', p: 'stack the boxes on pallet' },
+                { label: 'Drop Ground', p: 'drop the boxes on the ground' },
+                { label: 'Conveyor Speeds', p: 'switch conveyor belt speeds' },
+                { label: 'Home', p: 'go home' },
+              ].map((qp, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => onSendCommand(qp.p)}
+                  disabled={status === 'EXECUTING'}
+                  className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#161a24] hover:bg-cyan-950 hover:text-cyan-300 hover:border-cyan-700/60 text-slate-300 border border-[#252a38] transition-colors disabled:opacity-50"
+                >
+                  {qp.label}
+                </button>
+              ))}
+            </div>
 
             {/* Current Mission & Goal Display */}
             <div className="rounded border border-[#252a38] bg-[#0c0e14] p-2">
