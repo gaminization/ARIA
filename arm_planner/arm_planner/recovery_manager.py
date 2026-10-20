@@ -306,8 +306,83 @@ Set give_up=true only if the task is physically impossible (e.g. unreachable, ob
 """
 
 
+def deterministic_recovery_plan(task: TaskState, idx: int, attempt: int) -> dict:
+    """Fast, offline recovery plan derived from the failed step's semantics.
+
+    The corrective steps re-establish the precondition that most commonly
+    breaks (stale pose, bad arm posture, missing destination resolution)
+    before the failed step is retried. This runs in microseconds and keeps
+    autonomous operation responsive on CPU-only hosts.
+    """
+    failed = task.action_queue[idx]
+    atype = (failed.action_type or "").lower()
+    target = failed.target_object or ""
+    dest = failed.destination or ""
+
+    # Composite skills already traversed every candidate object. Replaying the
+    # whole sweep after a partial failure only scatters the scene, so report
+    # the outcome instead of retrying.
+    if atype in ("pick_all", "stack_all", "nest_all", "drop_all",
+                 "sort", "sort_by_color"):
+        return {
+            "diagnosis": f"composite skill {atype!r} completed with partial results",
+            "steps": [],
+            "retry_failed_action": False,
+            "give_up": True,
+            "reasoning": "Composite skills act on every object; no safe replay.",
+        }
+
+    if atype in ("pick", "execute_grasp", "plan_grasp", "transport", "lift"):
+        steps = [
+            {"skill": "named_pose", "object_id": "ready"},
+            {"skill": "scan_workspace", "object_id": target},
+        ]
+        diagnosis = "grasp precondition lost — reset posture and refresh perception"
+    elif atype in ("place", "stack", "sort", "sort_by_color", "nest_all", "stack_all"):
+        steps = [{"skill": "scan_workspace", "object_id": target}]
+        if dest:
+            steps.append({"skill": "locate", "object_id": dest})
+        diagnosis = "destination pose stale — refresh world model and destination"
+    elif atype in ("locate", "scan_workspace"):
+        steps = [
+            {"skill": "named_pose", "object_id": "ready"},
+            {"skill": "scan_workspace", "object_id": target},
+        ]
+        diagnosis = "target not resolved — rescan the workspace"
+    elif atype in ("drop", "conveyor", "press"):
+        steps = [{"skill": "named_pose", "object_id": "ready"}]
+        diagnosis = "retry infrastructure action from a known posture"
+    elif atype in ("move_to", "joint_motion", "named_pose"):
+        steps = [{"skill": "named_pose", "object_id": "ready"}]
+        diagnosis = "motion rejected — return to a known reachable posture"
+    else:
+        steps = [{"skill": "scan_workspace", "object_id": target}]
+        diagnosis = "generic precondition refresh"
+
+    return {
+        "diagnosis": diagnosis,
+        "steps": steps,
+        "retry_failed_action": True,
+        "give_up": False,
+        "reasoning": f"Deterministic recovery for failed {atype!r} (attempt {attempt})",
+    }
+
+
 def llm_recovery_plan(task: TaskState, idx: int, attempt: int) -> Optional[dict]:
-    """Synchronous helper (call from a worker thread). Returns parsed recovery dict or None."""
+    """Synchronous helper (call from a worker thread). Returns parsed recovery dict or None.
+
+    Default backend is deterministic (fast, offline). Set
+    ARIA_RECOVERY_BACKEND=llm to let the planner LLM diagnose instead.
+    """
+    import os as _os
+
+    backend = _os.environ.get("ARIA_RECOVERY_BACKEND", "rules").strip().lower()
+    if backend != "llm":
+        try:
+            return deterministic_recovery_plan(task, idx, attempt)
+        except Exception:
+            return None
+
     try:
         from arm_planner.llm_client import OllamaClient
     except Exception:

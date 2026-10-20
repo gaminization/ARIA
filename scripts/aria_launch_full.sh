@@ -248,7 +248,7 @@ if [ "$USE_TMUX" = true ]; then
     if [ "$ENABLE_OPENVLA" = true ]; then
         VLA_ENV="export ARIA_OPENVLA_FORCE_LOAD=1 ARIA_USE_OPENVLA=1 ARIA_ROOT=\"$ARIA_ROOT\" && "
     fi
-    tmux send-keys -t aria_sim "cd \"$ARIA_ROOT\" && ${VLA_ENV}export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
+    tmux send-keys -t aria_sim "cd \"$ARIA_ROOT\" && ${VLA_ENV}export ROS_LOCALHOST_ONLY=1 && export GAZEBO_IP=127.0.0.1 && export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
     tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=\"$WORLD_NAME\" gui:=\"$ENABLE_GUI\" synthetic:=\"$SYNTHETIC_MODE\" 2>&1 | tee /tmp/aria_launch.log" Enter
 
     echo "✅ Simulation + multi-agent stack started in tmux session 'aria_sim'"
@@ -256,7 +256,7 @@ if [ "$USE_TMUX" = true ]; then
     # ── Session 2: Web Dashboard Backend ─────────────────────
     if [ "$LAUNCH_DASHBOARD" = true ]; then
         tmux new-session -d -s aria_dash -x 220 -y 50
-        tmux send-keys -t aria_dash "cd \"$ARIA_ROOT\" && export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
+        tmux send-keys -t aria_dash "cd \"$ARIA_ROOT\" && export ROS_LOCALHOST_ONLY=1 && export GAZEBO_IP=127.0.0.1 && export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
         tmux send-keys -t aria_dash "sleep 12 && export ARIA_DASHBOARD_PORT=$DASHBOARD_PORT && python3 arm_dashboard/app.py 2>&1 | tee /tmp/aria_dashboard.log" Enter
         echo "✅ Dashboard backend initialized in tmux session 'aria_dash'"
     fi

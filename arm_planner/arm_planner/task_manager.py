@@ -47,7 +47,7 @@ CONFIDENCE_THRESHOLD = 0.75
 DEFAULT_AUTO_APPROVE_AFTER_S = 3.0
 
 
-ACTION_TIMEOUT_S = 240.0
+ACTION_TIMEOUT_S = 600.0  # composite skills (pick_all/sort_by_color) act on every object
 MAX_TASK_RECOVERIES = 3
 
 

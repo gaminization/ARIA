@@ -99,6 +99,19 @@ class DetectionNode(Node):
         # Load YOLO model
         self.model = None
         if YOLO_AVAILABLE:
+            # Fall back to CPU if CUDA is not available
+            if device.startswith('cuda'):
+                try:
+                    import torch
+                    if not torch.cuda.is_available():
+                        self.get_logger().warn(
+                            f"CUDA not available, falling back to CPU for YOLO")
+                        device = 'cpu'
+                        use_half = False
+                except ImportError:
+                    device = 'cpu'
+                    use_half = False
+
             try:
                 self.model = YOLO(model_name)
                 self.get_logger().info(f"Loaded YOLO model: {model_name}")
@@ -135,8 +148,10 @@ class DetectionNode(Node):
         self.max_inference_ms = 0.0
 
         # Subscribers — always the gripper/wrist camera (eye-in-hand)
+        # Use RELIABLE to match Gazebo camera plugin QoS (RELIABLE publisher
+        # cannot communicate with BEST_EFFORT subscriber in ROS 2)
         qos = QoSProfile(
-            reliability=ReliabilityPolicy.BEST_EFFORT,
+            reliability=ReliabilityPolicy.RELIABLE,
             durability=DurabilityPolicy.VOLATILE,
             depth=5
         )
@@ -329,7 +344,7 @@ class DetectionNode(Node):
 
     def _image_cb(self, msg: Image):
         """Process incoming camera frame with YOLO and physical color extraction."""
-        if self.model is None or self.bridge is None:
+        if self.bridge is None:
             return
 
         if self._processing or not sys_config.should_process('detection_node', sys_config.detection_max_rate_hz):
@@ -352,20 +367,22 @@ class DetectionNode(Node):
         else:
             infer_image = cv_image
 
-        try:
-            t_start = time.perf_counter()
+        results = None
+        if self.model is not None:
+            try:
+                t_start = time.perf_counter()
 
-            results = self.model.predict(
-                infer_image,
-                verbose=False,
-                device=self.device,
-                conf=self.conf_threshold,
-            )
-        except Exception as e:
-            self.get_logger().error(f"YOLO inference error: {e}")
-            sys_config.periodic_cache_clear()
-            self._processing = False
-            return
+                results = self.model.predict(
+                    infer_image,
+                    verbose=False,
+                    device=self.device,
+                    conf=self.conf_threshold,
+                )
+            except Exception as e:
+                self.get_logger().error(f"YOLO inference error: {e}")
+                sys_config.periodic_cache_clear()
+                self._processing = False
+                return
 
         inference_ms = (time.perf_counter() - t_start) * 1000
 

@@ -90,6 +90,10 @@ class MovingTargetHandler:
         self.filters: dict = {}  # tracking_id → KalmanFilter2D
         self.z_positions: dict = {}  # tracking_id → float (Z is usually constant)
         self.position_histories: dict = {}
+        # Intercept notices are informational; logging one per frame floods
+        # the chain of thought and hides task progress.
+        self._last_intercept_log: dict = {}
+        self._intercept_log_period_s = 8.0
 
     def update(self, tracking_id: int, position: np.ndarray):
         """Update with a new observation."""
@@ -179,10 +183,15 @@ class MovingTargetHandler:
                 break
 
         if best_pos is not None:
-            self.bus.add_chain_of_thought(
-                f"INTERCEPT: Object {tracking_id} moving at "
-                f"{obj_speed*100:.1f}cm/s. Intercept at "
-                f"({best_pos[0]:.3f}, {best_pos[1]:.3f}) in {best_time:.2f}s")
+            now = time.time()
+            last = self._last_intercept_log.get(tracking_id, 0.0)
+            # Only report genuinely moving objects, at most every few seconds.
+            if obj_speed >= 0.03 and now - last >= self._intercept_log_period_s:
+                self._last_intercept_log[tracking_id] = now
+                self.bus.add_chain_of_thought(
+                    f"INTERCEPT: Object {tracking_id} moving at "
+                    f"{obj_speed*100:.1f}cm/s. Intercept at "
+                    f"({best_pos[0]:.3f}, {best_pos[1]:.3f}) in {best_time:.2f}s")
             return {
                 'intercept_position': best_pos.tolist(),
                 'intercept_time_s': best_time,

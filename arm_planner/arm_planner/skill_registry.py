@@ -48,6 +48,13 @@ SKILL_ALIAS_MAP = {
     'press': 'press', 'press_button': 'press', 'tap': 'press', 'type_key': 'press',
     'gripper': 'gripper', 'open_gripper': 'gripper', 'close_gripper': 'gripper', 'release': 'gripper',
     'named_pose': 'named_pose', 'go_home': 'named_pose', 'wait': 'wait',
+    # Composite / infrastructure behaviors
+    'conveyor': 'conveyor', 'set_conveyor': 'conveyor', 'belt': 'conveyor',
+    'conveyor_speed': 'conveyor', 'start_conveyor': 'conveyor',
+    'drop': 'drop', 'drop_object': 'drop', 'drop_all': 'drop_all',
+    'pick_all': 'pick_all', 'pick_everything': 'pick_all',
+    'stack_all': 'stack_all', 'nest_all': 'nest_all',
+    'sort_by_color': 'sort_by_color', 'sort_colors': 'sort_by_color',
 }
 
 

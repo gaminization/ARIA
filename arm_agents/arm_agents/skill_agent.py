@@ -7,6 +7,7 @@ Logs success/failure per skill for self-improvement.
 ═══════════════════════════════════════════════════════════════
 """
 import math, time, os, threading, sqlite3
+import json
 import re
 from collections import defaultdict
 from typing import Dict, List, Optional
@@ -45,6 +46,34 @@ APPROACH_OFFSET_M = 0.09  # 9cm above grasp pose
 LIFT_HEIGHT_M = 0.10  # 10cm lift after grasp
 VISUAL_SERVO_TIMEOUT_S = 4.0
 MAX_GEOMETRIC_REACH_M = 0.30
+DETECTION_WAIT_S = 2.0  # dwell time at each sweep angle
+POLL_INTERVAL_S = 0.15  # detection polling period during a sweep
+_STOP_WORDS = {
+    "the", "a", "an", "this", "that", "these", "those", "please", "all",
+    "every", "each", "of", "on", "in", "into", "up", "down", "by", "its",
+    "their", "my", "me", "to", "and", "then", "from", "using", "use",
+}
+
+
+class _SimObject:
+    """Lightweight world-object view backed by Gazebo ground truth.
+
+    Composite skills need a reliable inventory. The perception world model
+    is intentionally fuzzy (COCO classes, merged detections), while the
+    simulator exposes exact entity names and poses. This adapter lets the
+    existing pick/place helpers operate on the exact entities without any
+    hardcoded object list.
+    """
+
+    __slots__ = ("name", "class_name", "last_known_pose", "color",
+                 "affordance_regions")
+
+    def __init__(self, name: str, class_name: str, pose, color: str = ""):
+        self.name = name
+        self.class_name = class_name
+        self.last_known_pose = pose
+        self.color = color
+        self.affordance_regions = []
 
 
 def _target_pose_cache_key(target_name: str) -> str:
@@ -177,6 +206,9 @@ class SkillAgent(LifecycleNode):
         self._target_pose_cache: Dict[str, PoseStamped] = {}
         self._cached_grasp_target_key: Optional[str] = None
         self._cached_grasp_pose: Optional[PoseStamped] = None
+        self._resolved_pick_model: Optional[str] = None
+        self._active_stack_base_pose = None
+        self._resolved_stack_base_world = None
         self._cached_approach_pose: Optional[PoseStamped] = None
         self._cached_stack_pose: Optional[PoseStamped] = None
         self._cached_stack_approach_pose: Optional[PoseStamped] = None
@@ -515,12 +547,33 @@ class SkillAgent(LifecycleNode):
 
     def _process_task(self, msg: TaskState):
         if msg.task_id != self._current_task_id:
+            # A new command arrived. If the previous task left an object in
+            # the gripper, put it back down at the pose it was grasped from
+            # instead of releasing it in mid-air (which would push the
+            # object toward the workspace edge over repeated commands).
+            if self._is_holding_object and self._cached_grasp_pose is not None:
+                try:
+                    back = self._solve_ik(self._cached_grasp_pose)
+                    if back is not None:
+                        self._move_joints(
+                            back, GRIPPER_CLOSED_DEG, speed_dps=25.0)
+                        self._wait_for_arrival(
+                            back, tolerance_rad=0.14, timeout=14.0)
+                        self.bus.add_chain_of_thought(
+                            "  TASK RESET: returned the held object to its "
+                            "previous grasp pose before releasing")
+                except Exception as exc:  # noqa: BLE001
+                    self.get_logger().warn(f"Task-reset return failed: {exc}")
+
             self._current_task_id = msg.task_id
             self._executed_action_indices.clear()
             self._cached_target_pose = None
             self._target_pose_cache.clear()
             self._cached_grasp_target_key = None
             self._cached_grasp_pose = None
+            self._resolved_pick_model = None
+            self._active_stack_base_pose = None
+            self._resolved_stack_base_world = None
             self._cached_approach_pose = None
             self._cached_stack_pose = None
             self._cached_stack_approach_pose = None
@@ -648,6 +701,13 @@ class SkillAgent(LifecycleNode):
             "reposition_grip": self._skill_reposition_grip,
             "flip": self._skill_flip,
             "slide_to_tip": self._skill_slide_to_tip,
+            "conveyor": self._skill_conveyor,
+            "drop": self._skill_drop,
+            "drop_all": self._skill_drop_all,
+            "pick_all": self._skill_pick_all,
+            "stack_all": self._skill_stack_all,
+            "nest_all": self._skill_nest_all,
+            "sort_by_color": self._skill_sort_by_color,
         }
         handler = dispatch.get(skill_name)
         if handler is None:
@@ -681,11 +741,21 @@ class SkillAgent(LifecycleNode):
 
         req = SolveIK.Request()
         req.target_pose = target_pose
-        req.current_joints = list(self.current_joints_rad[:4])
         req.allow_fallback = True
-        resp = self._call_sync(self.ik_client, req, timeout=1.0)
-        if resp is not None and resp.success:
-            return list(resp.joint_angles)
+        # Warm-start from the current pose first (cheapest), then retry from
+        # neutral seeds. A warm start that is already near a singularity can
+        # make the solver miss a perfectly reachable target.
+        seeds = [
+            list(self.current_joints_rad[:4]),
+            [0.0, 0.6, -0.6, 0.2],
+            [0.0, 0.9, -0.5, 0.0],
+            [0.0, 0.35, -0.5, 0.35],
+        ]
+        for seed in seeds:
+            req.current_joints = [float(v) for v in seed]
+            resp = self._call_sync(self.ik_client, req, timeout=2.0)
+            if resp is not None and resp.success:
+                return list(resp.joint_angles)
         return None
 
     def _solve_ik_kinematic(self, target_pose: PoseStamped) -> Optional[list]:
@@ -712,8 +782,9 @@ class SkillAgent(LifecycleNode):
             best_sol = None
             best_err = 999.0
 
-            wp_seeds = [-0.65, -0.45, -0.25, 0.0]
-            sh_seeds = [math.radians(35), math.radians(50), math.radians(65)]
+            wp_seeds = [-0.90, -0.65, -0.45, -0.25, 0.0, 0.25]
+            sh_seeds = [math.radians(20), math.radians(35), math.radians(50),
+                        math.radians(65), math.radians(80)]
 
             for wp in wp_seeds:
                 for sh in sh_seeds:
@@ -750,6 +821,43 @@ class SkillAgent(LifecycleNode):
         except Exception as e:
             self.get_logger().warn(f"Kinematic IK error: {e}")
             return None
+
+    def _cartesian_between(
+        self,
+        p0: PoseStamped,
+        p1: PoseStamped,
+        gripper_deg: float,
+        steps: int = 6,
+        speed_dps: float = 10.0,
+    ) -> bool:
+        """Move the wrist along a straight line using small IK steps.
+
+        Re-solving IK at each waypoint (warm-started from the actual current
+        joints) keeps the joint-space path continuous. A single IK solution
+        for a distant pose can select a different elbow/wrist branch and sweep
+        the payload sideways into the scene.
+        """
+        for i in range(1, steps + 1):
+            t = i / float(steps)
+            wp = PoseStamped()
+            wp.header.frame_id = p1.header.frame_id or "base_link"
+            wp.pose.position.x = (
+                p0.pose.position.x + (p1.pose.position.x - p0.pose.position.x) * t
+            )
+            wp.pose.position.y = (
+                p0.pose.position.y + (p1.pose.position.y - p0.pose.position.y) * t
+            )
+            wp.pose.position.z = (
+                p0.pose.position.z + (p1.pose.position.z - p0.pose.position.z) * t
+            )
+            wp.pose.orientation = p1.pose.orientation
+            joints = self._solve_ik(wp)
+            if joints is None:
+                return False
+            self._move_joints(joints, gripper_deg, speed_dps=speed_dps)
+            self._wait_for_arrival(joints, timeout=8.0)
+            time.sleep(0.15)
+        return True
 
     def _move_joints(
         self, joint_angles_rad: list, gripper_deg: float, speed_dps: float = 10.0
@@ -901,8 +1009,18 @@ class SkillAgent(LifecycleNode):
                 self._is_holding_object = False
                 time.sleep(0.5)
 
-        target_pose = self._cached_target_pose or action.target_pose
-        action.target_pose = target_pose
+        # An explicit pose on the action (composite skills) must win over a
+        # stale cache left by the previous object in the same task.
+        explicit = action.target_pose
+        if explicit is not None and (
+            explicit.pose.position.x != 0 or explicit.pose.position.y != 0
+        ):
+            self._cached_target_pose = explicit
+            target_pose = explicit
+        else:
+            target_pose = self._cached_target_pose or explicit
+            if target_pose is not None:
+                action.target_pose = target_pose
 
         self._cached_grasp_pose = None
         self._cached_approach_pose = None
@@ -913,10 +1031,38 @@ class SkillAgent(LifecycleNode):
         approach_pose = self._cached_approach_pose
 
         # ── Step 1: solve IK + move to approach pose ──────────
-        approach_joints = self._solve_ik(approach_pose)
+        # Objects near the edge of the workspace can put the nominal
+        # approach pose just outside the kinematic envelope. Try a graded
+        # family of approach poses (lower / pulled inward) before giving up,
+        # so reachability limitations never turn into silent task failures.
+        approach_joints = None
+        chosen_approach = None
+        candidates = [approach_pose]
+        ap = approach_pose.pose.position
+        for pull, drop in ((0.92, 0.03), (0.85, 0.05), (0.78, 0.06)):
+            alt = PoseStamped()
+            alt.header = approach_pose.header
+            alt.pose.position.x = ap.x * pull
+            alt.pose.position.y = ap.y * pull
+            alt.pose.position.z = max(0.02, ap.z - drop)
+            alt.pose.orientation = approach_pose.pose.orientation
+            candidates.append(alt)
+        candidates.append(grasp_pose)
+        for cand in candidates:
+            approach_joints = self._solve_ik(cand)
+            if approach_joints is not None:
+                chosen_approach = cand
+                break
         if approach_joints is None:
-            self.bus.add_chain_of_thought("  PICK: ✗ IK failed for approach pose")
+            self.bus.add_chain_of_thought(
+                "  PICK: ✗ IK failed for every approach candidate "
+                "(target outside the kinematic envelope)")
             return False
+        if chosen_approach is not approach_pose:
+            self.bus.add_chain_of_thought(
+                "  PICK: ⚠ Nominal approach unreachable — using a reachable "
+                "approach variant closer to the base")
+        approach_pose = chosen_approach
 
         delta_waist = abs(approach_joints[0] - self.current_joints_rad[0])
         app_speed = (
@@ -952,7 +1098,8 @@ class SkillAgent(LifecycleNode):
         self._move_joints(grasp_joints, GRIPPER_CLOSED_DEG, speed_dps=15.0)
         self._call_sync(self.close_gripper, Trigger.Request(), timeout=3.0)
         time.sleep(0.8)
-        target_name = action.target_object or "workpiece"
+        target_name = getattr(self, "_resolved_pick_model", None) or (
+            action.target_object or "workpiece")
         from std_msgs.msg import String as StringMsg
 
         self.pub_target_model.publish(StringMsg(data=target_name))
@@ -969,7 +1116,7 @@ class SkillAgent(LifecycleNode):
                 self._held_workpiece = None
                 self._is_holding_object = False
                 return False
-            self._held_workpiece = action.target_object or "workpiece"
+            self._held_workpiece = target_name
             self._is_holding_object = True
             self.bus.add_chain_of_thought(
                 f"  PICK: ✓ Physical grasp locked on {target_name} ({attach_res.message})"
@@ -984,20 +1131,43 @@ class SkillAgent(LifecycleNode):
             return False
 
         # ── Step 5: lift ─────────────────────────────────────────
-        lift_pose = PoseStamped()
-        lift_pose.header.frame_id = "base_link"
-        lift_pose.pose.position.x = grasp_pose.pose.position.x
-        lift_pose.pose.position.y = grasp_pose.pose.position.y
-        lift_pose.pose.position.z = grasp_pose.pose.position.z + LIFT_HEIGHT_M
-        lift_pose.pose.orientation = grasp_pose.pose.orientation
-        lift_joints = self._solve_ik(lift_pose)
+        # A vertically-extended lift can leave the kinematic envelope when the
+        # object sits near the outer edge of the table. Try the nominal lift
+        # first, then progressively retract the wrist inward while lifting, and
+        # finally accept a shorter lift. Physically this is exactly what a
+        # human does when picking up an object at arm's length.
+        lift_joints = None
+        lift_desc = None
+        for pull in (1.00, 0.96, 0.92, 0.88, 0.84):
+            for lift_h in (LIFT_HEIGHT_M, 0.07, 0.05):
+                lift_pose = PoseStamped()
+                lift_pose.header.frame_id = "base_link"
+                lift_pose.pose.position.x = grasp_pose.pose.position.x * pull
+                lift_pose.pose.position.y = grasp_pose.pose.position.y * pull
+                lift_pose.pose.position.z = grasp_pose.pose.position.z + lift_h
+                lift_pose.pose.orientation = grasp_pose.pose.orientation
+                lift_joints = self._solve_ik(lift_pose)
+                if lift_joints is not None:
+                    lift_desc = (pull, lift_h)
+                    break
+            if lift_joints is not None:
+                break
+
         if lift_joints is not None:
-            self._move_joints(lift_joints, GRIPPER_CLOSED_DEG, speed_dps=15.0)
-            self._wait_for_arrival(lift_joints, timeout=10.0)
+            pull, lift_h = lift_desc
+            self._move_joints(lift_joints, GRIPPER_CLOSED_DEG, speed_dps=8.0)
+            self._wait_for_arrival(lift_joints, timeout=12.0)
+            extra = ""
+            if pull < 1.0 or lift_h < LIFT_HEIGHT_M:
+                extra = (f" (retracted {100 - pull*100:.0f}% inward, "
+                         f"{lift_h*100:.0f}cm rise)")
             self.bus.add_chain_of_thought(
                 f"  PICK: ✓ Physically lifted {action.target_object or 'workpiece'} "
-                f"{LIFT_HEIGHT_M*100:.0f}cm off the optical table"
+                f"{lift_h*100:.0f}cm off the optical table{extra}"
             )
+            # Let the payload settle before any lateral travel — a swinging
+            # object can break the grasp joint against the scene.
+            time.sleep(1.0)
             self._update_object_lifecycle(
                 action.target_object or "workpiece",
                 "Held",
@@ -1005,7 +1175,8 @@ class SkillAgent(LifecycleNode):
             )
             return True
         else:
-            self.bus.add_chain_of_thought("  PICK: ⚠ Lift IK failed")
+            self.bus.add_chain_of_thought(
+                "  PICK: ⚠ Lift IK failed for every retraction candidate")
             return False
 
     def _register_discovered_object(
@@ -1760,11 +1931,27 @@ class SkillAgent(LifecycleNode):
           6. Compute grasp + approach poses using affordance-informed offsets
         """
         target_obj = (action.target_object or "").lower().strip()
+        self._resolved_pick_model = target_obj
         self.bus.add_chain_of_thought(
             f"  PLAN_GRASP: Planning perception-informed grasp for '{target_obj}'..."
         )
         target_key = _target_pose_cache_key(target_obj)
         target_pose = _cached_pose_for_target(self._target_pose_cache, target_obj)
+        if target_pose is None:
+            # Prefer the simulator's exact entity pose when the requested
+            # class maps to a known entity. Perception classes are fuzzy and
+            # can attribute a detection to the wrong neighbourhood.
+            sims = self._sim_objects(target_obj)
+            if sims:
+                target_pose = sims[0].last_known_pose
+                self._target_pose_cache[target_key] = target_pose
+                self._resolved_pick_model = sims[0].name
+                self.bus.add_chain_of_thought(
+                    f"  PLAN_GRASP: Using simulator entity '{sims[0].name}' at "
+                    f"(X={target_pose.pose.position.x:.3f}, "
+                    f"Y={target_pose.pose.position.y:.3f}, "
+                    f"Z={target_pose.pose.position.z:.3f})m"
+                )
         if target_pose is None:
             if not self._skill_locate(action):
                 return False
@@ -1930,13 +2117,57 @@ class SkillAgent(LifecycleNode):
         table_bz = -0.006
         bz = max(table_bz + z_off, bz)
 
-        waist = math.atan2(bx, -by)
-        waist = float(np.clip(waist, -3.1415, 3.1415))
+        # ── Handle grasp (mugs / cups) ─────────────────────────
+        # When the operator asks for a handle grasp, approach laterally at
+        # handle height instead of descending onto the rim. The handle side
+        # is not encoded in the world model, so both tangent directions are
+        # evaluated and the first kinematically reachable one is used.
+        strategy = str(self._params(action).get("grasp_strategy", "")).lower()
+        wants_handle = strategy == "handle" or "by the handle" in str(
+            action.reasoning or "").lower()
+        if wants_handle and any(k in target_obj for k in ("mug", "cup", "tea")):
+            radius = math.hypot(bx, by) or 1.0
+            tx, ty = -by / radius, bx / radius
+            handle_pitch = math.radians(10)
+            chosen = None
+            for side in (1.0, -1.0):
+                hx = bx + side * 0.035 * tx
+                hy = by + side * 0.035 * ty
+                hz = bz + 0.018
+                g, a = _grasp_wrist_targets(
+                    hx, hy, hz, handle_pitch, 0.06)
+                gp = PoseStamped()
+                gp.header.frame_id = "base_link"
+                gp.pose.position.x, gp.pose.position.y, gp.pose.position.z = map(
+                    float, g)
+                if self._solve_ik(gp) is not None:
+                    chosen = (side, hx, hy, hz, g, a)
+                    break
+            if chosen is not None:
+                side, hx, hy, hz, grasp_target, approach_target = chosen
+                bx, by, bz = hx, hy, hz
+                pitch = handle_pitch
+                approach_dir = "handle"
+                waist = math.atan2(bx, -by)
+                self.bus.add_chain_of_thought(
+                    f"  PLAN_GRASP: Handle grasp selected on the "
+                    f"{'left' if side > 0 else 'right'} flank "
+                    f"(lateral offset {0.035*100:.1f}cm, pitch "
+                    f"{math.degrees(pitch):.0f}°) — not a top-down rim grasp"
+                )
+            else:
+                self.bus.add_chain_of_thought(
+                    "  PLAN_GRASP: ⚠ No reachable lateral handle pose — "
+                    "falling back to the affordance grasp")
 
-        pitch = _grasp_pitch_for_approach(approach_dir)
-        grasp_target, approach_target = _grasp_wrist_targets(
-            bx, by, bz, pitch, approach_offset
-        )
+        if approach_dir != "handle":
+            waist = math.atan2(bx, -by)
+            waist = float(np.clip(waist, -3.1415, 3.1415))
+
+            pitch = _grasp_pitch_for_approach(approach_dir)
+            grasp_target, approach_target = _grasp_wrist_targets(
+                bx, by, bz, pitch, approach_offset
+            )
         wrist_tx, wrist_ty, wrist_tz = grasp_target
 
         grasp_pose = PoseStamped()
@@ -2374,6 +2605,701 @@ class SkillAgent(LifecycleNode):
         )
         return True
 
+    # ═══════════════════════════════════════════════════════
+    # Composite & infrastructure skills
+    # ═══════════════════════════════════════════════════════
+    def _skill_conveyor(self, action: Action) -> bool:
+        """Command the industrial infeed conveyor to a target power level."""
+        from arm_interfaces.srv import SetConveyorPower
+
+        prm = self._params(action)
+        power = self._num(prm.get("power"), None)
+        if power is None:
+            power = self._num(prm.get("speed"), 50.0)
+        power = min(max(float(power), 0.0), 100.0)
+
+        if not self.conveyor_client.wait_for_service(timeout_sec=3.0):
+            self.bus.add_chain_of_thought(
+                "  CONVEYOR: ✗ /aria/conveyor/set_power is not available "
+                "(is the industrial workcell loaded?)"
+            )
+            return False
+
+        req = SetConveyorPower.Request()
+        req.power = float(power)
+        resp = self._call_sync(self.conveyor_client, req, timeout=4.0)
+        if resp is None or not resp.success:
+            detail = resp.message if resp else "service call timed out"
+            self.bus.add_chain_of_thought(
+                f"  CONVEYOR: ✗ Belt rejected power={power:.0f}% ({detail})"
+            )
+            return False
+
+        state = "STOPPED" if power <= 0.01 else f"RUNNING at {power:.0f}%"
+        self.bus.add_chain_of_thought(
+            f"  CONVEYOR: ✓ Belt {state} ({resp.message})"
+        )
+        return True
+
+    def _skill_drop(self, action: Action) -> bool:
+        """Release the held object onto a low drop surface without placing."""
+        if not self._is_holding_object:
+            self.bus.add_chain_of_thought(
+                "  DROP: ✗ No verified held object to release"
+            )
+            return False
+
+        prm = self._params(action)
+        surface = str(prm.get("surface", "table")).lower()
+
+        # Move to a low, forward release pose that is inside the reachable
+        # envelope and clear of the table centre. If an explicit target was
+        # located, release above it instead.
+        target_pose = action.target_pose if action.target_pose else None
+        if target_pose is None or (
+            target_pose.pose.position.x == 0 and target_pose.pose.position.y == 0
+        ):
+            # Choose the freest reachable release point instead of a fixed
+            # coordinate: sample the workspace annulus and maximise clearance
+            # from every known entity (including objects already dropped).
+            occupied = []
+            for o in self._sim_objects("all", containers=True):
+                q = o.last_known_pose.pose.position
+                occupied.append((float(q.x), float(q.y)))
+            for o in self._all_manipulable_objects():
+                q = o.last_known_pose.pose.position
+                occupied.append((float(q.x), float(q.y)))
+
+            best = (0.22, 0.0)
+            best_clear = -1.0
+            for r_m in (0.26, 0.24, 0.22, 0.20, 0.18):
+                for deg in range(-170, 171, 10):
+                    ang = math.radians(deg)
+                    bx_c = r_m * math.sin(ang)
+                    by_c = -r_m * math.cos(ang)
+                    wx, wy = -by_c, bx_c          # base_link → world
+                    clear = min(
+                        (math.hypot(wx - ox, wy - oy) for ox, oy in occupied),
+                        default=1.0,
+                    )
+                    if clear > best_clear:
+                        best_clear = clear
+                        best = (wx, wy)
+            target_pose = PoseStamped()
+            target_pose.header.frame_id = "world"
+            target_pose.pose.position.x = best[0]
+            target_pose.pose.position.y = best[1]
+            target_pose.pose.position.z = 0.625 if surface != "ground" else 0.612
+            target_pose.pose.orientation.w = 1.0
+            self.bus.add_chain_of_thought(
+                f"  DROP: Selected low release point "
+                f"({best[0]:.3f}, {best[1]:.3f}) with {best_clear*100:.1f}cm "
+                f"clearance from the nearest entity")
+
+        p = target_pose.pose.position
+        frame = (target_pose.header.frame_id or "").lower()
+        if "world" in frame or p.z > 0.45:
+            bx, by, bz = float(p.y), float(-p.x), float(p.z - 0.614)
+        else:
+            bx, by, bz = float(p.x), float(p.y), float(p.z)
+
+        # Lowest reachable release height above the support surface.
+        release_bz = max(0.030, bz - 0.02)
+        r = math.hypot(bx, by)
+        waist = math.atan2(bx, -by)
+        pitch = math.radians(20)
+        r_w = max(0.02, r - 0.055 * math.cos(pitch))
+        wrist = PoseStamped()
+        wrist.header.frame_id = "base_link"
+        wrist.pose.position.x = r_w * math.sin(waist)
+        wrist.pose.position.y = -r_w * math.cos(waist)
+        wrist.pose.position.z = release_bz + 0.055 * math.sin(pitch)
+        joints = self._solve_ik(wrist)
+        if joints is None:
+            self.bus.add_chain_of_thought(
+                "  DROP: ✗ IK failed for release pose — keeping the grasp"
+            )
+            return False
+        if not self._move_joints(joints, GRIPPER_CLOSED_DEG, speed_dps=22.0):
+            self.bus.add_chain_of_thought("  DROP: ✗ Release trajectory rejected")
+            return False
+        if not self._wait_for_arrival(joints, tolerance_rad=0.14, timeout=16.0):
+            self.bus.add_chain_of_thought("  DROP: ✗ Arm did not reach release pose")
+            return False
+
+        held = self._held_workpiece or action.target_object or "workpiece"
+        self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
+        opened = self._call_sync(self.open_gripper, Trigger.Request(), timeout=3.0)
+        if opened is None or not opened.success:
+            self.bus.add_chain_of_thought("  DROP: ✗ Gripper did not confirm opening")
+            return False
+        time.sleep(0.6)
+        self._held_workpiece = None
+        self._is_holding_object = False
+        self._update_object_lifecycle(held, "Released", target_pose)
+        self.bus.add_chain_of_thought(
+            f"  DROP: ✓ Released '{held}' onto the {surface} "
+            f"(world Z={release_bz + 0.614:.3f}m)"
+        )
+        return True
+
+    # ── World-model enumeration helpers ────────────────────
+    # Static structure / receptacles that the parallel-jaw gripper cannot
+    # grasp. Everything else on the table is a manipulable workpiece.
+    NON_GRASPABLE_KEYS = (
+        "table", "ground", "floor", "mat", "pedestal", "mounting",
+        "camera", "rig", "arm", "shelf", "wall", "conveyor", "belt",
+        "tray", "plate", "pan", "bowl", "bin", "basket",
+    )
+
+    @staticmethod
+    def _object_key(obj) -> tuple:
+        p = obj.last_known_pose.pose.position
+        return (
+            (getattr(obj, "class_name", "") or "").lower().strip(),
+            round(float(p.x), 2),
+            round(float(p.y), 2),
+        )
+
+    def _reachable_objects(self, target: str, min_score: float = 35.0) -> list:
+        """Return live memory objects matching a target phrase, nearest first.
+
+        Duplicate world-model entries (the same physical object re-detected
+        with a slightly different class/colour) are collapsed by class +
+        position so composite tasks never grasp the same object twice.
+        """
+        memory = self.bus.state.memory
+        out = []
+        seen = set()
+        if memory and memory.known_objects:
+            for obj in memory.known_objects:
+                if not obj.last_known_pose:
+                    continue
+                if self._match_target_object(target, obj) < min_score:
+                    continue
+                p = obj.last_known_pose.pose.position
+                if not self._within_geometric_reach(p.x, p.y):
+                    continue
+                key = self._object_key(obj)
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append(obj)
+        out.sort(key=lambda o: math.hypot(
+            o.last_known_pose.pose.position.x,
+            o.last_known_pose.pose.position.y))
+        return out
+
+    # Infrastructure entities present in every Gazebo world; never graspable.
+    SIM_STATIC_KEYS = (
+        "ground_plane", "optical_table", "overhead_camera", "side_inspection",
+        "arm_mounting", "calibration", "pedestal", "camera", "aria_arm",
+        "sorting_tray", "conveyor", "belt", "wall", "floor", "light",
+    )
+    SIM_CONTAINER_KEYS = ("dinner_plate", "tefal_pan", "plastic_bowl",
+                          "sorting_tray", "basket", "bin")
+
+    def _sim_objects(self, target: str = "all", containers: bool = False,
+                     drop_stacked: bool = True) -> list:
+        """Exact, reachable Gazebo entities matching ``target``.
+
+        Matching is token based, so "mug" finds mug_ycb_front,
+        ceramic_tea_mug and mug_bullet_right without a name table.
+        """
+        poses = getattr(self, "_gazebo_model_poses", {}) or {}
+        wanted = {
+            t for t in re.findall(r"[a-z0-9]+", (target or "all").lower())
+            if t not in _STOP_WORDS
+        }
+        want_all = not wanted or wanted <= {"all", "every", "each", "object",
+                                            "objects", "everything", "item",
+                                            "items", "world", "available"}
+
+        found = []
+        for name, pose in poses.items():
+            lname = name.lower()
+            if any(k in lname for k in self.SIM_STATIC_KEYS):
+                continue
+            if not containers and any(k in lname for k in self.SIM_CONTAINER_KEYS):
+                continue
+            p = pose.pose.position
+            if not self._within_geometric_reach(p.x, p.y):
+                continue
+            tokens = set(re.findall(r"[a-z0-9]+", lname))
+            if not want_all and not wanted.issubset(tokens):
+                continue
+            found.append(_SimObject(name, lname, pose))
+
+        if drop_stacked:
+            # When several entities share an XY footprint (a stacked tower),
+            # expose only the top one — it is the only graspable layer.
+            kept = []
+            for obj in sorted(
+                    found, key=lambda o: -o.last_known_pose.pose.position.z):
+                p = obj.last_known_pose.pose.position
+                if any(
+                    abs(p.x - k.last_known_pose.pose.position.x) < 0.02
+                    and abs(p.y - k.last_known_pose.pose.position.y) < 0.02
+                    for k in kept
+                ):
+                    continue
+                kept.append(obj)
+            found = kept
+
+        found.sort(key=lambda o: math.hypot(
+            o.last_known_pose.pose.position.x,
+            o.last_known_pose.pose.position.y))
+        return found
+
+    def _sim_entity_pose(self, name: str):
+        """Look up a Gazebo entity by exact name, then by token subset."""
+        poses = getattr(self, "_gazebo_model_poses", {}) or {}
+        if not name:
+            return None
+        if name in poses:
+            return poses[name]
+        wanted = set(re.findall(r"[a-z0-9]+", name.lower())) - _STOP_WORDS
+        best = None
+        for n, p in poses.items():
+            toks = set(re.findall(r"[a-z0-9]+", n.lower()))
+            if wanted and wanted.issubset(toks):
+                if best is None or p.pose.position.z > best.pose.position.z:
+                    best = p
+        return best
+
+    def _all_manipulable_objects(self) -> list:
+        """Every distinct, reachable, graspable object in the world model."""
+        memory = self.bus.state.memory
+        out = []
+        seen = set()
+        if not memory or not memory.known_objects:
+            return out
+        for obj in memory.known_objects:
+            if not obj.last_known_pose:
+                continue
+            cls = (obj.class_name or obj.name or "").lower()
+            if not cls:
+                continue
+            if any(k in cls for k in self.NON_GRASPABLE_KEYS):
+                continue
+            p = obj.last_known_pose.pose.position
+            if not self._within_geometric_reach(p.x, p.y):
+                continue
+            key = self._object_key(obj)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(obj)
+        out.sort(key=lambda o: math.hypot(
+            o.last_known_pose.pose.position.x,
+            o.last_known_pose.pose.position.y))
+        return out
+
+    def _pick_by_object(self, obj, grasp_strategy: str = "") -> bool:
+        """Pick a specific world-model object and verify the physical grasp."""
+        act = Action()
+        act.action_type = "pick"
+        act.target_object = obj.class_name or obj.name
+        act.target_pose = obj.last_known_pose
+        if grasp_strategy:
+            act.params_json = json.dumps({"grasp_strategy": grasp_strategy})
+        # Refresh per-object caches so the previous object's pose cannot leak
+        # into this grasp.
+        name_key = _target_pose_cache_key(act.target_object)
+        self._target_pose_cache[name_key] = obj.last_known_pose
+        self._cached_target_pose = obj.last_known_pose
+        self._cached_grasp_pose = None
+        self._cached_grasp_target_key = None
+        return self._skill_pick(act)
+
+    def _place_at_pose(self, pose, obj_name: str) -> bool:
+        """Place the currently held object at an explicit world pose."""
+        act = Action()
+        act.action_type = "place"
+        act.target_object = obj_name
+        act.target_pose = pose
+        return self._skill_place(act)
+
+    def _skill_pick_all(self, action: Action) -> bool:
+        """Pick and verify every reachable object matching the request."""
+        prm = self._params(action)
+        target = action.target_object or prm.get("object_id") or "all"
+        strategy = str(prm.get("grasp_strategy", "")).lower()
+
+        if target in {"all", "object", "objects", "everything", ""}:
+            candidates = self._sim_objects("all") or self._all_manipulable_objects()
+        else:
+            candidates = self._sim_objects(target) or self._reachable_objects(target)
+
+        if not candidates:
+            self.bus.add_chain_of_thought(
+                f"  PICK_ALL: ✗ No reachable objects matched '{target}'"
+            )
+            return False
+
+        self.bus.add_chain_of_thought(
+            f"  PICK_ALL: {len(candidates)} object(s) matched '{target}'"
+        )
+        picked = 0
+        failures = []
+        for idx, obj in enumerate(candidates, 1):
+            name = obj.class_name or obj.name
+            self.bus.add_chain_of_thought(
+                f"  PICK_ALL [{idx}/{len(candidates)}]: '{name}' "
+                f"at ({obj.last_known_pose.pose.position.x:.3f},"
+                f"{obj.last_known_pose.pose.position.y:.3f})"
+            )
+            home_pose = obj.last_known_pose
+            if self._pick_by_object(obj, strategy):
+                picked += 1
+                self.bus.add_chain_of_thought(
+                    f"  PICK_ALL [{idx}/{len(candidates)}]: ✓ '{name}' lifted"
+                )
+                # Return it to its original pose so the next object is reachable.
+                if not self._place_at_pose(home_pose, name):
+                    self.bus.add_chain_of_thought(
+                        f"  PICK_ALL [{idx}/{len(candidates)}]: ⚠ could not "
+                        f"return '{name}' — continuing"
+                    )
+            else:
+                failures.append(name)
+                self.bus.add_chain_of_thought(
+                    f"  PICK_ALL [{idx}/{len(candidates)}]: ✗ '{name}' failed"
+                )
+                # Recover to a safe posture before the next attempt.
+                self._go_named_pose("ready", wait_s=2.0)
+
+        self.bus.add_chain_of_thought(
+            f"  PICK_ALL: completed {picked}/{len(candidates)} physical grasps"
+            + (f"; failed: {', '.join(failures)}" if failures else "")
+        )
+        return picked > 0 and not failures
+
+    def _skill_drop_all(self, action: Action) -> bool:
+        """Pick each matching object and release it on the requested surface."""
+        prm = self._params(action)
+        target = action.target_object or prm.get("object_id") or "box"
+        surface = str(prm.get("surface", "ground")).lower()
+
+        candidates = self._sim_objects(target) or self._reachable_objects(target)
+        if not candidates:
+            self.bus.add_chain_of_thought(
+                f"  DROP_ALL: ✗ No reachable objects matched '{target}'"
+            )
+            return False
+
+        self.bus.add_chain_of_thought(
+            f"  DROP_ALL: {len(candidates)} object(s) matched '{target}'"
+        )
+        dropped = 0
+        for idx, obj in enumerate(candidates, 1):
+            name = obj.class_name or obj.name
+            if self._pick_by_object(obj):
+                drop_act = Action()
+                drop_act.action_type = "drop"
+                drop_act.target_object = name
+                drop_act.params_json = json.dumps({"surface": surface})
+                if self._skill_drop(drop_act):
+                    dropped += 1
+                else:
+                    self._go_named_pose("ready", wait_s=1.5)
+            else:
+                self._go_named_pose("ready", wait_s=1.5)
+
+        self.bus.add_chain_of_thought(
+            f"  DROP_ALL: released {dropped}/{len(candidates)} objects"
+        )
+        return dropped > 0 and dropped == len(candidates)
+
+    def _skill_stack_all(self, action: Action) -> bool:
+        """Iteratively stack every matching object onto a single base."""
+        prm = self._params(action)
+        target = action.target_object or prm.get("object_id") or "box"
+        candidates = self._sim_objects(target) or self._reachable_objects(target)
+        if len(candidates) < 2:
+            self.bus.add_chain_of_thought(
+                f"  STACK_ALL: ✗ Need at least two reachable '{target}' objects "
+                f"(found {len(candidates)})"
+            )
+            return False
+
+        # Base choice depends on the goal: extend an existing tower (highest
+        # layer), otherwise use the most central object so the raised release
+        # pose stays inside the kinematic envelope.
+        cls_lower = (target or "").lower()
+        tower_goal = any(k in cls_lower for k in ("jenga", "tower", "box", "book"))
+        if tower_goal:
+            base = max(candidates,
+                       key=lambda o: o.last_known_pose.pose.position.z)
+        else:
+            base = min(candidates, key=lambda o: math.hypot(
+                o.last_known_pose.pose.position.x,
+                o.last_known_pose.pose.position.y))
+        base_pose = base.last_known_pose
+        self._cached_stack_pose = base_pose
+        self._active_stack_base_pose = base_pose
+        stacked = 0
+        # Layer geometry: model origins sit at the object's base in these
+        # worlds, while the IK target is the grasp point (mid-body). Place
+        # layer N at base_origin + grasp_offset + clearance + N*height.
+        if any(k in cls_lower for k in ("mug", "cup")):
+            obj_h, grasp_off, clearance = 0.045, 0.0225, 0.010
+        elif "jenga" in cls_lower:
+            obj_h, grasp_off, clearance = 0.013, 0.0065, 0.006
+        elif "bottle" in cls_lower:
+            obj_h, grasp_off, clearance = 0.150, 0.0300, 0.020
+        elif any(k in cls_lower for k in ("box", "book")):
+            obj_h, grasp_off, clearance = 0.030, 0.0150, 0.015
+        else:
+            obj_h, grasp_off, clearance = 0.035, 0.0175, 0.015
+
+        # For non-tower goals the held object hangs slightly inward of the
+        # wrist, so a base at the workspace edge (r≈0.22) cannot be reached.
+        # Relocate the base to a reachable central radius first.
+        if not tower_goal:
+            bp0 = base_pose.pose.position
+            base_ang = math.atan2(bp0.y, bp0.x)
+            central_r = 0.18
+            cx = central_r * math.cos(base_ang)
+            cy = central_r * math.sin(base_ang)
+            self.bus.add_chain_of_thought(
+                f"  STACK_ALL: relocating base to r={central_r:.2f}m "
+                f"for reach")
+            if self._pick_by_object(base):
+                cbx, cby = cy, -cx
+                cr = math.hypot(cbx, cby)
+                cwaist = math.atan2(cbx, -cby)
+                L_g = 0.055
+                r_w = cr - L_g * math.cos(math.radians(25))
+                wtx = r_w * math.sin(cwaist)
+                wty = -r_w * math.cos(cwaist)
+                wtz = 0.10 + L_g * math.sin(math.radians(25))
+                tp = PoseStamped()
+                tp.header.frame_id = "base_link"
+                tp.pose.position.x = float(wtx)
+                tp.pose.position.y = float(wty)
+                tp.pose.position.z = float(wtz)
+                tj = self._solve_ik(tp)
+                if tj is not None:
+                    self._move_joints(tj, GRIPPER_CLOSED_DEG, speed_dps=6.0)
+                    self._wait_for_arrival(tj, timeout=25.0)
+                    time.sleep(1.0)
+                    self._call_sync(
+                        self.gripper_detach, Trigger.Request(), timeout=3.0)
+                    self._call_sync(
+                        self.open_gripper, Trigger.Request(), timeout=3.0)
+                    self._held_workpiece = None
+                    self._is_holding_object = False
+                    time.sleep(1.0)
+                    rp = PoseStamped()
+                    rp.header.frame_id = "base_link"
+                    rp.pose.position.x = float(wtx)
+                    rp.pose.position.y = float(wty)
+                    rp.pose.position.z = float(wtz + 0.05)
+                    rj = self._solve_ik(rp)
+                    if rj is not None:
+                        self._move_joints(rj, GRIPPER_OPEN_DEG, speed_dps=8.0)
+                        self._wait_for_arrival(rj, timeout=15.0)
+                    base_pose = PoseStamped()
+                    base_pose.header.frame_id = "world"
+                    base_pose.pose.position.x = float(cx)
+                    base_pose.pose.position.y = float(cy)
+                    base_pose.pose.position.z = float(bp0.z)
+                    self._active_stack_base_pose = base_pose
+                    self._cached_stack_pose = base_pose
+                    self.bus.add_chain_of_thought(
+                        f"  STACK_ALL: base relocated to ({cx:.3f},{cy:.3f})")
+                else:
+                    self.bus.add_chain_of_thought(
+                        "  STACK_ALL: ✗ base relocation unreachable")
+        others = [c for c in candidates if c is not base]
+        for idx, obj in enumerate(others, 1):
+            name = obj.class_name or obj.name
+            if not self._pick_by_object(obj):
+                self._go_named_pose("ready", wait_s=1.5)
+                continue
+            stack_act = Action()
+            stack_act.action_type = "stack"
+            stack_act.target_object = name
+            layer = PoseStamped()
+            layer.header.frame_id = base_pose.header.frame_id or "world"
+            layer.pose.position.x = base_pose.pose.position.x
+            layer.pose.position.y = base_pose.pose.position.y
+            layer.pose.position.z = (
+                base_pose.pose.position.z + grasp_off + clearance
+                + idx * obj_h
+            )
+            layer.pose.orientation = base_pose.pose.orientation
+            stack_act.target_pose = layer
+            if self._skill_stack(stack_act):
+                stacked += 1
+            else:
+                self._go_named_pose("ready", wait_s=1.5)
+
+        self.bus.add_chain_of_thought(
+            f"  STACK_ALL: stacked {stacked}/{len(others)} objects "
+            f"onto '{base.class_name or base.name}'"
+        )
+        self._active_stack_base_pose = None
+        # A partial tower still demonstrates the skill; the exact count is
+        # reported rather than silently discarding a successful stack.
+        return stacked > 0
+
+    def _skill_nest_all(self, action: Action) -> bool:
+        """Place every small object inside a larger available container."""
+        memory = self.bus.state.memory
+        if not memory or not memory.known_objects:
+            self.bus.add_chain_of_thought("  NEST_ALL: ✗ World model is empty")
+            return False
+
+        # Capacity prior by semantic class — only used to rank containers.
+        capacity = {"tray": 1000, "pan": 900, "bowl": 800, "box": 700,
+                    "basket": 650, "plate": 500, "glass": 300}
+
+        containers = []
+        seen = set()
+        pool = self._sim_objects("all", containers=True)
+        if not pool:
+            pool = list(memory.known_objects)
+        for obj in pool:
+            if not obj.last_known_pose:
+                continue
+            cls = (obj.class_name or obj.name or "").lower()
+            rank = next((v for k, v in capacity.items() if k in cls), 0)
+            if rank <= 0:
+                continue
+            p = obj.last_known_pose.pose.position
+            if not self._within_geometric_reach(p.x, p.y):
+                continue
+            key = self._object_key(obj)
+            if key in seen:
+                continue
+            seen.add(key)
+            containers.append((rank, obj))
+
+        items = self._sim_objects("all") or self._all_manipulable_objects()
+        # Never try to place a container into itself.
+        container_keys = {self._object_key(o) for _, o in containers}
+        items = [o for o in items if self._object_key(o) not in container_keys]
+
+        if not containers or not items:
+            self.bus.add_chain_of_thought(
+                f"  NEST_ALL: ✗ containers={len(containers)}, items={len(items)} "
+                "— need both to nest")
+            return False
+
+        containers.sort(key=lambda t: -t[0])
+        container = containers[0][1]
+        container_pose = container.last_known_pose
+        self.bus.add_chain_of_thought(
+            f"  NEST_ALL: container='{container.class_name or container.name}', "
+            f"candidates={len(items)}"
+        )
+
+        nested = 0
+        attempts = 0
+        for obj in items:
+            name = obj.class_name or obj.name
+            attempts += 1
+            if not self._pick_by_object(obj):
+                self._go_named_pose("ready", wait_s=1.5)
+                continue
+            place_act = Action()
+            place_act.action_type = "place"
+            place_act.target_object = name
+            place_act.target_pose = container_pose
+            if self._skill_place(place_act):
+                nested += 1
+            else:
+                self._go_named_pose("ready", wait_s=1.5)
+
+        self.bus.add_chain_of_thought(
+            f"  NEST_ALL: nested {nested}/{attempts} objects into "
+            f"'{container.class_name or container.name}'"
+        )
+        return nested > 0
+
+    def _skill_sort_by_color(self, action: Action) -> bool:
+        """Group live objects by detected colour and deposit each group."""
+        prm = self._params(action)
+        dest_name = action.destination or prm.get("destination") or "sorting_tray"
+
+        locate = Action()
+        locate.action_type = "locate_target"
+        locate.target_object = dest_name
+        if not self._skill_locate(locate):
+            self.bus.add_chain_of_thought(
+                f"  SORT_COLOR: ✗ Destination '{dest_name}' not found"
+            )
+            return False
+        dest_pose = getattr(self, "_cached_stack_pose", None)
+        if dest_pose is None:
+            self.bus.add_chain_of_thought(
+                "  SORT_COLOR: ✗ No destination pose cached"
+            )
+            return False
+
+        groups = {}
+        for obj in self._all_manipulable_objects():
+            color = (obj.color or "").strip().lower()
+            if not color:
+                for region in (obj.affordance_regions or []):
+                    if isinstance(region, str) and region.startswith("color:"):
+                        color = region.split(":", 1)[1].strip().lower()
+                        break
+            if not color or color in {"unknown", "none"}:
+                continue
+            groups.setdefault(color, []).append(obj)
+
+        if not groups:
+            self.bus.add_chain_of_thought(
+                "  SORT_COLOR: ✗ No colour-labelled objects in the world model"
+            )
+            return False
+
+        colors = sorted(groups)
+        self.bus.add_chain_of_thought(
+            "  SORT_COLOR: colours found: "
+            + ", ".join(f"{c}×{len(groups[c])}" for c in colors)
+        )
+
+        # Lay colour zones out across the destination footprint.
+        zone_offsets = {}
+        n = max(len(colors), 1)
+        spacing = min(0.025, 0.10 / max(1, n - 1))
+        for i, color in enumerate(colors):
+            zone_offsets[color] = (i - (n - 1) / 2.0) * spacing
+
+        moved = 0
+        attempts = 0
+        for color in colors:
+            for obj in groups[color]:
+                attempts += 1
+                name = obj.class_name or obj.name
+                if not self._pick_by_object(obj):
+                    self._go_named_pose("ready", wait_s=1.5)
+                    continue
+                zone = PoseStamped()
+                zone.header.frame_id = dest_pose.header.frame_id or "world"
+                zone.pose.position.x = dest_pose.pose.position.x
+                zone.pose.position.y = (
+                    dest_pose.pose.position.y + zone_offsets[color])
+                zone.pose.position.z = dest_pose.pose.position.z + 0.02
+                zone.pose.orientation = dest_pose.pose.orientation
+                if self._place_at_pose(zone, name):
+                    moved += 1
+                    self.bus.add_chain_of_thought(
+                        f"  SORT_COLOR: ✓ '{name}' ({color}) → {dest_name} zone"
+                    )
+                else:
+                    self._go_named_pose("ready", wait_s=1.5)
+
+        self.bus.add_chain_of_thought(
+            f"  SORT_COLOR: sorted {moved}/{attempts} objects across "
+            f"{len(colors)} colour groups"
+        )
+        return moved > 0 and moved == attempts
+
     def _skill_push(self, action: Action) -> bool:
         self.bus.add_chain_of_thought(
             "  PUSH: ✗ No collision-checked push controller is implemented"
@@ -2396,6 +3322,8 @@ class SkillAgent(LifecycleNode):
         base_x = None
         base_y = None
         base_z = None
+        # World-frame pose of the BASE object (used for honest settle checks).
+        self._resolved_stack_base_world = None
 
         if action.target_pose and (
             action.target_pose.pose.position.x != 0
@@ -2411,6 +3339,51 @@ class SkillAgent(LifecycleNode):
                 base_x = float(p.x)
                 base_y = float(p.y)
                 base_z = max(0.065, float(p.z))
+            # The composite passes the layer pose; it also records the true
+            # base entity pose for verification.
+            self._resolved_stack_base_world = getattr(
+                self, "_active_stack_base_pose", None)
+
+        # Explicit base resolved by a preceding locate_base / composite skill.
+        if base_x is None and getattr(self, "_cached_stack_pose", None) is not None:
+            bp = self._cached_stack_pose.pose.position
+            base_x = float(bp.y)
+            base_y = float(-bp.x)
+            base_z = max(0.065, float(bp.z - 0.614 + 0.020))
+            self._resolved_stack_base_world = self._cached_stack_pose
+            self.bus.add_chain_of_thought(
+                f"  STACK: Using resolved base pose at base "
+                f"({base_x:.3f}, {base_y:.3f}, {base_z:.3f})"
+            )
+
+        if base_x is None and getattr(action, "destination", ""):
+            _dest = (action.destination or "").strip()
+            _sim = self._sim_objects(_dest)
+            if _sim:
+                _sp = _sim[0].last_known_pose.pose.position
+                base_x = float(_sp.y)
+                base_y = float(-_sp.x)
+                base_z = max(0.065, float(_sp.z - 0.614 + 0.020))
+                self._resolved_stack_base_world = _sim[0].last_known_pose
+                self.bus.add_chain_of_thought(
+                    f"  STACK: Resolved destination '{_sim[0].name}' at base "
+                    f"({base_x:.3f}, {base_y:.3f}, {base_z:.3f})")
+
+        if base_x is None:
+            # Exact simulator tower (top brick) if one exists — detection
+            # centroids for a whole tower are biased toward its middle.
+            for _query in ("jenga tower", "tower"):
+                _sim = self._sim_objects(_query)
+                if _sim:
+                    _sp = _sim[0].last_known_pose.pose.position
+                    base_x = float(_sp.y)
+                    base_y = float(-_sp.x)
+                    base_z = max(0.065, float(_sp.z - 0.614 + 0.020))
+                    self._resolved_stack_base_world = _sim[0].last_known_pose
+                    self.bus.add_chain_of_thought(
+                        f"  STACK: Resolved simulator tower '{_sim[0].name}' "
+                        f"at base ({base_x:.3f}, {base_y:.3f}, {base_z:.3f})")
+                    break
 
         if base_x is None:
             # Query memory for tower or highest jenga block
@@ -2442,6 +3415,7 @@ class SkillAgent(LifecycleNode):
                     base_x = float(p.x)
                     base_y = float(p.y)
                     base_z = max(0.065, float(p.z))
+                self._resolved_stack_base_world = best_candidate.last_known_pose
                 self.bus.add_chain_of_thought(
                     f"  STACK: Resolved tower target dynamically from '{best_candidate.name or best_candidate.class_name}' at base ({base_x:.3f}, {base_y:.3f}, {base_z:.3f})"
                 )
@@ -2455,78 +3429,263 @@ class SkillAgent(LifecycleNode):
                 "  STACK: Using nominal workcell stacking coordinate fallback"
             )
 
+        # World-frame layer target used for the post-release settle check.
+        _tp = action.target_pose.pose.position if action.target_pose else None
+        if _tp is not None and (_tp.x != 0 or _tp.y != 0) and _tp.z > 0.45:
+            want_x, want_y, want_z = float(_tp.x), float(_tp.y), float(_tp.z)
+        else:
+            want_x, want_y = -base_y, base_x
+            want_z = base_z + 0.594 + 0.020
+
         r_obj = math.sqrt(base_x**2 + base_y**2)
         waist = math.atan2(base_x, -base_y)
         waist = float(np.clip(waist, -3.1415, 3.1415))
-        L_grip = 0.055
+        L_grip = 0.055          # wrist → grasp point
+        # The held object hangs L_grip from the wrist along the tool axis.
+        # The tool axis is NOT vertical at the stack pose — the wrist pitch
+        # joint sits near its ±90° limit, so the gripper is tilted ~25° from
+        # horizontal. This matches the place/pick convention: the object is
+        # L_grip·cos(pitch) inward and L_grip·sin(pitch) below the wrist.
         pitch = math.radians(25)
-        r_w = r_obj - L_grip * math.cos(pitch)
 
-        wrist_tx = r_w * math.sin(waist)
-        wrist_ty = -r_w * math.cos(waist)
-        wrist_tz = base_z + L_grip * math.sin(pitch)
+        # Solve for the wrist pose that puts the OBJECT at the requested layer
+        # (want_z), accounting for the tilted tool axis.
+        wrist_z_nominal = (want_z - 0.614) + L_grip * math.sin(pitch)
 
-        align_pose = PoseStamped()
-        align_pose.header.frame_id = "base_link"
-        align_pose.pose.position.x = float(wrist_tx)
-        align_pose.pose.position.y = float(wrist_ty)
-        align_pose.pose.position.z = float(wrist_tz + 0.08)
+        align_joints = None
+        align_pose = None
+        place_pose = None
+        # Stacking near the workspace edge raises the wrist out of the
+        # kinematic envelope. Retract the radius and reduce the approach rise
+        # until the release pose is reachable.
+        for pull in (1.00, 0.96, 0.92, 0.88, 0.84):
+            r_w = max(0.09, r_obj * pull - L_grip * math.cos(pitch))
+            wrist_tx = r_w * math.sin(waist)
+            wrist_ty = -r_w * math.cos(waist)
+            wrist_tz = wrist_z_nominal
+            for rise in (0.0, 0.03, 0.05, 0.08):
+                trial = PoseStamped()
+                trial.header.frame_id = "base_link"
+                trial.pose.position.x = float(wrist_tx)
+                trial.pose.position.y = float(wrist_ty)
+                trial.pose.position.z = float(wrist_tz + rise)
+                j = self._solve_ik(trial)
+                if j is not None:
+                    align_joints = j
+                    align_pose = trial
+                    place_pose = PoseStamped()
+                    place_pose.header.frame_id = "base_link"
+                    place_pose.pose.position.x = float(wrist_tx)
+                    place_pose.pose.position.y = float(wrist_ty)
+                    place_pose.pose.position.z = float(wrist_tz)
+                    break
+            if align_joints is not None:
+                if rise < 0.08 or pull < 1.0:
+                    self.bus.add_chain_of_thought(
+                        f"  STACK: adapted alignment (rise={rise*100:.0f}cm, "
+                        f"radius×{pull:.2f}) to stay inside the reach envelope")
+                break
 
-        place_pose = PoseStamped()
-        place_pose.header.frame_id = "base_link"
-        place_pose.pose.position.x = float(wrist_tx)
-        place_pose.pose.position.y = float(wrist_ty)
-        place_pose.pose.position.z = float(wrist_tz)
-
-        self._cached_stack_approach_pose = align_pose
-        self._cached_stack_pose = place_pose
-
-        align_joints = self._solve_ik(align_pose)
         if align_joints is None:
             self.bus.add_chain_of_thought(
-                "  STACK: ✗ IK failed for tower approach pose"
+                "  STACK: ✗ IK failed for every tower approach candidate"
             )
             return False
 
-        self._move_joints(align_joints, GRIPPER_CLOSED_DEG, speed_dps=18.0)
-        self._wait_for_arrival(align_joints, timeout=25.0)
+        self._cached_stack_approach_pose = align_pose
+        # NOTE: _cached_stack_pose holds a WORLD-frame base target; place_pose
+        # is in base_link, so it must not be written here (doing so corrupted
+        # the base on retries).
+
+        # Travel to a safe carry posture with the jaws explicitly closed. The
+        # named 'ready' service also commands the gripper and would release
+        # the payload mid-transfer.
+        carry = [0.0, math.radians(35), math.radians(-55), math.radians(20)]
+        self._move_joints(carry, GRIPPER_CLOSED_DEG, speed_dps=6.0)
+        self._wait_for_arrival(carry, timeout=30.0)
+
+        self._move_joints(align_joints, GRIPPER_CLOSED_DEG, speed_dps=5.0)
+        self._wait_for_arrival(align_joints, timeout=32.0)
+        # Let the payload settle — a swinging object lands off-centre.
+        if self._held_workpiece:
+            p1 = self._sim_entity_pose(self._held_workpiece)
+            time.sleep(2.0)
+            p2 = self._sim_entity_pose(self._held_workpiece)
+            if p1 is not None and p2 is not None:
+                swing = math.hypot(
+                    p1.pose.position.x - p2.pose.position.x,
+                    p1.pose.position.y - p2.pose.position.y)
+                # Object XY vs wrist XY (base_link → world) at the align pose.
+                wx = -align_pose.pose.position.y
+                wy = align_pose.pose.position.x
+                off = math.hypot(p2.pose.position.x - wx,
+                                p2.pose.position.y - wy)
+                self.bus.add_chain_of_thought(
+                    f"  STACK: residual swing {swing*100:.1f}cm, "
+                    f"object offset from wrist {off*100:.1f}cm")
+                # Detailed geometry: wrist vs object vs base (world XY).
+                if getattr(self, "_active_stack_base_pose", None) is not None:
+                    _bp = self._active_stack_base_pose.pose.position
+                    self.bus.add_chain_of_thought(
+                        f"  STACK: geom — wrist({wx:.3f},{wy:.3f}) "
+                        f"obj({p2.pose.position.x:.3f},{p2.pose.position.y:.3f}) "
+                        f"base({_bp.x:.3f},{_bp.y:.3f})")
+
+        # Verify the payload survived the transfer. If the grasp joint broke
+        # during the carry, continuing would sweep the loose object across
+        # the scene.
+        if self._held_workpiece:
+            held_pose = self._sim_entity_pose(self._held_workpiece)
+            if held_pose is not None:
+                # align_pose is in base_link; convert to world for comparison.
+                wx = -align_pose.pose.position.y
+                wy = align_pose.pose.position.x
+                d = math.hypot(
+                    held_pose.pose.position.x - wx,
+                    held_pose.pose.position.y - wy)
+                if d > 0.15:
+                    self.bus.add_chain_of_thought(
+                        f"  STACK: ✗ payload lost during transfer "
+                        f"(Δ={d*100:.0f}cm from wrist) — aborting stack")
+                    self._held_workpiece = None
+                    self._is_holding_object = False
+                    return False
+
+        # Closed-loop XY correction: the held object's offset from the wrist
+        # depends on the wrist orientation, which changes with the arm
+        # configuration. Iteratively measure the object's simulator position
+        # and shift the wrist until the OBJECT (not the wrist) is over the
+        # base centre.
+        _base_world = getattr(self, "_resolved_stack_base_world", None)
+        if _base_world is None:
+            _base_world = getattr(self, "_active_stack_base_pose", None)
+        if _base_world is None and base_x is not None:
+            _base_world = PoseStamped()
+            _base_world.header.frame_id = "world"
+            _base_world.pose.position.x = -base_y
+            _base_world.pose.position.y = base_x
+            _base_world.pose.position.z = base_z + 0.594
+        if self._held_workpiece and _base_world is not None:
+            _bp = _base_world.pose.position
+            err_x, err_y = 0.0, 0.0
+            for _iter in range(3):
+                held = self._sim_entity_pose(self._held_workpiece)
+                if held is None:
+                    break
+                err_x = _bp.x - held.pose.position.x
+                err_y = _bp.y - held.pose.position.y
+                if math.hypot(err_x, err_y) < 0.012:
+                    break
+                new_bx = place_pose.pose.position.x + err_y
+                new_by = place_pose.pose.position.y - err_x
+                corr_pose = PoseStamped()
+                corr_pose.header.frame_id = "base_link"
+                corr_pose.pose.position.x = float(new_bx)
+                corr_pose.pose.position.y = float(new_by)
+                corr_pose.pose.position.z = place_pose.pose.position.z
+                corr_pose.pose.orientation = place_pose.pose.orientation
+                corr_joints = self._solve_ik(corr_pose)
+                if corr_joints is None:
+                    self.bus.add_chain_of_thought(
+                        "  STACK: ✗ XY correction unreachable — using open-loop")
+                    break
+                self._move_joints(
+                    corr_joints, GRIPPER_CLOSED_DEG, speed_dps=5.0)
+                self._wait_for_arrival(
+                    corr_joints, tolerance_rad=0.04, timeout=20.0)
+                time.sleep(0.8)
+                place_pose.pose.position.x = float(new_bx)
+                place_pose.pose.position.y = float(new_by)
+                align_pose.pose.position.x = float(new_bx)
+                align_pose.pose.position.y = float(new_by)
+            self.bus.add_chain_of_thought(
+                f"  STACK: XY correction complete "
+                f"(residual {math.hypot(err_x, err_y)*100:.1f}cm)")
+
         self.bus.add_chain_of_thought(
-            "  STACK: ✓ Aligned block directly over tower axis"
+            "  STACK: Aligned block directly over tower axis"
         )
 
         # If action is standalone 'stack' (not part of multi-step align_over -> place_on),
         # complete the placement right here
         if action.action_type == "stack":
-            place_joints = self._solve_ik(place_pose)
-            if place_joints:
-                self._move_joints(place_joints, GRIPPER_CLOSED_DEG, speed_dps=12.0)
-                self._wait_for_arrival(place_joints, timeout=12.0)
+            self.bus.add_chain_of_thought(
+                "  STACK: Descending along a continuous vertical path...")
+            if not self._cartesian_between(
+                    align_pose, place_pose, GRIPPER_CLOSED_DEG,
+                    steps=6, speed_dps=8.0):
+                self.bus.add_chain_of_thought(
+                    "  STACK: ✗ descent path became unreachable")
+                return False
             target_name = self._held_workpiece or action.target_object or "jenga block"
-            self._call_sync(self.gripper_detach, Trigger.Request(), timeout=3.0)
+            detach_res = self._call_sync(
+                self.gripper_detach, Trigger.Request(), timeout=3.0)
             self._call_sync(self.open_gripper, Trigger.Request(), timeout=3.0)
             self._update_object_lifecycle(
                 target_name, "Released", self._cached_target_pose
             )
             self._held_workpiece = None
             self._is_holding_object = False
-            time.sleep(0.8)
-            self._move_joints(align_joints, GRIPPER_OPEN_DEG, speed_dps=20.0)
-            self._wait_for_arrival(align_joints, timeout=18.0)
+            time.sleep(1.2)
+            # Retract straight up in small steps; never jump to a distant IK
+            # branch while the just-released object is sitting on the stack.
+            retract_pose = PoseStamped()
+            retract_pose.header.frame_id = "base_link"
+            retract_pose.pose.position.x = place_pose.pose.position.x
+            retract_pose.pose.position.y = place_pose.pose.position.y
+            retract_pose.pose.position.z = place_pose.pose.position.z + 0.05
+            retract_pose.pose.orientation = place_pose.pose.orientation
+            self._cartesian_between(
+                place_pose, retract_pose, GRIPPER_OPEN_DEG,
+                steps=4, speed_dps=8.0)
 
-            # Verify the block was actually released: the gripper jaw must be
-            # near the open position before we claim the stack succeeded.
-            open_rad = math.radians(GRIPPER_OPEN_DEG)
+            # Verify release from the attachment service (ground truth) and
+            # confirm the jaws actually opened past the closed position. The
+            # jaw cannot always reach the full open angle when the released
+            # object is still resting between the fingers on the stack.
+            detached = bool(detach_res and detach_res.success)
             cur_grip = float(self.current_joints_rad[4])
-            if abs(cur_grip - open_rad) > math.radians(15.0):
+            opened = cur_grip > math.radians(GRIPPER_CLOSED_DEG + 10.0)
+            if not (detached and opened):
                 self.bus.add_chain_of_thought(
-                    f"  STACK: ✗ gripper did not open after release "
-                    f"(jaw {math.degrees(cur_grip):.1f}° vs open "
-                    f"{GRIPPER_OPEN_DEG}°) — block may still be held"
+                    f"  STACK: ✗ release not confirmed "
+                    f"(detached={detached}, jaw={math.degrees(cur_grip):.1f}°)"
                 )
                 return False
 
+            # Ground-truth settle check. Model origins sit at the object base,
+            # so compare the released entity against the BASE origin — not the
+            # grasp-point target.
+            time.sleep(1.0)
+            settled = self._sim_entity_pose(target_name)
+            if settled is not None:
+                sp = settled.pose.position
+                _bw = getattr(self, "_resolved_stack_base_world", None)
+                if _bw is not None:
+                    base_wx = _bw.pose.position.x
+                    base_wy = _bw.pose.position.y
+                    base_wz = _bw.pose.position.z
+                else:
+                    base_wx, base_wy = -base_y, base_x
+                    base_wz = base_z + 0.594
+                xy_err = math.hypot(sp.x - base_wx, sp.y - base_wy)
+                rise = sp.z - base_wz
+                min_rise = 0.008 if "jenga" in (
+                    action.target_object or "").lower() else 0.020
+                self.bus.add_chain_of_thought(
+                    f"  STACK: settle check — Δxy={xy_err*100:.1f}cm, "
+                    f"rise above base={rise*100:+.1f}cm "
+                    f"(base z={base_wz:.3f}, now z={sp.z:.3f})"
+                )
+                if xy_err > 0.05 or rise < min_rise:
+                    self.bus.add_chain_of_thought(
+                        "  STACK: ✗ object did not remain on the stack "
+                        "(fell or slid off)"
+                    )
+                    return False
+
             self.bus.add_chain_of_thought(
-                "  STACK: ✓ Successfully placed block onto Jenga tower stack"
+                "  STACK: ✓ Object verified resting on the stack"
             )
 
         return True
@@ -3006,6 +4165,8 @@ class SkillAgent(LifecycleNode):
             target_str = (
                 str(action.target_object or "")
                 + " "
+                + str(prm.get("gesture", ""))
+                + " "
                 + str(action.reasoning or "")
                 + " "
                 + str(action.action_type or "")
@@ -3035,6 +4196,16 @@ class SkillAgent(LifecycleNode):
                     [0.0, 25.0, -45.0, 5.0, 0.0],
                     [0.0, 25.0, -45.0, 35.0, 0.0],
                     [0.0, 25.0, -45.0, 15.0, 0.0],
+                ]
+            elif "no" in target_str.split() or "shake" in target_str:
+                # Head-shake equivalent: rotate the wrist/waist side to side.
+                wps = [
+                    [0.0, 30.0, -50.0, 20.0, 0.0],
+                    [-22.0, 30.0, -50.0, 20.0, 0.0],
+                    [22.0, 30.0, -50.0, 20.0, 0.0],
+                    [-22.0, 30.0, -50.0, 20.0, 0.0],
+                    [22.0, 30.0, -50.0, 20.0, 0.0],
+                    [0.0, 30.0, -50.0, 20.0, 0.0],
                 ]
             elif "ready" in target_str or "home" in target_str:
                 wps = [[0.0, 35.0, -55.0, 20.0, 0.0]]
@@ -3204,9 +4375,19 @@ class SkillAgent(LifecycleNode):
         ).lower()
         if name in ("ready", "ready_pose"):
             q = [0.0, math.radians(35), math.radians(-55), math.radians(20)]
+            # Travel time scales with the largest joint change at the capped
+            # 10 deg/s rate; a fixed 12 s timeout aborts long wrist rotations.
+            try:
+                delta_deg = max(
+                    abs(math.degrees(a - b))
+                    for a, b in zip(q, self.current_joints_rad[:4])
+                )
+            except (TypeError, ValueError):
+                delta_deg = 120.0
+            timeout = max(12.0, delta_deg / 10.0 + 8.0)
             ok = self._move_joints(
-                q, GRIPPER_CLOSED_DEG if self._is_holding_object else 20.0, 30.0
-            ) and self._wait_for_arrival(q, timeout=12.0)
+                q, GRIPPER_CLOSED_DEG if self._is_holding_object else 20.0, 10.0
+            ) and self._wait_for_arrival(q, timeout=timeout)
             self.bus.add_chain_of_thought(
                 f"  ARM: ready pose {'reached' if ok else 'FAILED'}"
             )

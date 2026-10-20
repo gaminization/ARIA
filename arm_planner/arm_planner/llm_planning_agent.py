@@ -18,6 +18,7 @@ Publishes:
 import asyncio
 import json
 import os
+import threading
 import time
 from typing import Optional
 
@@ -28,6 +29,7 @@ from std_msgs.msg import String, Float64
 from arm_planner.msg import TaskState, Action
 from arm_planner.state_bus import StateBus
 from arm_planner.llm_client import OllamaClient
+from arm_planner.intent_planner import IntentPlanner
 
 # Import the original PlanningAgent for fallback
 from arm_agents.planning_agent import PlanningAgent as RuleBasedPlanningAgent
@@ -191,6 +193,18 @@ class LLMPlanningAgent(LifecycleNode):
         # without instantiating a full node — we just need the methods
         self._rule_parser = _RuleBasedFallback()
 
+        # Deterministic intent compiler. Runs before the LLM so common
+        # operator requests are planned in microseconds and the control
+        # loop never blocks on inference.
+        self._intent = IntentPlanner()
+        # auto   → intent first, LLM only for unmatched commands
+        # intent → intent + rule fallback only (fast, never blocks)
+        # llm    → always use the LLM
+        self._backend = os.environ.get(
+            'ARIA_PLANNING_BACKEND', 'auto').strip().lower()
+        if self._backend not in ('auto', 'intent', 'llm', 'rules'):
+            self._backend = 'auto'
+
         # Performance tracking
         self._last_plan_time_ms = 0.0
         self._plans_generated = 0
@@ -285,12 +299,88 @@ class LLMPlanningAgent(LifecycleNode):
 
     # ── Task state listener ────────────────────────────────
     def _on_task_changed(self, msg: TaskState):
-        """React to PLANNING status — decompose the command."""
+        """React to PLANNING status — decompose the command.
+
+        Fast path: the deterministic intent compiler resolves the command
+        inline (microseconds). Only genuinely novel phrasing is handed to
+        the LLM, and that always happens on a worker thread so the ROS
+        executor and the state bus are never blocked by inference.
+        """
         if msg.task_status != 'PLANNING':
             return
         if not msg.current_command:
             return
-        self._run_async(self._async_decompose(msg))
+
+        # Guard against re-planning the same task on every republish.
+        if getattr(self, '_planning_task_id', None) == msg.task_id:
+            return
+        self._planning_task_id = msg.task_id
+
+        command = msg.current_command.strip()
+
+        if self._backend != 'llm':
+            plan = self._intent.plan(command, self._known_objects())
+            if plan:
+                t0 = time.monotonic()
+                self.bus.add_chain_of_thought(
+                    "INTENT_PLANNER: deterministic plan matched "
+                    f"({len(plan.get('actions', []))} actions)")
+                self.bus.add_chain_of_thought(
+                    f"INTENT_PLANNER: goal = \"{plan.get('goal', '')}\"")
+                self._apply_plan_to_task(
+                    msg, plan, (time.monotonic() - t0) * 1000.0)
+                self._publish_plan_artifacts(plan, (time.monotonic() - t0) * 1000.0)
+                return
+
+            if self._backend in ('intent', 'rules'):
+                self.bus.add_chain_of_thought(
+                    "INTENT_PLANNER: no deterministic match — "
+                    "using rule-based decomposition")
+                self._fallback_decompose(msg)
+                return
+
+        # Novel phrasing: plan off the executor thread.
+        threading.Thread(
+            target=self._plan_with_llm_guarded, args=(msg,), daemon=True
+        ).start()
+
+    def _plan_with_llm_guarded(self, msg: TaskState):
+        """Run LLM planning without ever leaving the task stuck in PLANNING."""
+        try:
+            self._run_async(self._async_decompose(msg))
+        except Exception as exc:  # noqa: BLE001 - any failure must degrade
+            self.get_logger().error(f"LLM planning failed: {exc}")
+            self.bus.add_chain_of_thought(
+                f"LLM_PLANNING: ✗ LLM path failed ({exc}) — rule-based fallback")
+            try:
+                self._fallback_decompose(msg)
+            except Exception as exc2:  # noqa: BLE001
+                self.get_logger().error(f"Rule fallback failed: {exc2}")
+                msg.task_status = 'FAILED'
+                self.bus.publish_task(msg)
+
+    # ── Shared helpers ─────────────────────────────────────
+    def _known_objects(self) -> list:
+        """Snapshot the live world model for intent grounding."""
+        try:
+            memory = self.bus.state.memory
+            if memory and memory.known_objects:
+                return list(memory.known_objects)
+        except Exception:
+            pass
+        return []
+
+    def _publish_plan_artifacts(self, plan: dict, elapsed_ms: float):
+        """Publish the raw plan and its planning latency."""
+        try:
+            plan_msg = String()
+            plan_msg.data = json.dumps(plan, indent=2)
+            self.plan_pub.publish(plan_msg)
+            time_msg = Float64()
+            time_msg.data = elapsed_ms
+            self.time_pub.publish(time_msg)
+        except Exception:
+            pass
 
     # ── Main planning pipeline ─────────────────────────────
     async def _async_decompose(self, task: TaskState):

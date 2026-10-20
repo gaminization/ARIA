@@ -34,9 +34,14 @@ from std_msgs.msg import String
 from arm_planner.msg import VisionState, ObjectDetection
 from arm_planner.state_bus import StateBus
 
-from arm_agents.arm_agents.moving_target_handler import (
-    MovingTargetHandler, KalmanFilter2D,
-)
+try:
+    from arm_agents.moving_target_handler import (
+        MovingTargetHandler, KalmanFilter2D,
+    )
+except ImportError:
+    from moving_target_handler import (
+        MovingTargetHandler, KalmanFilter2D,
+    )
 
 LOST_THRESHOLD_FRAMES = 15   # Mark as LOST after N frames without detection
 PREDICTION_HORIZON_S = 0.5   # Predict 0.5s into the future
@@ -143,9 +148,11 @@ class MovingTargetTracker:
 
         for det in detections:
             tid = det.tracking_id
-            # Extract 2D position from detection bbox center
-            cx = det.bbox.center.position.x
-            cy = det.bbox.center.position.y
+            # Extract 2D position from the detection's bbox fields
+            # (VisionState/ObjectDetection exposes bbox_x/y/w/h, not a
+            # Detection2D bbox message).
+            cx = float(det.bbox_x) + float(det.bbox_w) * 0.5
+            cy = float(det.bbox_y) + float(det.bbox_h) * 0.5
             position_2d = np.array([cx, cy])
 
             # Extract 3D position if available
