@@ -2,11 +2,9 @@
 
 ## 1. Kinematic Structure & Authoritative URDF Mapping
 
-Project ARIA employs a **4-DoF** revolute serial chain plus a gripper
-(clamp). There is **no wrist-roll axis**, so the task manifold is position
-+ pitch only:
+Project ARIA employs a **4-DoF** revolute serial chain plus a gripper (clamp). There is **no wrist-roll axis**, so the task manifold is position + pitch only:
 
-$$\mathcal{M}_{\text{task}} = \left\{ \mathbf{T} \in SE(3) \;\middle|\; \mathbf{p} \in \mathcal{W}_{\text{reach}}, \; \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \; \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}] \right\}$$
+$$\mathcal{M}_{\text{task}} = \left\lbrace \mathbf{T} \in SE(3) \quad\middle|\quad \mathbf{p} \in \mathcal{W}_{\text{reach}}, \quad \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \quad \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}] \right\rbrace$$
 
 ### Craig Modified Denavit-Hartenberg (MDH) Parameters (Table III):
 
@@ -39,7 +37,7 @@ $$\hat{\mathbf{a}} = \begin{bmatrix} \cos\theta_1 \sin(\theta_2 + \theta_3 + \th
 Implemented in [`arm_ik/arm_ik/ik_solvers/aria_analytical_ik.py`](file:///home/gaminizer/Projects/ARIA/arm_ik/arm_ik/ik_solvers/aria_analytical_ik.py):
 
 Because a 5-DoF manipulator cannot independently achieve arbitrary 6D poses in $SE(3)$, inverse kinematics is strictly formulated over the 5-dimensional admissible task manifold $\mathcal{M}_{\text{task}}$:
-$$\mathcal{M}_{\text{task}} = \left\{ \mathbf{T} \in SE(3) \;\middle|\; \mathbf{p} \in \mathcal{W}_{\text{reach}}, \; \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \; \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}], \; \psi_{\text{roll}} = 0 \right\}$$
+$$\mathcal{M}_{\text{task}} = \left\lbrace \mathbf{T} \in SE(3) \quad\middle|\quad \mathbf{p} \in \mathcal{W}_{\text{reach}}, \quad \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \quad \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}], \quad \psi_{\text{roll}} = 0 \right\rbrace$$
 
 ### Step-by-Step Closed-Form Resolution:
 1. **Azimuth Angle ($\theta_1$):**

@@ -154,7 +154,7 @@ ARIA's arm has **4 revolute joints + a gripper** (waist, shoulder, elbow,
 wrist pitch, plus the gripper clamp). There is **no wrist-roll axis**, so the
 task manifold is position + pitch only:
 
-$$\mathcal{M}_{\text{task}} = \left\{ \mathbf{T} \in SE(3) \;\middle|\; \mathbf{p} \in \mathcal{W}_{\text{reach}}, \; \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \; \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}] \right\}$$
+$$\mathcal{M}_{\text{task}} = \left\lbrace \mathbf{T} \in SE(3) \quad\middle|\quad \mathbf{p} \in \mathcal{W}_{\text{reach}}, \quad \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \quad \theta_{\text{pitch}} \in [\theta_{\min}, \theta_{\max}] \right\rbrace$$
 
 ### Numerical Inverse Kinematics (position + pitch)
 The URDF joint chain includes fixed RPY offsets that make a closed-form 2R

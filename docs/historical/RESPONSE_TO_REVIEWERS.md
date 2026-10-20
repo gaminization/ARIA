@@ -136,7 +136,7 @@ Because the physical embodiment was not physically fabricated in this research p
 
 **Response: Fully Addressed.**  
 In Section~V-A (lines 322–330), we formally define the 5-dimensional admissible task manifold:
-$$\mathcal{M}_{\text{task}} = \left\{ \mathbf{T} \in SE(3) \;\middle|\; \mathbf{p} \in \mathcal{W}_{\text{reach}}, \; \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \; \theta_{\text{pitch}} \in [\theta_{\text{pitch},\min}, \theta_{\text{pitch},\max}], \; \psi_{\text{roll}} = 0 \right\}$$
+$$\mathcal{M}_{\text{task}} = \left\lbrace \mathbf{T} \in SE(3) \quad\middle|\quad \mathbf{p} \in \mathcal{W}_{\text{reach}}, \quad \phi_{\text{yaw}} = \text{atan2}(p_y, p_x), \quad \theta_{\text{pitch}} \in [\theta_{\text{pitch},\min}, \theta_{\text{pitch},\max}], \quad \psi_{\text{roll}} = 0 \right\rbrace$$
 Proposition~1 explicitly proves that any target pose $\mathbf{T}_{\text{target}} \in \mathcal{M}_{\text{task}}$ possesses a closed-form inverse kinematic solution uniquely determined up to elbow-up / elbow-down posture branch selection.
 
 ---
@@ -622,7 +622,7 @@ Rather than removing "Language-Conditioned" from the title, we conducted a rigor
 2. **Orientation Derivation Proof:** In Section III-A (Equation 15), we provided the complete mathematical proof: The first column of ${}^0\mathbf{R}_5$ is $\mathbf{n} = [\cos(\theta_1-\theta_5)\cos\phi, \sin(\theta_1-\theta_5)\cos\phi, \sin\phi]^T$. For vertical grasps ($\phi = \theta_2+\theta_3+\theta_4 = 0$), the out-of-plane tilt vanishes, yielding $\mathbf{n} = [\cos(\theta_1-\theta_5), \sin(\theta_1-\theta_5), 0]^T$. Setting $\theta_5 = \theta_1 - \psi$ ensures $\mathbf{n} = [\cos\psi, \sin\psi, 0]^T$, guaranteeing exact alignment with commanded planar yaw $\psi$.
 3. **Algorithm 1 and Proposition 1 Update:**
    - Algorithm 1 was updated to include explicit screening against all five joint limits $[\theta_{i,\min}, \theta_{i,\max}]$ and an automated fallback: if the elbow-up branch ($\sigma = -1$) violates joint limits, the solver immediately evaluates the elbow-down branch ($\sigma = +1$).
-   - Proposition 1 was re-stated: *"For any commanded pose $\mathbf{x}_{\text{target}} \in \mathcal{M}_{\text{task}}$, Algorithm 1 returns an exact, closed-form kinematic solution that is algebraically unique for the selected elbow branch $\sigma \in \{-1, +1\}$."*
+   - Proposition 1 was re-stated: *"For any commanded pose $\mathbf{x}_{\text{target}} \in \mathcal{M}_{\text{task}}$, Algorithm 1 returns an exact, closed-form kinematic solution that is algebraically unique for the selected elbow branch $\sigma \in \lbrace -1, +1 \rbrace$."*
    - Convergence was formally qualified: ARIA achieves **$100.0\%$ convergence on the admissible reachable manifold $\mathcal{M}_{\text{task}}$ ($N=95{,}400$ poses)**, while the remaining $4{,}600$ boundary poses lie outside physical joint limits and are deterministically flagged as unreachable in $O(1)$ time ($0.075$\,ms) without numerical stalling.
 
 ---
