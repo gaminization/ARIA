@@ -1,0 +1,89 @@
+[submodule "third_party/repos/DH2URDF"]
+	path = third_party/repos/DH2URDF
+	url = https://github.com/AdoHaha/DH2URDF.git
+	ignore = dirty
+
+[submodule "third_party/repos/Week-11-12-Robot-arms"]
+	path = third_party/repos/Week-11-12-Robot-arms
+	url = https://github.com/MOGI-ROS/Week-11-12-Robot-arms.git
+	ignore = dirty
+
+[submodule "third_party/repos/arduino_robot_arm"]
+	path = third_party/repos/arduino_robot_arm
+	url = https://github.com/smart-methods/arduino_robot_arm.git
+	ignore = dirty
+
+[submodule "third_party/repos/arduino_robot_arm_gripper"]
+	path = third_party/repos/arduino_robot_arm_gripper
+	url = https://github.com/smart-methods/arduino_robot_arm_gripper.git
+	ignore = dirty
+
+[submodule "third_party/repos/bullet3"]
+	path = third_party/repos/bullet3
+	url = https://github.com/bulletphysics/bullet3.git
+	ignore = dirty
+
+[submodule "third_party/repos/cobot_IK"]
+	path = third_party/repos/cobot_IK
+	url = https://github.com/LearnRoboticsWROS/cobot_IK.git
+	ignore = dirty
+
+[submodule "third_party/repos/gym-grasp"]
+	path = third_party/repos/gym-grasp
+	url = https://git.ais.uni-bonn.de/mosbach/gym-grasp.git
+	ignore = dirty
+
+[submodule "third_party/repos/iai_table_robot_description"]
+	path = third_party/repos/iai_table_robot_description
+	url = https://github.com/code-iai/iai_table_robot_description.git
+	ignore = dirty
+
+[submodule "third_party/repos/industrial_environment"]
+	path = third_party/repos/industrial_environment
+	url = https://github.com/LearnRoboticsWROS/industrial_environment.git
+	ignore = dirty
+
+[submodule "third_party/repos/pr_assets"]
+	path = third_party/repos/pr_assets
+	url = https://github.com/personalrobotics/pr_assets.git
+	ignore = dirty
+
+[submodule "third_party/repos/puppet"]
+	path = third_party/repos/puppet
+	url = https://github.com/ros-visualization/puppet.git
+	ignore = dirty
+
+[submodule "third_party/repos/robot_arm_arduino_python"]
+	path = third_party/repos/robot_arm_arduino_python
+	url = https://github.com/smart-methods/robot_arm_arduino_python.git
+	ignore = dirty
+
+[submodule "third_party/repos/robot_scenarios_sim"]
+	path = third_party/repos/robot_scenarios_sim
+	url = https://github.com/code-iai/robot_scenarios_sim.git
+	ignore = dirty
+
+[submodule "third_party/repos/tabletop-handybot"]
+	path = third_party/repos/tabletop-handybot
+	url = https://github.com/ycheng517/tabletop-handybot.git
+	ignore = dirty
+
+[submodule "third_party/repos/ur_app_youtube"]
+	path = third_party/repos/ur_app_youtube
+	url = https://github.com/LearnRoboticsWROS/ur_app_youtube.git
+	ignore = dirty
+
+[submodule "third_party/repos/ur_camera_yt_moveit_config"]
+	path = third_party/repos/ur_camera_yt_moveit_config
+	url = https://github.com/LearnRoboticsWROS/ur_camera_yt_moveit_config.git
+	ignore = dirty
+
+[submodule "third_party/repos/warebots"]
+	path = third_party/repos/warebots
+	url = https://github.com/niteshjha08/warebots
+	ignore = dirty
+
+[submodule "third_party/vision_msgs"]
+	path = third_party/vision_msgs
+	url = https://github.com/ros-perception/vision_msgs.git
+	ignore = dirty
