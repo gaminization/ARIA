@@ -1,4 +1,27 @@
 {
+    "git.autoRepositoryDetection": false,
+    "git.detectSubmodules": false,
+    "git.detectSubmodulesLimit": 0,
+    "git.ignoredRepositories": [
+        "third_party/repos/DH2URDF",
+        "third_party/repos/Week-11-12-Robot-arms",
+        "third_party/repos/arduino_robot_arm",
+        "third_party/repos/arduino_robot_arm_gripper",
+        "third_party/repos/bullet3",
+        "third_party/repos/cobot_IK",
+        "third_party/repos/gym-grasp",
+        "third_party/repos/iai_table_robot_description",
+        "third_party/repos/industrial_environment",
+        "third_party/repos/pr_assets",
+        "third_party/repos/puppet",
+        "third_party/repos/robot_arm_arduino_python",
+        "third_party/repos/robot_scenarios_sim",
+        "third_party/repos/tabletop-handybot",
+        "third_party/repos/ur_app_youtube",
+        "third_party/repos/ur_camera_yt_moveit_config",
+        "third_party/repos/warebots",
+        "third_party/vision_msgs"
+    ],
     "cmake.sourceDirectory": "/home/gaminizer/Projects/ARIA/repos/pr_assets",
     "ROS2.distro": "humble",
     "python.autoComplete.extraPaths": [
