@@ -233,6 +233,11 @@ class StudyNode(Node):
         traj.joint_names = names
         pt = JointTrajectoryPoint()
         pt.positions = [float(x) for x in positions]
+        # The controller uses spline interpolation.  A single-point trajectory
+        # without an explicit velocity is not reliably executed; supply zero
+        # end velocities so the goal is always honoured.
+        pt.velocities = [0.0] * len(names)
+        pt.accelerations = [0.0] * len(names)
         pt.time_from_start = Duration(seconds=float(duration)).to_msg()
         traj.points.append(pt)
         t0 = time.monotonic()
