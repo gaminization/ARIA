@@ -122,8 +122,8 @@ def main() -> int:
         summary[name] = {
             "recall_5mm": p5, "wilson_low": lo5, "wilson_high": hi5,
             "recall_1mm": k1 / len(errs),
-            "median_err_mm": float(np.median(errs)),
-            "p95_err_mm": float(np.quantile(errs, 0.95)),
+            "median_err_mm": float(np.median(errs)) * 1000.0,
+            "p95_err_mm": float(np.quantile(errs, 0.95)) * 1000.0,
             "median_solve_ms": float(np.median(times)),
             "p95_solve_ms": float(np.quantile(times, 0.95)),
         }
