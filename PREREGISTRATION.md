@@ -192,9 +192,9 @@ family.
 
 | Item | Value |
 |---|---|
-| Pre-registration commit | filled by `git log -1 --format=%H` at first evaluation |
-| Thresholds frozen at | this commit |
-| Evaluation started at | not yet |
+| Pre-registration commit | `cf5d7b4` |
+| Thresholds frozen at | `cf5d7b4` |
+| Evaluation started at | `2026-10-24T19:14:41Z` (P0-REACH) |
 | Deviations | `DEVIATIONS.md` |
 
 Signed off by: automated study harness (no human PI available in this environment).

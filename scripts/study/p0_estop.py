@@ -55,7 +55,8 @@ GOAL_Q = (0.8, 1.2, -1.0, 1.4, 0.5)
 MOVE_S = 2.5
 SIG_RANGE = (0.50, 0.70)
 OBSERVE_S = 1.50
-VEL_THRESH = 0.05
+VEL_THRESH_PREREG = 0.01
+VEL_THRESH_SENS = 0.05
 HOLD_S = 0.20
 
 
@@ -147,15 +148,26 @@ class EstopNode(StudyNode):
         return self.samples[i][1], self.samples[i][2]
 
 
+def _sustained_stop(ts: np.ndarray, vd: np.ndarray, thresh: float, t_sig: float) -> float:
+    """First sample from which |dq/dt| stays below ``thresh`` for ``HOLD_S``."""
+    for i in range(len(ts)):
+        if not np.all(np.abs(vd[i]) < thresh):
+            continue
+        window = (ts >= ts[i]) & (ts <= ts[i] + HOLD_S)
+        if np.all(np.abs(vd[window]) < thresh):
+            return float(ts[i] - t_sig)
+    return float("nan")
+
+
 def stop_metrics(
     samples: List[Tuple[float, np.ndarray, np.ndarray]],
     t_sig: float,
     q_sig: np.ndarray,
     t_end: float,
-) -> Tuple[float, float, float, bool, float]:
+) -> Tuple[float, float, float, float, bool, bool, float]:
     after = [s for s in samples if t_sig - 1e-9 <= s[0] <= t_end + 1e-9]
     if len(after) < 5:
-        return float("nan"), float("nan"), float("nan"), False, float("nan")
+        return (float("nan"),) * 4 + (False, False, float("nan"))
     ts = np.array([s[0] for s in after])
     qs = np.array([s[1] for s in after])
     vd_reported = np.array([s[2] for s in after])
@@ -170,15 +182,13 @@ def stop_metrics(
     vd = np.gradient(qs, ts, axis=0)
     vd_reported_max = float(np.nanmax(np.abs(vd_reported)))
 
-    t_stop = float("nan")
-    for i in range(len(after)):
-        if not np.all(np.abs(vd[i]) < VEL_THRESH):
-            continue
-        window = (ts >= ts[i]) & (ts <= ts[i] + HOLD_S)
-        if np.all(np.abs(vd[window]) < VEL_THRESH):
-            t_stop = float(ts[i] - t_sig)
-            break
-    return t_stop, overshoot, overshoot_norm, bool(np.isfinite(t_stop)), vd_reported_max
+    t_stop = _sustained_stop(ts, vd, VEL_THRESH_PREREG, t_sig)
+    t_stop_sens = _sustained_stop(ts, vd, VEL_THRESH_SENS, t_sig)
+    return (
+        t_stop, t_stop_sens, overshoot, overshoot_norm,
+        bool(np.isfinite(t_stop)), bool(np.isfinite(t_stop_sens)),
+        vd_reported_max,
+    )
 
 
 def main() -> int:
@@ -195,6 +205,7 @@ def main() -> int:
         "trial_id", "seed", "path", "move_s", "sig_s",
         "q_sig_0", "q_sig_1", "q_sig_2", "q_sig_3", "v_sig_max",
         "t_zero_cmd_s", "t_stop_s", "halt_success",
+        "t_stop_005_s", "halt_success_005",
         "overshoot_rad", "overshoot_norm_rad",
         "halt_joint_count", "halt_has_velocities", "estop_active_seen",
         "other_traj_events", "v_reported_max_rad_s",
@@ -202,9 +213,11 @@ def main() -> int:
     config = {
         "seeds": seeds, "paths": paths, "start_q": START_Q, "goal_q": GOAL_Q,
         "move_s": MOVE_S, "sig_range": SIG_RANGE, "observe_s": OBSERVE_S,
-        "vel_thresh_rad_s": VEL_THRESH, "hold_s": HOLD_S,
+        "vel_thresh_rad_s": VEL_THRESH_PREREG, "hold_s": HOLD_S,
+        "vel_thresh_sensitivity_rad_s": VEL_THRESH_SENS,
         "t_zero_cmd_def": "sim time from signal to the path-matching controller-topic message",
-        "t_stop_def": "sim time to sustained |dq/dt|<0.05 rad/s for 0.2 s, q differentiated from measured positions",
+        "t_stop_def": "sim time to sustained |dq/dt|<0.01 rad/s for 0.2 s, q differentiated from measured positions",
+        "t_stop_sensitivity_def": "same at the more permissive 0.05 rad/s threshold",
         "overshoot_def": "max single-joint |q-q_sig| after signal",
         "path_match": "command: 5 joints with velocities; safety: 4 joints (SafetyAgent halt)",
     }
@@ -273,7 +286,7 @@ def main() -> int:
                         rclpy.spin_until_future_complete(node, fut, timeout_sec=5.0)
                         node.estop_active = False
 
-                    t_stop, over, over_norm, ok, v_rep = stop_metrics(
+                    t_stop, t_stop_sens, over, over_norm, ok, ok_sens, v_rep = stop_metrics(
                         node.samples, t_sig, q_sig, obs_end
                     )
 
@@ -306,6 +319,8 @@ def main() -> int:
                         "v_sig_max": float(np.nanmax(np.abs(v_sig))),
                         "t_zero_cmd_s": t_zero, "t_stop_s": t_stop,
                         "halt_success": int(ok),
+                        "t_stop_005_s": t_stop_sens,
+                        "halt_success_005": int(ok_sens),
                         "overshoot_rad": over, "overshoot_norm_rad": over_norm,
                         "halt_joint_count": n_joints,
                         "halt_has_velocities": int(has_vel),
@@ -319,7 +334,8 @@ def main() -> int:
                     print(
                         f"  trial {trial}: seed={seed} path={path} "
                         f"v_sig={row['v_sig_max']:.3f} t_zero={t_zero*1000:.1f}ms "
-                        f"t_stop={t_stop:.3f}s ok={ok} over={over:.4f}rad "
+                        f"t_stop={t_stop:.3f}s ok={ok} "
+                        f"t_stop005={t_stop_sens:.3f}s ok005={ok_sens} over={over:.4f}rad "
                         f"joints={n_joints} vel={has_vel}",
                         flush=True,
                     )
@@ -333,8 +349,11 @@ def main() -> int:
         for path in paths:
             cell = [r for r in rows if r["path"] == path]
             ok = [bool(r["halt_success"]) for r in cell]
+            ok_sens = [bool(r["halt_success_005"]) for r in cell]
             p, lo, hi = stats.wilson(sum(ok), len(ok))
+            p_sens, lo_sens, hi_sens = stats.wilson(sum(ok_sens), len(ok_sens))
             tstop = np.array([r["t_stop_s"] for r in cell if r["halt_success"]])
+            tstop_sens = np.array([r["t_stop_005_s"] for r in cell if r["halt_success_005"]])
             tzero = np.array([r["t_zero_cmd_s"] for r in cell if np.isfinite(r["t_zero_cmd_s"])])
             over = np.array([r["overshoot_rad"] for r in cell])
             summary[path] = {
@@ -346,6 +365,11 @@ def main() -> int:
                 "t_zero_cmd_p95_ms": float(np.quantile(tzero, 0.95) * 1000) if tzero.size else None,
                 "t_stop_median_s": float(np.median(tstop)) if tstop.size else None,
                 "t_stop_p95_s": float(np.quantile(tstop, 0.95)) if tstop.size else None,
+                "halt_success_005_rate": p_sens,
+                "halt_success_005_wilson_low": lo_sens,
+                "halt_success_005_wilson_high": hi_sens,
+                "t_stop_005_median_s": float(np.median(tstop_sens)) if tstop_sens.size else None,
+                "t_stop_005_p95_s": float(np.quantile(tstop_sens, 0.95)) if tstop_sens.size else None,
                 "overshoot_median_rad": float(np.median(over)),
                 "overshoot_p95_rad": float(np.quantile(over, 0.95)),
                 "halt_joint_count_median": float(np.median([r["halt_joint_count"] for r in cell])),

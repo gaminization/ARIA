@@ -247,6 +247,16 @@ def main() -> int:
         add(f"estop{label}HasVel", f"{cell['halt_has_velocities_fraction']*100:.0f}",
             exp="P0-ESTOP", metric=f"fraction of halt messages with velocities, {path}",
             unit="percent", n=cell["n"])
+        add(f"estop{label}SuccessSensitivity",
+            f"{cell['halt_success_005_rate']*100:.0f}",
+            exp="P0-ESTOP", metric=f"halt success at 0.05 rad/s, {path}",
+            unit="percent", n=cell["n"])
+        if cell["t_stop_005_median_s"] is not None:
+            sens_ms = 1000 * cell["t_stop_005_median_s"]
+            add(f"estop{label}TstopSensitivityMs",
+                f"{sens_ms:.0f}", exp="P0-ESTOP",
+                metric=f"median stop time at 0.05 rad/s, {path}", unit="ms",
+                n=cell["n"])
 
     # ----------------------------------------------------------------------- N4
     base, n4c = n4["baseline"], n4["n4"]
@@ -282,6 +292,32 @@ def main() -> int:
     add("nFourFalseSuccessPct", pct(base["false_success_rate"]), exp="P2-N4",
         metric="baseline solver success flag with >5 mm FK error", unit="percent",
         n=base["n"])
+    add("nFourBaselineExecFailPct", pct(base["executed_failure_rate"]), exp="P2-N4",
+        metric="execution failure rate among baseline plans", unit="percent",
+        n=base["n"])
+    add("nFourExecFailPct", pct(n4c["executed_failure_rate"]), exp="P2-N4",
+        metric="execution failure rate among N4-executed plans", unit="percent",
+        n=int(round(n4c["coverage"] * n4c["n"])))
+    pair_rows = {}
+    for r in n4_rows:
+        pair_rows.setdefault(r["seed"], {})[r["method"]] = r
+    pairs = [v for v in pair_rows.values() if "baseline" in v and "n4" in v]
+    add("nFourBothSuccess", str(sum(
+        v["baseline"]["success"] == "1" and v["n4"]["success"] == "1" for v in pairs)),
+        exp="P2-N4", metric="targets solved by both pipelines", unit="count",
+        n=len(pairs))
+    add("nFourBaselineOnly", str(sum(
+        v["baseline"]["success"] == "1" and v["n4"]["success"] == "0" for v in pairs)),
+        exp="P2-N4", metric="targets solved only by the baseline", unit="count",
+        n=len(pairs))
+    add("nFourOnly", str(sum(
+        v["baseline"]["success"] == "0" and v["n4"]["success"] == "1" for v in pairs)),
+        exp="P2-N4", metric="targets solved only by N4", unit="count",
+        n=len(pairs))
+    add("nFourNeither", str(sum(
+        v["baseline"]["success"] == "0" and v["n4"]["success"] == "0" for v in pairs)),
+        exp="P2-N4", metric="targets solved by neither pipeline", unit="count",
+        n=len(pairs))
     add("nFourCoveragePct", pct(n4c["coverage"]), exp="P2-N4",
         metric="N4 coverage (executed / total)", unit="percent", n=n4c["n"])
     add("nFourReplansMean", f2(n4c["mean_replans"]), exp="P2-N4",
