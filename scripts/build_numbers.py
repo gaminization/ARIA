@@ -342,7 +342,7 @@ def main() -> int:
     ax.set_ylim(0, 0.13)
     ax.legend(frameon=False, fontsize=7, loc="upper left")
     fig.tight_layout()
-    fig.savefig(FIG / "fig_conv_speed.pdf")
+    fig.savefig(FIG / "fig_conv_speed.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
     # Fig 2: relative error by commanded speed.
@@ -355,7 +355,7 @@ def main() -> int:
     for i, v in enumerate(rel):
         ax.text(i, v - 3, f"{v:.1f}", ha="center", va="top", fontsize=7)
     fig.tight_layout()
-    fig.savefig(FIG / "fig_conv_error.pdf")
+    fig.savefig(FIG / "fig_conv_error.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
     # Fig 3: reachability error ECDF.
@@ -370,7 +370,7 @@ def main() -> int:
     ax.set_ylabel("ECDF")
     ax.legend(frameon=False, fontsize=7)
     fig.tight_layout()
-    fig.savefig(FIG / "fig_reach_ecdf.pdf")
+    fig.savefig(FIG / "fig_reach_ecdf.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
     # Fig 4: E-STOP overshoot per path.
@@ -382,7 +382,7 @@ def main() -> int:
     ax.boxplot(data, tick_labels=["command", "safety-agent"], widths=0.5)
     ax.set_ylabel("post-signal overshoot (rad)")
     fig.tight_layout()
-    fig.savefig(FIG / "fig_estop_overshoot.pdf")
+    fig.savefig(FIG / "fig_estop_overshoot.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
     # Fig 5: N4 intention-to-treat success with Wilson CIs.
@@ -396,7 +396,7 @@ def main() -> int:
     ax.set_ylim(0, 100)
     ax.set_ylabel("intention-to-treat success (%)")
     fig.tight_layout()
-    fig.savefig(FIG / "fig_n4_success.pdf")
+    fig.savefig(FIG / "fig_n4_success.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
     # ------------------------------------------------------------- write macros
