@@ -18,8 +18,14 @@ class TrialLog:
 
     The CSV is the analysis table. The JSONL keeps nested config and any extra
     fields without widening the CSV schema. Both are flushed per row so a
-    crash cannot silently drop completed trials.
+    crash cannot silently drop completed trials.  Provenance columns are part
+    of every CSV row, not only the sidecar.
     """
+
+    PROVENANCE = [
+        "exp_id", "commit", "short_commit", "dirty",
+        "started_at", "finished_at",
+    ]
 
     def __init__(self, exp_id: str, fieldnames: Iterable[str], config: Dict[str, Any] | None = None):
         provenance.assert_clean(exp_id)
@@ -27,7 +33,8 @@ class TrialLog:
         self.exp_id = exp_id
         self.csv_path = RAW_DIR / f"{exp_id}.csv"
         self.jsonl_path = RAW_DIR / f"{exp_id}.jsonl"
-        self.fieldnames = list(fieldnames)
+        names = [f for f in fieldnames if f not in self.PROVENANCE]
+        self.fieldnames = self.PROVENANCE + names
         self.config = config or {}
         self._stamp = provenance.stamp()
         self._csv_f = open(self.csv_path, "w", newline="", encoding="utf-8")
@@ -45,7 +52,10 @@ class TrialLog:
         out.setdefault("commit", self._stamp["commit"])
         out.setdefault("short_commit", self._stamp["short_commit"])
         out.setdefault("dirty", False)
-        out.setdefault("logged_at", datetime.now(timezone.utc).isoformat())
+        now = datetime.now(timezone.utc).isoformat()
+        out.setdefault("started_at", now)
+        out.setdefault("finished_at", now)
+        out.setdefault("logged_at", now)
         self._writer.writerow(out)
         self._csv_f.flush()
         rec = {"row": out, "config": self.config, "monotonic_ns": time.monotonic_ns()}

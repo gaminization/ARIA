@@ -161,6 +161,8 @@ def main() -> int:
         "speeds": speeds,
         "part": PART,
         "part_reset": PART_RESET,
+        "part_reset_y_range": [0.700, 0.740],
+        "part_reset_x_jitter": 0.005,
         "hold_q": HOLD_Q,
         "accel_s": ACCEL_S,
         "window_ticks": WINDOW_TICKS,
@@ -207,11 +209,14 @@ def main() -> int:
             for seed in seeds:
                 rng = np.random.default_rng(seed)
                 for speed in speeds:
+                    t_trial0 = datetime.now(timezone.utc).isoformat()
                     # Quiesce, then place the part at the infeed end.
                     set_speed(node, 0.0)
                     node.spin_for(0.30)
-                    x = PART_RESET[0] + float(rng.uniform(-0.008, 0.008))
-                    y0 = PART_RESET[1] + float(rng.uniform(-0.03, 0.03))
+                    x = PART_RESET[0] + float(rng.uniform(-0.005, 0.005))
+                    # The slider bed ends at y=0.760; keep the part well inside
+                    # it so a trial cannot start with the part off the edge.
+                    y0 = 0.720 + float(rng.uniform(-0.020, 0.020))
                     ok = node.set_model_pose(PART_MODEL, (x, y0, PART_RESET[2]))
                     if not ok:
                         raise RuntimeError("set_entity_state failed for workpiece_01")
@@ -261,6 +266,8 @@ def main() -> int:
                         "trial_id": trial,
                         "seed": seed,
                         "speed_cmd": speed,
+                        "started_at": t_trial0,
+                        "finished_at": datetime.now(timezone.utc).isoformat(),
                         "speed_reported": node.speed_reported,
                         "start_x": x,
                         "start_y": y0,
@@ -308,22 +315,33 @@ def main() -> int:
             err = np.array([r["speed_error"] for r in cell])
             rel = np.array([r["speed_rel_error"] for r in cell])
             mean_real = float(real.mean())
+            med_real = float(np.median(real))
             ci = stats.bootstrap_ci(real, np.mean) if len(real) > 1 else (mean_real, mean_real, mean_real)
+            mci = stats.bootstrap_ci(real, np.median) if len(real) > 1 else (med_real, med_real, med_real)
             summary[f"speed_{speed:.2f}"] = {
                 "n": len(cell),
                 "mean_realized_speed": mean_real,
                 "mean_realized_ci_low": float(ci[1]),
                 "mean_realized_ci_high": float(ci[2]),
+                "median_realized_speed": med_real,
+                "median_realized_ci_low": float(mci[1]),
+                "median_realized_ci_high": float(mci[2]),
                 "mean_speed_error": float(err.mean()),
+                "median_speed_error": float(np.median(err)),
                 "mean_rel_error": float(rel.mean()),
                 "median_rel_error": float(np.median(rel)),
                 "max_abs_rel_error": float(np.max(np.abs(rel))),
+                "fraction_within_10pct": float(np.mean(np.abs(rel) <= 0.10)),
+                "fraction_within_25pct": float(np.mean(np.abs(rel) <= 0.25)),
                 "belt_link_speed_mean": float(np.mean([r["belt_link_speed"] for r in cell])),
                 "head_roller_speed_mean": float(np.mean([r["head_roller_speed"] for r in cell])),
                 "tail_roller_speed_mean": float(np.mean([r["tail_roller_speed"] for r in cell])),
                 "tcp_dev_mm_mean": float(np.nanmean([r["tcp_dev_mm"] for r in cell])),
                 "tcp_dev_mm_max": float(np.nanmax([r["tcp_dev_mm"] for r in cell])),
             }
+        summary["speed_reported_matches_cmd_fraction"] = float(
+            np.mean([abs(r["speed_reported"] - r["speed_cmd"]) < 1e-9 for r in rows])
+        )
         summary["rtf_mean"] = float(np.mean([r["rtf"] for r in rows]))
         summary["hold_config_error_rad"] = hold_err
         summary["hold_trajectory_attempts"] = hold_attempts
