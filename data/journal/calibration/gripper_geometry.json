@@ -1,0 +1,27 @@
+{
+  "source": "Gazebo Classic 11 TF (robot_state_publisher) on aria_arm, 2026-10-25",
+  "note": "Measured pad-midpoint offset in the wrist frame vs actual gripper joint angle. The pad midpoint is NOT the wrist origin. Values are means of the two pad collision-box centres; each box centre is the URDF collision origin transformed by the measured link TF.",
+  "gripper_joint_actual_rad": [0.0, 0.5, 0.7, 1.0],
+  "pad_midpoint_offset_wrist_m": [
+    [-0.0356, 0.0664, -0.0060],
+    [-0.0341, 0.0629, -0.0060],
+    [-0.0331, 0.0594, -0.0065],
+    [-0.0307, 0.0515, -0.0069]
+  ],
+  "pad_center_separation_mm": {
+    "0.0": 26.14, "0.2": 38.15, "0.4": 52.96, "0.5": 59.63,
+    "0.6": 65.87, "0.65": 68.78, "0.7": 71.84, "0.75": 75.33,
+    "0.8": 78.42, "0.9": 83.70, "1.0": 88.33
+  },
+  "defect_measurements": {
+    "pad_face_normal_dot_closed": 0.994,
+    "pad_face_normal_dot_at_g0.6": 0.374,
+    "pad_face_normal_dot_at_g1.0": -0.217,
+    "interpretation": "Both pad face normals point the same way when closed (dot ~ +1), so the right collision box is not mirrored. At the opening required for a 40 mm cube (g ~ 0.76) the normals are ~112 deg apart (splayed V).",
+    "grasp_attempts": [
+      {"grasp_xyz": [0.20, -0.03, 0.6277], "result": "object pushed to x=0.148, no lift"},
+      {"grasp_xyz": [0.18, -0.03, 0.6277], "result": "both pads contact only after object displaced; lift 0.1 mm"},
+      {"grasp_xyz": [0.177, -0.0266, 0.630], "result": "pads centred to 0.5 mm; closure produced 6088 N / 2228 N; lift 0 mm"}
+    ]
+  }
+}

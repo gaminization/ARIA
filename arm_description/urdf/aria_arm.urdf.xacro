@@ -7,6 +7,10 @@
      ═══════════════════════════════════════════════════════════════ -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="aria_arm">
 
+  <!-- Study switches. Defaults preserve the original bring-up behaviour. -->
+  <xacro:arg name="enable_attach" default="true"/>
+  <xacro:arg name="enable_cameras" default="true"/>
+
   <!-- Include Gazebo-specific plugins and materials -->
   <xacro:include filename="$(find arm_description)/urdf/aria_arm.gazebo.xacro"/>
 
@@ -335,6 +339,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
 
     <joint name="shoulder_joint">
@@ -344,6 +349,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
 
     <joint name="elbow_joint">
@@ -353,6 +359,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
 
     <joint name="wrist_pitch_joint">
@@ -362,6 +369,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
 
     <joint name="gripper_joint">
@@ -371,6 +379,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
 
     <joint name="finger_mimic_joint">
@@ -379,6 +388,7 @@
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
 
   </ros2_control>

@@ -22,6 +22,7 @@
   <!-- ═══════════════════════════════════════════════════════════
        ARIA INDUSTRIAL GRIPPER PLUGIN — High-Fidelity Grasp & Release
        ═══════════════════════════════════════════════════════════ -->
+  <xacro:if value="$(arg enable_attach)">
   <gazebo>
     <plugin filename="libaria_gripper_plugin.so"
             name="aria_gripper_plugin">
@@ -32,6 +33,7 @@
       <max_attach_dist>0.14</max_attach_dist>
     </plugin>
   </gazebo>
+  </xacro:if>
 
   <!-- ═══════════════════════════════════════════════════════════
        ROBUST JOINT DYNAMICS (Implicit Spring-Damper in ODE)
@@ -209,6 +211,7 @@
        Uses libgazebo_ros_camera.so for Gazebo Classic
        CLEAN: noise stddev = 0
        ═══════════════════════════════════════════════════════════ -->
+  <xacro:if value="$(arg enable_cameras)">
   <gazebo reference="wrist_link">
     <sensor name="wrist_camera" type="depth">
       <always_on>true</always_on>
@@ -246,6 +249,7 @@
       </plugin>
     </sensor>
   </gazebo>
+  </xacro:if>
 
   <!-- ═══════════════════════════════════════════════════════════
        IMU SENSOR — MPU6050 (on wrist_link)

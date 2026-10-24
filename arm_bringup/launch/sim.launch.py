@@ -52,9 +52,16 @@ def generate_launch_description():
     gui_conf = LaunchConfiguration("gui")
 
     # ── Robot description (URDF via xacro) ──
+    # xacro is expanded before launch substitutions resolve, so the study
+    # switches are environment variables, not launch arguments:
+    #   ARIA_ENABLE_ATTACH=false  -> no oracle attach plugin
+    #   ARIA_ENABLE_CAMERAS=false -> no wrist depth camera (faster control runs)
     xacro_file = os.path.join(desc_pkg, "urdf", "aria_arm.urdf.xacro")
     doc = xacro.parse(open(xacro_file))
-    xacro.process_doc(doc)
+    xacro.process_doc(doc, mappings={
+        "enable_attach": os.environ.get("ARIA_ENABLE_ATTACH", "true"),
+        "enable_cameras": os.environ.get("ARIA_ENABLE_CAMERAS", "true"),
+    })
     urdf_xml = doc.toxml()
 
     # Strip XML comments and collapse whitespace for gazebo_ros2_control

@@ -1,0 +1,1 @@
+"""ARIA journal study package."""
