@@ -337,3 +337,16 @@ supports the disposition. Rows not listed here remain as stated above.
 | `SafetyAgent` publishes a 4-joint halt with no velocities | `arm_agents/arm_agents/safety_agent.py:113-121`; JTC has `allow_partial_joints_goal: False`. | The controller rejects the halt. The arm continues to its goal (median overshoot 0.72 rad). |
 | Conveyor realized speed has a fixed offset, not a scale error | `P0-CONV`: commanded 0.04/0.08/0.12 m/s gives 0.0151/0.0543/0.0937 m/s; offset `-0.0249/-0.0257/-0.0263 m/s`. | A single scale factor cannot repair the plant; the friction/velocity-write model must change. |
 | `solve_analytical` reports success for residuals up to 10 mm | `_gradient_fallback` accepts `best_err < tolerance_m*10`. | A planner that trusts `success` can execute a pose error up to 10 mm. `P2-N4` quantifies the consequence. |
+
+### 11.2 Second repair pass: provenance, thresholds, and conditional metrics
+
+The first addendum was written before three issues were found. They are recorded here
+because each changes what the paper is allowed to claim.
+
+| Issue | Evidence | Disposition |
+|---|---|---|
+| P0-REACH rows had no per-row provenance | The first CSV predated the `TrialLog` provenance columns; only the summary carried the commit. | Re-ran from clean commit `7e9d762` with the same seed, target grid, tolerance, and solvers. Recall and error values are identical; solve-time medians changed from 0.863/0.288 ms to 0.705/0.230 ms. The legacy logs are in `data/journal/raw/archive/`. |
+| P0-ESTOP used a 0.05 rad/s stop threshold while the pre-registration fixes 0.01 rad/s | `PREREGISTRATION.md` H0e; the earlier `scripts/study/p0_estop.py` set `VEL_THRESH=0.05`. | The final run logs `0.01 rad/s` as the primary threshold and `0.05 rad/s` as a sensitivity check. Both are in the CSV. |
+| The P0-ESTOP summary commit differed from the row commit | A documentation-only commit landed mid-run: rows `99966bd`, summary `d978641`. | `build_numbers.py` now reads the single commit stamped on the rows and warns when the summary differs. The old run is archived. |
+| N4's conditional execution-failure rate was reported as a failure | N4 executes 47/100 targets with 0 execution failures; the baseline executes 100/100 with 48 failures. Intention-to-treat success is 47% vs 52%. | The paper reports both: the gate lowers conditional execution failures but rejects 53% of targets, rescues 1 baseline failure, and loses 6 baseline successes. No practical improvement is claimed. |
+| P2-N4 target box and interval method changed | Box changed on development seeds before evaluation; the paired design uses a bootstrap interval rather than the pre-registered unpaired Newcombe interval. | Recorded in `DEVIATIONS.md` D2 and D3; the evaluation seeds were not used for tuning. |
