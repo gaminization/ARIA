@@ -152,16 +152,23 @@ def stop_metrics(
     t_sig: float,
     q_sig: np.ndarray,
     t_end: float,
-) -> Tuple[float, float, float, bool]:
+) -> Tuple[float, float, float, bool, float]:
     after = [s for s in samples if t_sig - 1e-9 <= s[0] <= t_end + 1e-9]
-    if len(after) < 3:
-        return float("nan"), float("nan"), float("nan"), False
+    if len(after) < 5:
+        return float("nan"), float("nan"), float("nan"), False, float("nan")
     ts = np.array([s[0] for s in after])
     qs = np.array([s[1] for s in after])
-    vd = np.array([s[2] for s in after])
+    vd_reported = np.array([s[2] for s in after])
     disp = np.abs(qs - q_sig[None, :])
     overshoot = float(np.max(disp))
     overshoot_norm = float(np.max(np.linalg.norm(qs - q_sig[None, :], axis=1)))
+
+    # ``/joint_states.velocity`` in this workcell is not the derivative of the
+    # measured position (it is offset by roughly an order of magnitude and the
+    # waist sign is inverted).  Differentiate the measured positions instead;
+    # the reported field is kept only as a diagnostic.
+    vd = np.gradient(qs, ts, axis=0)
+    vd_reported_max = float(np.nanmax(np.abs(vd_reported)))
 
     t_stop = float("nan")
     for i in range(len(after)):
@@ -171,7 +178,7 @@ def stop_metrics(
         if np.all(np.abs(vd[window]) < VEL_THRESH):
             t_stop = float(ts[i] - t_sig)
             break
-    return t_stop, overshoot, overshoot_norm, bool(np.isfinite(t_stop))
+    return t_stop, overshoot, overshoot_norm, bool(np.isfinite(t_stop)), vd_reported_max
 
 
 def main() -> int:
@@ -190,14 +197,14 @@ def main() -> int:
         "t_zero_cmd_s", "t_stop_s", "halt_success",
         "overshoot_rad", "overshoot_norm_rad",
         "halt_joint_count", "halt_has_velocities", "estop_active_seen",
-        "other_traj_events",
+        "other_traj_events", "v_reported_max_rad_s",
     ]
     config = {
         "seeds": seeds, "paths": paths, "start_q": START_Q, "goal_q": GOAL_Q,
         "move_s": MOVE_S, "sig_range": SIG_RANGE, "observe_s": OBSERVE_S,
         "vel_thresh_rad_s": VEL_THRESH, "hold_s": HOLD_S,
         "t_zero_cmd_def": "sim time from signal to the path-matching controller-topic message",
-        "t_stop_def": "sim time to sustained |qd|<0.05 rad/s for 0.2 s",
+        "t_stop_def": "sim time to sustained |dq/dt|<0.05 rad/s for 0.2 s, q differentiated from measured positions",
         "overshoot_def": "max single-joint |q-q_sig| after signal",
         "path_match": "command: 5 joints with velocities; safety: 4 joints (SafetyAgent halt)",
     }
@@ -266,7 +273,9 @@ def main() -> int:
                         rclpy.spin_until_future_complete(node, fut, timeout_sec=5.0)
                         node.estop_active = False
 
-                    t_stop, over, over_norm, ok = stop_metrics(node.samples, t_sig, q_sig, obs_end)
+                    t_stop, over, over_norm, ok, v_rep = stop_metrics(
+                        node.samples, t_sig, q_sig, obs_end
+                    )
 
                     events = [
                         e for e in node.traj_events
@@ -302,6 +311,7 @@ def main() -> int:
                         "halt_has_velocities": int(has_vel),
                         "estop_active_seen": int(estop_seen),
                         "other_traj_events": other_events,
+                        "v_reported_max_rad_s": v_rep,
                     }
                     log.log(row)
                     rows.append(row)
@@ -343,6 +353,7 @@ def main() -> int:
                 "estop_active_fraction": float(np.mean([r["estop_active_seen"] for r in cell])),
                 "other_traj_events_mean": float(np.mean([r["other_traj_events"] for r in cell])),
                 "path_match_fraction": float(np.mean([r["halt_joint_count"] > 0 for r in cell])),
+                "v_reported_max_median": float(np.nanmedian([r["v_reported_max_rad_s"] for r in cell])),
             }
         # Paired comparison of overshoot within each seed.
         pairs = {}
