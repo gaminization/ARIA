@@ -328,7 +328,7 @@ def main() -> int:
             "exp_id": exp_id,
             "started_at": t_start.isoformat(),
             "finished_at": datetime.now(timezone.utc).isoformat(),
-            "n": len(rows), "seeds": seeds, "commit": provenance.commit(),
+            "n": len(rows), "seeds": seeds, "commit": log.stamp["commit"],
         }
         for path in paths:
             cell = [r for r in rows if r["path"] == path]

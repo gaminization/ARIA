@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.9.8)  13 OCT 2026 14:33
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2022/dev/Debian) (preloaded format=pdflatex 2026.9.8)  25 OCT 2026 01:58
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -219,42 +219,16 @@ Package bm Info: No bold for \OMX/cmex/m/n, using \pmb.
 Package bm Info: No bold for \U/msa/m/n, using \pmb.
 Package bm Info: No bold for \U/msb/m/n, using \pmb.
 LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 149.
-) (./algorithmic.sty
-Package: algorithmic 2009/08/24 v0.1 Document Style `algorithmic'
-
-(/usr/share/texlive/texmf-dist/tex/latex/base/ifthen.sty
-Package: ifthen 2020/11/24 v1.1c Standard LaTeX ifthen package (DPC)
-)
-\c@ALC@unique=\count278
-\c@ALC@line=\count279
-\c@ALC@rem=\count280
-\c@ALC@depth=\count281
-\ALC@tlm=\skip53
-\algorithmicindent=\skip54
-) (./algorithm.sty
-Package: algorithm 2009/08/24 v0.1 Document Style `algorithm' - floating enviro
-nment
-
-(/usr/share/texlive/texmf-dist/tex/latex/float/float.sty
-Package: float 2001/11/08 v1.3d Float enhancements (AL)
-\c@float@type=\count282
-\float@exts=\toks23
-\float@box=\box54
-\@float@everytoks=\toks24
-\@floatcapt=\box55
-)
-\@float@every@algorithm=\toks25
-\c@algorithm=\count283
 )
 (/usr/share/texlive/texmf-dist/tex/latex/tools/array.sty
 Package: array 2021/10/04 v2.5f Tabular extension package (FMi)
 \col@sep=\dimen173
-\ar@mcellbox=\box56
+\ar@mcellbox=\box54
 \extrarowheight=\dimen174
-\NC@list=\toks26
-\extratabsurround=\skip55
-\backup@length=\skip56
-\ar@cellbox=\box57
+\NC@list=\toks23
+\extratabsurround=\skip53
+\backup@length=\skip54
+\ar@cellbox=\box55
 )
 (/usr/share/texlive/texmf-dist/tex/latex/booktabs/booktabs.sty
 Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
@@ -268,60 +242,20 @@ Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
 \cmidrulesep=\dimen182
 \cmidrulekern=\dimen183
 \defaultaddspace=\dimen184
-\@cmidla=\count284
-\@cmidlb=\count285
+\@cmidla=\count278
+\@cmidlb=\count279
 \@aboverulesep=\dimen185
 \@belowrulesep=\dimen186
-\@thisruleclass=\count286
-\@lastruleclass=\count287
+\@thisruleclass=\count280
+\@lastruleclass=\count281
 \@thisrulewidth=\dimen187
 )
 (/usr/share/texlive/texmf-dist/tex/latex/multirow/multirow.sty
 Package: multirow 2021/03/15 v2.8 Span multiple rows of a table
-\multirow@colwidth=\skip57
-\multirow@cntb=\count288
-\multirow@dima=\skip58
+\multirow@colwidth=\skip55
+\multirow@cntb=\count282
+\multirow@dima=\skip56
 \bigstrutjot=\dimen188
-)
-(/usr/share/texlive/texmf-dist/tex/latex/subfig/subfig.sty
-Package: subfig 2005/06/28 ver: 1.3 subfig package
-
-(/usr/share/texlive/texmf-dist/tex/latex/caption/caption3.sty
-Package: caption3 2020/10/21 v2.2e caption3 kernel (AR)
-\captionmargin=\dimen189
-\captionmargin@=\dimen190
-\captionwidth=\dimen191
-\caption@tempdima=\dimen192
-\caption@indent=\dimen193
-\caption@parindent=\dimen194
-\caption@hangindent=\dimen195
-Package caption Info: Unknown document class (or package),
-(caption)             standard defaults will be used.
-Package caption Info: \@makecaption = \long macro:#1#2->\ifx \@captype \@IEEEta
-blestring \footnotesize \bgroup \par \centering \@IEEEtabletopskipstrut {\norma
-lfont \footnotesize #1}\\{\normalfont \footnotesize \scshape #2}\par \addvspace
- {0.5\baselineskip }\egroup \@IEEEtablecaptionsepspace \else \@IEEEfigurecaptio
-nsepspace \setbox \@tempboxa \hbox {\normalfont \footnotesize {#1.}\nobreakspac
-e \nobreakspace #2}\ifdim \wd \@tempboxa >\hsize \setbox \@tempboxa \hbox {\nor
-malfont \footnotesize {#1.}\nobreakspace \nobreakspace }\parbox [t]{\hsize }{\n
-ormalfont \footnotesize \noindent \unhbox \@tempboxa #2}\else \ifCLASSOPTIONcon
-ference \hbox to\hsize {\normalfont \footnotesize \hfil \box \@tempboxa \hfil }
-\else \hbox to\hsize {\normalfont \footnotesize \box \@tempboxa \hfil }\fi \fi 
-\fi  on input line 1139.
-)
-\c@KVtest=\count289
-\sf@farskip=\skip59
-\sf@captopadj=\dimen196
-\sf@capskip=\skip60
-\sf@nearskip=\skip61
-\c@subfigure=\count290
-\c@subfigure@save=\count291
-\c@lofdepth=\count292
-\c@subtable=\count293
-\c@subtable@save=\count294
-\c@lotdepth=\count295
-\sf@top=\skip62
-\sf@bottom=\skip63
 )
 (/usr/share/texlive/texmf-dist/tex/latex/url/url.sty
 \Urlmuskip=\muskip17
@@ -332,73 +266,85 @@ Package: microtype 2021/12/10 v3.0b Micro-typographical refinements (RS)
 
 (/usr/share/texlive/texmf-dist/tex/latex/etoolbox/etoolbox.sty
 Package: etoolbox 2020/10/05 v2.5k e-TeX tools for LaTeX (JAW)
-\etb@tempcnta=\count296
+\etb@tempcnta=\count283
 )
-\MT@toks=\toks27
-\MT@count=\count297
-\MT@tempbox=\box58
+\MT@toks=\toks24
+\MT@count=\count284
+\MT@tempbox=\box56
 LaTeX Info: Redefining \leftprotrusion on input line 1010.
 LaTeX Info: Redefining \rightprotrusion on input line 1018.
 LaTeX Info: Redefining \textls on input line 1173.
-\MT@outer@kern=\dimen197
+\MT@outer@kern=\dimen189
 LaTeX Info: Redefining \textmicrotypecontext on input line 1759.
-\MT@listname@count=\count298
+\MT@listname@count=\count285
 
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/microtype-pdftex.def
 File: microtype-pdftex.def 2021/12/10 v3.0b Definitions specific to pdftex (RS)
 
 LaTeX Info: Redefining \lsstyle on input line 897.
 LaTeX Info: Redefining \lslig on input line 897.
-\MT@outer@space=\skip64
+\MT@outer@space=\skip57
 )
 Package microtype Info: Loading configuration file microtype.cfg.
 
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/microtype.cfg
 File: microtype.cfg 2021/12/10 v3.0b microtype main configuration file (RS)
 ))
-\c@assumption=\count299
-\c@remark=\count300
-\c@proposition=\count301
-\c@theorem=\count302
-\c@definition=\count303
+(/usr/share/texlive/texmf-dist/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2021/10/31 v2.13 LaTeX color extensions (UK)
 
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 227.
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1352.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1356.
+Package xcolor Info: Model `RGB' extended on input line 1368.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1370.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1371.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1372.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1373.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1374.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1375.
+)
+(./numbers.tex)
 (/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2022-01-12 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count304
-\l__pdf_internal_box=\box59
+\l__color_backend_stack_int=\count286
+\l__pdf_internal_box=\box57
 )
 (./main.aux)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 72.
-LaTeX Font Info:    ... okay on input line 72.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
 
 -- Lines per column: 58 (exact).
 (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count305
-\scratchdimen=\dimen198
-\scratchbox=\box60
-\nofMPsegments=\count306
-\nofMParguments=\count307
-\everyMPshowfont=\toks28
-\MPscratchCnt=\count308
-\MPscratchDim=\dimen199
-\MPnumerator=\count309
-\makeMPintoPDFobject=\count310
-\everyMPtoPDFconversion=\toks29
+\scratchcounter=\count287
+\scratchdimen=\dimen190
+\scratchbox=\box58
+\nofMPsegments=\count288
+\nofMParguments=\count289
+\everyMPshowfont=\toks25
+\MPscratchCnt=\count290
+\MPscratchDim=\dimen191
+\MPnumerator=\count291
+\makeMPintoPDFobject=\count292
+\everyMPtoPDFconversion=\toks26
 ) (/usr/share/texlive/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
@@ -408,21 +354,18 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-Package caption Info: Begin \AtBeginDocument code.
-Package caption Info: subfig package v1.3 is loaded.
-Package caption Info: End \AtBeginDocument code.
-LaTeX Info: Redefining \microtypecontext on input line 72.
-Package microtype Info: Applying patch `item' on input line 72.
-Package microtype Info: Applying patch `toc' on input line 72.
-Package microtype Info: Applying patch `eqnum' on input line 72.
-Package microtype Info: Applying patch `footnote' on input line 72.
+LaTeX Info: Redefining \microtypecontext on input line 38.
+Package microtype Info: Applying patch `item' on input line 38.
+Package microtype Info: Applying patch `toc' on input line 38.
+Package microtype Info: Applying patch `eqnum' on input line 38.
+Package microtype Info: Applying patch `footnote' on input line 38.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
 Package microtype Info: Automatic font expansion enabled (level 2),
 (microtype)             stretch: 20, shrink: 20, step: 1, non-selected.
 Package microtype Info: Using default expansion set `alltext-nott'.
-LaTeX Info: Redefining \showhyphens on input line 72.
+LaTeX Info: Redefining \showhyphens on input line 38.
 Package microtype Info: No adjustment of tracking.
 Package microtype Info: No adjustment of interword spacing.
 Package microtype Info: No adjustment of character kerning.
@@ -430,8 +373,8 @@ Package microtype Info: No adjustment of character kerning.
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-ptm.cfg
 File: mt-ptm.cfg 2006/04/20 v1.7 microtype config. file: Times (RS)
 )
-LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 8
-6.
+LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 4
+9.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1pcr.fd
 File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
@@ -445,7 +388,7 @@ Package microtype Info: Loading generic protrusion settings for font family
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msa on input line 92.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 52.
 
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
@@ -454,7 +397,7 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 92.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 52.
 
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
@@ -462,152 +405,69 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msb.cfg
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
-)
-LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 1
-14.
-
-(/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
-File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 ) [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
 
 
-] [2] [3] [4]
-<figures//fig2_kinematics_dh.png, id=29, 688.7331pt x 322.5651pt>
-File: figures//fig2_kinematics_dh.png Graphic file (type png)
-<use figures//fig2_kinematics_dh.png>
-Package pdftex.def Info: figures//fig2_kinematics_dh.png  used on input line 23
-0.
-(pdftex.def)             Requested size: 252.0pt x 118.02321pt.
- [5 <./figures//fig2_kinematics_dh.png>]
-LaTeX Font Info:    Trying to load font information for OMS+ptm on input line 3
-82.
- (/usr/share/texlive/texmf-dist/tex/latex/psnfss/omsptm.fd
-File: omsptm.fd 
-)
-LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 382.
- [6]
-<figures//fig1_system_architecture.png, id=52, 860.013pt x 570.933pt>
-File: figures//fig1_system_architecture.png Graphic file (type png)
-<use figures//fig1_system_architecture.png>
-Package pdftex.def Info: figures//fig1_system_architecture.png  used on input l
-ine 424.
-(pdftex.def)             Requested size: 392.15717pt x 260.34117pt.
- [7]
-<figures//fig3_perception_pipeline.png, id=57, 819.5418pt x 294.6207pt>
-File: figures//fig3_perception_pipeline.png Graphic file (type png)
-<use figures//fig3_perception_pipeline.png>
-Package pdftex.def Info: figures//fig3_perception_pipeline.png  used on input l
-ine 510.
-(pdftex.def)             Requested size: 392.15717pt x 140.97575pt.
-
-Overfull \vbox (15.23323pt too high) has occurred while \output is active []
-
-
-[8 <./figures//fig1_system_architecture.png>]
-Overfull \hbox (22.17139pt too wide) detected at line 585
-[]\OMS/cmsy/m/n/10 j\OML/cmm/m/it/10 ^^NZ[]\OMS/cmsy/m/n/10 j ^^Y \OML/cmm/m/it
-/10 Z[]\OMS/cmsy/m/n/10 j\OML/cmm/m/it/10 ^^N \OMS/cmsy/m/n/10 ^^A \OML/cmm/m/
-it/10 D \OT1/cmr/m/n/10 + \OML/cmm/m/it/10 ^^N^^L\OMS/cmsy/m/n/10 j ^^T \OML/cm
-m/m/it/10 Z[] []
- []
-
-[9 <./figures//fig3_perception_pipeline.png>]
-<figures//fig4_planning_hitl.png, id=67, 697.8873pt x 310.2792pt>
-File: figures//fig4_planning_hitl.png Graphic file (type png)
-<use figures//fig4_planning_hitl.png>
-Package pdftex.def Info: figures//fig4_planning_hitl.png  used on input line 61
-1.
-(pdftex.def)             Requested size: 381.84283pt x 169.76874pt.
-<figures//fig10_reliability_diagram.png, id=68, 679.0971pt x 281.853pt>
-File: figures//fig10_reliability_diagram.png Graphic file (type png)
-<use figures//fig10_reliability_diagram.png>
-Package pdftex.def Info: figures//fig10_reliability_diagram.png  used on input 
-line 646.
-(pdftex.def)             Requested size: 252.0pt x 104.58932pt.
-<figures//fig5_inhand_manipulation.png, id=69, 787.743pt x 267.399pt>
-File: figures//fig5_inhand_manipulation.png Graphic file (type png)
-<use figures//fig5_inhand_manipulation.png>
-Package pdftex.def Info: figures//fig5_inhand_manipulation.png  used on input l
-ine 678.
-(pdftex.def)             Requested size: 252.0pt x 85.54086pt.
- [10] [11 <./figures//fig4_planning_hitl.png> <./figures//fig10_reliability_dia
-gram.png> <./figures//fig5_inhand_manipulation.png>]
-<figures//fig6_ik_benchmark.png, id=80, 715.2321pt x 236.5638pt>
-File: figures//fig6_ik_benchmark.png Graphic file (type png)
-<use figures//fig6_ik_benchmark.png>
-Package pdftex.def Info: figures//fig6_ik_benchmark.png  used on input line 744
-.
-(pdftex.def)             Requested size: 185.76031pt x 61.44016pt.
-<figures//fig7_vla_benchmark.png, id=81, 821.2281pt x 266.6763pt>
-File: figures//fig7_vla_benchmark.png Graphic file (type png)
-<use figures//fig7_vla_benchmark.png>
-Package pdftex.def Info: figures//fig7_vla_benchmark.png  used on input line 74
-6.
-(pdftex.def)             Requested size: 309.60315pt x 100.53642pt.
- [12] [13 <./figures//fig6_ik_benchmark.png> <./figures//fig7_vla_benchmark.png
->]
-<figures//fig8_conveyor_sorting.png, id=92, 778.5888pt x 379.8993pt>
-File: figures//fig8_conveyor_sorting.png Graphic file (type png)
-<use figures//fig8_conveyor_sorting.png>
-Package pdftex.def Info: figures//fig8_conveyor_sorting.png  used on input line
- 907.
-(pdftex.def)             Requested size: 340.56189pt x 166.17654pt.
- [14]
-LaTeX Font Info:    Font shape `OT1/pcr/m/it' in size <8> not available
-(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 965.
- [15 <./figures//fig8_conveyor_sorting.png>]
-<figures//fig9_dashboard_interface.png, id=101, 1874.00125pt x 964.60374pt>
-File: figures//fig9_dashboard_interface.png Graphic file (type png)
-<use figures//fig9_dashboard_interface.png>
-Package pdftex.def Info: figures//fig9_dashboard_interface.png  used on input l
-ine 1084.
-(pdftex.def)             Requested size: 176.39923pt x 90.78462pt.
- [16 <./figures//fig9_dashboard_interface.png>] (./main.bbl [17] [18]) [19
+] [2] [3]
+<figures//fig_reach_ecdf.pdf, id=22, 245.718pt x 180.675pt>
+File: figures//fig_reach_ecdf.pdf Graphic file (type pdf)
+<use figures//fig_reach_ecdf.pdf>
+Package pdftex.def Info: figures//fig_reach_ecdf.pdf  used on input line 140.
+(pdftex.def)             Requested size: 252.0pt x 185.30333pt.
+<figures//fig_conv_speed.pdf, id=23, 245.718pt x 180.675pt>
+File: figures//fig_conv_speed.pdf Graphic file (type pdf)
+<use figures//fig_conv_speed.pdf>
+Package pdftex.def Info: figures//fig_conv_speed.pdf  used on input line 154.
+(pdftex.def)             Requested size: 252.0pt x 185.30333pt.
+<figures//fig_conv_error.pdf, id=24, 245.718pt x 180.675pt>
+File: figures//fig_conv_error.pdf Graphic file (type pdf)
+<use figures//fig_conv_error.pdf>
+Package pdftex.def Info: figures//fig_conv_error.pdf  used on input line 161.
+(pdftex.def)             Requested size: 252.0pt x 185.30333pt.
+ [4 <./figures//fig_reach_ecdf.pdf>]
+<figures//fig_estop_overshoot.pdf, id=41, 245.718pt x 180.675pt>
+File: figures//fig_estop_overshoot.pdf Graphic file (type pdf)
+<use figures//fig_estop_overshoot.pdf>
+Package pdftex.def Info: figures//fig_estop_overshoot.pdf  used on input line 1
+75.
+(pdftex.def)             Requested size: 252.0pt x 185.30333pt.
+<figures//fig_n4_success.pdf, id=42, 216.81pt x 173.448pt>
+File: figures//fig_n4_success.pdf Graphic file (type pdf)
+<use figures//fig_n4_success.pdf>
+Package pdftex.def Info: figures//fig_n4_success.pdf  used on input line 187.
+(pdftex.def)             Requested size: 252.0pt x 201.61003pt.
+ [5 <./figures//fig_conv_speed.pdf> <./figures//fig_conv_error.pdf> <./figures/
+/fig_estop_overshoot.pdf> <./figures//fig_n4_success.pdf>] (./main.bbl
+[6]) [7
 
 ] (./main.aux) ) 
 Here is how much of TeX's memory you used:
- 8309 strings out of 480247
- 136372 string characters out of 5896152
- 496274 words of memory out of 5000000
- 25527 multiletter control sequences out of 15000+600000
- 553017 words of font info for 512 fonts, out of 8000000 for 9000
- 20 hyphenation exceptions out of 8191
- 55i,18n,63p,2559b,631s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 7029 strings out of 480247
+ 110667 string characters out of 5896152
+ 451580 words of memory out of 5000000
+ 24540 multiletter control sequences out of 15000+600000
+ 531158 words of font info for 333 fonts, out of 8000000 for 9000
+ 18 hyphenation exceptions out of 8191
+ 55i,8n,62p,2050b,317s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</us
-r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/shar
-e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></usr/share/texli
-ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></usr/share/texlive/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmmi5.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
-amsfonts/cm/cmmi7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
-s/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cm
-mi9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmib10.p
-fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmmib8.pf
-b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr
-/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/share/t
-exlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/texlive/t
-exmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dis
-t/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/amsfonts/cm/cmr9.pfb></usr/share/texlive/texmf-dist/fonts/type1/pu
-blic/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/a
-msfonts/cm/cmsy5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts
-/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cms
-y7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/s
-hare/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/sh
-are/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/sha
-re/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texlive/te
-xmf-dist/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texlive/texmf-dist/fon
-ts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/ti
-mes/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb
-></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on main.pdf (19 pages, 4964665 bytes).
+r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/shar
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></usr/share/texli
+ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texm
+f-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/f
+onts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/public/amsfonts/cm/cmr9.pfb></usr/share/texlive/texmf-dist/fonts/type1/publi
+c/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm
+/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.
+pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/sha
+re/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texm
+f-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/t
+ype1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/
+utmri8a.pfb>
+Output written on main.pdf (7 pages, 240346 bytes).
 PDF statistics:
- 248 PDF objects out of 1000 (max. 8388607)
- 142 compressed objects within 2 object streams
+ 150 PDF objects out of 1000 (max. 8388607)
+ 89 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 90675 words of extra memory for PDF output out of 106986 (max. 10000000)
+ 54298 words of extra memory for PDF output out of 61914 (max. 10000000)
 

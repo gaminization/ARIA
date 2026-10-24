@@ -200,7 +200,7 @@ def main() -> int:
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "n": len(rows),
         "seeds": seeds,
-        "commit": provenance.commit(),
+        "commit": log.stamp["commit"],
         "config": config,
     }
     for method in ("baseline", "n4"):

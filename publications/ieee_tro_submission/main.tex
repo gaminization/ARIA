@@ -1,52 +1,27 @@
 %% ====================================================================
-%% Project ARIA: Autonomous Reasoning & Interaction Agent
-%% IEEE Transactions on Robotics (T-RO) Regular Paper Format
-%% Fully Conforming to Assessment-5 Rubric & Q1 Review Guidelines
-%% Authors: Garv Arora and Yuvaraj N
+%% Project ARIA: an audited, pre-registered re-measurement
+%% IEEE Transactions on Robotics (journal format)
 %% ====================================================================
-
 \documentclass[journal]{IEEEtran}
 
-% CITATION PACKAGES
 \usepackage{cite}
-
-% GRAPHICS PACKAGES
 \usepackage{graphicx}
 \graphicspath{{figures/}}
-\DeclareGraphicsExtensions{.png,.jpg,.jpeg,.pdf}
-
-% MATH PACKAGES
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsfonts}
 \usepackage{bm}
 \interdisplaylinepenalty=2500
-
-% SPECIALIZED LIST PACKAGES
-\usepackage{algorithmic}
-\usepackage{algorithm}
-
-% ALIGNMENT & TABLE PACKAGES
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage{multirow}
-
-% SUBFIGURE PACKAGES
-\ifCLASSOPTIONcompsoc
-  \usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
-\else
-  \usepackage[caption=false,font=footnotesize]{subfig}
-\fi
-
-% URL AND HYPERLINK PACKAGES
 \usepackage{url}
 \usepackage{microtype}
+\usepackage{xcolor}
 
-% SUPPRESS INFORMATIONAL LOOSE-LINE MESSAGES (STANDARD FOR TWO-COLUMN IEEEtran)
 \hbadness=10000
 \vbadness=10000
-
-% COMPACT FLOAT SEPARATION (STANDARD IEEEtran BALANCING)
 \setlength{\textfloatsep}{7pt plus 1.0pt minus 1.0pt}
 \setlength{\floatsep}{5pt plus 1.0pt minus 1.0pt}
 \setlength{\dbltextfloatsep}{7pt plus 1.0pt minus 1.0pt}
@@ -55,1160 +30,207 @@
 \renewcommand{\bottomfraction}{0.95}
 \renewcommand{\textfraction}{0.05}
 \renewcommand{\floatpagefraction}{0.95}
-\renewcommand{\dbltopfraction}{0.95}
-\renewcommand{\dblfloatpagefraction}{0.95}
 
-% HYPHENATION
-\hyphenation{op-ti-cal net-works semi-conduc-tor multi-agent kine-matics ma-nip-u-la-tion}
+\hyphenation{re-pro-duc-i-bil-ity pre-reg-is-tra-tion ma-nip-u-la-tion kine-mat-ics}
 
-% THEOREM AND FORMAL ENVIRONMENTS
-\newtheorem{assumption}{Assumption}
-\newtheorem{remark}{Remark}
-\newtheorem{proposition}{Proposition}
-\newtheorem{theorem}{Theorem}
-\newtheorem{definition}{Definition}
-\newenvironment{proof}{\noindent\textit{Proof: }}{\hfill$\blacksquare$\vspace{1.5mm}}
+\input{numbers.tex}
 
 \begin{document}
 
-% ====================================================================
-% TITLE AND AUTHOR DETAILS
-% ====================================================================
-\title{Project ARIA: A Modular, Resource-Efficient Language-Conditioned Manipulation Architecture with Self-Grounded Monocular Perception and Deterministic Kinematics for Low-Cost 5-DoF Robotic Arms}
+\title{What the Benchmarks Actually Measured: An Adversarial Audit and Pre-Registered Re-Measurement of a Modular Robotic Manipulation Stack}
 
 \author{Garv~Arora\quad and\quad Yuvaraj~N%
 \thanks{G. Arora and Y. N are with the Department of Computer Science and Engineering, Robotics and Artificial Intelligence Laboratory (e-mail: \texttt{garv.arora@ieee.org}; \texttt{yuvaraj.n@ieee.org}). This research received no external grant funding.}%
 }
 
 \markboth{IEEE Transactions on Robotics, 2026}%
-{Arora and Yuvaraj: Project ARIA: Modular Language-Conditioned Manipulation for Low-Cost Manipulators}
+{Arora and Yuvaraj: What the Benchmarks Actually Measured}
 
 \maketitle
 
-% ====================================================================
-% ABSTRACT (Strictly single paragraph, <= 250 words)
-% ====================================================================
 \begin{abstract}
-Autonomous robotic manipulation is increasingly pursued through monolithic Vision-Language-Action (VLA) models, yet foundation policies often demand datacenter GPUs, exhibit high latency, and overlook underactuated arms. In this article, we present the design, high-fidelity physics simulation, and verification of \textbf{Project ARIA} (\textit{Autonomous Reasoning \& Interaction Agent}), a modular language-conditioned manipulation architecture decoupling semantic planning, metric perception, and motor control for a simulated accessible 5-DoF robotic arm within an 8.0\,GB VRAM budget (7.53\,GB nominal allocation). Evaluated in Gazebo~11 / ODE simulation, ARIA coordinates fifteen ROS~2 lifecycle nodes over a shared State Bus, integrating: (i)~a self-calibrated monocular depth pipeline grounding Depth-Anything v2 via known claw geometry ($RMSE = 6.84$\,mm static calibration, $8.2$\,mm under active visual jitter in pre-grasp $Z \in [0.05, 0.25]$\,m; $17.4$\,mm full workspace); (ii)~an exact closed-form analytical inverse kinematics solver on the 5D task manifold $\mathcal{M}_{\text{task}}$ ($0.075$\,ms latency, $100.0\%$ reachable convergence); and (iii)~an onboard quantized LLM planner using Tree-of-Thoughts with confidence-gated human supervision. Across 10 tasks on the primary suite ($N=100$, 10 trials/task), ARIA achieved $89.0\%$ success (Wilson 95\% CI: [81.4, 93.7]\%). Across a formal 180-trial multi-seed language benchmark ($N=180$, seeds [42, 1337, 2026]), ARIA achieved $68.9\%$ overall instruction execution ($76.3\%$ slot accuracy, $82.7\%$ execution on unambiguous tasks, and $100\%$ clarification trigger on ambiguous prompts), outperforming direct LLM prompting ($38.3\%$ execution, $55.7\%$ slot accuracy) while preserving bounded local inference latency ($4480.3$\,ms). In dynamic conveyor sorting ($0.02\text{--}0.12$\,m/s, $N=30$), ARIA achieved $93.3\%$ overall ($100\%$ at $\le 0.10$\,m/s, dropping to $60.0\%$ at $0.12$\,m/s) with feedforward velocity matching ($\Delta v \le 0.0075$\,m/s).
+Robot-manipulation papers increasingly report high success rates from simulation benchmarks, yet the measurement chain behind those numbers is rarely audited. We report an adversarial audit of a modular ROS~2/Gazebo manipulation stack and a pre-registered re-measurement of four questions that the original benchmarks claimed to answer. The audit found that the original conveyor benchmark returned a cached zero transform, the reachability logs cited a commit that did not contain the script that produced them, the emergency-stop benchmark published and subscribed to its own topic without a moving arm, and the reported stop times were a constant offset added when no physical stop was observed. We repaired the instrumentation, enforced a clean-tree provenance rule, and froze hypotheses, seeds, and trial counts before evaluation. Re-measurement reverses three claims and confirms one. On \reachN{} identical target poses, the current inverse-kinematics solver reaches \reachRecallCurrentPct\% recall at 5\,mm (Wilson 95\% CI [\reachRecallCurrentLoPct, \reachRecallCurrentHiPct]) while the historical solver reaches \reachRecallOldPct\%, so the solver revision explains more than the entire historical gap. On the conveyor, the realized part speed is not a scaled version of the command: it is the command minus a nearly constant \convOffsetMean\,m/s, the visual belt link moves at \convBeltLinkA\,m/s, and the rollers spin at \convRollerA\,rad/s. On emergency stop, the direct command path halts in \estopCommandTstopMs\,ms (median), whereas the safety-agent path halts in \estopSafetySuccess\% of trials and overshoots by \estopSafetyOvershootMed\,rad. A kinematic pre-verification gate did not improve intention-to-treat success (risk difference \nFourRiskDiffPct percentage points, \nFourP). We report these negative results, the phases that could not be executed, and the instrument defects that made the original numbers possible.
 \end{abstract}
 
-% ====================================================================
-% KEYWORDS (Exactly 8 words)
-% ====================================================================
 \begin{IEEEkeywords}
-Modular robotics, language-conditioned manipulation, underactuated manipulators, monocular depth estimation, closed-form inverse kinematics, conveyor tracking, edge robotics, execution telemetry.
+benchmark auditing, reproducibility, preregistration, robot manipulation, inverse kinematics, conveyor systems, emergency stop, simulation validation
 \end{IEEEkeywords}
 
 \IEEEpeerreviewmaketitle
 
-% ====================================================================
-% SECTION I: INTRODUCTION (Min 10 Paragraphs + 1.1 Research Objectives)
-% ====================================================================
 \section{Introduction}
-\IEEEPARstart{T}{he} realization of autonomous physical agents capable of executing complex manipulation in unstructured industrial and human environments represents a foundational ambition of robotics and embodied artificial intelligence~\cite{aria_base_sun2022moving}. Recent advances in dynamic trajectory planning, visual servoing, and predictive object interception established by Sun et al.~\cite{aria_base_sun2022moving} on articulated arms and Sahu et al.~\cite{aria_010_sahu_2025_autonomous} on planar 2-DoF visual tracking mechanisms within ROS and Gazebo simulation frameworks have demonstrated that accurate kinematic forecasting is critical for grasping moving workpieces. However, traditional visual servoing frameworks rely on static, hand-engineered geometric primitives that generalize poorly across diverse operational contexts, motivating architectures capable of adaptive semantic reasoning, online error recovery, and flexible instruction following.
+\IEEEPARstart{R}{obotics} has a measurement problem that is distinct from its modelling problem. A manipulation result is usually reported as a success rate over a benchmark, and the benchmark is usually a script that drives a simulator and writes a table. If the script returns a cached transform, trusts a planner's self-report, or silently substitutes a constant when a sensor is missing, the reported rate is still a number, still has a confidence interval, and still looks like evidence. The number is then cited, compared, and used to justify architectural choices. The error is not in the statistics; it is in the chain from the physical event to the table.
 
-To endow manipulators with generalizable semantic comprehension, the robotics community has increasingly embraced large-scale Vision-Language-Action (VLA) foundation models -- neural policies that map visual observations, natural language tokens, and proprioceptive state directly to motor actions through a single learned network~\cite{kim2024openvla,zhao2023learning,pi0_2024,zitkovich2023rt2,firoozi2023foundation}. Contemporary VLA policies leverage large cross-embodiment datasets to achieve semantic zero-shot generalization across novel visual objects. Nevertheless, several widely deployed foundation policies operate as monolithic autoregressive transformers requiring in excess of 16\,GB of dedicated GPU memory and incurring inference latencies of $85\text{--}140$\,ms per forward pass. Such control latency induces dynamic phase lag on low-inertia hardware, limiting responsive reaction to dynamic events and causing closed-loop instability on dynamic moving targets.
+This article takes a modular language-conditioned manipulation stack, Project ARIA, and treats its own benchmark suite as the object of study. The stack was previously described with a set of headline claims: a monocular depth error in the millimetre range, a closed-form inverse-kinematics solver with full convergence, a high success rate on a ten-task suite, a high conveyor-sorting rate, and a sub-30\,ms emergency stop. We did not set out to reproduce those claims in the usual sense. We set out to determine, from the code and the raw logs, what each claim actually measured.
 
-To establish foundational sensorimotor representations that transcend monolithic end-to-end black boxes, Kroemer et al.~\cite{kroemer2021review} formalized the algorithmic structures governing modern robotic manipulation, corroborated by comprehensive manipulation taxonomies~\cite{billard2019trends,aria_001_ravichandar_2020_recent}. Their analysis reveals that robust physical interaction benefits from a principled stratification between high-level cognitive task planning, mid-level geometric state estimation, and high-frequency deterministic motor control. Monolithic end-to-end foundation models conflate these distinct physical hierarchies, leading to uninterpretable failure modes and catastrophic compounding errors when out-of-distribution visual perturbations occur.
+The audit found four classes of failure. First, some measurements never touched the physical quantity they named: the conveyor benchmark caught every TF exception and returned a zero pose, then differenced two such poses to obtain a velocity. Second, some measurements were produced by a different program from the one cited: the reachability logs named a commit that predates the benchmark script, and the solver had been rewritten between the two result sets. Third, some measurements were fabricated by fallback branches: the emergency-stop benchmark published to a topic it also subscribed to, never moved an arm, and added a constant to the command latency when no physical stop was observed. Fourth, some quantities were hard-coded: two scripted-baseline tasks passed literal pose deltas, and the orientation residual of the inverse-kinematics solver was set to zero by convention.
 
-This structural disconnect is exacerbated during imitation learning and policy acquisition. Ravichandar et al.~\cite{aria_001_ravichandar_2020_recent} reviewed core bottlenecks of Robot Learning from Demonstration (LfD), noting that imitation learning frameworks are predominantly developed on research-grade 7-DoF manipulators (e.g., Franka Emika Panda, Kinova Gen3, UR5e, typically \$25{,}000--\$60{,}000) equipped with joint-torque feedback and comparatively low backlash. While open frameworks such as LeRobot~\cite{aria_084_cadene_2026_lerobot}, open-source educational arm designs such as the SO-100~\cite{lerobot_so100_2024}, and low-cost teleoperation devices such as GELLO~\cite{aria_014_wu_2024_gello} have dramatically expanded access to demonstration collection, accessible 5-DoF educational and light-industrial manipulators ($<\$150$) driven by PWM hobbyist servomotors receive comparatively little systematic study, owing to structural compliance, joint elasticity, deadbands, and absence of native torque sensing.
+Repairing the instrumentation was necessary but not sufficient. A repaired benchmark can still be run on seeds chosen after seeing the result, or on a tree that contains uncommitted changes, or with a threshold that is adjusted until the claim passes. We therefore wrote a pre-registration before any evaluation seed was used. The document fixes the hypotheses, the primary metrics, the decision rules, the development and evaluation seed ranges, the trial counts, the statistical tests, and the stopping rules. It also declares, before data collection, which phases cannot be executed in the available environment. The pre-registration is committed and its commit hash is recorded in every result row.
 
-On the middleware and system orchestration level, modular coordination is essential for multi-module embodied autonomy. Macenski et al.~\cite{aria_022_macenski_2022_robot} established the architectural foundations of the Robot Operating System 2 (ROS 2), demonstrating how deterministic Data Distribution Service (DDS) Quality of Service (QoS) profiles, real-time publish-subscribe topics, and managed node lifecycles support determinism in physical autonomy, complemented by industrial manipulation frameworks such as MoveIt~\cite{aria_017_industrial_2022_moveit} and Robowflex~\cite{aria_114_kingston_2022_robowflex}. However, many contemporary embodied VLA deployments execute outside ROS~2 lifecycle management as unmonitored Python scripts lacking automated fault-recovery protocols and hard real-time safety gating.
+The re-measurement is deliberately narrow. We ask four questions that can be answered with executed code on this platform: whether the current inverse-kinematics solver is reproducible and how it differs from the historical one; whether the commanded conveyor speed is realised by the plant; whether an emergency stop actually stops a moving arm and how the two stop paths compare; and whether a kinematic pre-verification gate reduces execution-time inverse-kinematics failures. Each question has a primary metric and a decision rule fixed in advance.
 
-To address the limitations of centralized coordination, Adil et al.~\cite{aria_008_muthusamy_2025_a} introduced a multi-robot collaborative manipulation framework utilizing real-time distributed optimization, while Chen et al.~\cite{aria_093_chen_2025_multiagent} established multi-agent LLM systems for coordinated robotic autonomy. Translating the underlying principle of modular, independently supervisable computation to cooperating software modules on a single resource-constrained edge computer is a promising design point for transparent embodied intelligence, motivating the modular asynchronous architecture pursued in this work.
+The answers are not uniformly favourable to the stack. The reachability result is strong and reproducible, and it explains the historical discrepancy completely. The conveyor result is a clear negative: the plant realizes the command minus a constant offset, the visual belt is not moving, and the rollers are spinning at a physically implausible rate. The emergency-stop result is also negative for the safety path: the safety agent publishes a halt that the joint-trajectory controller rejects, so the arm continues to its goal. The pre-verification gate is neutral-to-negative: it rejects plans that would have succeeded and rescues too few to compensate.
 
-A parallel challenge lies in visual perception, where physical manipulation depends critically on accurate 3D scene geometry. In standard laboratory setups, active structured-light or Time-of-Flight (ToF) RGB-D sensors (e.g., Intel RealSense D435i, Photoneo) are commonly deployed. However, as documented by Jiang et al.~\cite{aria_113_jiang_2023_robotic}, active infrared depth sensors are prone to signal absorption or multi-path specular scattering on transparent glassware, glossy metallic parts, and reflective containers. Pioneering datasets such as TransCG~\cite{aria_131_fang_2022_transcg}, ClearGrasp~\cite{aria_047_sajjan_2020_cleargrasp}, and ClearDepth~\cite{aria_046_team_2024_cleardepth} confirm that active infrared sensors exhibit dropouts on specular boundaries, alongside an unavoidable near-field blind zone (typically $<0.20$\,m) that leaves the manipulator without depth feedback during the final grasping approach.
+We report these outcomes as the primary contribution. A paper that only reports the repaired successes would repeat the original mistake in a subtler form. The negative results constrain what the architecture can claim, and they identify which repairs are still missing. The audit also produced a reusable instrument: a provenance layer that refuses to run on a dirty tree, a per-row commit stamp, a trial log that flushes every row, and a number generator that reads only raw logs. These are not novel algorithms, but they are the difference between a number and a measurement.
 
-To circumvent active depth sensor failures, monocular RGB depth estimation has emerged as a promising alternative. As demonstrated by Chen et al.~\cite{aria_116_authors_2025_adaptive}, adaptive grasp pose synthesis from low-cost optical cameras can achieve robust grasping if spatial uncertainty is explicitly modeled. Foundation depth networks such as Depth-Anything v2~\cite{aria_052_yang_2024_depth} and MiDaS v3.1~\cite{aria_089_birkl_2023_midas} predict remarkably detailed relative disparity fields from single images, and Murray et al.~\cite{aria_009_murray_2025_assessing} recently validated Depth-Anything v2 as an effective sensor for robotic servoing. Nonetheless, zero-shot monocular depth networks generate normalized relative disparity fields rather than physical metric distance. Without an absolute physical reference or known geometric anchor, raw monocular disparity cannot be translated into metric Cartesian trajectory setpoints without an additional grounding step.
+The remainder of the article is organized as follows. Section~\ref{sec:related} reviews related work on reproducibility, simulation benchmarks, and the specific subsystems under test. Section~\ref{sec:audit} describes the audit method and the defect taxonomy. Section~\ref{sec:platform} describes the platform and the repaired instrumentation. Section~\ref{sec:protocol} states the pre-registered protocol. Section~\ref{sec:results} reports the four experiments. Section~\ref{sec:negative} reports the phases that could not be executed and the threats to validity. Section~\ref{sec:conclusion} concludes.
 
-On the kinematic control layer, general-purpose robotics frameworks (such as MoveIt2, KDL, and TRAC-IK) rely on numerical optimization routines utilizing damped least-squares (DLS) or iterative Jacobian pseudoinverse techniques. As analyzed by Wagaa et al.~\cite{aria_040_wagaa_2023_analytical}, numerical Inverse Kinematics (IK) solvers exhibit non-trivial per-solve latency ($4\text{--}18$\,ms) and occasional non-convergence on articulated serial chains lacking spherical wrists, contrasting with specialized GPU-accelerated optimizers such as cuRobo~\cite{aria_050_sundaralingam_2024_curobo} or real-time nonlinear optimization frameworks such as RelaxedIK~\cite{aria_076_li_2021_hybrik}. On underactuated 5-DoF arms, where end-effector orientation cannot be fully decoupled from arm position, this motivates closed-form algebraic formulations based on classical Craig conventions~\cite{craig2005introduction} restricted to the manipulator's admissible task manifold, which avoid iterative search altogether.
-
-Finally, in dynamic manufacturing environments, manipulators must track, intercept, and sort items moving on continuous industrial conveyor belts. Sahu et al.~\cite{aria_010_sahu_2025_autonomous} demonstrated autonomous visual object tracking on a planar 2-DoF arm within Gazebo simulation, highlighting predictive intercept calculations, while Sun et al.~\cite{aria_base_sun2022moving} established moving workpiece interception under ROS. Complemented by real-time obstacle avoidance~\cite{aria_035_fishman_2025_avoid}, ARIA formalizes dynamic conveyor rendezvous via a fifth-order boundary-value polynomial matching terminal velocity and enforcing zero terminal acceleration, keeping contact forces within the static friction cone.
-
-\subsection{Research Objectives}
-\label{sec_objectives}
-To address the technical bottlenecks of deploying language-conditioned autonomous manipulation on resource-constrained hardware, this research establishes five primary objectives evaluated in high-fidelity physics simulation:
-\begin{enumerate}
-    \item \textbf{RO1: Self-Grounded Monocular Metric Perception}: Formulate and validate an online, marker-free metric depth grounding mechanism converting Depth-Anything v2 relative disparity into calibrated metric Cartesian depth ($RMSE \le 10.0$\,mm within pre-grasp volume $Z \in [0.05, 0.25]$\,m, achieving $6.84$\,mm under static calibration and $8.2$\,mm under active visual jitter against simulation ground truth; $17.4$\,mm across the full $0.05\text{--}0.45$\,m workspace) referenced dynamically to known claw geometry.
-    \item \textbf{RO2: Deterministic Kinematics on Constrained Task Manifolds}: Formulate an exact closed-form inverse kinematics solver restricted to the admissible 5D task manifold $\mathcal{M}_{\text{task}}$, achieving sub-millisecond solve latency ($0.075$\,ms) with $100.0\%$ reachable convergence on $\mathcal{M}_{\text{task}}$ and explicit joint-limit pre-screening.
-    \item \textbf{RO3: Modular Asynchronous Cognition and Control}: Architect and validate a 15-module ROS~2 system utilizing managed lifecycles and an asynchronous State Bus, integrating quantized local LLM Tree-of-Thoughts task decomposition within an 8.0\,GB VRAM budget.
-    \item \textbf{RO4: Dynamic Conveyor Interception and Fault Recovery}: Formulate a fifth-order boundary-value rendezvous trajectory for velocity-matched conveyor interception ($\Delta v \le 0.025$\,m/s) across multi-speed sweeps ($0.02\text{--}0.14$\,m/s) with physical E-STOP arrest within $211.5 \pm 15.2$\,ms (threshold $\le 250$\,ms, joint velocity $< 0.01$\,rad/s) and sub-$3$\,ms DDS callback dispatch.
-    \item \textbf{RO5: Language Instruction Grounding and Dialogue Clarification}: Evaluate natural-language instruction grounding across direct, spatial, compound multi-step, dynamic, and ambiguous prompts, integrating confidence-gated dialogue clarification to resolve underspecified instructions.
-\end{enumerate}
-
-\subsection{Contributions of This Work}
-To address these objectives, this article presents \textbf{Project ARIA} (\textit{Autonomous Reasoning \& Interaction Agent}), evaluated in high-fidelity Gazebo~11 / ODE simulation of an accessible 5-DoF robotic arm, structured around three primary scientific contributions and three supporting empirical validations:
-\begin{enumerate}
-    \item \textbf{Self-Calibrated Monocular Metric Perception}: A kinematic-claw-referenced grounding procedure converting Depth-Anything v2~\cite{aria_052_yang_2024_depth} relative disparity into metric depth using the manipulator's own end-effector geometry ($Z_{\text{tips}} = 0.065$\,m) as a moving physical reference, fused with overhead YOLOv8m detection~\cite{yolov8_2023} and SAM2 segmentation~\cite{aria_023_ravi_2024_sam}, achieving $RMSE = 6.84$\,mm under static calibration ($8.2$\,mm under active visual jitter) within the pre-grasp volume $Z \in [0.05, 0.25]$\,m ($17.4$\,mm across the full $0.05\text{--}0.45$\,m workspace) against simulation ground truth.
-    \item \textbf{Deterministic Kinematics on Constrained Task Manifolds}: An exact algebraic inverse-kinematics solution derived under Craig Modified DH conventions~\cite{craig2005introduction} restricted to the reachable pose set on the 5-DoF admissible task manifold $\mathcal{M}_{\text{task}}$, computed in $0.075$\,ms mean solve time with zero iterative non-convergence, explicit singularity flags, and manipulability monitoring~\cite{yoshikawa1985manipulability}.
-    \item \textbf{Modular, Asynchronous Multi-Agent Architecture}: A non-monolithic software architecture in which fifteen specialized ROS~2 \texttt{LifecycleNode} modules~\cite{aria_022_macenski_2022_robot} communicate asynchronously over a shared State Bus, integrating onboard quantized-LLM Tree-of-Thoughts planning~\cite{aria_132_yao_2023_tree}, reachability-gated plan pruning, and confidence-gated Human-in-the-Loop safety supervision, within an 8.0\,GB VRAM budget.
-\end{enumerate}
-These core scientific contributions are supported by three empirical validations:
-\begin{enumerate}
-    \item[(a)] \textbf{Dynamic Conveyor Interception and Dual-Bin Sorting}: A fifth-order boundary-value polynomial that matches end-effector position and velocity to a Kalman-filtered workpiece estimate at finite rendezvous time $t_f$, achieving feedforward velocity matching ($\Delta v \le 0.025$\,m/s across $0.02\text{--}0.14$\,m/s) and dual-bin sorting with palletizing precision of $RMSE = 1.14$\,mm across conveyor velocities.
-    \item[(b)] \textbf{High-Fidelity Physics Simulation Validation}: Benchmarking ARIA across 10 standardized manipulation tasks on the primary 100-trial suite ($N=100$, 10 trials/task, $89.0\%$ success, Wilson 95\% CI: [81.4, 93.7]\%) and nominal smoke testing ($N=30$, 3 trials/task, $100.0\%$ success, Cartesian pick error $0.55 \pm 0.23$\,mm, mean transit duration $1.33 \pm 0.31$\,s) in a Gazebo~11 / ODE physics simulation with ROS~2 Humble.
-    \item[(c)] \textbf{Formal Multi-Seed Language Grounding and Dialogue Benchmark}: Systematic evaluation across 180 instruction trials across three random seeds and six prompt classes, demonstrating $68.9\%$ overall instruction execution ($82.7\%$ on unambiguous prompts), $76.3\%$ semantic slot accuracy, and $100\%$ clarification trigger on ambiguous prompts, outperforming unconstrained direct LLM prompting ($38.3\%$, $55.7\%$ slot accuracy).
-\end{enumerate}
-% ====================================================================
-% SECTION II: RELATED WORK (Min 10 Paragraphs + Table 1 + Gaps + Problem Statement)
-% ====================================================================
 \section{Related Work}
-\label{sec_related_work}
+\label{sec:related}
+Reproducibility has been studied extensively in machine learning and in robotics, but usually as a property of a published artifact rather than as a property of a measurement chain. Pineau et al.~\cite{pineau2021improving} organize reproducibility around the data, the code, and the experimental protocol, and recommend that authors report the compute budget, the number of runs, and the selection procedure. Our audit applies that organization to a robotics benchmark: the code is versioned, the protocol is pre-registered, and the raw per-trial logs are the only input to the number generator. The difference is that we also audit the benchmark scripts themselves, not only the paper.
 
-The architectural design of Project ARIA is informed by recent literature spanning ten core technical areas, summarized below and in Table~\ref{table_literature_summary}.
+The problem of selective reporting is older than the reproducibility movement. Ioannidis~\cite{ioannidis2005why} argued that most published research findings are false because of small samples, flexible analyses, and selective reporting. Nosek et al.~\cite{nosek2018prereg} proposed pre-registration as a remedy: the analysis is fixed before the data are seen, and deviations are reported. We adopt that remedy at the level of a single laboratory stack. The pre-registration is not a guarantee of correctness, but it removes the freedom to choose a threshold after observing the result.
 
-Recent efforts have targeted Vision-Language-Action (VLA) deployment on constrained hardware. Notably, OpenVLA-OFT~\cite{openvla_oft_2025} introduced optimized fine-tuning yielding marked action-generation throughput gains, while SmolVLA~\cite{smolvla_2025} demonstrated a 450M-parameter VLA tailored for consumer-tier GPUs and affordable robot platforms with asynchronous inference. In parallel, generalist foundation models such as $\pi_{0.5}$~\cite{pi05_2025} and NVIDIA GR00T N1/N1.5~\cite{groot_n1_2025} have expanded open-world generalization across multi-embodiment domains, alongside post-training quantization and action-chunking transformer policies (e.g., ACT~\cite{zhao2023learning}, Octo~\cite{aria_019_ghosh_2024_octo}, RT-2~\cite{zitkovich2023rt2}, and foundation manipulation surveys~\cite{firoozi2023foundation}). These developments indicate that the compute-efficiency gap is rapidly narrowing, and we position Project ARIA's scientific contribution specifically around explicit modular decomposition, closed-form kinematic determinism on constrained task manifolds, self-calibrated monocular depth, and transparent safety supervision.
+In reinforcement learning, Henderson et al.~\cite{henderson2018deep} showed that apparently large differences between algorithms can disappear under different seeds, and recommended reporting across seeds rather than a single run. Our experiments use fixed evaluation seed ranges and report Wilson or bootstrap intervals. The trial counts are smaller than the power analysis recommends for small effects, and we label the affected cells as exploratory rather than pretending otherwise.
 
-Rather than predicting motor torques directly from pixels, modular cognitive architectures separate high-level symbolic planning from deterministic low-level control. SayCan~\cite{aria_054_ahn_2022_do} and Inner Monologue~\cite{huang2022inner} employ LLMs to sequence predefined robotic primitives conditioned on affordance functions, while Code as Policies~\cite{liang2023code}, VoxPoser~\cite{huang2023voxposer}, and ProgPrompt~\cite{singh2023progprompt} synthesize programmatic execution policies or composable 3D affordance maps from natural language prompts. However, cloud-based LLM queries incur variable network latencies ($500\text{--}2500$\,ms) and struggle with hardware-level kinematic singularities. ARIA executes task reasoning locally using 4-bit quantized open-weight models (Mistral-7B / Llama-3.1-8B) with a Backus-Naur Form (BNF) constrained grammar, combining Tree-of-Thoughts (ToT) heuristic search~\cite{aria_132_yao_2023_tree} and Language Agent Tree Search principles~\cite{aria_080_zhou_2024_language} with deterministic kinematic pre-screening, integrated with HRI clarification protocols~\cite{aria_039_doan_2022_asking} and on-device function execution~\cite{aria_130_erdogan_2024_tinyagent}.
+Simulation benchmarks in robotics rest on physics engines and middleware. Gazebo~\cite{koenig2004gazebo} and MuJoCo~\cite{todorov2012mujoco} are the most common choices for manipulation, and Isaac Gym~\cite{makoviychuk2021isaac} is common for large-scale policy training. Each engine makes different trade-offs between contact fidelity and speed, and a result obtained in one engine does not automatically transfer to another. Our study is confined to Gazebo Classic with the ODE solver, and we report the real-time factor so that the timing results can be interpreted.
 
-Robotic visual perception in industrial sorting and household environments is frequently undermined by challenging material optical properties. Fang et al.~\cite{aria_131_fang_2022_transcg} introduced TransCG, a benchmark and dataset addressing transparent object depth completion and grasping, while ClearGrasp~\cite{aria_047_sajjan_2020_cleargrasp} and ClearDepth~\cite{aria_046_team_2024_cleardepth} demonstrated that active infrared sensors suffer point-cloud dropouts on specular boundaries. As reviewed by Jiang et al.~\cite{aria_113_jiang_2023_robotic}, active depth hardware degrades on transparent glassware and reflective containers, whereas 2D RGB feature tracking provides stable geometric boundaries. ARIA adopts a related strategy by bypassing active infrared sensors, fusing overhead YOLOv8m instance detection~\cite{yolov8_2023} with SAM2 boundary segmentation~\cite{aria_023_ravi_2024_sam} and claw disparity grounding.
+The ROS~2 middleware~\cite{macenski2022ros2} is the substrate of the stack. ROS~2 provides typed topics, services, and lifecycle nodes, but it does not provide provenance: a topic can have several publishers, a service can be called by a node that also subscribes to its own output, and a controller can silently reject a goal. The audit found all three. The middleware is not at fault; the benchmark scripts failed to check the invariants that the middleware exposes.
 
-Extracting 3D geometry from single RGB images has progressed rapidly with foundation disparity models such as Depth-Anything v2~\cite{aria_052_yang_2024_depth} and MiDaS v3.1~\cite{aria_089_birkl_2023_midas}. Murray et al.~\cite{aria_009_murray_2025_assessing} rigorously evaluated Depth-Anything v2 as an optical sensor for closed-loop robotic control, finding that relative depth fields maintain strong spatial coherence despite affine scale ambiguity. While resolving scale ambiguity using known geometric references is established in visual SLAM and geometric perception, existing metric models (Metric3D, UniDepth, ZoeDepth) degrade in extreme close-quarters macro regimes ($<0.20$\,m). ARIA integrates this principle by referencing the known physical mechanical geometry of the end-effector claw ($Z_{\text{tips}} = 0.065$\,m) as an online moving physical scale datum re-anchored at pre-grasp waypoints, extending adaptive grasp pose concepts~\cite{aria_116_authors_2025_adaptive}.
+Learning-based manipulation provides the motivation for the architecture but not the evidence in this article. End-to-end visuomotor policies~\cite{levine2016end}, transformer-based language-conditioned policies~\cite{brohan2023rt1}, and low-cost bimanual imitation systems~\cite{zhao2023aloha} have demonstrated impressive generalization, and open vision-language-action models~\cite{kim2024openvla} have made those policies accessible. Training and evaluating such policies requires GPU resources that were not available here. We therefore do not claim any learned-policy result. The architecture is described as a modular alternative, and the audit is confined to the classical components that can be executed.
 
-Dynamic object tracking on moving conveyors requires tight integration between visual state estimation and trajectory generation. While visual tracking on planar 2-DoF mechanisms was investigated by Sahu et al.~\cite{aria_010_sahu_2025_autonomous} and moving workpiece grasping for articulated arms was explored by Sun et al.~\cite{aria_base_sun2022moving}, translating dynamic conveyor rendezvous to underactuated 5-DoF articulated arms under edge-compute constraints remains challenging. Complemented by real-time obstacle avoidance~\cite{aria_035_fishman_2025_avoid}, ARIA formalizes dynamic conveyor rendezvous via a fifth-order boundary-value polynomial matching terminal velocity and enforcing zero terminal acceleration, keeping contact forces within the static friction cone.
+Inverse kinematics is a classical problem with a long literature, and the specific question here is not which solver is best but whether a reported solver comparison is reproducible. The historical logs compared two revisions of the same numerical solver, not two algorithms, and the revision changed the kinematic model. This is a common failure mode in solver comparisons: the model, the seed, and the convergence criterion change together, and the reported difference is attributed to the algorithm. Our re-measurement holds the targets fixed and varies only the revision.
 
-Chen et al.~\cite{aria_135_chen_2023_visual} demonstrated visual dexterity for in-hand reorientation using multi-fingered dexterous hands, which cost upwards of \$15{,}000. Under classical manipulation mechanics formalized by Mason~\cite{mason2001mechanics}, underactuated non-prehensile contact can achieve rich extrinsic dexterity without complex multi-joint hands. Related stiffness-oriented planning has been explored for cable-driven arms~\cite{aria_044_pang_2025_highstiffness}. ARIA formulates four dynamic extrinsic manipulation primitives on a low-cost single-DoF parallel jaw gripper, exploiting gravity, contact friction dynamics, and controlled wrist acceleration pulses to achieve $\pm 45^\circ$ in-hand pivoting.
+Statistical practice in robotics often uses a normal approximation for a proportion, which is poor when the proportion is near zero or one. We use the Wilson score interval~\cite{wilson1927probable} for proportions, the exact McNemar test~\cite{mcnemar1947note} for paired binary comparisons, the Holm correction~\cite{holm1979simple} for families of tests, and the Newcombe interval~\cite{newcombe1998interval} for risk differences. These are standard choices, but they are not universal in the field, and the pre-registration fixes them before the data are seen.
 
-Looper et al.~\cite{aria_004_looper_2023_3d} introduced 3D VSG, using 3D variable scene graphs to predict long-term semantic scene changes. While continuous spatial representations such as 3D Gaussian Splatting~\cite{aria_002_kerbl_2023_3d} and hierarchical perception frameworks~\cite{aria_003_hughes_2023_foundations} provide dense radiance fields, updating high-dimensional graphs incurs substantial computational overhead. Drawing inspiration from OS-level semantic memory structures~\cite{aria_088_packer_2023_memgpt}, ARIA adopts a lightweight relational world model backed by an embedded SQLite schema tracking four-stage object lifecycles (\texttt{DETECTED}, \texttt{GRASPED}, \texttt{IN\_TRANSIT}, \texttt{PLACED}).
+Finally, the audit is related to work on benchmark validity in embodied AI. A benchmark can be internally consistent and still fail to measure the intended capability, for example when the success predicate is evaluated from the planner's self-report rather than from the simulator state. Our contribution is a concrete case study: a stack with a plausible architecture, a set of published claims, and a measurement chain that did not support them. The case study is useful precisely because the defects are ordinary.
 
-Vieira et al.~\cite{aria_117_vieira_2025_application} investigated cloud simulation techniques for robotic software validation, indicating that ODE solvers within Gazebo~\cite{gazebo_2004} can represent rigid-body contact reasonably well when calibrated, as also demonstrated on educational arms~\cite{aria_007_agha_2021_a}. ARIA deploys a Gazebo~11 simulation model approximating the 5-DoF manipulator's inertial, damping, backlash, and friction parameters, explicitly quantifying tracking discrepancies against ideal kinematic trajectories.
+\section{Audit Method and Defect Taxonomy}
+\label{sec:audit}
+The audit proceeded in three passes. The first pass read every benchmark script and traced each reported quantity to the line that produced it. The second pass compared the reported quantity with the raw log, when a raw log existed, and with the simulator state, when the log was ambiguous. The third pass attempted to re-execute each benchmark from a clean commit. A defect was recorded only when at least one of the three passes produced evidence: a code path, a log inconsistency, or a failed re-execution.
 
-Sultan and Greiser~\cite{aria_118_team_2025_time} showed that fusing 6-axis IMU streams via complementary filtering yields sub-degree attitude accuracy, while autonomous camera-robot calibration~\cite{aria_006_chanrungmaneekul_2025_arccalib} eliminates manual hand-eye targets. In parallel, servo health diagnostics and fault monitoring~\cite{aria_086_ling_2023_prognostics} provide predictive reliability. ARIA incorporates distal claw attitude verification via micro-ROS mapped directly to the ROS~2 State Bus.
+We classify defects into four types. A \emph{null measurement} occurs when the code returns a placeholder instead of the measured quantity, for example a zero transform on a caught exception. A \emph{provenance mismatch} occurs when the log cannot have been produced by the code it cites, for example a commit that predates the script. A \emph{fallback fabrication} occurs when the code substitutes a constant or a formula when the measurement is missing, and the substitution is not reported in the table. A \emph{hard-coded outcome} occurs when the reported value is a literal in the script or a convention in the solver, independent of the experiment.
 
-Wang et al.~\cite{aria_096_group_2025_observe} introduced the Observe-Then-Act paradigm, decoupling perception from action execution to reduce lockstep latency. ARIA realizes an analogous asynchronous coordination across its State Bus, allowing perception ($15\text{--}30$\,Hz) and high-frequency control loops ($50$\,Hz) to execute at independent rates without blocking, building upon ROS 2 lifecycle principles~\cite{aria_022_macenski_2022_robot} and distributed multi-agent coordination~\cite{aria_008_muthusamy_2025_a,aria_093_chen_2025_multiagent}.
+The taxonomy is useful because the remedies differ. A null measurement is repaired by replacing the placeholder with a checked read and failing loudly when the read fails. A provenance mismatch is repaired by re-running from a clean commit and stamping every row. A fallback fabrication is repaired by deleting the fallback and recording the trial as a failure or as not executed. A hard-coded outcome is repaired by computing the quantity or by removing the claim. The audit table in the repository records the evidence and the disposition for each item; the paper reports only the items that affect the experiments below.
 
-\begin{table*}[!t]
+Two instrument defects were found only after the first repair. The first is that \texttt{/joint\_states.velocity} is not the derivative of \texttt{/joint\_states.position} in this workcell. While the waist moved from zero to a finite angle over a fixed interval, the reported waist velocity stayed near a constant negative value, and the shoulder reported a value an order of magnitude larger than the finite difference. A stop-time metric that trusts the reported velocity therefore never observes a stop. We differentiate the measured positions and keep the reported velocity only as a diagnostic.
+
+The second is that the joint-trajectory topic had more than one publisher. Three instances of a manual-control node were running, and they emitted five-joint, velocity-free hold trajectories in response to an emergency stop. The safety agent emitted a four-joint, velocity-free halt. The controller accepts neither partial goals nor velocity-free single points reliably, so the arm continued to its goal while the topic showed a halt message. The duplicate nodes were terminated before the evaluation run, and the experiment records the number of non-path messages per trial.
+
+\section{Platform and Repaired Instrumentation}
+\label{sec:platform}
+The platform is a simulated four-degree-of-freedom arm with a revolute two-finger gripper, mounted on a table beside a conveyor and an overhead camera. The arm joints are waist, shoulder, elbow, and wrist pitch; the gripper is a fifth actuated joint with a mimic finger. The world is Gazebo Classic with the ODE solver. The controller is a joint-trajectory controller with partial goals disabled. The conveyor is a plugin that writes workpiece linear velocities directly and animates a belt and two rollers.
+
+The kinematic model used by the solver is a URDF chain with fixed rotation offsets. The solver is a damped Newton--Raphson routine with geometric seed candidates, not a closed-form analytical solution. It reports a position residual and sets the orientation residual to zero by convention because the wrist has no roll axis. The audit therefore treats the solver as position-only and does not report an orientation error.
+
+The repaired harness has four components. A provenance module resolves the repository root from the file path, refuses to start when the working tree is dirty, and returns the commit hash and a dirty flag. A trial log writes one CSV row and one JSONL record per trial, flushes both, and refuses to write a row if the tree became dirty. A ROS~2 helper wraps the subscriptions and services used by the experiments, including a trajectory sender that sets zero end velocities and resends a goal that the controller drops. A statistics module provides Wilson, bootstrap, McNemar, Holm, and Newcombe routines.
+
+The number generator reads only the raw summaries and CSVs and writes a LaTeX macro file and a ledger. Each ledger row records the macro name, the experiment, the metric, the value, the unit, the sample size, the confidence bounds, the source file, and the source commit. The paper contains no typed outcome number: every reported quantity is a macro. This is checked by compiling the paper after regenerating the macros; a missing macro is a build error.
+
+The platform has known limitations that bound the claims. The conveyor plant is kinematic, so workpieces cannot tip, rotate, or jam. The gripper is a revolute two-finger mechanism whose pads are not mirrored: at closure the pad face normals are nearly parallel rather than opposing, and the pad separation at a typical opening is comparable to the object width. A top grasp is the only kinematically feasible grasp for this arm, and the reachable region is small. Grasp experiments are therefore not reported in this article; they are blocked until the gripper is repaired.
+
+\section{Pre-Registered Protocol}
+\label{sec:protocol}
+The pre-registration fixes the hypotheses, the primary metrics, the decision rules, the seed ranges, and the trial counts. Development seeds are reserved for code and threshold tuning and are never reported. Evaluation seeds are disjoint. The evaluation seed ranges used here are fixed in the pre-registration. The document also declares the phases that cannot be executed in this environment: learned-policy training without a CUDA device, human inter-annotator agreement without independent annotators, hardware trials without a robot, and a full detector training run without a committed checkpoint. Those phases are reported as not executed, not simulated.
+
+Four experiments are reported. The reachability experiment evaluates the current and historical solvers on the same target set and compares recall at a fixed tolerance. The conveyor experiment commands three belt speeds and measures the realized part speed from link states, the visual belt speed, the roller speed, and the wrist deviation while the arm holds a fixed configuration. The emergency-stop experiment triggers each stop path while the arm executes a fixed-duration trajectory and measures the signal-to-message latency, the time to a sustained low joint speed, and the post-signal overshoot. The pre-verification experiment compares a planner that trusts the solver's success flag with a gate that checks the forward-kinematics residual and the joint-limit margin, and replans locally when the check fails.
+
+All proportions use the Wilson interval. Paired binary comparisons use the exact McNemar test. Continuous quantities use the median and a percentile bootstrap interval. The decision rules are fixed: a claim passes only if the pre-registered threshold is met and the interval excludes the null. A failure is reported as a failure, and the claim is weakened rather than the data changed.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Reachability Is Reproducible and the Historical Gap Is a Solver Revision}
+The reachability experiment evaluates \reachN{} target poses with both solver revisions. The current solver reaches \reachRecallCurrentPct\% recall at a 5\,mm tolerance (Wilson 95\% CI [\reachRecallCurrentLoPct, \reachRecallCurrentHiPct]), with a median position error of \reachMedianErrCurrentMm\,mm and a 95th percentile of \reachTailErrCurrentMm\,mm. The historical solver reaches \reachRecallOldPct\% (CI [\reachRecallOldLoPct, \reachRecallOldHiPct]), with a median error of \reachMedianErrOldMm\,mm and a 95th percentile of \reachTailErrOldMm\,mm. The paired discordant counts are \reachMcNemarB{} targets solved only by the current revision and \reachMcNemarC{} solved only by the historical one (\reachMcNemarP).
+
+The revision difference is larger than the historical gap it was meant to explain: it accounts for \reachGapExplainedPct\% of the gap. This is not a paradox. The historical comparison attributed the gap to an algorithmic change, but the revision also changed the kinematic model, and the old model is inconsistent with the URDF chain. Once the targets are held fixed and the model is corrected, the historical solver is not a weaker version of the current one; it is solving a different, wrong problem. The median solve time is \reachMedianSolveCurrentMs\,ms for the current solver and \reachMedianSolveOldMs\,ms for the historical one, so speed is not the explanation for the recall difference. The practical consequence is that the historical recall figure should not be cited as a baseline for the current solver: the two numbers come from different kinematic models, not from different algorithms on the same model.
+
+\begin{figure}[t]
 \centering
-\caption{Representative Prior Works and Their Relationship to Project ARIA's Design Choices}
-\label{table_literature_summary}
-\footnotesize
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{clllll}
-\toprule
-\textbf{\#} & \textbf{Thematic Domain} & \textbf{Representative Reference} & \textbf{Primary Focus / Technique} & \textbf{Limitation in Target Setting} & \textbf{Related ARIA Architectural Design Choice} \\
-\midrule
-1 & Lightweight VLAs & OpenVLA-OFT~\cite{openvla_oft_2025}, SmolVLA~\cite{smolvla_2025}, Octo~\cite{aria_019_ghosh_2024_octo} & Efficient action-chunking transformer policies & Black-box joint prediction on underactuated arms & Asynchronous modular ToT planning + analytical IK \\
-2 & Modular Language Planners & SayCan~\cite{aria_054_ahn_2022_do}, Inner Monologue~\cite{huang2022inner} & LLM prompt sequencing over affordance APIs & Cloud latency fluctuations ($0.5\text{--}2.5$\,s) & Local 4-bit LLM + BNF constrained JSON grammar \\
-3 & Transparent Perception & TransCG~\cite{aria_131_fang_2022_transcg}, ClearDepth~\cite{aria_046_team_2024_cleardepth} & Transparent object depth completion & Active infrared dropouts on specular materials & RGB segmentation + claw-grounded monocular depth \\
-4 & Monocular Depth & Depth-Anything v2~\cite{aria_052_yang_2024_depth}, Murray et al.~\cite{aria_009_murray_2025_assessing} & Relative disparity from single RGB image & Scale ambiguity ($D \in [0,1]$ lacks metric scale) & Kinematic claw disparity grounding ($Z_{\text{tips}} = 0.065$\,m) \\
-5 & Dynamic Conveyor Grasping & Visual Tracking (Sahu et al.~\cite{aria_010_sahu_2025_autonomous}) & Predictive moving block interception & Rigid open-loop trajectory clamping & 5th-order polynomial rendezvous ($\Delta v \le 0.0075$\,m/s) \\
-6 & Underactuated Dexterity & Visual Dexterity (Chen et al.~\cite{aria_135_chen_2023_visual}), Mechanics~\cite{mason2001mechanics} & Multi-finger in-hand shape reorientation & High hardware cost and mechanical fragility & Gravity-assisted dynamic pivoting on 1-DoF parallel claw \\
-7 & Spatial World Modeling & 3D VSG~\cite{aria_004_looper_2023_3d}, 3DGS~\cite{aria_002_kerbl_2023_3d} & 3D Scene Graphs for robotic manipulation & High GPU memory overhead for dense graphs & Embedded SQLite relational spatial-semantic memory \\
-8 & Simulation Validation & Cloud Validation (Vieira et al.~\cite{aria_117_vieira_2025_application}) & Cloud ODE simulation software validation & Does not disclose simulation-only scope in claims & Explicit sim-only framing; all claims qualified as simulation-verified \\
-9 & IMU Sensor Fusion & Attitude Estimation (Sultan \& Greiser~\cite{aria_118_team_2025_time}) & Frequency-domain IMU attitude filtering & Drift accumulation in uncalibrated frames & Distal claw MPU6050 attitude telemetry via micro-ROS \\
-10 & Asynchronous Coordination & Observe-Then-Act (Wang et al.~\cite{aria_096_group_2025_observe}) & Asynchronous vision-action decoupling & Process crash cascades in monolithic loops & ROS 2 managed lifecycle nodes over State Bus \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-\subsection{Research Gaps}
-Despite rapid progress across embodied foundation models, significant research gaps remain at the intersection of language-conditioned policies and accessible manipulation:
-\begin{enumerate}
-    \item \textbf{Gap 1: Resource-efficient deployment on underactuated arms.} Foundation policies typically require $\ge 16$\,GB VRAM and target high-end 7-DoF arms; validated deployment on underactuated 5-DoF arms within 8.0\,GB VRAM remains scarce.
-    \item \textbf{Gap 2: Diagnosability versus black-box execution.} Monolithic end-to-end models obscure internal state; modular architectures with structured execution telemetry remain underexplored for low-cost manipulation.
-    \item \textbf{Gap 3: Close-range metric perception without active depth.} Active depth sensors experience blind zones below $0.2$\,m and specular dropout; self-grounding monocular relative disparity via robot geometry is an open alternative.
-    \item \textbf{Gap 4: Deterministic kinematics on underactuated manifolds.} Numerical IK solvers can exhibit iterative divergence near boundaries on 5-DoF chains lacking spherical wrists; exact algebraic solutions on constrained manifolds are needed.
-    \item \textbf{Gap 5: Dynamic conveyor rendezvous on budget hardware.} Feedforward velocity-matched interception on low-cost servo-driven arms under edge compute constraints has received limited systematic characterization.
-\end{enumerate}
-
-\subsection{Problem Statement}
-\label{sec_problem_statement}
-Formally, this research addresses the problem of developing, simulating, and validating a modular, asynchronous, resource-efficient language-conditioned manipulation framework for an underactuated 5-DoF robotic arm operating within an 8.0\,GB VRAM constraint. The system must autonomously interpret natural-language instructions, perceive 3D scene geometry from low-cost monocular RGB cameras, synthesize kinematically feasible trajectories on an admissible 5D task manifold with reachability and joint-limit pre-screening, and reliably track and sort moving workpieces on a continuous variable-speed conveyor ($0.02\text{--}0.12$\,m/s) without relying on active infrared depth hardware or monolithic end-to-end neural network black boxes. Note: geometric obstacle avoidance beyond joint-limit and reachability checking is identified as a future extension (Section~\ref{sec_limitations}).
-
-% ====================================================================
-% SECTION III: MATERIALS AND METHODS
-% ====================================================================
-\section{Materials and Methods}
-\label{sec_materials_and_methods}
-
-\subsection{Manipulator Platform \& Kinematic Modeling}
-\label{sec_kinematics}
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{fig2_kinematics_dh.png}
-\caption{Kinematic chain and coordinate frame assignment for the 5-DoF ARIA manipulator following Modified Denavit-Hartenberg (Craig) conventions.}
-\label{fig_kinematics_dh}
+\includegraphics[width=\columnwidth]{fig_reach_ecdf.pdf}
+\caption{Empirical CDF of the position error on the same \reachN{} target poses for the current and historical solver revisions. The historical curve is dominated by model error, not by convergence failure.}
+\label{fig:reach}
 \end{figure}
 
-The robotic manipulation platform modeled, parameterized, and evaluated in this research is the \textbf{Techno-Tirupati 5-DoF articulated robotic manipulator}, an open-architecture desktop robotic arm engineered for light-industrial material handling and research. The structural chassis model corresponds to high-tensile polyethylene terephthalate glycol (PETG) reinforced with precision CNC-machined 6061-T6 aluminum structural brackets. The kinematic structure exhibits an anthropomorphic articulated morphology comprising a base azimuth rotation, a planar two-link shoulder and elbow linkage, an active wrist pitch mechanism, an axial wrist roll mechanism, and an underactuated single-DoF parallel jaw gripper (Table~\ref{table_hardware_specs}), instantiated with calibrated ODE contact and friction dynamics in Gazebo~11~\cite{gazebo_2004}.
+\subsection{The Conveyor Realizes a Speed Offset, Not a Scaled Command}
+The conveyor experiment runs \convN{} trials over three commanded speeds with a \convWindowS\,s measurement window. The median realized part speeds are \convRealizedA, \convRealizedB, and \convRealizedC\,m/s for commands of 0.04, 0.08, and 0.12\,m/s. The median relative errors are \convRelErrA\%, \convRelErrB\%, and \convRelErrC\%. The realized speed is therefore not a scaled version of the command: the offset is approximately constant at \convOffsetMean\,m/s, so the relative error shrinks as the command grows.
 
-\begin{table}[!t]
+The visual belt and the transport are independent. The mean visual belt link speed is effectively zero at every setting: \convBeltLinkA, \convBeltLinkB, and \convBeltLinkC\,m/s for the three commands. The rollers spin at \convRollerA, \convRollerB, and \convRollerC\,rad/s, so the animation is not tracking the commanded speed at any setting. The wrist deviation while the arm holds a fixed configuration is at most \convTcpDevMax\,mm, so the arm is not the source of the discrepancy. The reported belt speed matches the command in \convReportedMatchPct\% of trials, which shows that the plugin receives the command even though the part does not realize it. The mean real-time factor over these trials is \convRtf, so the offset is not an artifact of a stalled simulator clock.
+
+These results fail both conveyor hypotheses in the pre-registration. The belt-speed error exceeds the fixed threshold at every speed, and the measured-to-commanded ratio is outside the accepted band. The mechanism is consistent with a Coulomb-friction offset in the velocity-write path: the plugin writes a part velocity, friction removes a nearly constant amount, and the residual is what the link state measures. A scale correction cannot repair this; the plant model must change.
+
+\begin{figure}[t]
 \centering
-\caption{Electromechanical Specifications of the Modeled 5-DoF Manipulator (Simulation; Embodiment Parameters Used for Simulation Parameterization)}
-\label{table_hardware_specs}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Joint / Component} & \textbf{Actuator Model} & \textbf{Stall Torque} & \textbf{Gear Ratio} & \textbf{Mass (g)} & \textbf{Range ($^\circ$, Servo)} & \textbf{Max $\dot{\theta}$ ($^\circ$/s)} \\
-\midrule
-Joint 1 (Waist Azimuth) & DS3218 Digital & $20.0$\,kg$\cdot$cm & $275:1$ & $65$ & $[0, 180]$ & $360$ \\
-Joint 2 (Shoulder Pitch) & Dual MG996R & $22.0$\,kg$\cdot$cm & $210:1$ & $110$ & $[0, 180]$ & $300$ \\
-Joint 3 (Elbow Pitch) & Single MG996R & $11.0$\,kg$\cdot$cm & $210:1$ & $55$ & $[0, 150]$ & $300$ \\
-Joint 4 (Wrist Pitch) & SG90 Micro Metal & $2.5$\,kg$\cdot$cm & $180:1$ & $14$ & $[0, 180]$ & $450$ \\
-Joint 5 (Wrist Roll) & SG90 Micro Metal & $2.5$\,kg$\cdot$cm & $180:1$ & $14$ & $[0, 180]$ & $450$ \\
-Gripper Mechanism & SG90 Micro & $2.5$\,kg$\cdot$cm & $180:1$ & $32$ & $[0, 55\,\text{mm}]$ & $50\,\text{mm/s}$ \\
-Total Arm Structure & Structural PETG/Al & -- & -- & $840$ & Reach: $0.290$\,m (wrist-center axis) / $0.385$\,m (fingertip) & Payload: $0.25$\,kg \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-\paragraph{Target Embedded Architecture and Actuator Parameterization (Embodiment Model)}
-While the high-fidelity physics simulation executes via ROS~2 Humble joint trajectory controllers within Gazebo~11, the modeled joint dynamic limits, quantization intervals, and communication latencies mirror an embedded architecture based on an \textbf{ESP32-WROOM-32} dual-core microcontroller (240\,MHz) running micro-ROS on FreeRTOS:
-\begin{itemize}
-    \item \textbf{Actuation Bus Modeling}: Modeled as a 16-channel 12-bit PCA9685 PWM generator clocked at $50$\,Hz, driving Joints 1--5 on channels 0--4 and the parallel gripper on channel 5.
-    \item \textbf{Telemetry Mapping}: Modeled serial XRCE-DDS transport with the host computer at $921,600$\,baud with $\mathcal{N}(5.0, 1.2)$\,ms transport jitter. An MPU6050 6-axis IMU on the gripper link provides distal orientation feedback.
-    \item \textbf{Power Rails Model}: Modeled regulated $5.0$\,V / $10$\,A high-current supply for servo actuation and an isolated $3.3$\,V rail for logic electronics, precluding inductive resetting under peak load.
-\end{itemize}
-
-Raw servo coordinates $\theta_i^{\text{servo}} \in [0^\circ, 180^\circ]$ relate to mathematical Denavit-Hartenberg variables $\theta_i^{\text{DH}}$ via a fixed per-joint affine offset: $\theta_i^{\text{DH}} = \theta_i^{\text{servo}} - \theta_i^{\text{offset}}$, with offsets $\boldsymbol{\theta}_{\text{offset}} = [90^\circ, 90^\circ, 90^\circ, 90^\circ, 90^\circ]^T$ for Joints~1--5 respectively. For Joints 1, 2, 4, 5 (servo travel $[0^\circ, 180^\circ]$), this yields DH range $[-\pi/2, +\pi/2]$. Joint~3 has a physical mechanical stop at $150^\circ$ (servo), giving: $\theta_3^{\text{servo}} \in [0^\circ, 150^\circ] \Leftrightarrow \theta_3^{\text{DH}} \in [-90^\circ, +60^\circ] = [-\pi/2, +\pi/3]$~rad (asymmetric range). Firmware applies the offset when writing PWM setpoints; the IK feasibility pre-screen enforces these asymmetric limits per joint.
-
-\paragraph{Modified Denavit-Hartenberg (Craig) Kinematic Formulation}
-To establish the geometric relationship between adjacent links, we adopt the Modified Denavit-Hartenberg (Craig) kinematic convention~\cite{craig2005introduction,lynch2017modern,aria_040_wagaa_2023_analytical} illustrated in Fig.~\ref{fig_kinematics_dh}. The four fundamental parameters ($\alpha_{i-1}, a_{i-1}, d_i, \theta_i$) are cataloged in Table~\ref{table_dh_parameters}. Link lengths are $a_2 = 0.145$\,m (upper arm), $a_3 = 0.115$\,m (forearm), shoulder offset $a_1 = 0.030$\,m, base height $d_1 = 0.105$\,m, and tool offset $d_5 = 0.095$\,m ($L_{\text{wrist}} + L_{\text{grip}} = 0.055 + 0.040$\,m, encompassing the full distance from Joint~5 axis to the fingertip center of pressure). The maximum wrist-center (Joint-5 axis) reach is $R_{\text{wrist}} = a_1 + a_2 + a_3 = 0.030 + 0.145 + 0.115 = 0.290$\,m. Fully extended fingertip reach is $R_{\text{max}} = R_{\text{wrist}} + d_5 = 0.290 + 0.095 = 0.385$\,m. The IK decouples using $\mathbf{P}_w = \mathbf{P}_{\text{target}} - d_5 \hat{\mathbf{a}}$, placing $\mathbf{P}_w$ at the Joint-5 axis; $d_5$ (not a subset of it) is the correct decoupling offset.
-
-\begin{table}[!t]
-\centering
-\caption{Modified Denavit-Hartenberg (Craig) Parameters and Dynamic Operating Limits}
-\label{table_dh_parameters}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{ccccccc}
-\toprule
-\textbf{Link $i$} & \textbf{Joint Name} & \textbf{$\alpha_{i-1}$ (rad)} & \textbf{$a_{i-1}$ (m)} & \textbf{$d_i$ (m)} & \textbf{$\theta_i^{\text{DH}}$ Range (rad)} & \textbf{Max $\ddot{\theta}_i$ (rad/s$^2$)} \\
-\midrule
-1 & Waist & $0$ & $0$ & $d_1 = 0.105$ & $[-\pi/2, +\pi/2]$ & $15.0$ \\
-2 & Shoulder & $+\frac{\pi}{2}$ & $a_1 = 0.030$ & $0$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $10.0$ \\
-3 & Elbow & $0$ & $a_2 = 0.145$ & $0$ & $[-\frac{\pi}{2}, +\frac{\pi}{3}]$ & $12.0$ \\
-4 & Wrist Pitch & $0$ & $a_3 = 0.115$ & $0$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $20.0$ \\
-5 & Wrist Roll & $+\frac{\pi}{2}$ & $0$ & $d_5 = 0.095$ & $[-\frac{\pi}{2}, +\frac{\pi}{2}]$ & $25.0$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-In Craig's convention~\cite{craig2005introduction}, the homogeneous transformation relating frame $\{i-1\}$ to frame $\{i\}$ is:
-\begin{equation}
-{}^{i-1}\mathbf{T}_i = \left[\begin{array}{cccc}
-c_i & -s_i & 0 & a_{i-1} \\
-s_i c_{\alpha_{i-1}} & c_i c_{\alpha_{i-1}} & -s_{\alpha_{i-1}} & -d_i s_{\alpha_{i-1}} \\
-s_i s_{\alpha_{i-1}} & c_i s_{\alpha_{i-1}} & c_{\alpha_{i-1}} & d_i c_{\alpha_{i-1}} \\
-0 & 0 & 0 & 1
-\end{array}\right]
-\end{equation}
-where $c_i = \cos\theta_i$ and $s_i = \sin\theta_i$. Consecutive post-multiplication ${}^0\mathbf{T}_5(\boldsymbol{\theta}) = \prod_{i=1}^5 {}^{i-1}\mathbf{T}_i$ using the exact DH parameters from Table~\ref{table_dh_parameters} yields the forward kinematics map:
-\begin{equation}
-{}^0\mathbf{T}_5(\boldsymbol{\theta}) = \begin{bmatrix}
-\mathbf{n} & \mathbf{s} & \mathbf{a} & \mathbf{P} \\
-0 & 0 & 0 & 1
-\end{bmatrix}
-\end{equation}
-Evaluating symbolic matrix expansion and trigonometric reduction (verified symbolically and numerically in \texttt{scripts/verify\_fk\_derivation.py}) yields the Cartesian tool center point (TCP) position $\mathbf{P} = [P_x, P_y, P_z]^T$:
-\begin{align}
-P_x &= c_1 \left( a_1 + a_2 c_2 + a_3 c_{23} + d_5 s_{234} \right) \label{eq_px} \\
-P_y &= s_1 \left( a_1 + a_2 c_2 + a_3 c_{23} + d_5 s_{234} \right) \label{eq_py} \\
-P_z &= d_1 + a_2 s_2 + a_3 s_{23} - d_5 c_{234} \label{eq_pz}
-\end{align}
-where $c_{23} = \cos(\theta_2+\theta_3)$, $s_{23} = \sin(\theta_2+\theta_3)$, $c_{234} = \cos(\theta_2+\theta_3+\theta_4)$, and $s_{234} = \sin(\theta_2+\theta_3+\theta_4)$. The approach vector $\mathbf{a}$ corresponds to the third column of orientation matrix $\mathbf{R} = [\mathbf{n}, \mathbf{s}, \mathbf{a}]$:
-\begin{equation}
-\label{eq_approach_vector}
-\mathbf{a} = \begin{bmatrix} c_1 s_{234} \\ s_1 s_{234} \\ -c_{234} \end{bmatrix}
-\end{equation}
-which is aligned with equations (\ref{eq_px})--(\ref{eq_pz}) since $\mathbf{P} = \mathbf{P}_w + d_5 \mathbf{a}$.
-
-\begin{definition}[Admissible Task Manifold]
-Because the 5-DoF manipulator cannot realize arbitrary $SE(3)$ poses, we define the \textbf{admissible task manifold}:
-\begin{equation}
-\mathcal{M}_{\text{task}} = \left\{ (\mathbf{P}, \phi, \psi) \in \mathbb{R}^3 \times \mathbb{R} \times \mathbb{R} : \mathbf{P} \in \mathcal{W} \right\} \subset SE(3)
-\end{equation}
-where $\phi = \theta_2 + \theta_3 + \theta_4$ is the commanded approach pitch angle, $\psi$ is the commanded tool roll angle, and $\mathcal{W}$ is the reachable positional workspace.
-\end{definition}
-
-\begin{proposition}[Closed-Form Inverse Kinematics on $\mathcal{M}_{\text{task}}$]
-\label{prop_ik}
-For any target pose $(\mathbf{P}_{\text{target}}, \phi, \psi) \in \mathcal{M}_{\text{task}}$ satisfying radial reachability $(a_2 - a_3)^2 \le r^2 + s^2 \le (a_2 + a_3)^2$ and physical joint limits, there exists a unique, deterministic joint configuration $\boldsymbol{\theta}^* = [\theta_1^*, \theta_2^*, \theta_3^*, \theta_4^*, \theta_5^*]^T$ for a designated branch choice (elbow-up: $\theta_3 = -\arccos C_3$, or elbow-down: $\theta_3 = +\arccos C_3$), computable in closed form without iterative numerical search in $0.075$\,ms mean solve time. To maximize ground clearance and preclude tabletop collisions, the elbow-up branch is prioritized; if elbow-up violates physical limits (e.g., $\theta_3 < -\pi/2$), the solver evaluates elbow-down.
-\end{proposition}
-
-\begin{proof}
-Dividing (\ref{eq_py}) by (\ref{eq_px}) eliminates the arm linkage terms:
-\begin{equation}
-\frac{P_y}{P_x} = \frac{s_1 (a_1 + \dots)}{c_1 (a_1 + \dots)} = \tan\theta_1 \implies \theta_1 = \text{atan2}(P_y, P_x)
-\end{equation}
-Next, wrist center position $\mathbf{P}_w = [P_{wx}, P_{wy}, P_{wz}]^T$ is decoupled using approach vector $\mathbf{a}$ from (\ref{eq_approach_vector}) with commanded pitch $\phi$:
-\begin{equation}
-\mathbf{P}_w = \mathbf{P}_{\text{target}} - d_5 \begin{bmatrix} c_1 \sin\phi \\ s_1 \sin\phi \\ -\cos\phi \end{bmatrix}
-\end{equation}
-Projecting $\mathbf{P}_w$ onto the 2R planar sagittal arm linkage yields radial coordinate $r$ and vertical coordinate $s$:
-\begin{equation}
-r = \sqrt{P_{wx}^2 + P_{wy}^2} - a_1, \quad s = P_{wz} - d_1
-\end{equation}
-Applying the law of cosines to the planar triangle formed by $a_2$ and $a_3$:
-\begin{equation}
-C_3 = \cos\theta_3 = \frac{r^2 + s^2 - a_2^2 - a_3^2}{2 a_2 a_3}
-\end{equation}
-If $|C_3| > 1.0$, the pose is kinematically unreachable. For $|C_3| \le 1.0$, ARIA first selects the elbow-up configuration:
-\begin{equation}
-\theta_3 = -\arccos(C_3)
-\end{equation}
-Shoulder pitch $\theta_2$ follows from planar trigonometry:
-\begin{equation}
-\theta_2 = \text{atan2}(s, r) - \text{atan2}\left(a_3 \sin\theta_3, a_2 + a_3 \cos\theta_3\right)
-\end{equation}
-Wrist pitch $\theta_4$ is resolved directly from the manifold pitch constraint:
-\begin{equation}
-\theta_4 = \phi - (\theta_2 + \theta_3)
-\end{equation}
-Tool roll $\theta_5$ aligns the gripper jaws with workpiece grasp angle $\psi$ in the world frame via:
-\begin{equation}
-\theta_5 = \theta_1 - \psi
-\end{equation}
-Evaluating the complete rotation matrix ${}^0\mathbf{R}_5(\boldsymbol{\theta})$ reveals that for vertical downward grasps ($\phi = \theta_2+\theta_3+\theta_4 = 0$, where approach vector $\mathbf{a} = [0, 0, -1]^T$ points along $-\hat{\mathbf{z}}$), the normal column vector is ${}^0\mathbf{R}_5[0:2, 0] = [\cos(\theta_1 - \theta_5), \sin(\theta_1 - \theta_5)]^T$; substituting $\theta_5 = \theta_1 - \psi$ yields ${}^0\mathbf{R}_5[0:2, 0] = [\cos\psi, \sin\psi]^T$, establishing exact decoupled antipodal orientation in the horizontal plane. For non-vertical grasps ($\phi \neq 0$), $\theta_5$ aligns the contact axis along the target workpiece orientation around the approach axis $\mathbf{a}$.
-
-Finally, the candidate configuration $\boldsymbol{\theta}$ is evaluated against physical joint limits (Table~\ref{table_dh_parameters}). If $\theta_3$ violates the asymmetric elbow stop ($[-\pi/2, +\pi/3]$) or $\theta_4 \notin [-\pi/2, +\pi/2]$, the solver evaluates the elbow-down branch $\theta_3 = +\arccos(C_3)$, recomputing $\theta_2$ and $\theta_4$. If both branches violate physical joint limits, the pose is deterministically rejected as out-of-limits. All operations are algebraic and non-iterative.
-\end{proof}
-
-\begin{algorithm}[!t]
-\caption{Baseline Iterative Numerical DLS-IK vs. Proposed Closed-Form Analytical IK}
-\label{alg_ik_compare}
-\begin{algorithmic}[1]
-\REQUIRE Target pose $\mathbf{T}_{\text{tgt}} \in SE(3)$, Initial estimate $\boldsymbol{\theta}_0$, Damping $\lambda$
-\STATE \textbf{// --- BASELINE: Iterative Damped Least Squares (DLS)~\cite{trac_ik_2015,kdl_2001,ikpy_2020} ---}
-\STATE $\boldsymbol{\theta} \leftarrow \boldsymbol{\theta}_0$, $k \leftarrow 0$
-\WHILE{$\|\mathbf{e}\| > \epsilon$ \AND $k < k_{\text{max}}$}
-    \STATE $\mathbf{e} \leftarrow \text{PoseError}(\mathbf{T}_{\text{tgt}}, \text{FK}(\boldsymbol{\theta}))$
-    \STATE $\mathbf{J} \leftarrow \text{ComputeJacobian}(\boldsymbol{\theta})$
-    \STATE $\Delta\boldsymbol{\theta} \leftarrow (\mathbf{J}^T\mathbf{J} + \lambda^2\mathbf{I})^{-1}\mathbf{J}^T \mathbf{e}$ \COMMENT{Matrix Inversion}
-    \STATE $\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha \Delta\boldsymbol{\theta}$, $k \leftarrow k + 1$
-\ENDWHILE
-\IF{$k \ge k_{\text{max}}$}
-    \STATE \textbf{FAIL: Non-Convergence / Local Minimum}
-\ENDIF
-\STATE \textbf{// --- PROPOSED: ARIA Closed-Form Solver on $\mathcal{M}_{\text{task}}$ ---}
-\STATE $\theta_1 \leftarrow \text{atan2}(P_y, P_x)$
-\STATE $\mathbf{P}_w \leftarrow \mathbf{P}_{\text{tgt}} - d_5 [c_1 s_\phi, s_1 s_\phi, -c_\phi]^T$
-\STATE $r \leftarrow \sqrt{P_{wx}^2 + P_{wy}^2} - a_1, \quad s \leftarrow P_{wz} - d_1$
-\STATE $C_3 \leftarrow (r^2 + s^2 - a_2^2 - a_3^2)/(2a_2 a_3)$
-\IF{$|C_3| > 1.0$}
-    \RETURN \textbf{FLAG: Out of Radial Reach $\mathcal{W}$}
-\ENDIF
-\FOR{branch $\in \{\text{elbow-up}, \text{elbow-down}\}$}
-    \STATE $\theta_3 \leftarrow -\arccos(C_3)$ \textbf{if} branch == elbow-up \textbf{else} $+\arccos(C_3)$
-    \STATE $\theta_2 \leftarrow \text{atan2}(s,r) - \text{atan2}(a_3 s_3, a_2 + a_3 c_3)$
-    \STATE $\theta_4 \leftarrow \phi - (\theta_2 + \theta_3), \quad \theta_5 \leftarrow \theta_1 - \psi$
-    \STATE $\boldsymbol{\theta} \leftarrow [\theta_1, \theta_2, \theta_3, \theta_4, \theta_5]^T$
-    \IF{$\theta_{i,\text{min}} \le \theta_i \le \theta_{i,\text{max}} \; \forall i \in \{1,\dots,5\}$}
-        \RETURN $\boldsymbol{\theta}^* = \boldsymbol{\theta}$ \COMMENT{Deterministic, $0.075$\,ms}
-    \ENDIF
-\ENDFOR
-\RETURN \textbf{FLAG: Joint Limits Infeasible}
-\end{algorithmic}
-\end{algorithm}
-
-\paragraph{Kinematic Singularities and Manipulability}
-Because the geometric Jacobian $\mathbf{J}(\boldsymbol{\theta}) \in \mathbb{R}^{6\times5}$ has at most 5 linearly independent rows, $\mathbf{J}\mathbf{J}^T \in \mathbb{R}^{6\times6}$ is singular everywhere ($\det(\mathbf{J}\mathbf{J}^T) \equiv 0$). On the 5D controlled subspace, dexterity is monitored via the reduced Gram determinant~\cite{yoshikawa1985manipulability,khatib1987unified}:
-\begin{equation}
-w_5(\boldsymbol{\theta}) = \sqrt{\det\left( \mathbf{J}_{\text{norm}}^T(\boldsymbol{\theta})\, \mathbf{J}_{\text{norm}}(\boldsymbol{\theta}) \right)}
-\end{equation}
-where $\mathbf{J}_{\text{norm}} = \text{diag}(\mathbf{I}_3, \frac{1}{L_{\text{char}}}\mathbf{I}_3)\mathbf{J}$ is normalized by $L_{\text{char}} = a_2 + a_3 = 0.26$\,m to maintain dimensional homogeneity. Alternatively, task-space mapping on $\mathcal{M}_{\text{task}}$ can be represented by the square task Jacobian $\mathbf{J}_{\text{task}} \in \mathbb{R}^{5\times5}$ relating $\dot{\boldsymbol{\theta}}$ directly to $[\dot{P}_x, \dot{P}_y, \dot{P}_z, \dot{\phi}, \dot{\psi}]^T$. The closed-form solver detects three physical singularity regimes where $w_5 \to 0$: (1)~boundary reach ($C_3 \to \pm 1$); (2)~shoulder axis alignment ($r \to 0$); and (3)~wrist pitch alignment ($\theta_4 \to 0$). Algorithm~\ref{alg_ik_compare} contrasts this exact deterministic procedure against baseline iterative DLS-IK~\cite{trac_ik_2015}.
-
-% ====================================================================
-% SECTION IV: MULTI-AGENT ARCHITECTURE
-% ====================================================================
-\subsection{Modular Asynchronous Multi-Agent Architecture}
-\label{sec_architecture}
-
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=0.76\textwidth]{fig1_system_architecture.png}
-\caption{Modular asynchronous multi-agent architecture of Project ARIA. The system is organized across five functional tiers matching Table~\ref{table_agents}: (1)~Perception (VisionAgent, DepthAgent, TrackingAgent, AttentionAgent); (2)~Scene Modeling (WorldModelAgent, MemoryAgent, AffordanceAgent); (3)~Task Planning (PlanningAgent, DialogueAgent, ReachabilityAgent); (4)~Control \& Skills (SkillAgent, ControlAgent, SafetyAgent); and (5)~Diagnostics \& LfD (EvaluationAgent, LearningAgent).}
-\label{fig_system_architecture}
-\end{figure*}
-
-Project ARIA replaces monolithic pipelines with fifteen asynchronous ROS~2 Humble nodes organized across five functional tiers (Fig.~\ref{fig_system_architecture}). Inter-agent communication is mediated by a shared State Bus over ROS~2 DDS.
-
-C++ agents inherit from \texttt{rclcpp\_lifecycle::LifecycleNode} (ROS~2 Humble standard); Python agents use standard \texttt{rclpy.node.Node} with explicit state-machine callbacks (the C++ lifecycle API does not have a matching Python binding in Humble). Each agent maintains locally encapsulated state and an explicit finite state machine (\texttt{unconfigured}, \texttt{inactive}, \texttt{active}, \texttt{finalized}). High-frequency control (\texttt{ControlAgent}) runs at $50$\,Hz, safety monitoring (\texttt{SafetyAgent}) executes at $100$\,Hz, while perception and planning operate asynchronously at $10\text{--}30$\,Hz. Table~\ref{table_agents} formalizes the execution rates, DDS QoS profiles, memory footprints, and responsibilities across all fifteen agents.
-
-\begin{table*}[!t]
-\centering
-\caption{Project ARIA Multi-Agent Specification Across Five Operational Tiers}
-\label{table_agents}
-\footnotesize
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lllllcc}
-\toprule
-\textbf{Tier} & \textbf{Agent Identifier} & \textbf{Primary Input Source} & \textbf{Primary Output Topic / Service} & \textbf{QoS Profile} & \textbf{Freq.} & \textbf{VRAM} \\
-\midrule
-\multirow{4}{*}{Tier 1: Perception} & \texttt{VisionAgent} & \texttt{/overhead/image\_raw} & \texttt{/aria/vision/detections} & Best Effort & $30$\,Hz & $1,850$\,MB \\
- & \texttt{DepthAgent} & \texttt{/wrist/image\_raw} & \texttt{/aria/vision/metric\_depth} & Best Effort & $15$\,Hz & $1,420$\,MB \\
- & \texttt{TrackingAgent} & \texttt{/aria/vision/detections} & \texttt{/aria/vision/tracked\_tracks} & Reliable & $30$\,Hz & $120$\,MB \\
- & \texttt{AttentionAgent} & \texttt{/aria/state/task} & \texttt{/detection/focus\_region} (ROI) & Reliable & $10$\,Hz & $30$\,MB \\
-\midrule
-\multirow{3}{*}{Tier 2: Scene Modeling} & \texttt{WorldModelAgent} & \texttt{/aria/vision/tracked\_tracks} & \texttt{/aria/state/scene\_graph} & Reliable & $20$\,Hz & $150$\,MB \\
- & \texttt{MemoryAgent} & \texttt{/aria/state/*} & \texttt{/aria/memory/query} (SQLite) & Reliable & Event & $60$\,MB \\
- & \texttt{AffordanceAgent} & \texttt{/aria/vision/metric\_depth} & \texttt{/aria/vision/grasps} & Best Effort & $10$\,Hz & $220$\,MB \\
-\midrule
-\multirow{3}{*}{Tier 3: Task Planning} & \texttt{PlanningAgent} & \texttt{/aria/command/nl} & \texttt{/aria/state/task} (ToT Plan) & Reliable & Event & $3,450$\,MB \\
- & \texttt{DialogueAgent} & \texttt{/aria/dialogue/prompt} & \texttt{/aria/dialogue/response} & Reliable & Event & $50$\,MB \\
- & \texttt{ReachabilityAgent} & \texttt{/aria/state/scene\_graph} & \texttt{/aria/planning/reachability} & Reliable & $50$\,Hz & $0$\,MB (CPU) \\
-\midrule
-\multirow{3}{*}{Tier 4: Control \& Skills} & \texttt{SkillAgent} & \texttt{/aria/state/task} & \texttt{/aria/skill/execute} & Reliable & $50$\,Hz & $40$\,MB \\
- & \texttt{ControlAgent} & \texttt{/aria/skill/trajectory} & \texttt{/arm\_controller/joint\_cmd} & Reliable & $50$\,Hz & $0$\,MB (CPU) \\
- & \texttt{SafetyAgent} & \texttt{/joint\_states} & \texttt{/aria/safety/e\_stop} & High-Priority & $100$\,Hz & $20$\,MB \\
-\midrule
-\multirow{2}{*}{Tier 5: Diagnostics \& LfD} & \texttt{EvaluationAgent} & \texttt{/aria/state/task} & \texttt{/aria/eval/metrics} & Reliable & Event & $40$\,MB \\
- & \texttt{LearningAgent} & \texttt{/joint\_states} & \texttt{/aria/demo/hdf5\_record} & Reliable & $50$\,Hz & $80$\,MB \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-\begin{algorithm}[!t]
-\caption{ARIA Multi-Agent Health Monitoring and Fault-Recovery Protocol}
-\label{alg_health}
-\begin{algorithmic}[1]
-\REQUIRE Active agent set $\mathcal{A} = \{A_1, \dots, A_{15}\}$, Health topic \texttt{/aria/state/health}
-\ENSURE Fault isolation and sub-$200$\,ms non-critical node re-initialization post-detection
-\WHILE{System Operational}
-    \STATE Receive heartbeat message $\mathbf{h}_i(t)$ from each agent $A_i \in \mathcal{A}$
-    \FORALL{$A_i \in \mathcal{A}$}
-        \STATE $\Delta t_{\text{last}} \leftarrow t - t_{\text{heartbeat}}(A_i)$
-        \IF{$\Delta t_{\text{last}} > 200$\,ms \OR $\mathbf{h}_i.\text{status} == \text{ERROR}$}
-            \IF{$A_i \in \{\texttt{ControlAgent}, \texttt{SafetyAgent}\}$}
-                \STATE Trigger immediate hardware \texttt{E-STOP}
-                \STATE Command simulated arm to dynamic brake / hold state
-                \RETURN \textbf{SYSTEM HALTED: Critical Control Failure}
-            \ELSE
-                \STATE Transition $A_i$: \texttt{deactivate()} $\to$ \texttt{cleanup()} $\to$ \texttt{configure()} $\to$ \texttt{activate()}
-                \STATE Publish recovery alert to State Bus
-            \ENDIF
-        \ENDIF
-    \ENDFOR
-\ENDWHILE
-\end{algorithmic}
-\end{algorithm}
-
-The supervisory protocol is formalized in Algorithm~\ref{alg_health}. If an auxiliary node (e.g., \texttt{VisionAgent}) stalls or crashes, the supervisor re-instantiates it within $1360 \pm 240$\,ms (measured from real process SIGKILL to model re-instantiation and the node returning \texttt{active} state) while \texttt{ControlAgent} holds the arm in a safe hold configuration. If a safety-critical node fails or an operator emergency halt is dispatched, an E-STOP callback dispatches across DDS within $2.20 \pm 0.44$\,ms, and the manipulator achieves full physical arrest (joint velocity $< 0.01$\,rad/s) within $211.5 \pm 15.2$\,ms (worst-case $233.3$\,ms, well within the $250.0$\,ms threshold) via an asynchronous, event-driven subscriber callback executed on a dedicated high-priority thread within ROS~2's \texttt{MultiThreadedExecutor}. While \texttt{SafetyAgent} executes workspace limit checking at a $100$\,Hz polling rate ($10$\,ms period), the E-STOP arrest callback is event-driven and dispatches immediately upon topic arrival without waiting for the next periodic cycle tick. In simulation, the $\sim 200$\,ms physical arrest reflects the 100\,ms trajectory controller deceleration spline and actuator damping dynamics necessary to avoid physical link shearing. We emphasize that physical industrial deployments must complement software DDS preemption with a dedicated hardware safety relay loop (see Limitation 7).
-
-\paragraph{End-to-End IoT Telemetry Pipeline}
-A complete IoT telemetry chain streams state data from the execution environment to operators:
-\begin{align}
-\text{Gazebo / micro-ROS} &\xrightarrow{\text{DDS / XRCE}} \text{ROS~2 State Bus} \nonumber \\
-&\xrightarrow{\text{WS}} \text{FastAPI} \xrightarrow{} \text{React Dashboard}
-\end{align}
-Telemetry topics publish per-joint positions, simulated motor efforts, and IMU attitudes over WebSockets ($10$\,Hz). The web dashboard (Fig.~\ref{fig_dashboard}) displays live 3D joint telemetry, multi-camera feeds, and instant Human-in-the-Loop confirmation dialogs.
-
-% ====================================================================
-% SECTION V: PERCEPTION & ZERO-COST-DEPTH
-% ====================================================================
-\subsection{Self-Calibrated Monocular Metric Perception (Zero-Cost-Depth)}
-\label{sec_perception}
-
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=0.76\textwidth]{fig3_perception_pipeline.png}
-\caption{Self-grounded monocular perception pipeline: (a) Dual-camera topology comprising overhead eye-to-hand Logitech C270 ($1280\times720$) and wrist-mounted eye-in-hand ESP32-CAM ($640\times480$); (b) Eye-in-hand gripper camera view with contact normal and friction cone evaluation ($\mu = 0.45$); (c) Dense metric depth recovered from Depth-Anything v2 grounded via claw offset geometry ($Z_{\text{tips}} = 0.065$\,m) compared against Gazebo simulation ground truth.}
-\label{fig_perception}
-\end{figure*}
-
-\begin{table}[!t]
-\centering
-\caption{Visual Perception and Demonstration Dataset Specifications, Features, and Splits}
-\label{table_dataset_specs}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{ll}
-\toprule
-\textbf{Dataset Dimension} & \textbf{Experimental Specification} \\
-\midrule
-\multicolumn{2}{l}{\textit{Part A: Visual Perception Dataset (YOLOv8m / SAM2)}} \\
-Total Image Samples & 2,500 annotated RGB frames across 25 independent scene setups \\
-Object Classes ($N_c=4$) & Conforming block, defect block, pallet tray, scrap bin \\
-Annotated Instances & 6,500 total (3,120 conforming, 1,480 defect, 1,050 tray, 850 scrap) \\
-Input Sensory Features & Overhead $1280\times720$ RGB, Wrist $640\times480$ RGB \\
-Target Ground Truth & 2D bounding boxes (CIoU) and SAM2 polygon masks \\
-Partition Split Protocol & Scene-level split: 80\% Train (20 scenes), 10\% Val, 10\% Test (zero frame leakage) \\
-Training Hyperparameters & 100 epochs, AdamW ($\text{lr}_0 = 0.001$, cosine decay), batch size 16, seed 42, Mosaic \\
-Per-Class Metrics ($\text{AP}_{50}$) & Conforming: $98.4\%$, Defect: $95.8\%$, Tray: $99.1\%$, Scrap: $97.9\%$ \\
-Overall Accuracy & $\text{mAP}_{50} = 97.8\%$, $\text{mAP}_{50\text{--}95} = 94.2\%$, SAM2 mask IoU: $91.4\%$ \\
-\midrule
-\multicolumn{2}{l}{\textit{Part B: Expert Demonstration Dataset}} \\
-Total Demonstrations & 300 expert trajectories ($30$ per standardized task) \\
-Demonstration Modality & Synchronized dual RGB + 5D joint state $\mathbf{q} \in \mathbb{R}^5$ at $50$\,Hz \\
-Storage Format & Hierarchical Data Format (HDF5) with zlib compression \\
-Augmentation Protocol & Lighting variation ($150, 450, 850$\,lux), camera jitter $\pm 5$\,mm \\
-Baseline Policy Split & $240$ Train ($80\%$), $30$ Validation ($10\%$), $30$ Test ($10\%$) \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-ARIA's visual perception pipeline bypasses active infrared depth hardware by coupling monocular relative disparity with physical robot geometry (Fig.~\ref{fig_perception} and Table~\ref{table_dataset_specs}). The perceptual topology uses an overhead eye-to-hand camera (Logitech C270, $1280\times720$, 30\,fps) positioned $0.85$\,m above the workspace and a wrist eye-in-hand camera (ESP32-CAM, $640\times480$, 30\,fps).
-
-\paragraph{Extrinsic Workspace Calibration}
-Under the pinhole camera model, target projection simplifies to a planar projective homography $\mathbf{H}$ for tabletop objects ($Z_w = 0$):
-\begin{equation}
-\begin{bmatrix} X_w \\ Y_w \\ 1 \end{bmatrix} = \mathbf{H}^{-1} \begin{bmatrix} u \\ v \\ 1 \end{bmatrix}
-\end{equation}
-During one-time offline calibration, four AprilTags~\cite{aria_036_olson_2011_apriltag} placed at workspace corners solve $\mathbf{H}$ via Direct Linear Transformation (DLT). \emph{Online operation is 100\% markerless.} Eye-to-hand transformation ${}^B\mathbf{T}_C$ and eye-in-hand transformation ${}^5\mathbf{T}_{\text{cam}}$ are registered offline via classical $AX=XB$ calibration~\cite{chaumette2006visual,aria_006_chanrungmaneekul_2025_arccalib}.
-
-\paragraph{Kinematic Claw Disparity Grounding}
-Depth-Anything v2~\cite{aria_052_yang_2024_depth,aria_009_murray_2025_assessing} outputs normalized relative disparity $D(u, v) \in [0, 1]$. Because optical disparity is proportional to inverse metric depth ($D \propto 1/Z$), the metric distance $Z_{\text{metric}}(u, v)$ is recovered via:
-\begin{equation}
-\label{eq_inverse_depth}
-Z_{\text{metric}}(u, v) = \frac{1}{\alpha \cdot D(u, v) + \beta}
-\end{equation}
-Scale $\alpha$ and shift $\beta$ are resolved online by referencing two physical geometry datums:
-\begin{enumerate}
-    \item \textbf{Datum 1 (Claw Tips)}: The physical mechanical distance from the wrist camera lens to the fingertip plane is an invariant constant:
-    \begin{equation}
-    Z_{\text{tips}} = 0.065\,\text{m}
-    \end{equation}
-    Sampling disparity at projected claw tip pixels yields $D_{\text{tips}}$.
-    \item \textbf{Datum 2 (Ground Plane)}: Tabletop ground clearance along the optical ray axis is obtained via forward kinematics and camera pitch inclination $\theta_p$:
-    \begin{equation}
-    Z_{\text{ground}} = \frac{Z_{\text{fk}}(\boldsymbol{\theta}) - Z_{\text{table}}}{\cos\theta_p}
-    \end{equation}
-    with corresponding sampled disparity $D_{\text{ground}}$.
-\end{enumerate}
-Solving the two-point linear system yields:
-\begin{equation}
-\alpha = \frac{\frac{1}{Z_{\text{tips}}} - \frac{1}{Z_{\text{ground}}}}{D_{\text{tips}} - D_{\text{ground}}}, \quad \beta = \frac{1}{Z_{\text{tips}}} - \alpha D_{\text{tips}}
-\end{equation}
-To prevent numerical singularity when approaching the ground plane ($Z_{\text{ground}} \approx Z_{\text{tips}}$), a numerical safeguard clamps $|Z_{\text{ground}} - Z_{\text{tips}}| \ge \epsilon = 0.01$\,m. Because Depth-Anything v2 relative disparity fields can exhibit non-linear scale drift across large scenes, the calibration parameters $(\alpha, \beta)$ are not treated as a static global constant. Instead, they are dynamically re-anchored at each pre-grasp waypoint using the arm's current forward kinematics $Z_{\text{fk}}(\boldsymbol{\theta})$ and the invariant claw tip datum. 
-
-\paragraph{Calibration Conditioning and Error Propagation Analysis}
-The two-point calibration is well-conditioned primarily within the pre-grasp descent volume ($Z \in [0.05, 0.25]$\,m), where the claw tips ($Z_{\text{tips}} = 0.065$\,m) and the tabletop ground plane provide distinct disparity setpoints ($D_{\text{tips}} - D_{\text{ground}} \ge 0.15$). At higher elevations ($Z > 0.35$\,m), optical disparity compresses, expanding the full-workspace $RMSE$ to $17.41$\,mm. Furthermore, ground plane datum $Z_{\text{ground}}$ depends on forward kinematics $Z_{\text{fk}}(\boldsymbol{\theta})$ and camera pitch $\theta_p$. Differentiating $Z_{\text{ground}}$ with respect to kinematic height yields $\delta Z_{\text{ground}} \approx \delta Z_{\text{fk}} / \cos\theta_p$. For analog servo deadband ($\pm 0.02$\,rad), maximum vertical kinematic error is $|\delta Z_{\text{fk}}| \le 1.8$\,mm. Differentiating the metric depth mapping (\ref{eq_inverse_depth}) shows that depth sensitivity satisfies:
-\begin{equation}
-|\delta Z_{\text{metric}}| \approx Z_{\text{metric}}^2 |\delta \alpha \cdot D + \delta \beta| \le Z_{\text{metric}}^2 \left( \frac{|\delta Z_{\text{ground}}|}{Z_{\text{ground}}^2 (D_{\text{tips}} - D_{\text{ground}})} \right)
-\end{equation}
-In the critical pre-grasp volume ($Z_{\text{metric}} \le 0.20$\,m), this propagates to $|\delta Z_{\text{metric}}| \le 1.4$\,mm, which is well within the parallel claw jaw stroke tolerance ($w_{\text{max}} = 55$\,mm vs. typical workpiece width $30\text{--}40$\,mm). We note that all depth evaluations in this article are conducted against Gazebo~11 / ODE simulation z-buffer ground truth; physical transfer would introduce optical sensor noise, rolling shutter artifacts, and lens distortion, as analyzed in Limitation~2.
-
-To evaluate this formulation against alternative grounding schemes, we benchmarked three disparity-to-metric grounding models across $N=50$ tabletop grasp targets spanning the operational workspace ($Z \in [0.05, 0.45]$\,m; raw logs recorded in \texttt{data/depth\_calibration\_comparison.csv}):
-\begin{enumerate}
-    \item \textit{One-Point Calibration (Claw Tip Datum with Shift Prior)}: Calibrating scale $\alpha$ online from the single claw tip datum ($Z_{\text{tips}} = 0.065$\,m) using a nominal shift prior ($\beta_{\text{prior}} = 0.85$, derived from offline camera intrinsics) yielded $RMSE = 25.89$\,mm ($MAE = 16.60$\,mm, max error $102.76$\,mm) across the full workspace and $RMSE = 10.07$\,mm in the localized pre-grasp volume ($Z \in [0.05, 0.25]$\,m). While competitive near the datum, fixed-shift priors cannot compensate for scene-dependent disparity offsets induced by lighting variations and distant backgrounds.
-    \item \textit{Two-Point Calibration (ARIA Proposed)}: Simultaneously solving both scale $\alpha$ and shift $\beta$ online via the invariant claw tips ($Z_{\text{tips}} = 0.065$\,m) and ground plane datum ($Z_{\text{ground}}$) achieved $RMSE = 17.41$\,mm ($MAE = 10.68$\,mm, max $65.35$\,mm) across the full workspace, and $RMSE = 6.84$\,mm within the pre-grasp volume ($8.2$\,mm under active visual jitter during dynamic manipulation episodes), while remaining completely object-agnostic.
-    \item \textit{Multi-Reference Calibration (3-Point Least Squares)}: Incorporating a third datum from the target workpiece top facet ($Z_{\text{facet}} = 0.120$\,m) via linear least squares serves as an effective design choice when CAD part dimensions are known a priori, achieving $RMSE = 16.93$\,mm across the scene and $6.16$\,mm in the pre-grasp volume. However, requiring prior CAD geometry compromises zero-shot deployment on novel objects.
-\end{enumerate}
-The two-point kinematic grounding model was therefore adopted as the optimal Pareto trade-off between metric precision and operational autonomy.
-
-\paragraph{Antipodal Grasp Synthesis}
-\texttt{AffordanceAgent} samples candidate contact pairs $(\mathbf{c}_1, \mathbf{c}_2)$ along segmented object boundaries~\cite{aria_069_fang_2020_graspnet1billion}. Contact normals $\mathbf{n}_1, \mathbf{n}_2$ are computed via local PCA. A candidate grasp is valid if closing direction $\mathbf{g} = (\mathbf{c}_2 - \mathbf{c}_1)/\|\mathbf{c}_2 - \mathbf{c}_1\|$ satisfies Coulomb friction cone constraints ($\mu = 0.45$ under rigid-body contact mechanics~\cite{mason2001mechanics}):
-\begin{equation}
-\arccos(\mathbf{n}_1 \cdot \mathbf{g}) \le \arctan(\mu), \quad \arccos(-\mathbf{n}_2 \cdot \mathbf{g}) \le \arctan(\mu)
-\end{equation}
-Valid candidates are ranked by quality metric $Q = (\mathbf{n}_1\cdot\mathbf{g})(-\mathbf{n}_2\cdot\mathbf{g})(1 - \|\mathbf{c}_1-\mathbf{c}_2\|/w_{\text{max}})$, where $w_{\text{max}} = 0.055$\,m.
-
-% ====================================================================
-% SECTION VI: TASK PLANNING & IN-HAND DEXTERITY
-% ====================================================================
-\subsection{Task Planning, Reasoning \& Procedural Skills}
-\label{sec_planning}
-
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=0.74\textwidth]{fig4_planning_hitl.png}
-\caption{Task planning pipeline: (a) Hierarchical Tree-of-Thoughts task decomposition evaluating candidate execution branches; (b) Human-readable execution-rationale telemetry stream with Human-in-the-Loop (HITL) safety confirmation gates.}
-\label{fig_planning_hitl}
-\end{figure*}
-
-High-level natural language instructions are interpreted onboard using quantized 4-bit open-weight LLMs (Mistral-7B / Llama-3.1-8B via Ollama~\cite{aria_130_erdogan_2024_tinyagent}) executing in $320 \pm 45$\,ms within $3.45$\,GB VRAM.
-
-\paragraph{Constrained Grammar-Based Decoding}
-To prevent syntactic hallucinations, logit sampling is constrained via a formal Backus-Naur Form (BNF) schema:
-{\tiny
-\begin{verbatim}
-root    ::= "{" ws "\"plan_id\":" id "," ws "\"confidence\":" num "," 
-            ws "\"subgoals\":" "[" subgoals "]" "}"
-subgoal ::= "{" ws "\"skill\":" name "," ws "\"args\":" "{" args "}" "}"
-name    ::= "\"pick\"" | "\"place\"" | "\"palletize\"" | "\"sweep\"" 
-          | "\"pour\"" | "\"inspect\"" | "\"stack\"" | "\"push\"" | "\"home\""
-\end{verbatim}
-}
-This guarantees 100\% syntactic validity of generated JSON plans.
-
-\paragraph{Tree-of-Thoughts Heuristic Search}
-Expanding upon search-based language reasoning architectures~\cite{aria_132_yao_2023_tree,aria_080_zhou_2024_language}, at each planning step the LLM expands $K=3$ candidate action branches $\pi_j$ (Fig.~\ref{fig_planning_hitl}(a)), evaluated by heuristic scoring function:
-\begin{equation}
-S(\pi_j) = w_1 C_{\text{semantic}}(\pi_j) + w_2 R_{\text{kin}}(\pi_j) + w_3 \left(1 - \frac{\hat{T}(\pi_j)}{T_{\text{max}}}\right)
-\end{equation}
-where $C_{\text{semantic}}$ is normalized token log-likelihood, $\hat{T}$ is estimated duration ($T_{\text{max}} = 15.0$\,s), and $R_{\text{kin}} \in \{0, 1\}$ is a binary feasibility flag returned by passing candidate waypoints to Proposition~\ref{prop_ik}. If any waypoint violates reachability or joint limits, $R_{\text{kin}} = 0$, immediately pruning the branch. Heuristic weights $(w_1, w_2, w_3) = (0.50, 0.35, 0.15)$ and confidence threshold $\tau = 0.70$ were selected via grid search across 50 simulation validation episodes, balancing task completion rate against unnecessary operator interventions; sensitivity analysis confirms planning invariance within the simplex neighborhood $w_1 \in [0.45, 0.55], w_2 \in [0.30, 0.40]$.
-
-\paragraph{Confidence-Gated Human-in-the-Loop Safety}
-When $S(\pi^*) < \tau = 0.70$, execution pauses automatically. Following confidence-aware supervision principles~\cite{aria_039_doan_2022_asking} and tiered memory architectures~\cite{aria_088_packer_2023_memgpt}, \texttt{DialogueAgent} prompts the operator via a web modal, streaming an explainable telemetry trace (Fig.~\ref{fig_planning_hitl}(b)) and awaiting approval.
-
-\paragraph{Empirical Confidence Calibration and Reliability Profiling}
-To rigorously evaluate whether confidence scores provide dependable probabilistic gating for autonomous versus supervised execution, we evaluated the Expected Calibration Error (ECE) across ten uniform confidence bins for both visual perception (500 detections) and Tree-of-Thoughts plan generation (150 episodes) (Fig.~\ref{fig_reliability_diagram} and \texttt{data/confidence\_calibration\_summary.csv}). Visual object detection achieved an $\text{ECE} = 5.65\%$ (maximum calibration error $\text{MCE} = 15.0\%$, with bin counts $n=234$ in $[0.9, 1.0)$, $n=140$ in $[0.8, 0.9)$, $n=74$ in $[0.7, 0.8)$, $n=33$ in $[0.6, 0.7)$, $n=14$ in $[0.5, 0.6)$, $n=4$ in $[0.4, 0.5)$, and $n=1$ in $[0.3, 0.4)$), where high-confidence detections ($S \ge 0.80$) match empirical precision ($>90\%$). For Tree-of-Thoughts planning, confidence achieved an $\text{ECE} = 7.52\%$ ($\text{MCE} = 14.3\%$), spanning $n=26$ in $[0.9, 1.0)$ ($100.0\%$, $26/26$), $n=46$ in $[0.8, 0.9)$ ($93.5\%$, $43/46$), $n=30$ in $[0.7, 0.8)$ ($83.3\%$, $25/30$), $n=29$ in $[0.6, 0.7)$ ($69.0\%$, $20/29$), and $n=19$ in $[0.5, 0.6)$ ($68.4\%$, $13/19$). Across all plans above the supervisory threshold $\tau = 0.70$, pooled empirical success was $92.2\%$ ($94/102$), compared to $68.8\%$ ($33/48$) below threshold. These empirical findings are consistent with $\tau = 0.70$ serving as an effective operational threshold to gate autonomous execution from necessary human-in-the-loop escalation, while acknowledging an empirical 1-in-6 failure rate ($16.7\%$, $5/30$) in the marginal $[0.7, 0.8)$ bin.
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{fig10_reliability_diagram.png}
-\caption{Empirical reliability diagrams evaluating calibration error across ten confidence bins: (a) Visual perception detector calibration across 500 detections ($\text{ECE} = 5.65\%$, $\text{MCE} = 15.0\%$); (b) Tree-of-Thoughts plan generation confidence across 150 planning episodes ($\text{ECE} = 7.52\%$, $\text{MCE} = 14.3\%$). The supervisory threshold $\tau = 0.70$ is consistent with separating autonomous execution (pooled $92.2\%$ success, $94/102$) from autonomous pause and human-in-the-loop intervention ($68.8\%$ success, $33/48$), with marginal bin $[0.7, 0.8)$ exhibiting an $83.3\%$ ($25/30$) completion rate.}
-\label{fig_reliability_diagram}
+\includegraphics[width=\columnwidth]{fig_conv_speed.pdf}
+\caption{Realized part speed versus commanded belt speed. The dashed line is the identity. The measured points lie on a line of slope one with a negative offset, not on a scaled identity.}
+\label{fig:conv}
 \end{figure}
 
-\begin{table*}[!t]
+\begin{figure}[t]
 \centering
-\caption{Comprehensive Procedural Manipulation Skill Library Specifications}
-\label{table_skills_spec}
-\footnotesize
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lllllcc}
-\toprule
-\textbf{Skill Identifier} & \textbf{Input Parameters} & \textbf{Pre-conditions} & \textbf{Runtime Invariants} & \textbf{Post-conditions} & \textbf{Profile} & \textbf{Timeout} \\
-\midrule
-\texttt{pick} & $\mathbf{x}_{\text{target}}, \mathbf{a}, F_N$ & Gripper empty, target clear & $\| \mathbf{v}_{\text{ee}} \| \le v_{\text{max}}$, no collision & Object grasped, est. $F_N \ge 5.0$\,N & Min-Jerk & $3.5$\,s \\
-\texttt{place} & $\mathbf{x}_{\text{target}}, \mathbf{a}$ & Object grasped in jaws & Elevation maintained & Object released at target & Min-Jerk & $3.0$\,s \\
-\texttt{palletize} & $\text{tray\_id}, \text{idx}$ & Conforming object grasped & Insertion alignment $\le 1.5$\,mm & Pocket occupied, $RMSE < 1.5$\,mm & Trapezoidal & $4.0$\,s \\
-\texttt{sweep} & $\text{zone\_id}, \mathbf{d}$ & Arm in clear configuration & Altitude clamped to table offset & Target debris cleared & Linear & $5.0$\,s \\
-\texttt{pour} & $\text{src\_id}, \text{tgt\_id}, \Delta\theta_5$ & Container grasped firmly & Approach distance $\le 0.05$\,m & Dispense angle reached & Smooth Poly & $4.5$\,s \\
-\texttt{insert} & $\text{peg\_id}, \text{hole\_id}$ & Object grasped, visual lock & Contact force $F_z \le 8.0$\,N & Insertion depth reached & Spiral Search & $6.0$\,s \\
-\texttt{push} & $\mathbf{x}_{\text{target}}, \mathbf{d}, L$ & Path clear of obstacles & Non-prehensile contact held & Target displaced by $L$ & Linear & $3.5$\,s \\
-\texttt{inspect} & $\text{obj\_id}, \Delta\theta_5$ & Object elevated to wrist cam & Illumination $\ge 300$\,lux & Optical classification complete & Multi-Angle & $2.5$\,s \\
-\texttt{stack} & $\text{base\_id}, \text{top\_id}$ & Top object grasped, base stable & Vertical coaxial error $\le 2$\,mm & Stable vertical stack & Min-Jerk & $4.0$\,s \\
-\texttt{home} & -- & No hardware fault & Velocity limits respected & $\boldsymbol{\theta} = [0, \frac{\pi}{2}, 0, 0, 0]^T$ & Min-Jerk & $2.0$\,s \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{fig5_inhand_manipulation.png}
-\caption{Underactuated in-hand manipulation primitives executed on a 1-DoF parallel gripper: (a) Dynamic in-hand rotation ($\pm 45^\circ$); (b) Finger repositioning; (c) Controlled gravity-assisted flipping; (d) Sliding to fingertip grasp.}
-\label{fig_inhand}
+\includegraphics[width=\columnwidth]{fig_conv_error.pdf}
+\caption{Median relative speed error by commanded speed. The error is largest at the lowest command because the absolute offset is approximately constant.}
+\label{fig:converr}
 \end{figure}
 
-\paragraph{Procedural Skills and Underactuated In-Hand Mechanics}
-The \texttt{SkillAgent} encapsulates ten atomic procedural skills detailed in Table~\ref{table_skills_spec}. While complex multi-fingered hands require coordinated joint control for in-hand dexterity~\cite{aria_135_chen_2023_visual}, fine in-hand re-orientation ($\pm 45^\circ$) is achieved on ARIA's 1-DoF parallel gripper by exploiting gravity, wrist inertia, and frictional contact mechanics~\cite{mason2001mechanics,aria_044_pang_2025_highstiffness} (Fig.~\ref{fig_inhand}):
-\begin{enumerate}
-    \item \textbf{Dynamic In-Hand Rotation (Fig.~\ref{fig_inhand}(a))}: Clamping force relaxes to marginal slip threshold $F_N^{\text{slip}} \approx mg/(2\mu)$. Simultaneously, wrist roll executes an acceleration pulse $\ddot{\theta}_5 = 12.5$\,rad/s$^2$ for $\Delta t = 80$\,ms. Inertial torque $\tau_{\text{inertial}} = I_{\text{obj}}\ddot{\theta}_5$ overcomes frictional torque $\tau_{\text{fric}} = \frac{2}{3}\mu F_N R_{\text{pad}}$, pivoting the object before re-clamping.
-    \item \textbf{Reposition Grip (Fig.~\ref{fig_inhand}(b))}: Translating the arm against a compliant fixture while relaxing jaws slides the grip center along the workpiece.
-    \item \textbf{Gravity-Assisted Flip (Fig.~\ref{fig_inhand}(c))}: Pitching downward by $\theta_4 = -60^\circ$ and releasing allows gravity to swing the object $90^\circ$ before re-clamping.
-    \item \textbf{Slide-to-Tip (Fig.~\ref{fig_inhand}(d))}: Pitching upward to $\theta_4 = +90^\circ$ and relaxing jaws allows gravity to slide the object into a fingertip pinch.
-\end{enumerate}
-Because the 1-DoF parallel gripper lacks direct fingertip loadcells, in-hand manipulation primitives operate under bounded quasi-static assumptions for known rigid geometric objects ($m \le 0.15$\,kg). To prevent dropped objects during dynamic pivoting, the wrist eye-in-hand camera monitors optical flow features on the workpiece at 30\,fps~\cite{chaumette2006visual}. If optical flow reveals uncommanded slip exceeding a safety threshold ($\Delta s > 3.0$\,mm) during rotation, an automated interrupt immediately restores maximum clamping duty cycle ($F_N = 6.8$\,N), arresting runaway slip and triggering the recovery protocol detailed in Table~\ref{table_failure_taxonomy}.
+\subsection{The Direct Stop Works; the Safety-Agent Stop Does Not}
+The emergency-stop experiment runs \estopN{} trials, half on each path, while the arm executes the same trajectory. The direct command path halts in \estopCommandSuccess\% of trials. The median signal-to-message latency is \estopCommandTzeroMs\,ms, the median time to a sustained low joint speed is \estopCommandTstopMs\,ms (95th percentile \estopCommandTstopTailMs\,ms), and the median post-signal overshoot is \estopCommandOvershootMed\,rad. The path publishes a \estopCommandJoints-joint trajectory with zero end velocities, and the controller accepts it; velocities are present in \estopCommandHasVel\% of the halt messages.
 
-% ====================================================================
-% SECTION VII: DYNAMIC CONVEYOR INTERCEPTION
-% ====================================================================
-\subsection{Dynamic Conveyor Rendezvous Interception}
-\label{sec_conveyor}
+The safety-agent path halts in \estopSafetySuccess\% of trials. The agent publishes a four-joint halt with no velocities, and the controller rejects it because partial goals are disabled. The arm continues to its goal, with a median post-signal overshoot of \estopSafetyOvershootMed\,rad. The signal-to-message latency is short (\estopSafetyTzeroMs\,ms), so the failure is not a communication delay; it is a message-format mismatch. The halt message has \estopSafetyJoints{} joints and velocities in \estopSafetyHasVel\% of trials.
 
-Workpiece motion on the moving conveyor is tracked using an Extended Kalman Filter (EKF) with 6D state $\mathbf{x}_k = [p_{x,k}, p_{y,k}, p_{z,k}, v_{x,k}, v_{y,k}, v_{z,k}]^T$ and discrete constant-velocity matrices:
-\begin{equation}
-\mathbf{F} = \begin{bmatrix} \mathbf{I}_3 & \Delta t \mathbf{I}_3 \\ \mathbf{0}_3 & \mathbf{I}_3 \end{bmatrix}, \quad \mathbf{H} = \begin{bmatrix} \mathbf{I}_3 & \mathbf{0}_3 \end{bmatrix}
-\end{equation}
-with process noise $\mathbf{Q} = \text{diag}(10^{-6}\mathbf{I}_3, 10^{-4}\mathbf{I}_3)$ and optical noise $\mathbf{R} = 10^{-4}\mathbf{I}_3$~\cite{chaumette2006visual,aria_118_team_2025_time}.
+This result fails the pre-registered safety-path criterion. It also explains the original sub-30\,ms claim: the original benchmark measured the latency of a loopback topic, not the arrest of an arm. The repaired measurement separates the two quantities and shows that the safety path does not arrest the arm at all. The direct path is a valid stop, but it is not the safety agent.
 
-\begin{proposition}[Terminal Boundary-Value Conveyor Rendezvous]
-\label{prop_rendezvous}
-Let $\mathbf{p}_{\text{target}}(t) = \mathbf{p}_0 + \mathbf{v}_{\text{belt}}(t - t_0)$ denote workpiece position on a conveyor moving at velocity $\mathbf{v}_{\text{belt}}$. An end-effector trajectory $\mathbf{p}_{\text{claw}}(t) \in C^2([t_0, t_f])$ generated via a fifth-order polynomial matching the six boundary conditions:
-\begin{align}
-\mathbf{p}(t_0) &= \mathbf{p}_{\text{start}}, \quad \dot{\mathbf{p}}(t_0) = \mathbf{0}, \quad \ddot{\mathbf{p}}(t_0) = \mathbf{0} \\
-\mathbf{p}(t_f) &= \mathbf{p}_{\text{target}}(t_f), \quad \dot{\mathbf{p}}(t_f) = \mathbf{v}_{\text{belt}}, \quad \ddot{\mathbf{p}}(t_f) = \mathbf{0}
-\end{align}
-satisfies exact terminal position and velocity matching at finite rendezvous time $t_f$, with zero terminal relative acceleration $\ddot{\mathbf{p}}_{\text{rel}}(t_f) = \mathbf{0}$.
-\end{proposition}
-
-\begin{proof}
-Let $\tau = t_f - t_0$ and $\Delta\mathbf{p} = \mathbf{p}_{\text{target}}(t_f) - \mathbf{p}_{\text{start}}$. The polynomial $\mathbf{p}_{\text{claw}}(t) = \sum_{j=0}^5 \mathbf{c}_j (t - t_0)^j$ has coefficients:
-$\mathbf{c}_0 = \mathbf{p}_{\text{start}}$, $\mathbf{c}_1 = \mathbf{0}$, $\mathbf{c}_2 = \mathbf{0}$,
-$\mathbf{c}_3 = \frac{10}{\tau^3}\Delta\mathbf{p} - \frac{4}{\tau^2}\mathbf{v}_{\text{belt}}$,
-$\mathbf{c}_4 = -\frac{15}{\tau^4}\Delta\mathbf{p} + \frac{7}{\tau^3}\mathbf{v}_{\text{belt}}$,
-$\mathbf{c}_5 = \frac{6}{\tau^5}\Delta\mathbf{p} - \frac{3}{\tau^4}\mathbf{v}_{\text{belt}}$.
-Evaluating the third derivative at terminal rendezvous $t = t_f$:
-\begin{equation}
-\dddot{\mathbf{p}}_{\text{claw}}(t_f) = 6\mathbf{c}_3 + 24\mathbf{c}_4\tau + 60\mathbf{c}_5\tau^2 = \frac{60}{\tau^3}\Delta\mathbf{p} - \frac{36}{\tau^2}\mathbf{v}_{\text{belt}}
-\end{equation}
-which is bounded by $\|\dddot{\mathbf{p}}_{\text{claw}}(t_f)\| \le \frac{60}{\tau^3}\|\Delta\mathbf{p}\| + \frac{36}{\tau^2}\|\mathbf{v}_{\text{belt}}\|$. Cartesian trajectories map to joint velocities via $\dot{\boldsymbol{\theta}} = \mathbf{J}_p^\dagger \dot{\mathbf{p}}_{\text{claw}}$, where $\mathbf{J}_p^\dagger \triangleq \mathbf{J}_p^T (\mathbf{J}_p\mathbf{J}_p^T + \lambda^2 \mathbf{I}_3)^{-1} = (\mathbf{J}_p^T\mathbf{J}_p + \lambda^2 \mathbf{I}_5)^{-1}\mathbf{J}_p^T$ is the damped least-squares (DLS) pseudoinverse of the $3 \times 5$ positional Jacobian $\mathbf{J}_p \equiv \mathbf{J}_{1:3, 1:5}$, with damping factor $\lambda = 0.02$ preventing velocity divergence near kinematic singularities~\cite{lynch2017modern,craig2005introduction}. While DLS damping introduces a slight theoretical tracking bias, feedforward velocity matching maintains empirical relative contact velocity $\Delta v \le 0.0075$\,m/s across all tested speeds ($\le 0.005$\,m/s for $v_{\text{belt}} \le 0.10$\,m/s, with a maximum observed difference of $\Delta v = 0.0073$\,m/s at $0.12$\,m/s recorded in \texttt{data/conveyor\_speed\_sweep.csv}), keeping contact shear forces within the static Coulomb friction cone ($\mu = 0.45$) to preclude workpiece tipping~\cite{mason2001mechanics,aria_base_sun2022moving}.
-
-Perception frame latency $\Delta t_{\text{cam}} = 1/24.6 \approx 40.7$\,ms is forward-compensated within the EKF state extrapolator via $\hat{\mathbf{p}}(t_0 + \Delta t_{\text{cam}}) = \mathbf{p}_{\text{cam}} + \hat{\mathbf{v}}\Delta t_{\text{cam}}$. With empirical velocity estimation uncertainty $\sigma_v = 0.002$\,m/s, the predictive latency uncertainty is $\sigma_{\text{lat}} = \sigma_v \Delta t_{\text{cam}} = 0.081$\,mm, and DLS dynamic phase lag contributes $\approx 0.297$\,mm, yielding a total RMS dynamic intercept uncertainty of $0.587$\,mm (verified in \texttt{scripts/verify\_quintic\_trajectory.py}), fully consistent with measured pick precision ($0.55 \pm 0.23$\,mm).
-
-To enforce dynamic feasibility under physical servo constraints (Table~\ref{table_dh_parameters}), the planning duration $\tau = t_f - t_0$ is bounded by $\tau \ge \tau_{\text{min}} = \max_i \{ \tau_{\text{vel}, i}, \tau_{\text{acc}, i} \}$. For non-zero terminal velocity, peak Cartesian velocity occurs at interior time $t^* = \tau \frac{5\|\Delta\mathbf{p}\| - 2\|\mathbf{v}_{\text{belt}}\|\tau}{10\|\Delta\mathbf{p}\| - 5\|\mathbf{v}_{\text{belt}}\|\tau}$, generalizing the textbook rest-to-rest bound $\frac{15}{8}\|\Delta\mathbf{p}\|/\tau$. Dynamic time scaling enforces that $\|\dot{\boldsymbol{\theta}}(t)\|_\infty \le \dot{\boldsymbol{\theta}}_{\text{max}}$ and $\|\ddot{\boldsymbol{\theta}}(t)\|_\infty \le \ddot{\boldsymbol{\theta}}_{\text{max}}$ across $t \in [0, \tau]$. Crucially, two distinct physical mechanisms govern the high-speed operating envelope:
-\begin{enumerate}
-    \item \textit{Joint Velocity Saturation at $0.12$\,m/s}: At $v_{\text{belt}} = 0.12$\,m/s, sorting drops from $100\%$ to $60.0\%$ ($3/5$) because the required Cartesian intercept velocity pushes Joint~2 (shoulder) to its angular velocity ceiling ($\dot{\theta}_{2,\text{max}} = 2.0$\,rad/s), inducing transient trajectory clamping.
-    \item \textit{Reach Excursion Limit at $>0.14$\,m/s}: When belt speed exceeds $0.14$\,m/s, the minimum dynamically feasible duration $\tau_{\text{min}}$ causes workpiece displacement to carry $\mathbf{p}_{\text{target}}(t_f)$ past the physical fingertip reach envelope ($R_{\text{max}} = 0.385$\,m; horizontal shoulder-plane reach $R_{\text{wrist}} = 0.290$\,m) before rendezvous can occur, establishing the absolute tracking horizon.
-\end{enumerate}
-\end{proof}
-
-% ====================================================================
-% SECTION VIII: EXPERIMENTAL EVALUATION
-% ====================================================================
-\section{Experimental Results and Discussion}
-\label{sec_experiments}
-
-\begin{figure*}[!t]
+\begin{figure}[t]
 \centering
-\subfloat[Analytical IK vs. Numerical Solvers Latency]{\includegraphics[width=0.36\textwidth]{fig6_ik_benchmark.png}\label{fig_ik_a}}
-\hfill
-\subfloat[Manipulation Benchmark Success Rate vs. Baseline Policies]{\includegraphics[width=0.60\textwidth]{fig7_vla_benchmark.png}\label{fig_vla_b}}
-\caption{Quantitative benchmark results: (a) Inverse Kinematics computational latency across $100{,}000$ target Cartesian poses comparing the ARIA analytical solver (position + pitch only) against IKPy, RTB-LM, and KDL; (b) Manipulation success rate across 10 standardized tasks evaluated in the Gazebo~11 simulated workcell across the primary benchmark suite.}
-\label{fig_benchmarks}
-\end{figure*}
-
-\subsection{Simulation Environment \& Dynamics Discrepancy Analysis}
-To support reproducible benchmarking without mechanical fatigue, experiments were conducted within a high-fidelity Gazebo~11 / ODE physics simulation (\texttt{aria\_industrial\_workcell.world})~\cite{gazebo_2004,aria_117_vieira_2025_application} configured with time step $\Delta t = 0.001$\,s ($1000$\,Hz). Note: Gazebo Classic (used here) reached end-of-life in January 2025; migration to Gazebo Harmonic is planned for future work. To ensure the simulation captured non-ideal physical dynamics rather than nominal kinematics, the ODE physics engine was parameterized with Error Reduction Parameter $\text{ERP} = 0.2$, Constraint Force Mixing $\text{CFM} = 10^{-5}$, surface Coulomb friction $\mu = 0.45$ (assumed; not identified from physical tribometry), and rolling friction $\mu_r = 0.01$. Actuator compliance was modeled via torsional spring elasticity $k_\theta = 14.2$\,N$\cdot$m/rad and joint damping $d = 0.05$\,N$\cdot$s/rad, with gear deadband / backlash parameterized to $\Delta\theta = \pm 0.02$\,rad ($\pm 1.15^\circ$) to emulate low-cost analog servos. To stress-test perception and control under realistic stochasticity, zero-mean Gaussian noise was injected on joint encoders ($\sigma_q = 0.015$\,rad) and camera optical centers ($\sigma_{\text{cam}} = 1.5$\,pixels), while ROS~2 DDS transport latency was jittered according to $\mathcal{N}(5.0, 1.2)$\,ms. Ambient workcell illumination was varied across 150\,lux, 450\,lux, and 850\,lux. The simulation incorporates calibrated link inertias, joint friction models, a continuous moving conveyor belt plugin ($v_{\text{belt}} \in [0.02, 0.12]$\,m/s), and multi-camera optical sensor rendering at 30\,FPS. Table~\ref{table_reality_gap} summarizes tracking discrepancies between ideal kinematic trajectories and ODE dynamic simulation (a model fidelity metric, not a real-world reality gap) under gravity and contact friction across 10 pick-and-place cycles.
-
-\begin{table}[!t]
-\centering
-\caption{Tracking Discrepancy: Ideal Kinematic Reference vs. ODE Dynamic Simulation ($n=10$ Pick-and-Place Cycles)}
-\label{table_reality_gap}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lccc}
-\toprule
-\textbf{Metric Quantity} & \textbf{Kinematic Ideal} & \textbf{ODE Simulation} & \textbf{Abs. Difference} \\
-\midrule
-TCP final position error (mm) & $0.02$ & $0.90$ & $0.88$ \\
-Trajectory duration (s) & $2.25$ & $2.31$ & $0.06$ \\
-Peak overshoot (mm) & $0.00$ & $1.20$ & $1.20$ \\
-Joint-angle RMSE (deg) & $0.00$ & $0.42$ & $0.42$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-\subsection{Kinematic Solver Benchmark Across $100{,}000$ Target Poses}
-We evaluated the ARIA analytical solver against numerical solvers (IKPy~\cite{ikpy_2020}, RTB-LM, KDL~\cite{kdl_2001}) across $100{,}000$ stratified target poses ($20{,}000$ poses per stratum across five subsets: workspace interior, near-joint-limit, maximum-reach, deep-elbow, and near-singularity) (Table~\ref{table_ik_benchmark} and Fig.~\ref{fig_benchmarks}(a)). Across the full $100{,}000$-pose suite (raw logs recorded in \texttt{data/ik\_solver\_benchmark\_100k.csv}), ARIA achieved a mean solve time of $0.075 \pm 0.010$\,ms ($p50 = 0.077$\,ms, $p95 = 0.082$\,ms, $p99 = 0.092$\,ms, max $0.415$\,ms), outperforming KDL ($2.76 \pm 2.88$\,ms) and IKPy ($33.79 \pm 22.01$\,ms). When evaluated on the verified reachable subset ($N=95{,}400$ poses satisfying physical joint limits on $\mathcal{M}_{\text{task}}$), ARIA achieved $100.0\%$ convergence ($95{,}400 / 95{,}400$), compared to $94.5\%$ for RTB-LM, $82.8\%$ for IKPy, and $81.0\%$ for KDL. Across the full $100{,}000$-pose stress suite, the remaining $4.6\%$ ($4{,}600$ poses) occurred exclusively in the boundary strata---maximum-reach ($21.5\%$ stratum rejection, $4{,}300$ poses) and near-joint-limit ($1.5\%$ stratum rejection, $300$ poses)---where random test coordinates pushed target positions outside the physical joint-limit boundaries of the 5-DoF linkage. For all $4{,}600$ of these boundary poses, the analytical solver deterministically verified that no valid elbow-up or elbow-down branch satisfied physical joint limits, flagging them as unreachable in $O(1)$ time ($0.075$\,ms) without numerical divergence. Crucially, on all poses strictly lying on the admissible task manifold $\mathcal{M}_{\text{task}}$ within physical joint limits (the interior, deep-elbow, and near-singularity strata), ARIA achieved $100.0\%$ convergence ($60{,}000 / 60{,}000$), strictly confirming Proposition~\ref{prop_ik}. On converged poses, ARIA's algebraic $\text{FK}\circ\text{IK}$ reconstruction residual was $<0.001$\,mm (within floating-point precision, compared to $2.16 \pm 0.34$\,mm for IKPy).
-
-\begin{table}[!t]
-\centering
-\caption{Kinematic Solver Performance Benchmark Across $100{,}000$ Stratified Target Poses}
-\label{table_ik_benchmark}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Solver Algorithm} & \textbf{Method} & \textbf{Solve Time (ms)} & \textbf{FK$\circ$IK Res. (mm)} & \textbf{Reachable Conv. ($N=95{,}400$)$^\dagger$} \\
-\midrule
-IKPy (DLS)~\cite{ikpy_2020} & Numerical & $33.79 \pm 22.01$ & $2.16 \pm 0.34$ & $82.8\%$ \\
-RTB-LM & Numerical & $15.48 \pm 11.83$ & $1.68 \pm 0.29$ & $94.5\%$ \\
-KDL (MoveIt2)~\cite{kdl_2001} & Numerical & $2.76 \pm 2.88$ & $0.60 \pm 0.28$ & $81.0\%$ \\
-\textbf{ARIA (Ours)} & \textbf{Analytical (position + pitch only)} & $\mathbf{0.075 \pm 0.010}$ & $\mathbf{<0.001}$ & $\mathbf{100.0\%}$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-\noindent\footnotesize{$^\dagger$Convergence rate evaluated on the verified reachable subset ($N=95{,}400$ poses strictly on $\mathcal{M}_{\text{task}}$ within physical joint limits). Across the full $100{,}000$-pose suite, the remaining $4{,}600$ boundary poses lie outside the physical joint-limit envelope; ARIA deterministically detects infeasibility and flags $100\%$ ($4{,}600/4{,}600$) as unreachable in $O(1)$ time ($0.075$\,ms) without divergence, whereas numerical baselines either diverge, stall at iteration caps, or return unphysical joint-limit violations.}
-
-\subsection{Manipulation Policy Benchmark Across 10 Standardized Tasks}
-
-\subsection{Standardized Task Suite and Manipulation Policy Benchmark}
-\label{sec_manipulation_benchmark}
-
-To provide a rigorous, reproducible evaluation, Tasks T1--T10 span ten standardized industrial manipulation capabilities characterized by specific object geometries, inertial properties, and quantitative success criteria:
-\begin{enumerate}
-    \item \textbf{T1: Reach}: Planar transit to commanded Cartesian coordinates ($x=0.22, y=0.00, z=0.08$\,m) with terminal end-effector error $\le 2.0$\,mm.
-    \item \textbf{T2: Pick-and-Place}: Antipodal grasp acquisition of a $40\times 40\times 40$\,mm cube ($m=0.10$\,kg), vertical lift $\ge 50$\,mm, and transfer to a target container.
-    \item \textbf{T3: Conveyor Rendezvous}: Feedforward velocity-matched intercept of a $35\times 35\times 35$\,mm cube ($m=0.08$\,kg) on a continuous belt moving at $0.06$\,m/s without workpiece tipping ($\Delta v \le 0.0075$\,m/s).
-    \item \textbf{T4: Tray Palletizing}: Orientation and placement of a $30\times 30\times 20$\,mm rectangular block ($m=0.06$\,kg) into a 4-pocket tray with placement $RMSE \le 2.0$\,mm.
-    \item \textbf{T5: Static Obstacle Clearance}: Reaching a tabletop target with a fixed $80$\,mm tall cylindrical obstacle positioned along the direct path, evaluating predefined vertical clearance waypoints without collision (distinguished from dynamic obstacle avoidance, Limitation~8).
-    \item \textbf{T6: Visual Servoing}: Continuous closed-loop optical feature tracking of a moving marker with terminal Cartesian alignment $\le 1.5$\,mm.
-    \item \textbf{T7: Extrinsic In-Hand Pivoting}: In-hand non-prehensile reorientation of a $50\times 25\times 15$\,mm rectangular block ($m=0.07$\,kg) achieving $\pm 45^\circ$ angular shift using gravity and wrist impulses.
-    \item \textbf{T8: Surface Slide}: Non-prehensile planar pushing of a $60\times 30\times 10$\,mm plate ($m=0.05$\,kg) along the tabletop into a guide fixture.
-    \item \textbf{T9: Precision Stacking}: Vertical alignment and stacking of a $35\times 35\times 35$\,mm block atop another with shear offset $\le 3.0$\,mm without toppling.
-    \item \textbf{T10: Emergency Preemption}: Dynamic trajectory preemption under an unannounced safety halt signal, verifying complete joint deceleration within the stopping envelope.
-\end{enumerate}
-
-\begin{table*}[!t]
-\centering
-\caption{Manipulation Policy Benchmark Across 10 Standardized Tasks in Matched Simulation Workcell}
-\label{table_manipulation_benchmark}
-\footnotesize
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Model / Architecture} & \textbf{Parameters} & \textbf{Success Rate (\%), Wilson 95\% CI} & \textbf{Transit Time $T_{\text{transit}}$ (s)} & \textbf{VRAM (GB)} & \textbf{Policy / Plan Latency$^\dagger$} & \textbf{Motor Control Period} \\
-\midrule
-\textbf{ARIA (Primary Benchmark)} & \textbf{--} & $\mathbf{89.0\%}$ [81.4, 93.7] & $\mathbf{2.25 \pm 0.40}$ & $\mathbf{7.53^\star / 7.82^\ddagger}$ & $\mathbf{320 \pm 45\,ms^\dagger}$ & $\mathbf{20\,ms}$ ($50$\,Hz) \\
-\textit{ARIA (Nominal Smoke Suite)} & -- & $100.0\%$ [88.6, 100.0] & $1.33 \pm 0.31$ & $7.53$ & $320 \pm 45$\,ms & $20$\,ms ($50$\,Hz) \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-\noindent\footnotesize{$^\star$Nominal sum of per-agent allocations (Table~\ref{table_agents}); $^\ddagger$Peak measured GPU VRAM during simultaneous vision and 4-bit LLM execution. $^\dagger$High-level ToT planning latency (event-driven); end-to-end perception-to-action pipeline latency is $175 \pm 15$\,ms (Table~\ref{table_architecture_ablation}, row c), while low-level motor trajectory interpolation runs deterministically at $50$\,Hz ($20$\,ms).}
-
-\begin{table*}[!t]
-\centering
-\caption{Task-by-Task Success Rate Breakdown Across 10 Standardized Manipulation Tasks}
-\label{table_task_breakdown}
-\footnotesize
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lccccccccccc}
-\toprule
-\textbf{Method} & \textbf{T1: Reach} & \textbf{T2: Pick} & \textbf{T3: Conveyor} & \textbf{T4: Tray} & \textbf{T5: Obstacle} & \textbf{T6: Servoing} & \textbf{T7: Pivoting} & \textbf{T8: Slide} & \textbf{T9: Stacking} & \textbf{T10: Preemption} & \textbf{Overall Rate} \\
-\midrule
-\textbf{ARIA (Primary $N=100$)} & $\mathbf{100\%}\,(10/10)$ & $\mathbf{90\%}\,(9/10)$ & $\mathbf{90\%}\,(9/10)$ & $\mathbf{90\%}\,(9/10)$ & $\mathbf{90\%}\,(9/10)$ & $\mathbf{90\%}\,(9/10)$ & $\mathbf{80\%}\,(8/10)$ & $\mathbf{90\%}\,(9/10)$ & $\mathbf{80\%}\,(8/10)$ & $\mathbf{90\%}\,(9/10)$ & $\mathbf{89.0\%}\,(89/100)$ \\
-\textit{ARIA (Nominal $N=30$)} & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100\%\,(3/3)$ & $100.0\%\,(30/30)$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-ARIA was evaluated across identical camera feeds and tasks within the matched simulation workcell (Tables~\ref{table_manipulation_benchmark}--\ref{table_task_breakdown} and Fig.~\ref{fig_benchmarks}(b)). All 10 evaluation trials per task ($N=100$ total) were executed under standardized pseudo-random seeds, identical workpiece spawn coordinates, matched belt arrival timestamps, and multi-camera viewpoints. Crucially, ARIA requires zero task-specific demonstration trajectories ($N_{\text{demos}} = 0$), synthesizing manipulation motions zero-shot through its procedural skill library (Table~\ref{table_skills_spec}) and closed-form kinematic task manifold projections.
-
-On the primary standardized benchmark suite ($N=100$ empirical trials, 10 per task across all 10 tasks, documented in \texttt{data/expanded\_stress\_suite\_100.csv}), ARIA achieved $89.0\%$ overall success (Wilson 95\% CI: [81.4, 93.7]\%, with 11 failure-triggered autonomous recovery events); the task-by-task breakdown is cataloged in Table~\ref{table_task_breakdown}. In nominal smoke testing under unperturbed baseline conditions ($N=30$ trials, 3 per task, documented in \texttt{data/expanded\_manipulation\_trials.csv}), ARIA achieved $100.0\%$ task success (Wilson 95\% CI: [88.6, 100.0]\%) with $1.33 \pm 0.31$\,s mean transit duration ($14.0\text{--}36.6$\,s full conveyor loop) and $0.55 \pm 0.23$\,mm mean Cartesian pick error.
-
-\paragraph{Diagnostic Failure Mode Analysis}
-\begin{enumerate}
-    \item \textbf{Dynamic Tracking Constraints}: On Task 3, quintic trajectory updates with EKF forward compensation maintain relative contact velocity $\Delta v \le 0.0073$\,m/s up to conveyor speeds of $0.10$\,m/s.
-    \item \textbf{Task Manifold Feasibility}: ARIA constrains motion synthesis to the 5D task manifold $\mathcal{M}_{\text{task}}$, actively preventing geometric pitch decoupling or joint-limit clamping via \texttt{ReachabilityAgent} pre-screening.
-    \item \textbf{Multi-Modal Scene Consistency}: ARIA maintains an explicit scene graph over the State Bus, surviving temporary visual occlusions during long-horizon manipulation.
-    \item \textbf{Safety Preemption Invariant}: On Task 10, emergency preemption is evaluated as an asynchronous middleware safety invariant. High-priority DDS interrupt preemption dispatches within $2.20 \pm 0.44$\,ms, bringing physical joint velocities strictly below $0.01$\,rad/s within $211.5 \pm 15.2$\,ms (worst-case $233.3$\,ms, limit $\le 250$\,ms).
-\end{enumerate}
-
-\subsection{Language Instruction Grounding and Dialogue Benchmark}
-\label{sec_language_benchmark}
-
-To rigorously evaluate natural-language conditioning beyond static task configurations, we executed a formal 60-episode empirical benchmark spanning six standardized instruction categories ($10$ distinct episodes per category; raw logs recorded in \texttt{data/language\_grounding\_benchmark.csv}):
-\begin{enumerate}
-    \item \textit{Cat 1: Direct Imperative} (e.g., ``Pick up the blue bolt and place it in tray pocket 1'');
-    \item \textit{Cat 2: Attribute-Grounded} (e.g., ``Inspect and discard the defective red cylinder with surface scratches'');
-    \item \textit{Cat 3: Spatial-Relational} (e.g., ``Move the grey block located to the left of the pallet into the scrap bin'');
-    \item \textit{Cat 4: Compound Multi-Step} (e.g., ``Grasp the blue bracket, reorient it 45 degrees via in-hand pivoting, and stack it'');
-    \item \textit{Cat 5: Constraint / Dynamic} (e.g., ``Intercept the moving workpiece on the conveyor without exceeding velocity limits'');
-    \item \textit{Cat 6: Ambiguous / Underspecified} (e.g., ``Clear the damaged component from the workcell station'').
-\end{enumerate}
-ARIA was benchmarked against two standard paradigms: (1)~unconstrained zero-shot Direct LLM Prompting using Mistral-7B / Llama-3.1, and (2)~SayCan-style affordance scoring~\cite{aria_054_ahn_2022_do} over predefined primitives.
-
-\begin{table}[!t]
-\centering
-\caption{Multi-Seed Empirical Language Grounding and Instruction Benchmark ($N=180$ Trials Across Six Categories, Seeds [42, 1337, 2026])}
-\label{table_language_benchmark}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Instruction Category} & \textbf{Episodes} & \textbf{ARIA Slot (\%)} & \textbf{ARIA Succ. (\%)} & \textbf{SayCan Succ. (\%)} & \textbf{Direct LLM (\%)} & \textbf{ARIA Lat. (ms)} \\
-\midrule
-Cat 1: Direct Imperative & 30 & $85.6\%$ & $83.3\%$ & $86.7\%$ & $63.3\%$ & $4386.1$ \\
-Cat 2: Attribute-Grounded & 30 & $75.6\%$ & $83.3\%$ & $93.3\%$ & $56.7\%$ & $4350.4$ \\
-Cat 3: Spatial-Relational & 30 & $77.8\%$ & $80.0\%$ & $83.3\%$ & $33.3\%$ & $4411.5$ \\
-Cat 4: Compound Multi-Step & 30 & $81.1\%$ & $83.3\%$ & $83.3\%$ & $30.0\%$ & $4634.8$ \\
-Cat 5: Constraint / Dynamic & 30 & $74.4\%$ & $83.3\%$ & $93.3\%$ & $43.3\%$ & $4628.7$ \\
-Cat 6: Ambiguous / Underspecified & 30 & $63.3\%$ & $0.0\%$ & $0.0\%$ & $3.3\%$ & $4470.6$ \\
-\midrule
-\textbf{Overall Performance ($N=180$)} & \textbf{180} & $\mathbf{76.3\%}$ & $\mathbf{68.9\%}$ & $\mathbf{73.3\%}$ & $\mathbf{38.3\%}$ & $\mathbf{4480.3}$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-As cataloged in Table~\ref{table_language_benchmark} (derived from \texttt{data/real/language\_grounding\_multiseed\_summary.csv} and \texttt{data/real/language\_grounding\_multiseed\_trials.csv}, $N=180$ across seeds 42, 1337, and 2026), ARIA achieved $68.9\%$ overall instruction execution success ($124/180$ trials; $82.7\%$ on unambiguous instructions) with $76.3\%$ semantic slot extraction accuracy and $4480.3$\,ms mean inference latency. On unambiguous tasks (Categories 1--5), ARIA maintained $82.7\%$ execution success, outperforming unconstrained zero-shot Direct LLM prompting ($45.3\%$, overall $38.3\%$). On ambiguous and underspecified prompts (Cat 6), ARIA's \texttt{DialogueAgent} triggered human-in-the-loop clarification escalation across $13.3\%$ of overall trials ($100\%$ of ambiguous prompts), preventing unintended execution, while SayCan triggered zero clarifications ($0.0\%$) and failed Cat 6 completely ($0.0\%$). SayCan achieved $73.3\%$ execution across predefined primitives with $2965.4$\,ms latency but lacked interactive clarification capability. On compound multi-step instructions (Cat 4), ARIA achieved $83.3\%$ execution with $81.1\%$ slot extraction accuracy.
-
-\noindent\textbf{Ambiguity Benchmark Labeling vs. Runtime Gating:} We explicitly clarify that the ground-truth ambiguity labels in the planner benchmark are assigned \textit{a priori} from prompt design (in \texttt{lang\_prompts\_heldout\_60.json}), rather than being computed from the scene graph that the runtime gate inspects. Specifically, each evaluation prompt is authored with an explicit ground-truth flag \texttt{is\_ambiguous} based on whether the referring expression lacks unique visual attributes (e.g., ``pick up the cylinder'' when multiple cylinders exist). At runtime, ARIA's gating mechanism computes an independent match against the active scene graph using \texttt{deterministic\_scene\_match(target\_phrase, scene\_entities)}, triggering clarification whenever the candidate match count in the scene graph is not equal to 1.
-
-\subsection{Conveyor Sorting Sweep Across Six Belt Velocities}
-
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=0.66\textwidth]{fig8_conveyor_sorting.png}
-\caption{Full-system simulated conveyor sorting demonstration across six sequential execution phases in the Gazebo workcell: (a) Simulated workcell overview; (b) Overhead optical defect inspection classifying conforming (PASS) vs. defective (REJECT) workpieces; (c) Predictive rendezvous trajectory generation equating arm transit time with belt displacement; (d) Dynamic grasp acquisition with feedforward velocity matching ($\mathbf{v}_{\text{ee}} \approx \mathbf{v}_{\text{belt}}$); (e) Conforming workpiece palletizing into 4-pocket tray ($RMSE = 1.14$\,mm); (f) Defective workpiece transfer and scrap bin rejection ($3.8$\,s reject sub-motion, $14.0\text{--}36.6$\,s full conveyor cycle).}
-\label{fig_conveyor_demo}
-\end{figure*}
-
-\begin{table}[!t]
-\centering
-\caption{Multi-Speed Conveyor Sorting Sweep Across Six Belt Velocities}
-\label{table_conveyor_results}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lccccc}
-\toprule
-\textbf{Belt Speed ($v_{\text{belt}}$)} & \textbf{Cycles} & \textbf{Grasp Succ.} & \textbf{Sort Succ.} & \textbf{Rate (\%)} & \textbf{Wilson 95\% CI} \\
-\midrule
-$0.02$\,m/s & 5 & 5 & 5 & $100.0\%$ & [56.6, 100.0] \\
-$0.04$\,m/s & 5 & 5 & 5 & $100.0\%$ & [56.6, 100.0] \\
-$0.06$\,m/s & 5 & 5 & 5 & $100.0\%$ & [56.6, 100.0] \\
-$0.08$\,m/s & 5 & 5 & 5 & $100.0\%$ & [56.6, 100.0] \\
-$0.10$\,m/s & 5 & 5 & 5 & $100.0\%$ & [56.6, 100.0] \\
-$0.12$\,m/s & 5 & 4 & 3 & $60.0\%$ & [23.1, 88.2] \\
-\midrule
-\textbf{Primary Systematic Sweep ($N=30$)} & \textbf{30} & \textbf{29} & \textbf{28} & $\mathbf{93.3\%}$ & \textbf{[78.7, 98.2]} \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-Dynamic manipulation was validated across six operational phases (Fig.~\ref{fig_conveyor_demo}). As cataloged in Table~\ref{table_conveyor_results}, across the primary 30-cycle systematic sweep ($5$ cycles per speed tier, recorded in \texttt{data/conveyor\_extended\_sweep\_30.csv}), ARIA achieved $93.3\%$ sorting success (28/30 cycles, pooled Wilson 95\% CI: [78.7, 98.2]\%), maintaining velocity matching $\Delta v \le 0.0075$\,m/s ($\le 0.005$\,m/s for $v_{\text{belt}} \le 0.10$\,m/s, with a maximum observed difference of $\Delta v = 0.0073$\,m/s at $0.12$\,m/s). Complete conveyor cycles spanned $14.0\text{--}36.6$\,s (incorporating visual inspection, trajectory generation, dynamic rendezvous, tray placement, or reject bin transfer), while the active pick rendezvous sub-phase required only $1.2\text{--}1.4$\,s transit time. Across the systematic sweep, sorting was $100.0\%$ ($25/25$) from $0.02$\,m/s to $0.10$\,m/s, dropping to $60.0\%$ ($3/5$) at the top tested speed tier of $0.12$\,m/s due to Joint~2 velocity saturation as the belt speed approached arm kinematic limits. Test case TC-03 confirms dynamic intercept PASS at $0.12$\,m/s under nominal timing, while belt velocities exceeding $0.14$\,m/s outrun the arm's reach envelope ($R_{\text{max}} = 0.385$\,m; wrist-center reach $R_{\text{wrist}} = 0.290$\,m), defining the system's dynamic tracking limit.
-
-\subsection{Systematic Test Cases: Normal, Boundary, Abnormal}
-
-\begin{table*}[!t]
-\centering
-\caption{Systematic Test Cases Across Normal, Boundary, and Abnormal Operating Conditions}
-\label{table_test_cases}
-\footnotesize
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{cllllcc}
-\toprule
-\textbf{Test ID} & \textbf{Condition Type} & \textbf{Test Scenario} & \textbf{Operating Parameters} & \textbf{Expected System Behavior} & \textbf{Actual Empirical Result} & \textbf{Status} \\
-\midrule
-TC-01 & \textbf{Normal} & Static Tabletop Pick \& Lift & $x=0.22$\,m, $y=0.00$\,m, $z=0.08$\,m; 450\,lux & Clean antipodal grasp; lift $\ge 50$\,mm & Grasp locked; TCP error $0.55$\,mm & \textbf{PASS} \\
-TC-02 & \textbf{Normal} & Conveyor Inspection \& Dual-Bin Sort & $v_{\text{belt}} = 0.06$\,m/s; 5 cycles & Palletize conforming; scrap defect & $100\%$ sort (5/5); tray $RMSE = 1.14$\,mm & \textbf{PASS} \\
-TC-03 & \textbf{Boundary} & High-Speed Moving Conveyor ($v_{\text{max}}$) & $v_{\text{belt}} = 0.12$\,m/s (highest speed tier) & Dynamic intercept before belt limit & Grasp locked; $\Delta v = 0.0073$\,m/s; intercept $1.3$\,s & \textbf{PASS} \\
-TC-04 & \textbf{Boundary} & Maximum Workspace Reach \& Singularity & $R_{\text{wrist}} \to 0.290$\,m (wrist-center limit); shoulder axis $r \to 0$ & Flag singularity or reach limit; hold safe & Explicit flag raised; zero motor chatter & \textbf{PASS} \\
-TC-05 & \textbf{Abnormal} & Dynamic Obstacle Intrusion & Unexpected intrusion during rapid transit & Sub-10\,ms preemption; physical arrest $\le 250$\,ms & High-priority E-STOP dispatch $2.22 \pm 0.39$\,ms; arrest $211.0 \pm 15.0$\,ms & \textbf{PASS} \\
-TC-06 & \textbf{Abnormal} & Auxiliary Worker Node Crash (Fault) & Simulated SIGKILL on \texttt{VisionAgent} & Autonomous process re-spawn \& model reload & Re-spawned and model reloaded in $1421.4 \pm 350.1$\,ms; arm held & \textbf{PASS} \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-To rigorously evaluate the system's operational envelope, behavioral invariants, and resilience against stochastic physical perturbations, Table~\ref{table_test_cases} catalogs empirical performance across six formal operational regimes spanning nominal execution (TC-01, TC-02), kinematic and dynamic boundaries (TC-03, TC-04), and unannounced abnormal disturbances (TC-05, TC-06).
-
-\paragraph{Fault-Injection Latency Distribution and Reliability Matrix}
-To evaluate middleware fault recovery beyond the single process kill test (TC-06), we conducted a systematic fault-injection suite spanning distinct failure modalities (raw logs recorded in \texttt{data/real/safety\_runtime\_real.csv}):
-\begin{enumerate}
-    \item \textit{Worker Node Crash (SIGKILL on \texttt{VisionAgent})}: Across $N=30$ true SIGKILL injection episodes with PyTorch YOLOv8 weights loaded in process memory, autonomous process re-spawn completed in $1271.3 \pm 98.6$\,ms and model re-initialization in $64.5 \pm 181.2$\,ms (total crash-to-active recovery latency $1421.4 \pm 350.1$\,ms, median $1245.8$\,ms, max $2588.9$\,ms); the arm remained safely held stationary across $100\%$ of trials without runaway motion.
-    \item \textit{Optical Sensor Disconnection (0-byte camera frame injection)}: Detected via frame deadline timeout ($33.3$\,ms $\times 3 = 100$\,ms); fallback to last valid State Bus scene graph completed in $14.6 \pm 1.7$\,ms ($p95 = 17.6$\,ms), precluding grasp on stale visual targets.
-    \item \textit{LLM Task Planning Timeout ($>2.5$\,s artificial hang)}: Watchdog deadline triggered at $2.0$\,s; fallback to rule-based deterministic pick primitive dispatched in $12.9 \pm 1.9$\,ms ($p95 = 16.3$\,ms), preventing workcell stall.
-    \item \textit{DDS Network Packet Burst Loss ($15\%$ drop rate)}: Quintic polynomial interpolation buffered over $100$\,ms smoothly bridged packet loss with buffer jitter of $3.59 \pm 0.77$\,ms, limiting trajectory tracking deviation to $0.43 \pm 0.08$\,mm without motor chatter or uncommanded halts.
-    \item \textit{Emergency Stop Interrupt Preemption ($N=30$)}: Across $N=30$ dynamic intrusion tests, high-priority DDS interrupt preemption arrested joint motion command in $2.22 \pm 0.39$\,ms ($p50 = 2.15$\,ms, worst-case $3.37$\,ms), with complete physical arrest (joint velocity $< 0.01$\,rad/s) achieved in $211.0 \pm 15.0$\,ms ($p50 = 208.5$\,ms, worst-case $233.6$\,ms), safely halting the manipulator well within the stated $\le 250$\,ms physical threshold.
-\end{enumerate}
-
-\paragraph{Colour-vs-Defect Factorial Sensitivity Trial}
-To mitigate the potential confound that conveyor sorting might inadvertently respond to superficial workpiece albedo rather than physical defects, we executed a $2 \times 3$ factorial control experiment spanning base colors (Signal Blue, Cherry Red, Industrial Grey) and physical conditions (Conforming smooth surface vs. Defective with simulated structural scratches) across $N=20$ episodes per condition ($120$ episodes total; recorded in \texttt{data/color\_defect\_cross\_experiment.csv}). Crucially, this suite tested cross-conditions against the nominal training prior (e.g., Red Conforming parts and Blue Defective parts) to detect chromatic leakage.
-
-\begin{table}[!t]
-\centering
-\caption{Colour-vs-Defect Factorial Control Experiment ($N=20$ per Condition, 120 Episodes Total)}
-\label{table_color_defect_trial}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lccccc}
-\toprule
-\textbf{Workpiece Condition} & \textbf{Type} & \textbf{Det. Acc.} & \textbf{Defect Prec.} & \textbf{Defect Rec.} & \textbf{End-to-End Sort (95\% CI)} \\
-\midrule
-Blue Conforming & Prior & $100.0\%$ & -- & -- & $20/20$ ($100.0\%$) [83.9, 100.0]\% \\
-Blue Defective & Cross & $100.0\%$ & $100.0\%$ & $100.0\%$ & $19/20$ ($95\%$) [76.4, 99.1]\% \\
-Red Conforming & Cross & $100.0\%$ & -- & -- & $20/20$ ($100.0\%$) [83.9, 100.0]\% \\
-Red Defective & Prior & $100.0\%$ & $100.0\%$ & $100.0\%$ & $20/20$ ($100.0\%$) [83.9, 100.0]\% \\
-Grey Conforming & Neutral & $100.0\%$ & -- & -- & $20/20$ ($100.0\%$) [83.9, 100.0]\% \\
-Grey Defective & Neutral & $100.0\%$ & $100.0\%$ & $100.0\%$ & $20/20$ ($100.0\%$) [83.9, 100.0]\% \\
-\midrule
-\textbf{Pooled Overall} & -- & $\mathbf{100.0\%}$ & $\mathbf{100.0\%}$ & $\mathbf{100.0\%}$ & $\mathbf{119/120}$ ($\mathbf{99.2\%}$) \textbf{[95.4, 99.9]\%} \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-As cataloged in Table~\ref{table_color_defect_trial}, the perception model maintained $100.0\%$ defect precision and recall across all base albedos, with an end-to-end conveyor sorting success of $99.2\%$ pooled across all conditions ($119/120$, Wilson 95\% CI: $[95.4, 99.9]\%$, recorded in \texttt{data/real/color\_defect\_summary.csv}). A two-sided Fisher's exact test confirms no statistically significant difference across conditions ($p = 1.000$). With $N=20$ trials per cell, these empirical findings demonstrate invariant sorting performance without chromatic leakage.
-
-\subsection{Expected vs. Actual Performance Comparison}
-Table~\ref{table_expected_vs_actual} contrasts the theoretical design specifications formulated in Section~\ref{sec_problem_statement} against empirical measurements recorded within the simulated workcell across seven critical engineering dimensions.
-
-\begin{table*}[!t]
-\centering
-\caption{Expected vs. Actual Performance Comparison Across Primary Engineering Dimensions}
-\label{table_expected_vs_actual}
-\footnotesize
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccl}
-\toprule
-\textbf{Performance Metric} & \textbf{Design Specification} & \textbf{Empirical Measurement} & \textbf{Compliance} & \textbf{Deviation Analysis \& Discussion} \\
-\midrule
-Metric Depth Accuracy ($RMSE$) & $\le 10.0$\,mm & $8.2$\,mm ($Z \le 0.25$\,m) / $17.4$\,mm (full) & \textbf{Met (Pre-grasp)} & Pre-grasp claw grounding meets the $\le 10.0$\,mm tolerance; full scene expands to $17.4$\,mm. \\
-Inverse Kinematics Solve Latency & $< 1.00$\,ms & $0.075 \pm 0.010$\,ms & \textbf{Exceeded ($13.3\times$)} & Closed-form geometric decoupling bypasses iterative matrix inversion. \\
-Manipulation Policy Success Rate & $\ge 85.0\%$ & $89.0\%$ (Primary $N=100$) / $100.0\%$ (Nominal $N=30$) & \textbf{Met / Exceeded} & Reachability gating and ToT pruning eliminated invalid motions. \\
-Conveyor Velocity Matching & $\Delta v \le 0.0075$\,m/s (RO4) & $\Delta v \le 0.0073$\,m/s ($\le 0.005$\,m/s for $v \le 0.10$\,m/s) & \textbf{Met} & Quintic boundary-value polynomial minimizes terminal acceleration and relative slip. \\
-Auxiliary Node Fault Recovery Time & $< 2.0$\,s & $1271.3 \pm 98.6$\,ms (spawn) / $1421.4 \pm 350.1$\,ms (total with model) & \textbf{Met} & Standalone OS process SIGKILL recovery including full YOLO model weight loading into PyTorch memory. \\
-Emergency Preemption Latency & $< 10.0$\,ms & $2.22 \pm 0.39$\,ms dispatch ($211.0 \pm 15.0$\,ms physical arrest) & \textbf{Exceeded} & ROS~2 DDS preemption interrupts controller in $2.22$\,ms; physical velocity drops below $0.01$\,rad/s within $211.0$\,ms ($\le 250$\,ms threshold). \\
-Host GPU Memory Utilization & $\le 8.00$\,GB VRAM & $7.53$\,GB ($94.1\%$ budget, Table~\ref{table_agents} sum) & \textbf{Met} & 4-bit LLM quantization and perception orchestrator bound VRAM. \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-Table~\ref{table_expected_vs_actual} summarizes empirical compliance across all seven primary engineering specifications against initial design targets. Specifications are met or exceeded across all seven dimensions, with auxiliary node fault recovery achieving complete OS process re-spawn and YOLO model reloading in $1421.4 \pm 350.1$\,ms under true SIGKILL fault injection, and software emergency preemption dispatch occurring in $2.22 \pm 0.39$\,ms with physical arrest verified within $211.0 \pm 15.0$\,ms.
-
-\subsection{Ablation Studies: Sub-Components and Architecture}
-
-\begin{table}[!t]
-\centering
-\caption{Systematic Sub-Component Ablation Study}
-\label{table_subcomponent_ablation}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{llccc}
-\toprule
-\textbf{Subsystem} & \textbf{Configuration} & \textbf{Subset ($N$)} & \textbf{Evaluated Metric} & \textbf{Result} \\
-\midrule
-Kinematics & \textbf{ARIA Analytical (position + pitch only)} & Full suite (100) & Task Success & $\mathbf{89.0\%}$ \\
-\midrule
-\multirow{3}{*}{Task Reasoning} & Direct LLM (Single-Turn) & Planning (50) & Plan Validity & $62.0\%$ \\
- & Linear Chain-of-Thought & Planning (50) & Plan Validity & $78.0\%$ \\
- & \textbf{Tree-of-Thoughts} & Planning (50) & Plan Validity & $\mathbf{92.0\%}$ \\
-\midrule
-\multirow{2}{*}{Perception} & Raw Uncalibrated Disparity & Pick/Place (25) & Pick Success & $28.0\%$ (7/25) \\
- & \textbf{Claw Grounded Metric} & Pick/Place (25) & Pick Success & $\mathbf{96.0\%}$ (24/25) \\
-\midrule
-\multirow{2}{*}{Conveyor} & Static Stop ($\Delta v > 0$) & Conveyor (30) & Sort Success & $36.7\%$ \\
- & \textbf{Velocity Matching} & Conveyor (30) & Sort Success & $\mathbf{93.3\%}$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-\noindent$^\S$ Plan validity: a generated JSON plan is deemed valid if it parses correctly against the BNF grammar, all referenced objects exist in the current scene graph, and all commanded waypoints pass the \texttt{ReachabilityAgent} kinematic pre-screen.\\
-\noindent Note: The perception ablation was evaluated on a dedicated, predefined cohort of $N=25$ pick-and-place episodes spanning 5 tabletop positions under variable ambient lighting.
-
-\begin{table*}[!t]
-\centering
-\caption{Architecture-Level Ablation Study Across Six Modular, Middleware, and Safety Configurations ($N=20$ per Configuration)}
-\label{table_architecture_ablation}
-\footnotesize
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Configuration / Pipeline Variant} & \textbf{Tasks} & \textbf{Overall Success (\%), Wilson 95\% CI} & \textbf{Mean Latency (ms)} & \textbf{p95 (ms)} & \textbf{Fault Recovery} & \textbf{Unsafe Plans Intercepted} \\
-\midrule
-(a) Monolithic Sequential Pipeline & All 10 ($N=20$) & $40.0\%$ [21.9, 61.3] & $415.0 \pm 42.0$ & $460.0$ & None (Halts) & -- \\
-(b) Modular Synchronous & All 10 ($N=20$) & $75.0\%$ [53.1, 88.8] & $285.0 \pm 25.0$ & $318.0$ & None (Blocking) & -- \\
-(c) \textbf{Modular Asynchronous (Full ARIA)} & All 10 ($N=20$) & $\mathbf{100.0\%}$ [83.9, 100.0] & $\mathbf{175.0 \pm 15.0}$ & $\mathbf{195.0}$ & $\mathbf{1421.4 \pm 350.1\,\text{ms}}$ & $\mathbf{100\%}$ \\
-(d) ARIA w/o Lifecycle Recovery & All 10 ($N=20$) & $70.0\%$ [48.1, 85.5] & $178.0 \pm 16.0$ & $198.0$ & Failed (Manual reboot) & $100\%$ \\
-(e) ARIA w/o ReachabilityAgent & All 10 ($N=20$) & $50.0\%$ [29.9, 70.1] & $172.0 \pm 14.0$ & $190.0$ & N/A & $0\%$ (Boundary clamped) \\
-(f) ARIA w/o SafetyAgent / HITL & All 10 ($N=20$) & $45.0\%$ [25.8, 65.8] & $168.0 \pm 14.0$ & $185.0$ & N/A & $0\%$ (Unarrested collisions) \\
-\bottomrule
-\end{tabular}%
-}
-\end{table*}
-
-Table~\ref{table_subcomponent_ablation} summarizes the sub-component ablations. In kinematics, ARIA's analytical solver (restricted to position and pitch) guarantees deterministic sub-millisecond motion synthesis across the 100-trial suite, eliminating numerical iteration stalls on dynamic conveyor tracking (Task 3) and pitch-coupled pivoting (Task 7). Disabling claw grounding dropped pick success from $96\%$ ($24/25$) to $28\%$ ($7/25$) across the predefined $N=25$ perception set, while disabling velocity matching reduced conveyor sort success to $36.7\%$ ($11/30$). The 50-episode planning ablation confirmed that ToT branching raised valid-plan rate from $62\%$ ($31/50$) to $92\%$ ($46/50$). Table~\ref{table_architecture_ablation} evaluates the multi-agent middleware across all 10 manipulation tasks ($2$ trials per task, $N=20$ per configuration, $120$ total ablation episodes). We emphasize that this architecture-level ablation suite is evaluated under nominal, unperturbed workcell conditions (standard 450\,lux illumination, nominal unjittered dynamics) to strictly isolate architectural middleware differences (e.g., removing asynchronous scheduling, reachability filtering, or safety monitoring) without compounding environmental disturbances. Under these unperturbed nominal conditions, Full ARIA completes all 20 diagnostic runs ($100.0\%$, Wilson CI: [83.9, 100.0]\%), consistent with the $100.0\%$ ($30/30$) achieved in the nominal smoke testing suite. In contrast, the primary benchmark ($N=100$, Table~\ref{table_task_breakdown}) subjects the system to active multi-modal disturbances (stochastic lighting, encoder noise, camera jitter, and conveyor speed shifts), inducing 11 failure-recovery events ($89.0\%$). At $N=20$, Full ARIA's confidence interval establishes non-overlapping separation from the monolithic sequential baseline ($40.0\%$, $[21.9, 61.3]\%$, Fisher $p = 0.0001$) and the safety-stripped variants ($45.0\%$, $[25.8, 65.8]\%$, $p = 0.0004$). For the modular synchronous variant ($75.0\%$, $[53.1, 88.8]\%$), confidence intervals overlap, but a two-sided Fisher's exact test confirms a statistically significant advantage ($p = 0.047$). Collapsing the architecture into a monolithic sequential Python loop increased latency to $415$\,ms and caused conveyor tracking failures due to dropped frames; omitting \texttt{ReachabilityAgent} induced silent joint-limit clamping; and removing \texttt{SafetyAgent} permitted unarrested collisions during unexpected dynamic intrusions.
-
-\subsection{Compute Profiling, VRAM Footprint, and Cost Analysis}
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=0.70\columnwidth]{fig9_dashboard_interface.png}
-\caption{ARIA Control Center web dashboard operating in real time against the Gazebo~11 simulated workcell, featuring live telemetry, joint position monitors, camera views with SAM2 masks, and responsive E-STOP safety controls.}
-\label{fig_dashboard}
+\includegraphics[width=\columnwidth]{fig_estop_overshoot.pdf}
+\caption{Post-signal overshoot by stop path. The safety-agent path overshoots by nearly a radian because the controller rejects its partial, velocity-free halt.}
+\label{fig:estop}
 \end{figure}
 
-\begin{table}[!t]
-\centering
-\caption{Perception Pipeline Latency Across Diverse Compute Tiers}
-\label{table_compute_benchmarks}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Perception Stage} & \textbf{RTX 4090 Laptop} & \textbf{RTX 3060 Laptop$^\ddagger$} & \textbf{Jetson Orin} & \textbf{Core i7 CPU} \\
-\midrule
-YOLOv8m Object Detection & $18.2$\,ms & $34.5$\,ms & $52.0$\,ms & $112.0$\,ms \\
-SAM2 Instance Mask Tracking & $8.4$\,ms & $24.1$\,ms & $48.2$\,ms & $285.0$\,ms \\
-Depth-Anything v2 Disparity & $11.2$\,ms & $28.4$\,ms & $56.0$\,ms & $340.0$\,ms \\
-Claw Grounding \& 3D Proj. & $0.8$\,ms & $1.2$\,ms & $2.8$\,ms & $4.5$\,ms \\
-Antipodal Grasp Sampling & $2.1$\,ms & $3.5$\,ms & $7.4$\,ms & $12.0$\,ms \\
-\midrule
-\textbf{Total Frame Latency} & $\mathbf{40.7\,\text{ms}}$ & $\mathbf{91.7\,\text{ms}}$ & $\mathbf{166.4\,\text{ms}}$ & $\mathbf{753.5\,\text{ms}}$ \\
-\textbf{Effective Frame Rate} & $\mathbf{24.6\,\text{fps}}$ & $\mathbf{10.9\,\text{fps}}$ & $\mathbf{6.0\,\text{fps}}$ & $\mathbf{1.3\,\text{fps}}$ \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-\noindent$^\ddagger$ \textit{RTX 3060 Laptop (6\,GB VRAM). This tier runs perception-only (YOLOv8m + SAM2 + Depth-Anything v2 = 3.27\,GB combined); the quantized LLM (3.45\,GB) is CPU-offloaded to system RAM. Full ARIA stack at 7.53\,GB requires a GPU with $\ge 8$\,GB VRAM (e.g., RTX 4090 or RTX 4070Ti).}
+\subsection{Kinematic Pre-Verification Does Not Improve Intention-to-Treat Success}
+The pre-verification experiment evaluates \nFourN{} planned targets with two pipelines. The baseline trusts the solver's success flag and executes the returned joints; it succeeds in \nFourBaselineSuccessPct\% of targets (Wilson 95\% CI [\nFourBaselineLoPct, \nFourBaselineHiPct]). The N4 pipeline checks the forward-kinematics residual and the joint-limit margin, replans locally when the check fails, and rejects the plan if no candidate verifies; it succeeds in \nFourSuccessPct\% (CI [\nFourNFourLoPct, \nFourNFourHiPct]). The paired risk difference is \nFourRiskDiffPct{} percentage points (95\% CI [\nFourRiskDiffLoPct, \nFourRiskDiffHiPct]), with \nFourP.
 
-\begin{table}[!t]
+The gate is not beneficial in this regime. The baseline's false-success rate is \nFourFalseSuccessPct\%, so the failure mode the gate was designed to catch is rare in the sampled workspace. The gate rejects some plans whose residual is between its stricter threshold and the execution tolerance, and those rejections are counted as failures in the intention-to-treat analysis. The gate executes \nFourCoveragePct\% of targets and uses \nFourReplansMean{} replans per target on average. A stricter gate is not a free improvement; it trades coverage for a guarantee that the executed plans are verified.
+
+\begin{figure}[t]
 \centering
-\caption{Projected Hardware Bill-of-Materials for Prospective Physical Embodiment (Actuation and Sensing)}
-\label{table_cost_comparison}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lclr}
+\includegraphics[width=\columnwidth]{fig_n4_success.pdf}
+\caption{Intention-to-treat success with and without kinematic pre-verification. Error bars are Wilson 95\% intervals. The gate does not improve success on this target distribution.}
+\label{fig:n4}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Pre-registered experiments and outcomes. Values are generated from the raw logs; see the ledger for sample sizes and intervals.}
+\label{tab:results}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{ARIA Workcell Component} & \textbf{Unit Cost} & \textbf{Typical Research Workcell} & \textbf{Unit Cost} \\
+Experiment & Primary quantity & Outcome \\
 \midrule
-5-DoF Arm Chassis \& Metal Servos & \$135 & Franka Emika Panda / UR5e & \$32,000 \\
-Logitech C270 Overhead Camera & \$25 & Intel RealSense D435i / Photoneo & \$1,400 \\
-ESP32-CAM Wrist Camera Module & \$8 & Robotiq 2F-85 Gripper & \$4,500 \\
-MPU6050 IMU + micro-ROS ESP32 & \$12 & ATI Mini40 Force/Torque Sensor & \$3,500 \\
-Workspace Fixture \& Wiring & \$16 & Interfacing \& Mounting & \$1,000 \\
-\midrule
-\textbf{Total Actuation / Sensing Package} & $\mathbf{\$196}$ & \textbf{Total Hardware Package} & $\mathbf{\$42,400}$ \\
+P0-REACH & recall at 5\,mm & \reachRecallCurrentPct\% current, \reachRecallOldPct\% historical \\
+P0-CONV & realized/commanded ratio & \convRelErrA\%, \convRelErrB\%, \convRelErrC\% error \\
+P0-ESTOP & halt success & \estopCommandSuccess\% command, \estopSafetySuccess\% safety \\
+P2-N4 & intention-to-treat success & \nFourBaselineSuccessPct\% off, \nFourSuccessPct\% on \\
 \bottomrule
-\end{tabular}%
-}
+\end{tabular}
 \end{table}
 
-\begin{table}[!t]
-\centering
-\caption{Systematic Failure Mode Taxonomy Across 100 Extended Trials (11 Failures)}
-\label{table_failure_taxonomy}
-\footnotesize
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lccl}
-\toprule
-\textbf{Failure Category} & \textbf{Count} & \textbf{\% of Failures} & \textbf{Automated Recovery Protocol} \\
-\midrule
-A: Visual Occlusion & 3 & $27.3\%$ & Switch to wrist visual servoing \\
-B: Grasp Slip & 3 & $27.3\%$ & Increase normal force + re-grasp \\
-C: Conveyor Speed Jitter & 2 & $18.2\%$ & Kalman filter velocity update \\
-D: Linguistic Ambiguity & 2 & $18.2\%$ & Trigger Web HITL Dialogue \\
-E: Physics Solver Interpenetration & 1 & $9.1\%$ & Automated micro-retreat and constraint relaxation \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
+\section{Negative Results, Non-Executed Phases, and Threats to Validity}
+\label{sec:negative}
+Three of the four pre-registered hypotheses are not supported. The conveyor hypothesis fails because the plant does not realize the command. The safety-path hypothesis fails because the halt message is rejected. The pre-verification hypothesis fails because the gate's stricter threshold costs more successes than it saves. The reachability hypothesis is supported, but the support is narrower than the original claim: the current solver is reproducible, and the historical comparison was a model change, not an algorithm comparison.
 
-Memory utilization across all 15 agents totals a nominal $7.53$\,GB (Table~\ref{table_agents} sum: $1{,}850+1{,}420+120+30+150+60+220+3{,}450+50+0+40+0+20+40+80 = 7{,}530$\,MB, $94.1\%$ of nominal 8.0\,GB VRAM), with empirical peak VRAM profiled under simultaneous full-pipeline perception, SAM2 tracking, and 4-bit LLM inference reaching $7.82$\,GB ($97.8\%$ of the 8.0\,GB budget including CUDA runtime context overhead, Table~\ref{table_manipulation_benchmark}), enabling local execution on consumer GPUs. ARIA's modular architecture enables full onboard semantic reasoning, closed-form kinematics, and language instruction parsing within consumer hardware limits. While the multi-modal perception pipeline runs at $40.7$\,ms total frame latency ($24.6$\,fps, Table~\ref{table_compute_benchmarks}), motor control interpolation and State Bus dispatch execute asynchronously at $20$\,ms ($50$\,Hz), decoupling low-level actuation from visual inference rates. Table~\ref{table_cost_comparison} itemizes the projected bill-of-materials for prospective physical fabrication: ARIA's actuation and sensing package totals \$196, compared with \$42,400 for an equivalent industrial research workcell. Table~\ref{table_failure_taxonomy} catalogs the 11 failure-triggered recovery events across the expanded 100-trial suite with their automated recovery protocols. Workstation host power under peak perception-planning GPU inference was profiled at $168.5$\,W, while simulated joint mechanical actuation dissipation averaged $14.2$\,W across active trajectories.
+Several phases could not be executed. Learned-policy training and evaluation require a CUDA device, and none is available; the stack was run on CPU only. Human inter-annotator agreement requires independent annotators, and none are available; a second language model is not a substitute for a human annotator, so the agreement study is not reported. Hardware trials require a robot and a serial device, and neither is present. A full detector training run requires a committed checkpoint and a labelled dataset; the available frames have suspect provenance, so the detector is not evaluated. These are declared omissions, not simulated results.
 
-% ====================================================================
-% SECTION IX: LIMITATIONS AND FUTURE WORK
-% ====================================================================
-\section{Limitations and Future Work}
-\label{sec_limitations}
+The same rule applies to three of the four proposed methods and to the watchdog hypothesis. N1, a kinematics-anchored recursive depth calibration, was not executed: the depth model package is absent from the environment and no checkpoint is committed, so there is no depth prediction to calibrate. N2, uncertainty-aware grasp gating, was not executed because it requires grasp attempts, and grasp attempts are blocked by the gripper defect described in Section~\ref{sec:platform}. N3, scene-match plus calibrated language-model confidence, was not executed within the available budget; no AUROC or success rate is claimed for it. N4 is the only proposed method with an executed evaluation, and its result is the neutral-to-negative one reported above. The 2.0\,s language-model watchdog in the pre-registration could not be tested because no such watchdog exists in the code; the only configured timeout is 90\,s, and a test of a non-existent mechanism would have measured the test harness rather than the stack. Each of these cells is recorded as not executed in the audit, with the blocking condition, rather than filled with an estimate.
 
-\subsection{Limitations}
-To maintain rigorous scientific standards, we explicitly disclose nine limitations:
-\begin{enumerate}
-    \item \textbf{Physics Simulation Scope and Hardware Prototyping}: All quantitative results were evaluated strictly within a Gazebo~11 / ODE simulated workcell without physical robot fabrication. Real-world physical servos introduce gear backlash ($1\text{--}3^\circ$), mechanical compliance, and potentiometer thermal drift that will require empirical characterization during hardware transfer. Physical hardware fabrication, physical video capture, and hardware photo documentation are explicitly scoped as future work following physical prototyping.
-    \item \textbf{Optical Ground Truth and Scaling Regimes}: Metric depth accuracy ($6.84$\,mm under static calibration and $8.2$\,mm under active visual jitter in the pre-grasp volume, expanding to $17.4$\,mm across the full scene) was evaluated strictly against the Gazebo z-buffer ground truth. While dynamic two-point re-anchoring bounds perspective distortion in the local pre-grasp volume, optical validation against physical depth sensors (e.g., Intel RealSense D435 or laser displacement triangulators) and across challenging non-Lambertian materials (metallic specularities, transparent glassware) remains future work.
-    \item \textbf{Illumination Sensitivity}: Under low light ($<80$\,lux), disparity RMSE degraded to $18.4$\,mm, indicating dependency on ambient factory illumination.
-    \item \textbf{Contact Force Modeling}: Normal clamping force $F_N$ is simulated via rigid-body contact constraints and normal pressure approximations rather than measured directly via physical tactile arrays or multi-axis loadcells.
-    \item \textbf{Heuristic Planning Weights and Calibration}: Tree-of-Thoughts heuristic weights ($w_1, w_2, w_3$) and HITL threshold $\tau = 0.70$ were tuned via a 50-episode grid search with sensitivity analysis confirming invariant planning within $w_1 \in [0.45, 0.55], w_2 \in [0.30, 0.40]$. While empirical calibration across perception ($\text{ECE} = 5.65\%$) and planning ($\text{ECE} = 7.52\%$) is now verified (Fig.~\ref{fig_reliability_diagram}), formal distribution-free conformal prediction bounds under non-stationary real-world domain shifts remain future work.
-    \item \textbf{Conveyor Velocity Limit}: The dynamic interception policy saturates at belt velocities exceeding $0.14$\,m/s due to actuator angular velocity limits.
-    \item \textbf{Software Safety Gating}: The software E-STOP dispatch ($2.22 \pm 0.39$\,ms, physical arrest $211.0 \pm 15.0$\,ms) is implemented over ROS~2 DDS and does not replace hardware-certified Category 4 emergency relays.
-    \item \textbf{Geometric Collision Avoidance}: The \texttt{ReachabilityAgent} performs joint-limit and kinematic reachability pre-screening; it does not implement a geometric collision checker against workspace obstacles. The evaluation environment's cleared workcell surface minimizes unmodeled obstacle interactions, but deployment in cluttered scenes would require integration of a motion planner (e.g., OMPL, MoveIt2) to enforce obstacle-avoidance.
-    \item \textbf{Language Grounding Scope and Physical Interaction}: While Section~\ref{sec_language_benchmark} provides a dedicated 180-trial multi-seed simulated grounding benchmark across 6 instruction taxonomies (achieving $68.9\%$ overall instruction execution and $13.3\%$ dialogue clarification escalation compared to $73.3\%$ for SayCan and $38.3\%$ for Direct LLM), the evaluation is restricted to simulated object interaction and simulated dialogue sessions. Physical acoustic noise, microphone distortion, spontaneous human interruptions, and unscripted real-world human-in-the-loop interactions remain future work to be validated on physical hardware.
-\end{enumerate}
+The threats to validity are specific. The conveyor plant is kinematic, so the measured offset may be an artifact of the velocity-write path rather than a friction property. The arm is a four-degree-of-freedom mechanism with a small reachable region, so the pre-verification result may not transfer to a six-degree-of-freedom arm with a larger workspace. The emergency-stop result depends on the controller configuration; a controller that accepts partial goals would not reject the safety halt. The trial counts are sufficient for the large effects reported here but not for small ones, and the pre-registration labels the smaller cells as exploratory.
 
-\subsection{Future Work}
-Future research will target: (i)~deploying the complete ROS~2 stack on the physical arm and quantifying the reality gap across hundreds of physical cycles; (ii)~incorporating fingertip micro-loadcells for closed-loop tactile force control; (iii)~extending the analytical IK derivation to 6-DoF spherical-wrist manipulators; (iv)~evaluating emerging sub-1B parameter foundation policies (e.g., SmolVLA) directly within ARIA's modular planning tier; (v)~integrating OMPL-based geometric motion planning for obstacle-dense environments; and (vi)~conducting open-vocabulary physical human-robot conversational trials with spontaneous interruptions and unscripted dialogue.
+The audit itself has a limitation: it was performed by the same group that built the stack. We mitigated this by freezing the protocol before evaluation, by using only executed code and raw logs, and by reporting failures. We did not have an independent auditor. An external audit would be stronger, and we recommend it for any claim that is used to justify a deployment.
 
-% ====================================================================
-% SECTION X: CONCLUSION
-% ====================================================================
-\enlargethispage{3\baselineskip}
 \section{Conclusion}
-\label{sec_conclusion}
-This article presented \textbf{Project ARIA}, a modular, resource-efficient language-conditioned manipulation framework for underactuated 5-DoF robotic arms operating within an 8.0\,GB VRAM budget in high-fidelity simulation. By decoupling semantic reasoning, metric perception, and motor control across fifteen asynchronous ROS~2 nodes, ARIA addresses the latency, underactuation, and black-box failure modes of monolithic VLA policies. The framework combines: (i)~self-calibrated monocular metric perception via kinematic claw grounding ($RMSE = 6.84$\,mm static calibration, $8.2$\,mm under active visual jitter in pre-grasp volume, $17.4$\,mm across full workspace); (ii)~deterministic closed-form inverse kinematics restricted to the 5D admissible task manifold $\mathcal{M}_{\text{task}}$ ($0.075$\,ms solve latency, $100.0\%$ convergence on the admissible reachable subset with $O(1)$ deterministic rejection of infeasible boundary poses); (iii)~an onboard Tree-of-Thoughts task planner with confidence-gated Human-in-the-Loop safety supervision; and (iv)~a grammar-constrained dialogue grounding pipeline.
+\label{sec:conclusion}
+We audited a modular manipulation stack, repaired its instrumentation, pre-registered four questions, and re-measured them from clean commits. The reachability result is reproducible and the historical gap is explained by a solver revision. The conveyor does not realize its command; it realizes the command minus a nearly constant offset, while the visual belt is stationary and the rollers spin implausibly fast. The direct emergency stop works, but the safety-agent stop is rejected by the controller and the arm continues to its goal. A kinematic pre-verification gate does not improve intention-to-treat success on the sampled workspace.
 
-Validated in a high-fidelity Gazebo~11 / ODE physics simulation across 10 manipulation tasks on the primary 100-trial suite ($N=100$, 10 trials/task, $89.0\%$ success, Wilson 95\% CI: [81.4, 93.7]\%), a 6-speed moving conveyor sweep ($N=30$ systematic cycles, $93.3\%$ success across speeds up to $0.14$\,m/s), and a dedicated 180-trial multi-seed natural language grounding benchmark across six instruction taxonomies ($68.9\%$ success vs.\ $73.3\%$ for SayCan and $38.3\%$ for Direct LLM; $82.7\%$ on unambiguous instructions), ARIA achieved sub-millimeter precision ($0.55 \pm 0.23$\,mm mean Cartesian pick error) with $1.33 \pm 0.31$\,s mean transit duration. These results demonstrate that high-performance, verifiable autonomous manipulation does not necessitate datacenter compute or expensive industrial arms; the projected bill-of-materials for prospective physical fabrication is \$196 (actuation and sensing only; host GPU with $\ge 8$\,GB VRAM required separately).
+The broader lesson is that a benchmark is a measurement chain, and every link must be checked. A topic can have several publishers; a service can be a loopback; a transform can be a placeholder; a solver can report success for a pose it did not reach; a controller can reject a goal without an error. None of these failures is exotic. Each produces a number that looks like evidence. Pre-registration and provenance do not prevent the failures, but they make them visible, and visibility is the precondition for repair.
 
-% ====================================================================
-% STATEMENTS AND DECLARATIONS
-% ====================================================================
 \section*{Data Availability}
-The complete ROS~2 Humble software stack, Gazebo~11 simulation digital twin environment (\texttt{aria\_industrial\_workcell.world}), analytical IK solver, fine-tuned YOLOv8m weights, and empirical trial CSV logs are openly available in the Project ARIA repository at \url{https://github.com/gaminizer/ARIA}. Active empirical benchmark records are cataloged in \texttt{data/real/}, while legacy and synthetic generator scripts are archived under \texttt{data/legacy\_synthetic/}.
+The pre-registration, the audit, the experiment scripts, the raw per-trial logs, the number generator, the macro file, and the ledger are in the repository. The paper is compiled from the macro file; no outcome number is typed into the manuscript.
 
 \section*{Acknowledgment}
-The authors express sincere gratitude to the open-source robotics and machine learning research communities whose foundational tools made Project ARIA possible. We specifically acknowledge the open repositories and datasets provided by the developers of ROS 2 (Open Robotics), MoveIt2, Ultralytics (YOLOv8), Meta AI Research (SAM2), HuggingFace (Depth-Anything v2), Ollama, and micro-ROS. This research received no external grant funding.
+The authors thank the maintainers of ROS~2, Gazebo, and the open-source robotics stack on which this work depends.
 
-% ====================================================================
-% REFERENCES IN IEEE FORMAT
-% ====================================================================
-\def\IEEEbibitemsep{-1.2pt}
 \bibliographystyle{IEEEtran}
 \bibliography{references}
-
-\begin{IEEEbiographynophoto}{Garv Arora}
-is with the Department of Computer Science and Engineering, Robotics and Artificial Intelligence Laboratory. His research interests include embodied artificial intelligence, robotic manipulation architectures, and real-time kinematic control.
-\end{IEEEbiographynophoto}
-
-\begin{IEEEbiographynophoto}{Yuvaraj N}
-is with the Department of Computer Science and Engineering, Robotics and Artificial Intelligence Laboratory. His research focuses on multi-agent systems, autonomous robotics, and intelligent control.
-\end{IEEEbiographynophoto}
 
 \end{document}

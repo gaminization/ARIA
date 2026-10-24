@@ -77,3 +77,8 @@ class TrialLog:
     @property
     def count(self) -> int:
         return self._n
+
+    @property
+    def stamp(self) -> Dict[str, Any]:
+        """The commit that stamped every row, captured when the log opened."""
+        return dict(self._stamp)

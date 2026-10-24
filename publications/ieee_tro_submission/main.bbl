@@ -21,380 +21,87 @@
 \providecommand{\BIBdecl}{\relax}
 \BIBdecl
 
-\bibitem{aria_base_sun2022moving}
-Y.~Sun, Z.~Chen, W.~Zhang, M.~Liu, and J.~Wang, ``{Moving Object Prediction and
-  Grasping System of Robot Manipulator},'' \emph{IEEE Access}, vol.~10, pp.
-  19\,522--19\,532, 2022.
+\bibitem{pineau2021improving}
+J.~Pineau, P.~Vincent-Lamarre, K.~Sinha, V.~Larivi{\`e}re, A.~Beygelzimer,
+  F.~d'Alch{\'e} Buc, E.~Fox, and H.~Larochelle, ``Improving reproducibility in
+  machine learning research: A report from the {NeurIPS} 2019 reproducibility
+  program,'' \emph{Journal of Machine Learning Research}, vol.~22, no. 164, pp.
+  1--20, 2021.
 
-\bibitem{aria_010_sahu_2025_autonomous}
-U.~K. Sahu, M.~K. S., A.~K., M.~M. P., A.~Jaiswal, U.~K. Yadav, and S.~K. Dash,
-  ``{Autonomous Object Tracking with Vision-Based Control Using a 2-DOF Robotic
-  Arm},'' \emph{Scientific Reports (Nature)}, 2025.
+\bibitem{ioannidis2005why}
+J.~P.~A. Ioannidis, ``Why most published research findings are false,''
+  \emph{PLoS Medicine}, vol.~2, no.~8, p. e124, 2005.
+
+\bibitem{nosek2018prereg}
+B.~A. Nosek, C.~R. Ebersole, A.~C. DeHaven, and D.~T. Mellor, ``The
+  preregistration revolution,'' \emph{Proceedings of the National Academy of
+  Sciences}, vol. 115, no.~11, pp. 2600--2606, 2018.
+
+\bibitem{henderson2018deep}
+P.~Henderson, R.~Islam, P.~Bachman, J.~Pineau, D.~Precup, and D.~Meger, ``Deep
+  reinforcement learning that matters,'' in \emph{Proceedings of the AAAI
+  Conference on Artificial Intelligence}, vol.~32, no.~1, 2018, pp. 3207--3214.
+
+\bibitem{koenig2004gazebo}
+N.~Koenig and A.~Howard, ``Design and use paradigms for {Gazebo}, an
+  open-source multi-robot simulator,'' in \emph{Proceedings of the IEEE/RSJ
+  International Conference on Intelligent Robots and Systems}, 2004, pp.
+  2149--2154.
+
+\bibitem{todorov2012mujoco}
+E.~Todorov, T.~Erez, and Y.~Tassa, ``{MuJoCo}: A physics engine for model-based
+  control,'' in \emph{Proceedings of the IEEE/RSJ International Conference on
+  Intelligent Robots and Systems}, 2012, pp. 5026--5033.
+
+\bibitem{makoviychuk2021isaac}
+V.~Makoviychuk, L.~Wawrzyniak, Y.~Guo, M.~Lu, K.~Storey, M.~Macklin,
+  D.~Hoeller, N.~Rudin, A.~Allshire, A.~Handa, and G.~State, ``{Isaac Gym}:
+  High performance {GPU}-based physics simulation for robot learning,'' in
+  \emph{Proceedings of the Neural Information Processing Systems Track on
+  Datasets and Benchmarks}, 2021.
+
+\bibitem{macenski2022ros2}
+S.~Macenski, T.~Foote, B.~Gerkey, C.~Lalancette, and W.~Woodall, ``Robot
+  operating system 2: Design, architecture, and uses in the wild,''
+  \emph{Science Robotics}, vol.~7, no.~66, p. eabm6074, 2022.
+
+\bibitem{levine2016end}
+S.~Levine, C.~Finn, T.~Darrell, and P.~Abbeel, ``End-to-end training of deep
+  visuomotor policies,'' \emph{Journal of Machine Learning Research}, vol.~17,
+  no.~39, pp. 1--40, 2016.
+
+\bibitem{brohan2023rt1}
+A.~Brohan, N.~Brown, J.~Carbajal, Y.~Chebotar, X.~Chen, K.~Choromanski
+  \emph{et~al.}, ``{RT-1}: Robotics transformer for real-world control at
+  scale,'' in \emph{Proceedings of Robotics: Science and Systems}, 2023.
+
+\bibitem{zhao2023aloha}
+T.~Z. Zhao, V.~Kumar, S.~Levine, and C.~Finn, ``Learning fine-grained bimanual
+  manipulation with low-cost hardware,'' in \emph{Proceedings of Robotics:
+  Science and Systems}, 2023.
 
 \bibitem{kim2024openvla}
-M.~J. Kim, K.~Pertsch, S.~Karamcheti, T.~Xiao, A.~Balakrishna, S.~Nair,
-  R.~Rafailov, E.~Foster, G.~Lam, P.~Sanketi, Q.~Vuong, T.~Kollar,
-  B.~Burchfiel, R.~Tedrake, D.~Sadigh, S.~Levine, P.~Liang, and C.~Finn,
-  ``{OpenVLA: An Open-Source Vision-Language-Action Model},'' \emph{arXiv
-  preprint arXiv:2406.09246}, 2024.
-
-\bibitem{zhao2023learning}
-T.~Z. Zhao, V.~Kumar, S.~Levine, and C.~Finn, ``{Learning Fine-Grained Bimanual
-  Manipulation with Low-Cost Hardware},'' in \emph{Robotics: Science and
-  Systems (RSS 2023)}, 2023.
-
-\bibitem{pi0_2024}
-K.~Black, N.~Brown, D.~Driess, A.~Esmail, M.~Equi, C.~Finn, N.~Fu, C.~Hooper,
-  L.~Groom, K.~Hausman, B.~Ichter, S.~Jakubczak, T.~Jones, L.~Ke, S.~Levine,
-  A.~Li, D.~Tran, Q.~Vuong, S.~Yang, S.~Zakharov, and T.~Yu, ``{$\pi_0$: A
-  Vision-Language-Action Flow Model for General Robot Control},'' \emph{arXiv
-  preprint arXiv:2410.24164}, 2024.
-
-\bibitem{zitkovich2023rt2}
-B.~Zitkovich, T.~Yu, S.~Xu, P.~Xu, T.~Xiao, F.~Xia, J.~Wu, P.~Wohlhart,
-  S.~Welker, A.~Wahid, Q.~Vuong, V.~Vanhoucke, H.~Trinh, J.~Tan, M.~Turner,
-  S.~Levine, K.~Hausman, and C.~Finn, ``{RT-2: Vision-Language-Action Models
-  Transfer Web Knowledge to Robotic Control},'' \emph{Conference on Robot
-  Learning (CoRL 2023) / arXiv:2307.15818}, 2023.
-
-\bibitem{firoozi2023foundation}
-R.~Firoozi, J.~Tucker, S.~Tian, A.~Majumdar, M.~Schwager, and D.~Sadigh,
-  ``{Foundation Models in Robotics: Applications, Challenges, and the
-  Future},'' \emph{arXiv preprint arXiv:2312.07843}, 2023.
-
-\bibitem{kroemer2021review}
-O.~Kroemer, S.~Niekum, and G.~Konidaris, ``{A Review of Robot Learning for
-  Manipulation: Challenges, Representations, and Methods},'' \emph{Annual
-  Review of Control, Robotics, and Autonomous Systems}, vol.~4, pp. 239--295,
-  2021.
-
-\bibitem{billard2019trends}
-A.~Billard and D.~Kragic, ``{Trends and challenges in robot manipulation},''
-  \emph{Science}, vol. 364, no. 6446, p. eaat8414, 2019.
-
-\bibitem{aria_001_ravichandar_2020_recent}
-H.~Ravichandar, A.~S. Polydoros, S.~Chernova, and A.~Billard, ``{Recent
-  Advances in Robot Learning from Demonstration},'' \emph{Annual Review of
-  Control, Robotics, and Autonomous Systems}, 2020.
-
-\bibitem{aria_084_cadene_2026_lerobot}
-R.~Cadene, S.~Alibert, A.~Soare, Q.~Gallou{\'e}dec, A.~Zouitine, and T.~Wolf,
-  ``{LeRobot: State-of-the-Art Machine Learning for Real-World Robotics},''
-  \url{https://github.com/huggingface/lerobot}, 2024.
-
-\bibitem{lerobot_so100_2024}
-A.~Koch and R.~Cadene, ``{SO-100: Low-Cost 3D-Printed Manipulator for Imitation
-  Learning},'' \url{https://github.com/TheRobotStudio/SO-ARM100}, 2024.
-
-\bibitem{aria_014_wu_2024_gello}
-P.~Wu, Y.~Hou, R.~Zhou, G.~Shi, and C.~Finn, ``{GELLO: A General, Low-Cost, and
-  Intuitive Teleoperation Framework for Robot Manipulators},'' \emph{arXiv
-  preprint arXiv:2309.13037}, 2024.
-
-\bibitem{aria_022_macenski_2022_robot}
-S.~Macenski, T.~Foote, B.~Gerkey, C.~Lalancette, and W.~Woodall, ``{Robot
-  Operating System 2: Design, Architecture, and Uses In The Wild},''
-  \emph{Science Robotics}, 2022.
-
-\bibitem{aria_017_industrial_2022_moveit}
-D.~Coleman, I.~{\c{S}}ucan, S.~Chitta, and N.~Correll, ``{Reducing the Barrier
-  to Entry of Complex Robotic Software: A MoveIt! Case Study},'' \emph{Journal
-  of Software Engineering for Robotics}, vol.~5, no.~1, pp. 3--16, 2014.
-
-\bibitem{aria_114_kingston_2022_robowflex}
-Z.~Kingston, K.~Chamzas, and L.~E. Kavraki, ``{Robowflex: Robot Motion Planning
-  with MoveIt Made Easy},'' \emph{arXiv preprint arXiv:2103.12826}, 2022.
-
-\bibitem{aria_008_muthusamy_2025_a}
-A.~A. Adil, S.~Sakhrieh, J.~Mounsef, and N.~Maalouf, ``{A Multi-Robot
-  Collaborative Manipulation Framework for Dynamic and Obstacle-Dense
-  Environments: Integration of Deep Learning for Real-Time Task Execution},''
-  \emph{Frontiers in Robotics and AI}, 2025.
-
-\bibitem{aria_093_chen_2025_multiagent}
-J.~Chen, Z.~Yang, H.~G. Xu, D.~Zhang, and G.~Mylonas, ``{Multi-Agent Systems
-  for Robotic Autonomy with LLMs},'' \emph{arXiv preprint arXiv:2505.05762},
-  2025.
-
-\bibitem{aria_113_jiang_2023_robotic}
-J.~Jiang, G.~Cao, J.~Deng, T.-T. Do, and S.~Luo, ``{Robotic Perception of
-  Transparent Objects: A Review},'' \emph{IEEE Transactions on Artificial
-  Intelligence}, vol.~5, no.~6, pp. 2547--2567, 2024.
-
-\bibitem{aria_131_fang_2022_transcg}
-H.~Fang, H.-S. Fang, S.~Xu, and C.~Lu, ``{TransCG: A Large-Scale Real-World
-  Dataset for Transparent Object Grasping and Depth Estimation},'' \emph{IEEE
-  Robotics and Automation Letters (RA-L) / arXiv:2202.08471}, 2022.
-
-\bibitem{aria_047_sajjan_2020_cleargrasp}
-S.~Sajjan, M.~Moore, M.~Pan, G.~Nagaraja, J.~Lee, A.~Zeng, and S.~Song,
-  ``{ClearGrasp: 3D Shape Estimation and Grasping of Transparent Objects},''
-  \emph{IEEE International Conference on Robotics and Automation (ICRA 2020)},
-  2020.
-
-\bibitem{aria_046_team_2024_cleardepth}
-K.~Bai, H.~Zeng, L.~Zhang, Y.~Liu, H.~Xu, Z.~Chen, and J.~Zhang, ``{ClearDepth:
-  Efficient Stereo Perception of Transparent Objects for Robotic
-  Manipulation},'' \emph{arXiv preprint arXiv:2409.08926}, 2024.
-
-\bibitem{aria_116_authors_2025_adaptive}
-A.~Chen, X.~Li, K.~Cen, and C.~Hon, ``{Adaptive Grasp Pose Optimization for
-  Robotic Arms Using Low-Cost Depth Sensors in Complex Environments},''
-  \emph{Sensors (MDPI)}, 2025.
-
-\bibitem{aria_052_yang_2024_depth}
-L.~Yang, B.~Kang, Z.~Huang, X.~Xu, J.~Feng, and H.~Zhao, ``{Depth Anything V2:
-  A Deep Monocular Depth Estimation Foundation Model},'' \emph{arXiv preprint
-  arXiv:2406.09414}, 2024.
-
-\bibitem{aria_089_birkl_2023_midas}
-R.~Birkl, D.~Wofk, and M.~M{\"u}ller, ``{MiDaS v3.1 -- A Model Zoo for Robust
-  Monocular Relative Depth Estimation},'' \emph{arXiv preprint
-  arXiv:2307.14460}, 2023.
-
-\bibitem{aria_009_murray_2025_assessing}
-L.~J. Murray, J.~Verster, and J.~Dickens, ``{Assessing Depth Anything V2
-  Monocular Depth Estimation as a LiDAR Alternative in Robotics},'' \emph{MATEC
-  Web of Conferences (RAPDASA-RobMech-PRASA-AMI 2025)}, 2025.
-
-\bibitem{aria_040_wagaa_2023_analytical}
-N.~Wagaa, H.~Kallel, and N.~Mellouli, ``{Analytical and Deep Learning
-  Approaches for Solving the Inverse Kinematic Problem of High-DOF Robotic
-  Arms},'' \emph{Engineering Applications of Artificial Intelligence}, 2023.
-
-\bibitem{aria_050_sundaralingam_2024_curobo}
-B.~Sundaralingam, S.~K.~S. Hari, A.~Fishman, C.~Garrett, K.~V. Wyk, V.~Blukis,
-  A.~Millane, H.~Oleynikova, A.~Handa, F.~Ramos, N.~Ratliff, and D.~Fox,
-  ``{cuRobo: Parallelized Collision-Free Minimum-Jerk Robot Motion
-  Generation},'' in \emph{IEEE International Conference on Robotics and
-  Automation (ICRA)}, 2024.
-
-\bibitem{aria_076_li_2021_hybrik}
-D.~Rakita, B.~Mutlu, and M.~Gleicher, ``{RelaxedIK: Real-Time Synthesis of
-  Accurate and Feasible Robot Arm Motion},'' \emph{Autonomous Robots}, vol.~42,
-  no.~6, pp. 1289--1303, 2018.
-
-\bibitem{craig2005introduction}
-J.~J. Craig, \emph{{Introduction to Robotics: Mechanics and Control}},
-  3rd~ed.\hskip 1em plus 0.5em minus 0.4em\relax Pearson Prentice Hall, 2005.
-
-\bibitem{aria_035_fishman_2025_avoid}
-A.~Fishman, A.~Walsman, M.~Bhardwaj, W.~Yuan, B.~Sundaralingam, B.~Boots, and
-  D.~Fox, ``{Avoid Everything: Real-Time Dynamic Obstacle Avoidance for Robot
-  Manipulators},'' \emph{Robotics: Science and Systems (RSS 2025)}, 2025.
-
-\bibitem{yolov8_2023}
-G.~Jocher, A.~Chaurasia, and J.~Qiu, ``{Ultralytics YOLOv8},''
-  \url{https://github.com/ultralytics/ultralytics}, 2023.
-
-\bibitem{aria_023_ravi_2024_sam}
-N.~Ravi, V.~Gabeur, Y.-T. Hu, R.~Hu, C.~Ryali, T.~Ma, H.~Khedr, R.~R{\"a}dle,
-  C.~Rolland, L.~Gustafson, E.~Mintun, J.~Pan, K.~V. Alwala, N.~Carion, C.-Y.
-  Wu, R.~Girshick, P.~Doll{\'a}r, and C.~Feichtenhofer, ``{SAM 2: Segment
-  Anything in Images and Videos},'' \emph{arXiv preprint arXiv:2408.00714},
-  2024.
-
-\bibitem{yoshikawa1985manipulability}
-T.~Yoshikawa, ``{Manipulability of Robotic Mechanisms},'' \emph{The
-  International Journal of Robotics Research}, vol.~4, no.~2, pp. 3--9, 1985.
-
-\bibitem{aria_132_yao_2023_tree}
-S.~Yao, D.~Yu, J.~Zhao, I.~Shafran, T.~L. Griffiths, Y.~Cao, and K.~Narasimhan,
-  ``{Tree of Thoughts: Deliberate Problem Solving with Large Language
-  Models},'' \emph{NeurIPS 2023 / arXiv:2305.10601}, 2023.
-
-\bibitem{openvla_oft_2025}
-M.~J. Kim, C.~Finn, and P.~Liang, ``{Fine-Tuning Vision-Language-Action Models:
-  Optimizing Speed and Success},'' \emph{arXiv preprint arXiv:2502.19645},
-  2025.
-
-\bibitem{smolvla_2025}
-M.~Shukor, D.~Aubakirova, F.~Capuano, P.~Kooijmans, S.~Palma, A.~Zouitine,
-  M.~Aractingi, C.~Pascal, M.~Russi, A.~Marafioti, S.~Alibert, M.~Cord,
-  T.~Wolf, and R.~Cadene, ``{SmolVLA: A Vision-Language-Action Model for
-  Affordable and Efficient Robotics},'' \emph{arXiv preprint arXiv:2506.01844},
-  2025.
-
-\bibitem{pi05_2025}
-K.~Black, N.~Brown, D.~Driess, A.~Esmail, M.~Equi, C.~Finn, N.~Fu, C.~Hooper,
-  K.~Hausman, B.~Ichter, S.~Levine, S.~Zakharov, and T.~Yu, ``{$\pi_{0.5}$:
-  Scaling Flow-Based Vision-Language-Action Models for Open-World Dexterous
-  Manipulation},'' \emph{arXiv preprint arXiv:2504.16054}, 2025.
-
-\bibitem{groot_n1_2025}
-J.~Bjorck, F.~Castaneda, N.~Cherniadev, X.~Da, R.~Ding, L.~Fan, Y.~Fang,
-  D.~Fox, F.~Hu, S.~Huang, J.~Jang, Z.~Jiang, J.~Kautz, K.~Kundalia, L.~Lao,
-  Z.~Li, Z.~Lin, K.~Lin, G.~Liu, E.~Llontop, L.~Magne, A.~Mandlekar,
-  A.~Narayan, S.~Nasiriany, S.~Reed, Y.~L. Tan, G.~Wang, Z.~Wang, J.~Wang,
-  Q.~Wang, J.~Xiang, Y.~Xie, Y.~Xu, Z.~Xu, S.~Ye, Z.~Yu, A.~Zhang, H.~Zhang,
-  Y.~Zhao, R.~Zheng, and Y.~Zhu, ``{Project GR00T N1: An Open Foundation Model
-  for Generalist Humanoid Robots},'' \emph{arXiv preprint arXiv:2503.14734},
-  2025.
-
-\bibitem{aria_019_ghosh_2024_octo}
-D.~Ghosh, H.~Walke, K.~Pertsch, K.~Black, O.~Mees, S.~Dasari, J.~Hejna,
-  T.~Kreiman, C.~Xu, J.~Luo, Y.~L. Tan, L.~Y. Chen, Q.~Vuong, P.~R. Sanketi,
-  S.~Levine, and C.~Finn, ``{Octo: An Open-Source Generalist Robot Policy},''
-  \emph{Robotics: Science and Systems (RSS 2024) / arXiv:2405.12213}, 2024.
-
-\bibitem{aria_054_ahn_2022_do}
-M.~Ahn, A.~Brohan, N.~Brown, Y.~Chebotar, O.~Cortes, B.~David, C.~Finn,
-  K.~Gopalakrishnan, K.~Hausman, A.~Herzog, D.~Ho, J.~Hsu, J.~Ibarz, B.~Ichter,
-  A.~Irpan, E.~Jang, R.~J. Ruano, K.~Jeffrey, S.~Jesmonth, N.~J. Joshi,
-  R.~Julian, D.~Kalashnikov, Y.~Kuang, K.-H. Lee, S.~Levine, Y.~Lu, L.~Luu,
-  C.~Parada, P.~Pastor, J.~Quiambao, K.~Rao, J.~Rettinghouse, D.~Reyes,
-  P.~Sermanet, N.~Sievers, C.~Tan, S.~Tran, V.~Vanhoucke, S.~Wie, T.~Xiao,
-  P.~Xu, S.~Xu, and M.~Yan, ``{Do As I Can, Not As I Say: Grounding Language in
-  Robotic Affordances (SayCan)},'' \emph{arXiv preprint arXiv:2204.01691},
-  2022.
-
-\bibitem{huang2022inner}
-W.~Huang, F.~Xia, T.~Xiao, H.~Chan, J.~Liang, P.~Florence, A.~Zeng, J.~Tompson,
-  I.~Mordatch, Y.~Chebotar, P.~Sermanet, N.~Brown, T.~Jackson, L.~Luu,
-  S.~Levine, K.~Hausman, and B.~Ichter, ``{Inner Monologue: Embodied Reasoning
-  through Planning with Language Models},'' in \emph{Conference on Robot
-  Learning (CoRL)}, 2022, pp. 1769--1782.
-
-\bibitem{liang2023code}
-J.~Liang, W.~Huang, F.~Xia, P.~Xu, K.~Hausman, B.~Ichter, P.~Florence, and
-  A.~Zeng, ``{Code as Policies: Language Model Programs for Embodied
-  Control},'' \emph{IEEE Robotics and Automation Letters}, vol.~8, no.~4, pp.
-  2271--2278, 2023.
-
-\bibitem{huang2023voxposer}
-W.~Huang, C.~Wang, R.~Zhang, Y.~Li, J.~Wu, and L.~Fei-Fei, ``{VoxPoser:
-  Composable 3D Value Maps for Robotic Manipulation with Language Models},'' in
-  \emph{Conference on Robot Learning (CoRL)}, 2023.
-
-\bibitem{singh2023progprompt}
-I.~Singh, V.~Blukis, A.~Mousavian, A.~Goyal, D.~Xu, J.~Tremblay, D.~Fox,
-  J.~Thomason, and A.~Garg, ``{ProgPrompt: Generating Situated Robot Task Plans
-  using Large Language Models},'' in \emph{IEEE International Conference on
-  Robotics and Automation (ICRA)}, 2023, pp. 11\,523--11\,530.
-
-\bibitem{aria_080_zhou_2024_language}
-A.~Zhou, K.~Yan, M.~Shlapentokh-Rothman, H.~Wang, and Y.-X. Wang, ``{Language
-  Agent Tree Search Unifies Reasoning, Acting, and Planning in Language Models
-  (LATS)},'' \emph{ICLR 2024 / arXiv:2310.04406}, 2024.
-
-\bibitem{aria_039_doan_2022_asking}
-F.~I. Do{\u{g}}an, I.~Torre, and I.~Leite, ``{Asking Follow-Up Clarifications
-  to Resolve Ambiguities in Human-Robot Conversation},'' \emph{ACM/IEEE
-  International Conference on Human-Robot Interaction (HRI)}, 2022.
-
-\bibitem{aria_130_erdogan_2024_tinyagent}
-L.~E. Erdogan, N.~Lee, S.~Jha, S.~Kim, R.~Tabrizi, S.~Moon, C.~Hooper,
-  G.~Anumanchipalli, K.~Keutzer, and A.~Gholami, ``{TinyAgent: Function Calling
-  at the Edge},'' \emph{arXiv preprint arXiv:2409.00608}, 2024.
-
-\bibitem{aria_135_chen_2023_visual}
-T.~Chen, M.~Tippur, S.~Qin, E.~Adelson, and P.~Agrawal, ``{Visual Dexterity:
-  In-Hand Reorientation of Novel and Complex Object Shapes},'' \emph{Science
-  Robotics / arXiv:2211.11744}, 2023.
-
-\bibitem{mason2001mechanics}
-M.~T. Mason, \emph{{Mechanics of Robotic Manipulation}}.\hskip 1em plus 0.5em
-  minus 0.4em\relax MIT Press, 2001.
-
-\bibitem{aria_044_pang_2025_highstiffness}
-S.~Pang, F.~Guo, B.~Zhang, H.~Huang, X.~Pan, and W.~Shang, ``{High-Stiffness
-  Path Planning for 7-DOF Cable-Driven Manipulators in Single and Dual-Arm
-  Configurations},'' in \emph{IEEE/RSJ International Conference on Intelligent
-  Robots and Systems (IROS)}, 2025, p. 11246216.
-
-\bibitem{aria_004_looper_2023_3d}
-S.~Looper, J.~Rodriguez-Puigvert, R.~Siegwart, C.~Cadena, and L.~Schmid, ``{3D
-  VSG: Long-term Semantic Scene Change Prediction through 3D Variable Scene
-  Graphs},'' \emph{IEEE Robotics and Automation Letters (RA-L) /
-  arXiv:2209.07896}, 2023.
-
-\bibitem{aria_002_kerbl_2023_3d}
-B.~Kerbl, G.~Kopanas, T.~Leimk{\"u}hler, and G.~Drettakis, ``{3D Gaussian
-  Splatting for Real-Time Radiance Field Rendering},'' \emph{ACM Transactions
-  on Graphics (SIGGRAPH)}, vol.~42, no.~4, pp. 139:1--139:14, 2023.
-
-\bibitem{aria_003_hughes_2023_foundations}
-N.~Hughes, Y.~Chang, S.~Hu, R.~Talak, R.~Abdulhai, J.~Strader, and L.~Carlone,
-  ``{Foundations of Spatial Perception for Robotics: Hierarchical
-  Representations and Realtime Systems},'' \emph{arXiv preprint
-  arXiv:2305.07154}, 2023.
-
-\bibitem{aria_088_packer_2023_memgpt}
-C.~Packer, S.~Wooders, K.~Lin, V.~Fang, S.~G. Patil, I.~Stoica, and J.~E.
-  Gonzalez, ``{MemGPT: Towards LLMs as Operating Systems},'' \emph{arXiv
-  preprint arXiv:2310.08560}, 2023.
-
-\bibitem{aria_117_vieira_2025_application}
-D.~Vieira, M.~R. Oliveira, R.~Arrais, and P.~Melo, ``{Application of Cloud
-  Simulation Techniques for Robotic Software Validation},'' \emph{Sensors},
-  vol.~25, no.~6, p. 1693, 2025.
-
-\bibitem{gazebo_2004}
-N.~Koenig and A.~Howard, ``{Design and Use Paradigms for Gazebo: An Open-Source
-  Multi-Robot Simulator},'' in \emph{IEEE/RSJ International Conference on
-  Intelligent Robots and Systems (IROS)}, 2004, pp. 2149--2154.
-
-\bibitem{aria_007_agha_2021_a}
-R.~A. {AlRashid Agha}, Z.~H. Mahdi, M.~N. Sefer, and I.~Hamarash, ``{A
-  ROS-Gazebo Interface for the Katana Robotic Arm Manipulation},'' \emph{UKH
-  Journal of Science and Engineering}, 2021.
-
-\bibitem{aria_118_team_2025_time}
-R.~Sultan and S.~Greiser, ``{Time and Frequency Domain Analysis of IMU-Based
-  Orientation Estimation Algorithms with Comparison to Robotic Arm Orientation
-  as Reference},'' \emph{Sensors (MDPI)}, 2025.
-
-\bibitem{aria_006_chanrungmaneekul_2025_arccalib}
-P.~Chanrungmaneekul, Y.~Chen, J.~T. Grace, A.~M. Dollar, and K.~Hang,
-  ``{ARC-Calib: Autonomous Markerless Camera-to-Robot Calibration via
-  Exploratory Robot Motions},'' \emph{arXiv preprint arXiv:2503.14701}, 2025.
-
-\bibitem{aria_086_ling_2023_prognostics}
-H.~Lee, I.~Raouf, J.~Song, H.~S. Kim, and S.~Lee, ``{Prognostics and Health
-  Management of the Robotic Servo-Motor under Variable Operating Conditions},''
-  \emph{Mathematics}, vol.~11, no.~2, p. 398, 2023.
-
-\bibitem{aria_096_group_2025_observe}
-G.~Wang, H.~Li, S.~Zhang, D.~Guo, Y.~Liu, and H.~Liu, ``{Observe Then Act:
-  Asynchronous Active Vision-Action Model for Robotic Manipulation},''
-  \emph{IEEE Robotics and Automation Letters (RA-L)}, 2025.
-
-\bibitem{lynch2017modern}
-K.~M. Lynch and F.~C. Park, \emph{{Modern Robotics: Mechanics, Planning, and
-  Control}}.\hskip 1em plus 0.5em minus 0.4em\relax Cambridge University Press,
-  2017.
-
-\bibitem{trac_ik_2015}
-P.~Beeson and B.~Ames, ``{TRAC-IK: An Open-Source Library for Improved Solving
-  of Generic Inverse Kinematics},'' in \emph{IEEE-RAS 15th International
-  Conference on Humanoid Robots (Humanoids)}, 2015, pp. 928--935.
-
-\bibitem{kdl_2001}
-H.~Bruyninckx, ``{Open Robot Control Software: The OROCOS Project},'' in
-  \emph{IEEE International Conference on Robotics and Automation (ICRA)}, 2001,
-  pp. 2523--2528.
-
-\bibitem{ikpy_2020}
-P.~Manceron, ``{IKPy: An Inverse Kinematics Library in Python},''
-  \url{https://github.com/Phylliade/ikpy}, 2020.
-
-\bibitem{khatib1987unified}
-O.~Khatib, ``{A Unified Approach for Motion and Force Control of Robot
-  Manipulators: The Operational Space Formulation},'' \emph{IEEE Journal on
-  Robotics and Automation}, vol.~3, no.~1, pp. 43--53, 1987.
-
-\bibitem{aria_036_olson_2011_apriltag}
-E.~Olson, ``{AprilTag: A Robust and Flexible Visual Fiducial System},''
-  \emph{IEEE International Conference on Robotics and Automation (ICRA)}, 2011.
-
-\bibitem{chaumette2006visual}
-F.~Chaumette and S.~Hutchinson, ``{Visual Servo Control. I. Basic
-  Approaches},'' \emph{IEEE Robotics and Automation Magazine}, vol.~13, no.~4,
-  pp. 82--90, 2006.
-
-\bibitem{aria_069_fang_2020_graspnet1billion}
-H.-S. Fang, C.~Wang, M.~Gou, and C.~Lu, ``{GraspNet-1Billion: A Large-Scale
-  Benchmark for General Object Grasping},'' \emph{CVPR 2020 /
-  arXiv:1912.13470}, 2020.
+M.~J. Kim, K.~Pertsch, S.~Karamcheti, T.~Xiao, A.~Balakrishna, S.~Nair
+  \emph{et~al.}, ``{OpenVLA}: An open-source vision-language-action model,''
+  \emph{arXiv preprint arXiv:2406.09246}, 2024.
+
+\bibitem{wilson1927probable}
+E.~B. Wilson, ``Probable inference, the law of succession, and statistical
+  inference,'' \emph{Journal of the American Statistical Association}, vol.~22,
+  no. 158, pp. 209--212, 1927.
+
+\bibitem{mcnemar1947note}
+Q.~McNemar, ``Note on the sampling error of the difference between correlated
+  proportions or percentages,'' \emph{Psychometrika}, vol.~12, no.~2, pp.
+  153--157, 1947.
+
+\bibitem{holm1979simple}
+S.~Holm, ``A simple sequentially rejective multiple test procedure,''
+  \emph{Scandinavian Journal of Statistics}, vol.~6, no.~2, pp. 65--70, 1979.
+
+\bibitem{newcombe1998interval}
+R.~G. Newcombe, ``Interval estimation for the difference between independent
+  proportions: Comparison of eleven methods,'' \emph{Statistics in Medicine},
+  vol.~17, no.~8, pp. 873--890, 1998.
 
 \end{thebibliography}

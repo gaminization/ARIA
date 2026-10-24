@@ -111,7 +111,7 @@ def main() -> int:
 
     summary = {"exp_id": exp_id, "started_at": t_start.isoformat(),
                "finished_at": datetime.now(timezone.utc).isoformat(),
-               "n": args.n, "seed": args.seed, "commit": provenance.commit()}
+               "n": args.n, "seed": args.seed, "commit": log.stamp["commit"]}
     for name in ("current", "old_8d83b97"):
         rows = [(e, t) for (nm, e, t) in out if nm == name]
         errs = np.array([e for e, _ in rows])

@@ -308,7 +308,7 @@ def main() -> int:
             "n": len(rows),
             "seeds": seeds,
             "speeds": speeds,
-            "commit": provenance.commit(),
+            "commit": log.stamp["commit"],
         }
         for speed in speeds:
             cell = [r for r in rows if abs(r["speed_cmd"] - speed) < 1e-12]
