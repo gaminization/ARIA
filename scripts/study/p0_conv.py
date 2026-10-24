@@ -54,7 +54,7 @@ TAIL = "conveyor_system::tail_roller"
 PART_RESET = (0.20, 0.75, 0.655)
 HOLD_Q = (0.0, 1.0, -0.6, 1.55, 0.855)
 ACCEL_S = 0.30
-WINDOW_TICKS = 10  # /clock publishes at 5 Hz, so 10 ticks = 2.0 s sim
+WINDOW_TICKS = 20  # /clock publishes at ~10 Hz, so 20 ticks = ~2.0 s sim
 
 
 class Sampler(StudyNode):
@@ -166,7 +166,7 @@ def main() -> int:
         "hold_q": HOLD_Q,
         "accel_s": ACCEL_S,
         "window_ticks": WINDOW_TICKS,
-        "clock_rate_hz": 5.0,
+        "clock_rate_hz": 10.0,
         "speed_source": "commanded Twist.linear.x",
         "realized_source": "/gazebo/link_states workpiece twist (mean over window)",
     }
@@ -234,6 +234,7 @@ def main() -> int:
                     node.wait_ticks(WINDOW_TICKS, timeout=30.0)
                     wall1 = time.monotonic()
                     sim1 = node.sim_time
+                    speed_reported_during = node.speed_reported
                     q_now = node.q(
                         ["waist_joint", "shoulder_joint", "elbow_joint",
                          "wrist_pitch_joint"]
@@ -268,7 +269,7 @@ def main() -> int:
                         "speed_cmd": speed,
                         "started_at": t_trial0,
                         "finished_at": datetime.now(timezone.utc).isoformat(),
-                        "speed_reported": node.speed_reported,
+                        "speed_reported": speed_reported_during,
                         "start_x": x,
                         "start_y": y0,
                         "start_z": PART_RESET[2],

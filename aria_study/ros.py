@@ -271,6 +271,10 @@ class StudyNode(Node):
         for _ in range(max(1, attempts)):
             used += 1
             t0 = self.send_trajectory(positions, duration, names)
+            # A single publish can be lost before the controller's subscription
+            # is fully matched; a second identical goal is harmless.
+            self.spin_for(0.05)
+            self.send_trajectory(positions, duration, names)
             ok = self.wait_until(
                 lambda: all(
                     abs(self.joint_positions.get(n, 1e9) - float(p)) <= tol
