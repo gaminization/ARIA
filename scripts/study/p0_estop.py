@@ -151,6 +151,8 @@ class EstopNode(StudyNode):
 def _sustained_stop(ts: np.ndarray, vd: np.ndarray, thresh: float, t_sig: float) -> float:
     """First sample from which |dq/dt| stays below ``thresh`` for ``HOLD_S``."""
     for i in range(len(ts)):
+        if ts[i] + HOLD_S > ts[-1]:
+            break
         if not np.all(np.abs(vd[i]) < thresh):
             continue
         window = (ts >= ts[i]) & (ts <= ts[i] + HOLD_S)
