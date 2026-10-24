@@ -350,3 +350,11 @@ because each changes what the paper is allowed to claim.
 | The P0-ESTOP summary commit differed from the row commit | A documentation-only commit landed mid-run: rows `99966bd`, summary `d978641`. | `build_numbers.py` now reads the single commit stamped on the rows and warns when the summary differs. The old run is archived. |
 | N4's conditional execution-failure rate was reported as a failure | N4 executes 47/100 targets with 0 execution failures; the baseline executes 100/100 with 48 failures. Intention-to-treat success is 47% vs 52%. | The paper reports both: the gate lowers conditional execution failures but rejects 53% of targets, rescues 1 baseline failure, and loses 6 baseline successes. No practical improvement is claimed. |
 | P2-N4 target box and interval method changed | Box changed on development seeds before evaluation; the paired design uses a bootstrap interval rather than the pre-registered unpaired Newcombe interval. | Recorded in `DEVIATIONS.md` D2 and D3; the evaluation seeds were not used for tuning. |
+
+### 11.3 Final evaluation values after the second repair pass
+
+| Experiment | Commit | Final values |
+|---|---|---|
+| P0-REACH | `7e9d762` | 100,000 targets, per-row provenance. Current 99.241% recall at 5 mm (Wilson 0.99185–0.99293), median error 0.365 mm, p95 0.476 mm, median solve 0.705 ms. Historical 0.019% (Wilson 0.000122–0.000297), median error 240.934 mm, p95 360.489 mm, median solve 0.230 ms. McNemar b=99,222, c=0, p underflows. Values are identical to the pre-provenance run; only the solve-time medians moved (0.863/0.288 ms to 0.705/0.230 ms). |
+| P0-ESTOP | `0bb4ed0` | 100 trials, 50 seeds × 2 paths. At the pre-registered 0.01 rad/s threshold: command 50/50 halts, median t_stop 120 ms (p95 120 ms), median t_zero 0.704 ms, median overshoot 0.0107 rad, 5 joints with velocities. Safety 0/50 halts, median t_zero 0.915 ms, median overshoot 0.716 rad, 4 joints without velocities. McNemar b=50, c=0, p=1.78e-15. At the 0.05 rad/s sensitivity threshold: command 50/50, median t_stop 110 ms; safety 0/50. |
+| P2-N4 | `1ad64b3` | 100 targets × 2 pipelines. Baseline 52/100 ITT, 48/100 execution failures; N4 47/100 ITT, 47/100 executed, 0/47 execution failures. Paired transitions: 1 N4-only success, 6 baseline-only, 46 both, 47 neither. RD −5.0 pp (paired bootstrap CI −10.0 to 0.0), McNemar p=0.125. |
