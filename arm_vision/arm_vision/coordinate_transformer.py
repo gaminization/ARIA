@@ -336,9 +336,14 @@ def create_top_camera_transformer(width: int = 1920, height: int = 1080,
 
     # Overhead camera position in world frame (supports industrial workcell & tester workspace)
     if cam_pos is None:
-        cam_x = float(os.environ.get("ARIA_OVERHEAD_CAM_X", "0.18" if os.environ.get("ARIA_WORKCELL") == "industrial" else "0.0"))
-        cam_y = float(os.environ.get("ARIA_OVERHEAD_CAM_Y", "0.03" if os.environ.get("ARIA_WORKCELL") == "industrial" else "0.0"))
-        cam_z = float(os.environ.get("ARIA_OVERHEAD_CAM_Z", "1.35" if os.environ.get("ARIA_WORKCELL") == "industrial" else "1.45"))
+        is_industrial = (
+            (width == 1280 and height == 720)
+            or os.environ.get("ARIA_WORKCELL") == "industrial"
+            or "industrial" in os.environ.get("ARIA_WORLD", "")
+        )
+        cam_x = float(os.environ.get("ARIA_OVERHEAD_CAM_X", "0.18" if is_industrial else "0.0"))
+        cam_y = float(os.environ.get("ARIA_OVERHEAD_CAM_Y", "0.03" if is_industrial else "0.0"))
+        cam_z = float(os.environ.get("ARIA_OVERHEAD_CAM_Z", "1.35" if is_industrial else "1.45"))
         cam_pos = np.array([cam_x, cam_y, cam_z])
 
     # Camera to world rotation (maps image x, y to world -Y, +X):

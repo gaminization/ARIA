@@ -55,6 +55,7 @@ SKILL_ALIAS_MAP = {
     'pick_all': 'pick_all', 'pick_everything': 'pick_all',
     'stack_all': 'stack_all', 'nest_all': 'nest_all',
     'sort_by_color': 'sort_by_color', 'sort_colors': 'sort_by_color',
+    'place_all': 'place_all',
 }
 
 

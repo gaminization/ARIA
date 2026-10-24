@@ -78,6 +78,17 @@ _OBJECT_ALIASES = {
     "dinner plate": "dinner_plate",
     "pan": "tefal_pan",
     "frying pan": "tefal_pan",
+    "bin": "bin",
+    "red bin": "reject_bin",
+    "reject bin": "reject_bin",
+    "boxes": "box",
+    "blue box": "blue box",
+    "blue boxes": "blue box",
+    "red box": "red box",
+    "red boxes": "red box",
+    "assembly tray": "assembly_finished_tray",
+    "finished tray": "assembly_finished_tray",
+    "green tray": "assembly_finished_tray",
     "tray": "sorting_tray",
     "sorting tray": "sorting_tray",
     "box": "box",
@@ -121,7 +132,7 @@ def _strip_stop(tokens: List[str]) -> List[str]:
 def _canonical_object(phrase: str) -> str:
     """Map a free-form noun phrase to the best live-search phrase."""
     phrase = _norm(phrase)
-    phrase = re.sub(r"^(the|a|an)\s+", "", phrase).strip()
+    phrase = re.sub(r"^(the|a|an|all\s+the|all|every|each)\s+", "", phrase).strip()
     if not phrase:
         return ""
     # Direct alias, longest first so "orange ball" beats "ball".
@@ -130,7 +141,7 @@ def _canonical_object(phrase: str) -> str:
             # Preserve an explicit colour qualifier if the caller gave one.
             colors = [t for t in _tokens(phrase) if t in _COLOR_WORDS]
             base = _OBJECT_ALIASES[alias]
-            if colors and base not in _COLOR_WORDS:
+            if colors and base not in _COLOR_WORDS and not base.startswith(colors[0]):
                 return f"{colors[0]} {base}"
             return base
     # Keep multi-word descriptors (e.g. "blue cube") but drop stop words.
@@ -139,15 +150,21 @@ def _canonical_object(phrase: str) -> str:
 
 
 def _split_put(command: str) -> Optional[tuple]:
-    """Split 'put X in/into/on Y' → (X, Y)."""
+    """Split 'put X in/into/on Y' or 'pick X and place it in Y' → (X, Y)."""
+    m2 = re.search(
+        r"\b(?:pick|grab|take)\b\s+(?:up\s+)?(.+?)\s+\b(?:and\s+)?(?:put|place|keep|set)\s+(?:them|it)?\s*(?:in|into|on|inside|inside of)\b\s+(.+)$",
+        command,
+    )
+    if m2:
+        return m2.group(1).strip(), m2.group(2).strip()
     m = re.search(
-        r"\b(?:put|place|set|drop|insert|throw)\b\s+(.+?)\s+"
+        r"\b(?:put|place|set|drop|insert|throw|keep)\b\s+(.+?)\s+"
         r"\b(?:in|into|inside|on|onto|at|inside of)\b\s+(.+)$",
         command,
     )
-    if not m:
-        return None
-    return m.group(1).strip(), m.group(2).strip()
+    if m:
+        return m.group(1).strip(), m.group(2).strip()
+    return None
 
 
 def _extract_speed(command: str) -> Optional[float]:
@@ -231,6 +248,19 @@ class IntentPlanner:
         switch = bool(re.search(r"\b(switch|change|set|adjust|move)\b", cmd))
         all_speeds = bool(re.search(r"\b(all|every|each)\b.*\b(speed|speeds)\b", cmd)) \
             or bool(re.search(r"\bspeed(s)?\b.*\ball\b", cmd))
+
+        if re.search(r"\bsort\b", cmd):
+            speed = _extract_speed(cmd) or 50.0
+            return {
+                "goal": "Start the conveyor belt and sort the boxes",
+                "actions": [
+                    _act("conveyor", f"Start belt at {speed:.0f}%", power=speed),
+                    _act("wait", "Allow conveyor to feed boxes", seconds=1.0),
+                    _act("scan_workspace", "Detect incoming workpieces"),
+                    _act("sort_by_color", "Group objects by color and deposit each group", destination="sorting_tray"),
+                ],
+                "confidence": 0.95,
+            }
 
         if all_speeds:
             sweep = [15.0, 30.0, 50.0, 75.0, 100.0]
@@ -322,10 +352,10 @@ class IntentPlanner:
         if not re.search(r"\ball\b|\bevery\b|\bobjects\b|\bitems\b|\bworkpieces\b", cmd):
             return None
         destination = "sorting_tray"
-        m = re.search(r"\b(?:in|into|onto|on)\s+(?:the\s+)?(.+)$", cmd)
+        m = re.search(r"\b(?:in|into|onto)\s+(?:the\s+)?([a-z_ ]+)$", cmd)
         if m:
             cand = _canonical_object(m.group(1))
-            if cand:
+            if cand and (cand in _RECEPTACLE_HINTS or any(k in cand for k in ["tray", "bin", "box", "table", "mat"])):
                 destination = cand
         return {
             "goal": f"Sort every object by colour into the {destination}",
@@ -342,6 +372,8 @@ class IntentPlanner:
         if not re.search(r"\bpick\b|\bgrab\b|\blift\b|\btake\b", cmd):
             return None
         if not re.search(r"\b(every|all|each)\b", cmd):
+            return None
+        if re.search(r"\b(?:put|place|keep|drop|set)\b", cmd) and re.search(r"\b(?:in|into|on|inside)\b", cmd):
             return None
         handle = bool(re.search(r"\bhandle", cmd))
         # "pick up every object available in the world"
@@ -482,6 +514,18 @@ class IntentPlanner:
         params: Dict[str, Any] = {}
         if handle:
             params["grasp_strategy"] = "handle"
+        is_all = bool(re.search(r"\b(all|every|each)\b", cmd))
+        if is_all:
+            return {
+                "goal": f"Pick all {obj} and place into {dest}",
+                "actions": [
+                    _act("scan_workspace", "Refresh the world model"),
+                    _act("place_all", f"Pick each {obj} and place it into {dest}",
+                         object_id=obj, destination=dest, **params),
+                    _act("verify", "Confirm the object is contained", object_id=obj),
+                ],
+                "confidence": 0.94,
+            }
         return {
             "goal": f"Put {obj} into {dest}",
             "actions": [

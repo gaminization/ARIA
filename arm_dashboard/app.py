@@ -227,11 +227,32 @@ class ARIADashboardState:
                     pass
 
     def get_full_state(self) -> dict:
+        def _deg(p):
+            if p is None or not isinstance(p, (int, float)) or math.isnan(p) or math.isinf(p):
+                return 0.0
+            return round(math.degrees(p), 1)
+
+        def _rad(p):
+            if p is None or not isinstance(p, (int, float)) or math.isnan(p) or math.isinf(p):
+                return 0.0
+            return round(p, 4)
+
+        def _clean(val):
+            if isinstance(val, float):
+                if math.isnan(val) or math.isinf(val):
+                    return 0.0
+                return val
+            elif isinstance(val, dict):
+                return {k: _clean(v) for k, v in val.items()}
+            elif isinstance(val, (list, tuple)):
+                return [_clean(v) for v in val]
+            return val
+
         self.sync_from_world_model_db()
         with self._lock:
-            angles_deg = [round(math.degrees(p), 1) for p in self.joint_positions]
-            target_deg = [round(math.degrees(p), 1) for p in self.target_joint_positions]
-            return {
+            angles_deg = [_deg(p) for p in self.joint_positions]
+            target_deg = [_deg(p) for p in self.target_joint_positions]
+            raw_state = {
                 "vision": {
                     "detected_objects": self.vision_state.get("detected_objects", []),
                     "tracked_ids": self.vision_state.get("tracked_ids", []),
@@ -254,7 +275,7 @@ class ARIADashboardState:
                     "target_angles": target_deg,
                     "force_estimates": list(self.force_estimates),
                     "positions_deg": angles_deg,
-                    "positions_rad": [round(p, 4) for p in self.joint_positions],
+                    "positions_rad": [_rad(p) for p in self.joint_positions],
                 },
                 "health": {
                     "servo_health": self.health_state.get("servo_health", []),
@@ -275,6 +296,7 @@ class ARIADashboardState:
                 "ros_connected": self.ros_connected,
                 "timestamp": time.time(),
             }
+            return _clean(raw_state)
 
     def update_joints(self, names, positions):
         with self._lock:

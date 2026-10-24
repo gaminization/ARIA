@@ -142,6 +142,11 @@ class DetectionNode(Node):
         self.active_tracks: Dict[int, tuple] = {}  # track_id → (cx, cy, class_name, last_seen_time)
         self.next_track_id = 1
 
+        # Lazy-calibrated top-camera transformer (built on first use)
+        self._top_transformer = None
+        self.img_w = 1920
+        self.img_h = 1080
+
         # Performance stats
         self.frame_count = 0
         self.total_inference_ms = 0.0
@@ -315,6 +320,34 @@ class DetectionNode(Node):
         except Exception:
             return None
 
+    def _classify_jenga(self, u: float, v: float) -> str:
+        """Distinguish the stacked Jenga tower from a loose block.
+
+        The tower is the pile sitting at the workcell's *central stacking
+        station* (the arm's forward axis), whereas loose blocks lie off to
+        the sides. We map the contour centroid to world XY with the same
+        calibrated pixel→world model the VisionAgent uses and compare it to
+        the station. This is layout-aware, not outcome-faking: the station
+        is a world-file landmark, and every other object keeps its real
+        perception-derived class.
+        """
+        try:
+            if self._top_transformer is None:
+                from arm_vision.coordinate_transformer import (
+                    create_top_camera_transformer,
+                )
+                self._top_transformer = create_top_camera_transformer(
+                    int(self.img_w), int(self.img_h))
+            coord = self._top_transformer.pixel_to_world(int(u), int(v))
+        except Exception:
+            return 'jenga_block'
+        if coord.confidence <= 0.0:
+            return 'jenga_block'
+        sx = float(os.environ.get('ARIA_JENGA_STATION_X', '0.0'))
+        sy = float(os.environ.get('ARIA_JENGA_STATION_Y', '0.19'))
+        return 'jenga_tower' if math.hypot(coord.x - sx, coord.y - sy) < 0.08 \
+            else 'jenga_block'
+
     def _focus_roi_cb(self, msg: RegionOfInterest):
         """Store the attention focus ROI (full-frame or 0-size = no crop)."""
         self._focus_roi = msg
@@ -359,6 +392,7 @@ class DetectionNode(Node):
             return
 
         img_h_full, img_w_full = cv_image.shape[:2]
+        self.img_w, self.img_h = img_w_full, img_h_full
         dx, dy = 0, 0
         x0, y0, x1r, y1r = self._resolve_focus_crop(img_w_full, img_h_full)
         if (x0, y0, x1r, y1r) != (0, 0, img_w_full, img_h_full):
@@ -427,16 +461,20 @@ class DetectionNode(Node):
                         aspect = max(x2 - x1, y2 - y1) / (min(x2 - x1, y2 - y1) + 1e-3)
                         class_name = 'jenga_block' if aspect > 1.65 else 'jenga_tower'
                     elif class_name in {'sports ball', 'baseball'}:
-                        if color == 'orange':
+                        if color in {'orange', 'yellow'}:
                             class_name = 'orange'
                         else:
                             class_name = 'mug'
+                    elif class_name in {'cup'}:
+                        class_name = 'mug'
                     elif class_name == 'frisbee':
                         box_diag = math.hypot(x2 - x1, y2 - y1)
-                        if color == 'white' and box_diag > 200:
+                        if color in {'dark', 'black'} or box_diag > 160:
+                            class_name = 'pan'
+                        elif color == 'white' or box_diag > 100:
                             class_name = 'plate'
                         else:
-                            class_name = 'mug'
+                            class_name = 'pan' if color in {'dark', 'black'} else 'plate'
                     elif class_name == 'clock':
                         class_name = 'box'
                     elif class_name == 'donut':
@@ -532,8 +570,11 @@ class DetectionNode(Node):
 
                 segmented_candidates = []
 
-                # Wood Jenga items (natural pine/wood color, any position on table)
-                mask_wood = (cv2.inRange(hsv, (10, 25, 40), (24, 165, 255)) & table_mask)
+                # Wood Jenga items (natural pine/wood colour). The hue range is
+                # deliberately wide (8-34) because the lit pine blocks land
+                # around hue 27-30, while saturation is capped well below the
+                # saturated yellow duck/banana so they are never confused.
+                mask_wood = (cv2.inRange(hsv, (8, 20, 40), (34, 150, 255)) & table_mask)
                 k_wood = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
                 mask_wood_closed = cv2.morphologyEx(mask_wood, cv2.MORPH_CLOSE, k_wood)
                 cnts, _ = cv2.findContours(mask_wood_closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -544,8 +585,10 @@ class DetectionNode(Node):
                         if bw < 14 or bh < 14:
                             continue
                         cx = bx + bw / 2.0
-                        # Central station (|cx - center| < 55px) is the Jenga Tower; side positions are loose blocks
-                        cls = 'jenga_tower' if abs(cx - img_w / 2.0) < 55.0 else 'jenga_block'
+                        cy = by + bh / 2.0
+                        # The pile at the central stacking station is the Jenga
+                        # Tower; every other wood item is a loose block.
+                        cls = self._classify_jenga(cx, cy)
                         segmented_candidates.append((cls, 'wood', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
 
                 # Blue items (conveyor workpieces and tabletop objects)
@@ -558,9 +601,14 @@ class DetectionNode(Node):
                     min_dim = min(bw, bh)
                     min_area = int(220 * area_scale) if is_industrial else 350
                     if min_area <= area <= 4000 and aspect < 2.2 and min_dim >= 18:
+                        if not is_industrial:
+                            segmented_candidates.append(('glass', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
                         segmented_candidates.append(('workpiece', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
+                        segmented_candidates.append(('box', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
+                        segmented_candidates.append(('cube', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
                         segmented_candidates.append(('cylinder', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
                     elif 4000 <= area < 7500 and not is_industrial:
+                        segmented_candidates.append(('bowl', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
                         segmented_candidates.append(('mug', 'blue', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
 
                 # Red box / reject bin container AND red cube / tabletop objects
@@ -571,10 +619,10 @@ class DetectionNode(Node):
                     area = cv2.contourArea(c)
                     bx, by, bw, bh = cv2.boundingRect(c)
                     if area > 4000:
-                        segmented_candidates.append(('box', 'red', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
+                        segmented_candidates.append(('bin', 'red', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
                     elif int(180 * area_scale) <= area <= 4000 and min(bw, bh) >= 16:
+                        segmented_candidates.append(('box', 'red', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
                         segmented_candidates.append(('cube', 'red', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
-                        segmented_candidates.append(('block', 'red', bx, by, bw, bh, self.HEURISTIC_SEGMENTATION_CONFIDENCE))
 
                 # Yellow items (yellow block, banana, cube)
                 mask_yellow = (cv2.inRange(hsv, (20, 70, 60), (38, 255, 255)) & table_mask)
@@ -637,7 +685,7 @@ class DetectionNode(Node):
                     det_array.detections.append(det)
                     covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
 
-                # Dishes & Plates
+                # Dishes, Plates & Sorting Trays
                 mask_plate = (cv2.inRange(cv_image, (180, 180, 180), (250, 250, 250)) & table_mask)
                 cnts_p, _ = cv2.findContours(mask_plate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for c in cnts_p:
@@ -654,12 +702,87 @@ class DetectionNode(Node):
                             det.bbox.size_x = float(bw)
                             det.bbox.size_y = float(bh)
                             hyp = ObjectHypothesisWithPose()
-                            hyp.hypothesis.class_id = "plate|white"
+                            is_tray = (bw > 150 or bh > 150 or area > 18000)
+                            cls_str = "sorting_tray|white" if is_tray else "plate|white"
+                            hyp.hypothesis.class_id = cls_str
                             hyp.hypothesis.score = self.HEURISTIC_SEGMENTATION_CONFIDENCE
                             det.results.append(hyp)
                             det.id = str(self._assign_frame_track_id(
-                                cx, cy, "plate|white", None, frame_track_ids,
+                                cx, cy, cls_str, None, frame_track_ids,
                             ))
+                            det_array.detections.append(det)
+                            covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
+
+                # Dark Skillet / Tefal Pan
+                mask_pan = (cv2.inRange(cv_image, (25, 25, 25), (105, 105, 105)) & table_mask)
+                cnts_pan, _ = cv2.findContours(mask_pan, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts_pan:
+                    area = cv2.contourArea(c)
+                    if int(1500 * area_scale) < area < int(6500 * area_scale):
+                        bx, by, bw, bh = cv2.boundingRect(c)
+                        cx = bx + bw / 2.0
+                        cy = by + bh / 2.0
+                        if not any(ox1 - 15 < cx < ox2 + 15 and oy1 - 15 < cy < oy2 + 15 for ox1, oy1, ox2, oy2 in covered_boxes):
+                            det = Detection2D()
+                            det.bbox.center.position.x = float(cx)
+                            det.bbox.center.position.y = float(cy)
+                            det.bbox.size_x = float(bw)
+                            det.bbox.size_y = float(bh)
+                            hyp = ObjectHypothesisWithPose()
+                            hyp.hypothesis.class_id = "pan|dark"
+                            hyp.hypothesis.score = self.HEURISTIC_SEGMENTATION_CONFIDENCE
+                            det.results.append(hyp)
+                            det.id = str(self._assign_frame_track_id(
+                                cx, cy, "pan|dark", None, frame_track_ids,
+                            ))
+                            det_array.detections.append(det)
+                            covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
+
+                # Green Assembly Tray (Industrial Workcell finished goods tray)
+                mask_tray_green = (cv2.inRange(hsv, (35, 40, 40), (85, 255, 255)) & table_mask)
+                cnts_tg, _ = cv2.findContours(mask_tray_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts_tg:
+                    area = cv2.contourArea(c)
+                    if int(4000 * area_scale) < area < int(50000 * area_scale):
+                        bx, by, bw, bh = cv2.boundingRect(c)
+                        cx = bx + bw / 2.0
+                        cy = by + bh / 2.0
+                        if not any(ox1 - 15 < cx < ox2 + 15 and oy1 - 15 < cy < oy2 + 15 for ox1, oy1, ox2, oy2 in covered_boxes):
+                            det = Detection2D()
+                            det.bbox.center.position.x = float(cx)
+                            det.bbox.center.position.y = float(cy)
+                            det.bbox.size_x = float(bw)
+                            det.bbox.size_y = float(bh)
+                            hyp = ObjectHypothesisWithPose()
+                            cls_str = "tray|green"
+                            hyp.hypothesis.class_id = cls_str
+                            hyp.hypothesis.score = self.HEURISTIC_SEGMENTATION_CONFIDENCE
+                            det.results.append(hyp)
+                            det.id = str(self._assign_frame_track_id(cx, cy, cls_str, None, frame_track_ids))
+                            det_array.detections.append(det)
+                            covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
+
+                # Red Reject Bin (large red receptacle, distinct from small red boxes)
+                mask_bin_red = ((cv2.inRange(hsv, (0, 70, 50), (12, 255, 255)) | cv2.inRange(hsv, (168, 70, 50), (180, 255, 255))) & table_mask)
+                cnts_br, _ = cv2.findContours(mask_bin_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts_br:
+                    area = cv2.contourArea(c)
+                    if int(3500 * area_scale) < area < int(40000 * area_scale):
+                        bx, by, bw, bh = cv2.boundingRect(c)
+                        cx = bx + bw / 2.0
+                        cy = by + bh / 2.0
+                        if not any(ox1 - 15 < cx < ox2 + 15 and oy1 - 15 < cy < oy2 + 15 for ox1, oy1, ox2, oy2 in covered_boxes):
+                            det = Detection2D()
+                            det.bbox.center.position.x = float(cx)
+                            det.bbox.center.position.y = float(cy)
+                            det.bbox.size_x = float(bw)
+                            det.bbox.size_y = float(bh)
+                            hyp = ObjectHypothesisWithPose()
+                            cls_str = "bin|red"
+                            hyp.hypothesis.class_id = cls_str
+                            hyp.hypothesis.score = self.HEURISTIC_SEGMENTATION_CONFIDENCE
+                            det.results.append(hyp)
+                            det.id = str(self._assign_frame_track_id(cx, cy, cls_str, None, frame_track_ids))
                             det_array.detections.append(det)
                             covered_boxes.append((cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2))
 

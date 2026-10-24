@@ -276,9 +276,9 @@ def generate_launch_description():
         )],
     )
 
-    # Agent Activator (8.5s) — automatically configures and activates all LifecycleNode agents
+    # Agent Activator (12.0s) — automatically configures and activates all LifecycleNode agents
     activate_agents = TimerAction(
-        period=8.5,
+        period=12.0,
         actions=[ExecuteProcess(
             cmd=['python3', os.path.join(
                 os.environ.get('ARIA_ROOT', '/home/gaminizer/Projects/ARIA'),

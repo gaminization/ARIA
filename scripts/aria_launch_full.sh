@@ -248,7 +248,11 @@ if [ "$USE_TMUX" = true ]; then
     if [ "$ENABLE_OPENVLA" = true ]; then
         VLA_ENV="export ARIA_OPENVLA_FORCE_LOAD=1 ARIA_USE_OPENVLA=1 ARIA_ROOT=\"$ARIA_ROOT\" && "
     fi
-    tmux send-keys -t aria_sim "cd \"$ARIA_ROOT\" && ${VLA_ENV}export ROS_LOCALHOST_ONLY=1 && export GAZEBO_IP=127.0.0.1 && export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
+    WORKCELL_FLAG=""
+    if [[ "$WORLD_NAME" == *"industrial"* ]]; then
+        WORKCELL_FLAG="export ARIA_WORKCELL=industrial && "
+    fi
+    tmux send-keys -t aria_sim "cd \"$ARIA_ROOT\" && ${VLA_ENV}${WORKCELL_FLAG}export ARIA_WORLD=\"$WORLD_NAME\" && export ROS_LOCALHOST_ONLY=1 && export GAZEBO_IP=127.0.0.1 && export FASTRTPS_DEFAULT_PROFILES_FILE=\"$FASTDDS_PROFILE\" && source \"$ROS_SETUP\" && source \"$ARIA_SETUP\"" Enter
     tmux send-keys -t aria_sim "ros2 launch arm_bringup aria_full_u3.launch.py world:=\"$WORLD_NAME\" gui:=\"$ENABLE_GUI\" synthetic:=\"$SYNTHETIC_MODE\" 2>&1 | tee /tmp/aria_launch.log" Enter
 
     echo "✅ Simulation + multi-agent stack started in tmux session 'aria_sim'"

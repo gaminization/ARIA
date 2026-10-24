@@ -342,6 +342,19 @@ def deterministic_recovery_plan(task: TaskState, idx: int, attempt: int) -> dict
         steps = [{"skill": "scan_workspace", "object_id": target}]
         if dest:
             steps.append({"skill": "locate", "object_id": dest})
+        if atype == "stack":
+            # A failed stack usually means the payload was dropped or knocked
+            # off on release. Re-acquire it before retrying; the pick skill is
+            # idempotent when the same object is still secured in the jaws.
+            payload = next(
+                ((task.action_queue[j].target_object or "")
+                 for j in range(idx - 1, -1, -1)
+                 if (task.action_queue[j].action_type or "").lower() in
+                 ("pick", "grasp", "plan_grasp", "execute_grasp")),
+                "",
+            )
+            if payload:
+                steps.append({"skill": "pick", "object_id": payload})
         diagnosis = "destination pose stale — refresh world model and destination"
     elif atype in ("locate", "scan_workspace"):
         steps = [
