@@ -13,7 +13,7 @@ from rclpy.duration import Duration
 
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from gazebo_msgs.msg import ModelStates, ContactsState
+from gazebo_msgs.msg import ModelStates, LinkStates, ContactsState
 from gazebo_msgs.srv import SetEntityState
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import Twist
@@ -30,6 +30,9 @@ class StudyNode(Node):
         self.joint_velocities: Dict[str, float] = {}
         self.joint_efforts: Dict[str, float] = {}
         self.model_poses: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
+        self.link_poses: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
+        self.link_twists: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
+        self.last_link_stamp: Optional[float] = None
         self.last_joint_stamp: Optional[float] = None
         self.trajectory_publishes: list = []
         self.left_contacts: list = []
@@ -37,6 +40,7 @@ class StudyNode(Node):
 
         self.create_subscription(JointState, "/joint_states", self._joint_cb, 50)
         self.create_subscription(ModelStates, "/gazebo/model_states", self._model_cb, 20)
+        self.create_subscription(LinkStates, "/gazebo/link_states", self._link_cb, 20)
         self.create_subscription(ContactsState, "/gripper/contact_left", self._left_contact_cb, 20)
         self.create_subscription(ContactsState, "/gripper/contact_right", self._right_contact_cb, 20)
 
@@ -77,6 +81,19 @@ class StudyNode(Node):
                 dtype=float,
             )
             self.model_poses[name] = (p, q)
+
+    def _link_cb(self, msg: LinkStates):
+        for name, pose, twist in zip(msg.name, msg.pose, msg.twist):
+            p = np.array([pose.position.x, pose.position.y, pose.position.z], dtype=float)
+            q = np.array(
+                [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w],
+                dtype=float,
+            )
+            v = np.array([twist.linear.x, twist.linear.y, twist.linear.z], dtype=float)
+            w = np.array([twist.angular.x, twist.angular.y, twist.angular.z], dtype=float)
+            self.link_poses[name] = (p, q)
+            self.link_twists[name] = (v, w)
+        self.last_link_stamp = time.monotonic()
 
     def _traj_cb(self, msg: JointTrajectory):
         self.trajectory_publishes.append((time.monotonic(), msg))
@@ -160,6 +177,19 @@ class StudyNode(Node):
         if name not in self.model_poses:
             raise RuntimeError(f"model '{name}' not present in /gazebo/model_states")
         return self.model_poses[name]
+
+    def link_pose(self, name: str) -> Tuple[np.ndarray, np.ndarray]:
+        if name not in self.link_poses:
+            raise RuntimeError(f"link '{name}' not present in /gazebo/link_states")
+        return self.link_poses[name]
+
+    def link_twist(self, name: str) -> Tuple[np.ndarray, np.ndarray]:
+        if name not in self.link_twists:
+            raise RuntimeError(f"link '{name}' not present in /gazebo/link_states")
+        return self.link_twists[name]
+
+    def wait_for_links(self, names: Sequence[str], timeout: float = 20.0) -> bool:
+        return self.wait_until(lambda: all(n in self.link_poses for n in names), timeout)
 
     def tf_pose(self, parent: str, child: str, timeout: float = 1.0) -> Tuple[np.ndarray, np.ndarray, float]:
         """Look up a transform. Raises TFUnavailable instead of returning zeros."""
