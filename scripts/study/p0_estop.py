@@ -66,6 +66,7 @@ class EstopNode(StudyNode):
         self.last_stamp: Optional[float] = None
         self.last_wall: Optional[float] = None
         self.samples: List[Tuple[float, np.ndarray, np.ndarray]] = []
+        self.anchors: List[Tuple[float, float]] = []
         self.traj_events: List[Tuple[float, int, bool]] = []
         self.estop_active = False
         self.create_subscription(Clock, "/clock", self._clock_cb, qos_profile_sensor_data)
@@ -91,8 +92,12 @@ class EstopNode(StudyNode):
                 if j < len(msg.velocity):
                     qd[i] = msg.velocity[j]
         self.samples.append((stamp, q, qd))
+        now = time.monotonic()
+        self.anchors.append((now, stamp))
+        if len(self.anchors) > 400:
+            self.anchors = self.anchors[-400:]
         self.last_stamp = stamp
-        self.last_wall = time.monotonic()
+        self.last_wall = now
 
     def _traj_event_cb(self, msg: JointTrajectory):
         self.traj_events.append(
@@ -103,9 +108,29 @@ class EstopNode(StudyNode):
         self.estop_active = bool(msg.data)
 
     def sim_at(self, wall: float) -> float:
-        if self.last_stamp is None or self.last_wall is None:
+        """Map a wall-clock instant to sim time by interpolating joint stamps.
+
+        The previous implementation extrapolated from the single latest sample.
+        When the joint-state stream stalls briefly, that anchor moves and the
+        same wall instant maps to different sim times.  Interpolation over the
+        recent (wall, stamp) pairs is monotone and reproducible.
+        """
+        if not self.anchors:
             return float("nan")
-        return self.last_stamp + (wall - self.last_wall)
+        arr = np.asarray(self.anchors, dtype=float)
+        if arr.shape[0] == 1:
+            return float(arr[0, 1])
+        if wall <= arr[0, 0]:
+            return float(arr[0, 1] + (wall - arr[0, 0]))
+        if wall >= arr[-1, 0]:
+            # Extrapolate with the median rate over the last 0.5 s.
+            recent = arr[arr[:, 0] >= arr[-1, 0] - 0.5]
+            if recent.shape[0] >= 2:
+                rate = (recent[-1, 1] - recent[0, 1]) / max(1e-9, recent[-1, 0] - recent[0, 0])
+            else:
+                rate = 1.0
+            return float(arr[-1, 1] + (wall - arr[-1, 0]) * rate)
+        return float(np.interp(wall, arr[:, 0], arr[:, 1]))
 
     def wait_sim(self, seconds: float, timeout: float = 30.0) -> None:
         start = self.last_stamp if self.last_stamp is not None else self.sim_time
@@ -165,14 +190,16 @@ def main() -> int:
         "t_zero_cmd_s", "t_stop_s", "halt_success",
         "overshoot_rad", "overshoot_norm_rad",
         "halt_joint_count", "halt_has_velocities", "estop_active_seen",
+        "other_traj_events",
     ]
     config = {
         "seeds": seeds, "paths": paths, "start_q": START_Q, "goal_q": GOAL_Q,
         "move_s": MOVE_S, "sig_range": SIG_RANGE, "observe_s": OBSERVE_S,
         "vel_thresh_rad_s": VEL_THRESH, "hold_s": HOLD_S,
-        "t_zero_cmd_def": "sim time from signal to first controller-topic message",
+        "t_zero_cmd_def": "sim time from signal to the path-matching controller-topic message",
         "t_stop_def": "sim time to sustained |qd|<0.05 rad/s for 0.2 s",
         "overshoot_def": "max single-joint |q-q_sig| after signal",
+        "path_match": "command: 5 joints with velocities; safety: 4 joints (SafetyAgent halt)",
     }
 
     rclpy.init()
@@ -243,14 +270,24 @@ def main() -> int:
 
                     events = [
                         e for e in node.traj_events
-                        if t_sig_wall - 1e-6 <= e[0] <= t_sig_wall + OBSERVE_S + 1.0
+                        if t_sig_wall - 1e-6 <= e[0] <= t_sig_wall + OBSERVE_S + 0.5
                     ]
-                    if events:
-                        t_cmd = node.sim_at(events[0][0])
+                    # Select the message that belongs to the path under test.
+                    # Other publishers exist on this topic; matching the
+                    # signature prevents a foreign message from being credited
+                    # as the halt.
+                    if path == "command":
+                        own = [e for e in events if e[1] == 5 and e[2]]
+                    else:
+                        own = [e for e in events if e[1] == 4]
+                    ev = own[0] if own else None
+                    if ev is not None:
+                        t_cmd = node.sim_at(ev[0])
                         t_zero = float(t_cmd - t_sig)
-                        n_joints, has_vel = events[0][1], events[0][2]
+                        n_joints, has_vel = ev[1], ev[2]
                     else:
                         t_zero, n_joints, has_vel = float("nan"), 0, False
+                    other_events = len(events) - (1 if ev is not None else 0)
 
                     row = {
                         "trial_id": trial, "seed": seed, "path": path,
@@ -264,6 +301,7 @@ def main() -> int:
                         "halt_joint_count": n_joints,
                         "halt_has_velocities": int(has_vel),
                         "estop_active_seen": int(estop_seen),
+                        "other_traj_events": other_events,
                     }
                     log.log(row)
                     rows.append(row)
@@ -303,6 +341,8 @@ def main() -> int:
                 "halt_joint_count_median": float(np.median([r["halt_joint_count"] for r in cell])),
                 "halt_has_velocities_fraction": float(np.mean([r["halt_has_velocities"] for r in cell])),
                 "estop_active_fraction": float(np.mean([r["estop_active_seen"] for r in cell])),
+                "other_traj_events_mean": float(np.mean([r["other_traj_events"] for r in cell])),
+                "path_match_fraction": float(np.mean([r["halt_joint_count"] > 0 for r in cell])),
             }
         # Paired comparison of overshoot within each seed.
         pairs = {}
