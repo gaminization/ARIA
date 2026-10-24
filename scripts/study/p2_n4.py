@@ -59,9 +59,9 @@ LIMIT_MARGIN = 0.02
 REPLANS = 3
 NEARBY_M = 0.02
 BOX = {
-    "x": [0.10, 0.32],
-    "y": [-0.20, 0.20],
-    "z": [0.60, 0.78],
+    "x": [0.08, 0.30],
+    "y": [-0.18, 0.18],
+    "z": [0.66, 0.78],
 }
 
 
@@ -236,21 +236,18 @@ def main() -> int:
     pairs = [v for v in paired.values() if "baseline" in v and "n4" in v]
     b = sum(v["baseline"]["success"] and not v["n4"]["success"] for v in pairs)
     c = sum(v["n4"]["success"] and not v["baseline"]["success"] for v in pairs)
+    rd, rd_lo, rd_hi = stats.bootstrap_diff_ci(
+        [v["n4"]["success"] for v in pairs],
+        [v["baseline"]["success"] for v in pairs],
+        np.mean,
+    )
     summary["paired"] = {
         "n_pairs": len(pairs),
         "baseline_only_success": b,
         "n4_only_success": c,
-        "risk_difference_n4_minus_baseline": (
-            summary["n4"]["rate"] - summary["baseline"]["rate"]
-        ),
-        "risk_difference_ci_low": stats.risk_difference_ci(
-            summary["n4"]["k"], summary["n4"]["n"],
-            summary["baseline"]["k"], summary["baseline"]["n"],
-        )[1],
-        "risk_difference_ci_high": stats.risk_difference_ci(
-            summary["n4"]["k"], summary["n4"]["n"],
-            summary["baseline"]["k"], summary["baseline"]["n"],
-        )[2],
+        "risk_difference_n4_minus_baseline": rd,
+        "risk_difference_ci_low": rd_lo,
+        "risk_difference_ci_high": rd_hi,
         "mcnemar_p": stats.mcnemar_exact(b, c),
     }
 
