@@ -241,7 +241,10 @@ def main() -> int:
 
                     t_stop, over, over_norm, ok = stop_metrics(node.samples, t_sig, q_sig, obs_end)
 
-                    events = [e for e in node.traj_events if e[0] >= t_sig_wall - 1e-6]
+                    events = [
+                        e for e in node.traj_events
+                        if t_sig_wall - 1e-6 <= e[0] <= t_sig_wall + OBSERVE_S + 1.0
+                    ]
                     if events:
                         t_cmd = node.sim_at(events[0][0])
                         t_zero = float(t_cmd - t_sig)
