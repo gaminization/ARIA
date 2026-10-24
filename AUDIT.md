@@ -294,3 +294,46 @@ still cites files from that directory.
 | Phase 7 hardware | NOT FEASIBLE (no hardware) |
 
 This table is updated only when a raw log is produced by executed code.
+
+---
+
+## 11. Addendum: measured dispositions (2026-10-25)
+
+This addendum is written only after raw logs existed. Each row names the log that
+supports the disposition. Rows not listed here remain as stated above.
+
+| Item | New status | Evidence |
+|---|---|---|
+| 1.1 TF zero pose | **FIXED (measurement path)** | `P0-CONV` reads `/gazebo/link_states`, not TF; 120/120 rows have a finite part velocity. |
+| 1.2 Belt speed scale | **FIXED (measurement path)** | `P0-CONV` publishes `Twist.linear.x` directly; no 0.50 m/s scale is used. |
+| 1.3 Twist/service race | **FIXED (measurement path)** | `aria_study.ros.send_conveyor_speed` publishes only the Twist. |
+| 1.4 Kinematic plant | **CONFIRMED, documented** | Realized part speed is `commanded - 0.025 m/s` (median); visual belt link speed is `~6e-8 m/s`; rollers turn at `~4.6e4 rad/s`. The belt animation and the transport are independent. |
+| 1.5 Release geometry | **OPEN** | Grasp experiments are blocked by the gripper defect (Section 12). |
+| 2.1 Impossible provenance | **FIXED** | `P0-REACH` was re-run from clean commit `83909cb`; 100,000 rows. |
+| 2.2 Solver changed | **QUANTIFIED** | Current solver recall 99.241% vs historical 0.019% on identical targets; McNemar b=99,222, c=0 (p underflows). |
+| 2.3 Identical files | **QUARANTINED** | Historical CSVs are not used in the paper. |
+| 2.4 Orientation hard-coded | **CONFIRMED** | `solve_analytical` returns `orientation_error_rad=0.0`; `P2-N4` therefore verifies position and joint limits only. |
+| 3.1 E-STOP loopback | **FIXED** | `P0-ESTOP` calls the real `/aria/estop` service while a 2.5 s trajectory is executing; 100 trials. |
+| 3.2 Fabricated stop times | **FIXED** | `P0-ESTOP` measures `t_stop` from `/joint_states` positions. |
+| 3.3 Release service mismatch | **FIXED (new harness)** | `P0-ESTOP` uses `/aria/estop/release`. Old script remains quarantined. |
+| 3.4 Timer excludes dispatch | **FIXED** | `t_zero_cmd` is measured from the signal to the controller-topic message. |
+| 3.5 Trajectory not gated | **CONFIRMED** | Safety path: 0/50 halts; median post-signal overshoot 0.72 rad. |
+| 3.6 Different metrics | **FIXED** | One operational definition is used for both paths. |
+| 4.1-4.3 LLM watchdog | **NOT EXECUTED** | No 2.0 s watchdog exists in the code; P0-WD is reported as N/A, not simulated. |
+| 5.1-5.8 Perception logs | **NOT EXECUTED / QUARANTINED** | No reconciled frame key exists; no detector checkpoint is committed. |
+| 6.1-6.3 Scripted baseline | **NOT EXECUTED** | Requires the repaired gripper; hard-coded tasks 07/08 are excluded from any future analysis. |
+| 7.1-7.2 Attach assist | **DISABLED** | Launch defaults now set `ARIA_ENABLE_ATTACH=false`; no grasp result is claimed. |
+| 8.1 Paper verifier | **REPLACED** | `scripts/build_numbers.py` regenerates every macro from raw logs; the paper no longer contains typed outcome numbers. |
+| 9.1 Hard-coded workspace | **FIXED (new scripts)** | `aria_study` resolves `ROOT` from `__file__`; legacy scripts remain quarantined. |
+| 9.2 No clean-tree enforcement | **FIXED** | `provenance.assert_clean()` aborts on a dirty tree; every row carries `commit` and `dirty`. |
+| 9.3 Synthetic data | **QUARANTINED** | No synthetic CSV is read by `build_numbers.py`. |
+
+### 11.1 New defects found during the repair
+
+| Defect | Evidence | Consequence |
+|---|---|---|
+| `/joint_states.velocity` is not the derivative of `/joint_states.position` | While the waist moved from 0.000 to 0.170 rad in 0.95 s, the reported waist velocity stayed near `-1.3 rad/s`; the shoulder reported `+1.8` to `+1.4 rad/s` for a `~0.12 rad/s` motion. | Any stop-time metric that trusts the reported velocity is invalid. `P0-ESTOP` differentiates the measured positions. |
+| Three `manual_control_node` instances were publishing on `/joint_trajectory_controller/joint_trajectory` | `ros2 topic info -v` listed four publishers; `pgrep` found three manual nodes. They emitted 5-joint, velocity-free hold trajectories in response to E-STOP. | E-STOP attribution was confounded. The duplicate nodes were killed before the evaluation run; the run records the number of non-path messages per trial. |
+| `SafetyAgent` publishes a 4-joint halt with no velocities | `arm_agents/arm_agents/safety_agent.py:113-121`; JTC has `allow_partial_joints_goal: False`. | The controller rejects the halt. The arm continues to its goal (median overshoot 0.72 rad). |
+| Conveyor realized speed has a fixed offset, not a scale error | `P0-CONV`: commanded 0.04/0.08/0.12 m/s gives 0.0151/0.0543/0.0937 m/s; offset `-0.0249/-0.0257/-0.0263 m/s`. | A single scale factor cannot repair the plant; the friction/velocity-write model must change. |
+| `solve_analytical` reports success for residuals up to 10 mm | `_gradient_fallback` accepts `best_err < tolerance_m*10`. | A planner that trusts `success` can execute a pose error up to 10 mm. `P2-N4` quantifies the consequence. |
