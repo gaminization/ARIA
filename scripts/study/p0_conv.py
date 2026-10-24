@@ -184,8 +184,8 @@ def main() -> int:
 
         # Hold a fixed arm configuration for the whole run.
         set_speed(node, 0.0)
-        node.send_trajectory(HOLD_Q, duration=2.0)
-        node.spin_for(3.0)
+        _, hold_attempts = node.send_trajectory_until(HOLD_Q, duration=2.0, timeout=6.0)
+        node.spin_for(1.0)
         q_hold = np.array(HOLD_Q[:4], dtype=float)
         hold_err = float(
             np.max(
@@ -198,7 +198,7 @@ def main() -> int:
                 )
             )
         )
-        print(f"hold config error: {hold_err:.4f} rad", flush=True)
+        print(f"hold config error: {hold_err:.4f} rad (attempts={hold_attempts})", flush=True)
 
         rows = []
         t_start = datetime.now(timezone.utc)
@@ -326,6 +326,7 @@ def main() -> int:
             }
         summary["rtf_mean"] = float(np.mean([r["rtf"] for r in rows]))
         summary["hold_config_error_rad"] = hold_err
+        summary["hold_trajectory_attempts"] = hold_attempts
         summary["arm_joint_drift_max"] = float(
             max(r["arm_joint_drift_max"] for r in rows)
         )

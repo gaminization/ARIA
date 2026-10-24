@@ -244,6 +244,44 @@ class StudyNode(Node):
         self.pub_traj.publish(traj)
         return t0
 
+    def send_trajectory_until(
+        self,
+        positions: Sequence[float],
+        duration: float,
+        joint_names: Optional[Sequence[str]] = None,
+        tol: float = 0.02,
+        timeout: float = 10.0,
+        attempts: int = 3,
+    ) -> Tuple[float, int]:
+        """Send a goal and verify that the joints actually arrive.
+
+        The controller can silently drop the first trajectory after start-up
+        (observed in this workcell), so resend until the measured joint
+        positions are within ``tol`` or the attempts are exhausted.
+        """
+        names = list(joint_names or [
+            "waist_joint",
+            "shoulder_joint",
+            "elbow_joint",
+            "wrist_pitch_joint",
+            "gripper_joint",
+        ])
+        t0 = 0.0
+        used = 0
+        for _ in range(max(1, attempts)):
+            used += 1
+            t0 = self.send_trajectory(positions, duration, names)
+            ok = self.wait_until(
+                lambda: all(
+                    abs(self.joint_positions.get(n, 1e9) - float(p)) <= tol
+                    for n, p in zip(names, positions)
+                ),
+                timeout,
+            )
+            if ok:
+                return t0, used
+        return t0, used
+
     def send_conveyor_speed(self, speed_m_s: float) -> None:
         """Single source of truth: Twist only, never the service, to avoid a race."""
         tw = Twist()
