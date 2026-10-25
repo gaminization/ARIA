@@ -1,0 +1,372 @@
+{
+  "source": "data/real/lang_prompts_heldout_60.json",
+  "rule": "sort by SHA-256(instruction); 30 tuning / 15 calibration / 15 test",
+  "n_prompts": 60,
+  "splits": {
+    "tuning": 30,
+    "calibration": 15,
+    "test": 15
+  },
+  "items": [
+    {
+      "prompt_id": "P15",
+      "instruction": "Transfer the threaded rod to the threading station.",
+      "sha256": "010cda45ec1188f5a3d3975974f776b99761e9217345107d8395fdca1e445af4",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P45",
+      "instruction": "Intercept the blue package on the belt moving at 0.06 m/s.",
+      "sha256": "0618bf6cddee93f0da0c11ca1f6f80ecbcb3b6cdcc153a8999648eb7e5a187d7",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P21",
+      "instruction": "Pick up the workpiece on the left side and place it in the center.",
+      "sha256": "0cabf2d2723e6f70036fbcbafded622ca77fd7a919d09ac0c8d014664d530518",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P50",
+      "instruction": "Transfer the component through the narrow 80 mm gap between side fixtures.",
+      "sha256": "0eb2ebe772248414c51732d0bec357348b8dd1d135a6542196b42f3b798b5f8f",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P05",
+      "instruction": "Move the red hex nut from the feeder to tray pocket 3.",
+      "sha256": "101aaed8fb5829647dbdb236a5942c76c1405d83a9819289c87aeca4afb250a1",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P36",
+      "instruction": "Sort all grey brackets to the staging area and all washers to the scrap cup.",
+      "sha256": "16f5b60641cafc0b7a02467057359a4e21ff67b0fbeb8f352e55bd60f3b1f86a",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P44",
+      "instruction": "Transfer the part avoiding collision with the tall obstacle tower.",
+      "sha256": "1afadda6564da33b15fef998e3898a2a219a70348f63d8e3480f0f4f63afef08",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P01",
+      "instruction": "Pick up the blue bolt and place it in tray pocket 1.",
+      "sha256": "1ee707de8d22f863f41d95a124190d99dee4ff59dcfa3e883ed61f8346f772ba",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P56",
+      "instruction": "Clear the one on the side.",
+      "sha256": "2137c972a67d6eebced1f321313a698759d4398e3a1c89a29405fc5bfefe8a42",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P34",
+      "instruction": "Pick the spacer, orient it vertically, and press it into socket 2.",
+      "sha256": "2828310e995404b94ab052639725c200b5af076c5b51c2e26f5e6cc056747cc7",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P51",
+      "instruction": "Pick up the blue cube.",
+      "sha256": "2bb99e0fc4c26762c75fa1c8462439256651ee44532a48173127c03e18d95cac",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P32",
+      "instruction": "Clear the table by moving the red block to bin A and the blue block to bin B.",
+      "sha256": "2c3b01184ac784c264b9c03e0050d84fe31bc3af503bc029065fb081896b9ab8",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P26",
+      "instruction": "Pick the block located inside the square marker and move it out.",
+      "sha256": "2fd998f4f00a105a41a482bf93a88abeec5e4637d06b182a3a17d99da4560b6a",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P57",
+      "instruction": "Discard the defective component.",
+      "sha256": "354b612b446236e721fa9f2e8e0fcde28c40e0ed1b78662d79c79e95644f9887",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P07",
+      "instruction": "Lift the brass bushing and place it in the center slot.",
+      "sha256": "37655cd0b4ab999ed6e590152e14a2de64c1d118b76a16888f71ec8262bbee4e",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P40",
+      "instruction": "Unstack the red block from the yellow block and place both side-by-side.",
+      "sha256": "396a546b3ae23db6a4fbe64a70191aee441b313837ee7f528ae7c7fa5b0e3c96",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P17",
+      "instruction": "Take the anodized red pin and insert it into sleeve A.",
+      "sha256": "3fb605b9033ead10fd814a92372f9cbf1dd1385b95442c3a6ffe26a6a8017ff1",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P28",
+      "instruction": "Pick the component in front of the blue fixture and slide it right.",
+      "sha256": "411693fec4deff8ef1bc95ae429bef3e2d83681f4393146687886e4f1447bd4b",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P25",
+      "instruction": "Pick the outermost part on the right rail and deposit it in bin C.",
+      "sha256": "4b681576885112eee61d5568ccbf07540626b5e4091da0994b7e732d8b0329de",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P29",
+      "instruction": "Grasp the part at the top-left corner of the grid.",
+      "sha256": "5f71221747447ef08cde3209698054155a80003290be0f8fea6e2040eceb14b7",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P31",
+      "instruction": "Pick the blue block, inspect it at camera 1, then place it in tray 1.",
+      "sha256": "61347f886fc78cb9cfcb48d004cbbf835729f232f93cf5686c0f9838f830e1df",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P09",
+      "instruction": "Pick the steel washer from the staging mat and drop it in bin B.",
+      "sha256": "64a3798ea8783681cb1bc380509f08cf91dde181ea1c875377c5917bcd573ee6",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P06",
+      "instruction": "Pick up the yellow spacer and set it on the test stand.",
+      "sha256": "65e7b7b2fe8974620fd3bb5ce29f3cf88cfa7d1693bc05c566f71cebc8d9b978",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P42",
+      "instruction": "Grasp the incoming red block on the belt without exceeding velocity limits.",
+      "sha256": "6bd824b6dcf1f4ea32272a7652027106fc4d1f043fb62f49c8786e71c9481109",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P33",
+      "instruction": "Stack the yellow block on top of the green block.",
+      "sha256": "6cfb1a1ee6cfc4166d6881aea02cbea04e133fe3bc27d27cc5594fc76eded99a",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P30",
+      "instruction": "Pick the item adjacent to the green LED indicator.",
+      "sha256": "73412e63bce823ffa1b77dcd137fea3ef2bc2ef798bc16fdc348944550da1802",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P12",
+      "instruction": "Select the metallic block and place it on the inspection pad.",
+      "sha256": "73ea44fb01d73d1381f8f4d6a76d0ad4d977cd7924ca0e84dc1585869a97bbc5",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P02",
+      "instruction": "Grasp the red cylinder and transfer it to the assembly fixture.",
+      "sha256": "74b44d72f2f252ffa653b90b945669e91822c32125561734091067662a342536",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P22",
+      "instruction": "Move the item nearest to the robot base to the output area.",
+      "sha256": "753e3892a745c4edd2707c20f58706a5a66bbf221ce84ee32190deec103b06d4",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P13",
+      "instruction": "Pick the defective blue block with the surface scratch and discard it.",
+      "sha256": "7dadc0c50c004089cb67a798dd89d7123630379019fcb4bbf3f2eab8f0668ce6",
+      "split": "tuning"
+    },
+    {
+      "prompt_id": "P04",
+      "instruction": "Transfer the blue cube from the pickup zone to the pallet.",
+      "sha256": "868c54106857bd84a8772019adee47e07d90cff218cbe69b2ab8c467b6b00480",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P37",
+      "instruction": "Pick the test cube, verify weight on the load cell, then store in bin 4.",
+      "sha256": "87a81549db522d564f2cd58d11e7c2d17c5157aed1b258764f35aafdaa4c35a9",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P16",
+      "instruction": "Pick the tall prism and place it in the tall component rack.",
+      "sha256": "8a1328576100177512ba71c60fd9bb914a5d34892eaab1f598ab4640b04c3f6a",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P53",
+      "instruction": "Pick up the green triangle.",
+      "sha256": "9139a2da8dce8d18ca1ef86d81f763318cb8de506dcc1a995ad4827a40fc26db",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P20",
+      "instruction": "Pick the slotted screw and drop it in tray slot 1.",
+      "sha256": "93890a39c7b6ba2edaef02345e39e445cab97adbadce28b44f33de72557bd335",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P27",
+      "instruction": "Retrieve the top item from the two-block stack and set it on the table.",
+      "sha256": "94e7a762045d0e4d60f3e743a68946af04d80df93d3de05649f883c7b9dea521",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P43",
+      "instruction": "Pick the fragile glass vial with gentle gripper force under 1 Newton.",
+      "sha256": "9536e0b5227da52ef1c708ccced5dc19cccfeca3982cc110ef2773253ff6ea0a",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P35",
+      "instruction": "Take the bolt from pocket 1, dip it in lubricant, and deposit in pocket 3.",
+      "sha256": "a1cfaa81b01ad28e1307639c2c482ce8d21469504ff165f8fd202107c10000a2",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P46",
+      "instruction": "Transport the open container keeping it strictly upright without tilting.",
+      "sha256": "a460c7afb22eaf47e4ebbb8add8f7bb5cdb4fa0efadf227fc4d76fafe82c8764",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P47",
+      "instruction": "Pick the warm heatsink keeping clearance from the thermal sensor.",
+      "sha256": "a78bd2eb8fe8801aa2f898aa0a030aa832fe299118a2dc18e9d62d83c1da8985",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P54",
+      "instruction": "Take the bolt.",
+      "sha256": "b201be87aa4bec0eca163f72b1275cf1a9c261045a6ee26f93e81f11b47d288a",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P24",
+      "instruction": "Transfer the cube between the two brackets to the pallet.",
+      "sha256": "b6d128c04b6dfc4bff87095cc771b37e58d8c6f22efd32fad5ce5773fb637c72",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P38",
+      "instruction": "Rotate the blue cylinder 90 degrees and place it in the cradle.",
+      "sha256": "ba58a8a567928720c6272f808d026cd4169d1bc1f6dbfca8f18fc5b762d99695",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P59",
+      "instruction": "Pick up the nearest object.",
+      "sha256": "bfb2e3bb8fb1b24c76c17082e6826614d9e98dda3878c3ef1828fbf1eefd24a0",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P10",
+      "instruction": "Move the black flange into the reject chute.",
+      "sha256": "bfbafe07aeaa5252100bec0610b4fe21011fff38be917fdb93b580b8083da28d",
+      "split": "calibration"
+    },
+    {
+      "prompt_id": "P41",
+      "instruction": "Track and intercept the workpiece arriving on the moving conveyor belt.",
+      "sha256": "c3259e125561879b7194b7354888193c4048c2626c5d8b9397e6dce7e823a3d2",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P52",
+      "instruction": "Move the part over there.",
+      "sha256": "c3d05b9d8557e50b5f638bf1c506e21385cce27db598d7c14c074b69fe72ef35",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P58",
+      "instruction": "Transfer the yellow workpiece to tray pocket 2.",
+      "sha256": "c7cfdeaf7a9931ac14b9bde6f76c89196150abc2c0a5cd98cb161738973f888b",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P48",
+      "instruction": "Catch the workpiece approaching on the conveyor before it drops off the end.",
+      "sha256": "cb1bfce81808899366130dce83cf047d238b3e92d99504e3774a3a83b9d03f72",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P55",
+      "instruction": "Put it in the pocket.",
+      "sha256": "ce9394730072dc5f591d03a78f5c2be32bc6881aedff0feab270b3933f019da2",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P23",
+      "instruction": "Pick the bolt behind the red cylinder and set it beside the tray.",
+      "sha256": "d146e76d2c6830b878f8498e4399ab1a75c6ba1e12e021d096ab1c672b0efbb2",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P11",
+      "instruction": "Pick the cylindrical workpiece and place it on the scale.",
+      "sha256": "d50c0c2f3dd2fbf89ea90c6e83faa63e3cd88c249bef47c36a42050cbefc19b3",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P39",
+      "instruction": "Slide the metal bracket 5 cm left, then pick and place it into slot B.",
+      "sha256": "d62b95ff8e6208469881376d33a0e76479b42a635a7861613fe92d370a4bfeca",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P18",
+      "instruction": "Pick up the bevelled gear and store it in pocket 4.",
+      "sha256": "d6b7b2055c9e603d355798ff386f7ae3dbe0c14b886c7da0b6e1680caffe2d81",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P49",
+      "instruction": "Slide the heavy pallet while maintaining constant table contact force.",
+      "sha256": "da4d32d93fbdd110b0c2ada25d3d50a46bef94e2978a099b07444f50ffd82374",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P60",
+      "instruction": "Sort the fastener.",
+      "sha256": "dcecafc170310ff174cfdf6016c537f1a5d18a36787e29191b93d509a4b26c2f",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P14",
+      "instruction": "Grasp the heavy 50g cylinder and place it in the balance fixture.",
+      "sha256": "e6e036082ecc847ccae29b69acc5412f0ee9b61db381b020c075d46bc6ca5cbe",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P19",
+      "instruction": "Grasp the rubber grommet and set it in the gasket tray.",
+      "sha256": "eafbd2e5c96f866ff9d536d4e8cd652f19b4d1cf52c65e7192ab3e14d57248b1",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P08",
+      "instruction": "Retrieve the aluminium rod and place it horizontally in tray 2.",
+      "sha256": "f3adb766918cfb1c3e34442743b70eb776cf8a3facd18c9a0612d337f811d5de",
+      "split": "test"
+    },
+    {
+      "prompt_id": "P03",
+      "instruction": "Pick the grey bracket from the table and drop it into bin A.",
+      "sha256": "f9ceaf6d9e980afe79912a844a8eb1b6b990be4db8dea6ca75a44c64f0b69e9b",
+      "split": "test"
+    }
+  ]
+}
