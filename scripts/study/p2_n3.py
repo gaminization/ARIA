@@ -143,31 +143,64 @@ def call_llm(prompt: dict, timeout: float = 180.0) -> Tuple[Optional[dict], str,
 
 
 def target_ok(pred: dict, prompt: dict) -> bool:
+    """Does the resolved target match the frozen expected target phrase?
+
+    All distinctive tokens of the expected phrase must appear in the resolved
+    target string, or the resolved string must equal a scene entity whose name
+    matches the expected phrase.  This is a semantic grounding check, not a
+    physical grasp check.
+    """
     name = str(pred.get("target_object", ""))
-    target = prompt.get("target_phrase", "")
-    if token_overlap(name, target) >= 0.99:
+    target = str(prompt.get("target_phrase", ""))
+    want = set(normalise(target))
+    have = set(normalise(name))
+    if want and want.issubset(have):
         return True
-    # Accept any scene entity whose name matches the target phrase.
     for ent in prompt.get("scene_entities", []):
-        if token_overlap(name, str(ent.get("name", ""))) >= 0.99 and token_overlap(
-            str(ent.get("name", "")), target
-        ) >= 0.5:
+        ename = str(ent.get("name", ""))
+        if set(normalise(ename)) == have and want.issubset(set(normalise(ename))):
             return True
     return False
 
 
 def action_ok(pred: dict, prompt: dict) -> bool:
+    """Diagnostic only: the frozen expected action is a symbolic token."""
     return token_overlap(str(pred.get("action", "")), str(prompt.get("expected_action", ""))) >= 0.5
 
 
 def destination_ok(pred: dict, prompt: dict) -> bool:
+    """Diagnostic only: the frozen expected destination is a symbolic token."""
     return (
         token_overlap(str(pred.get("destination", "")), str(prompt.get("expected_destination", "")))
         >= 0.67
     )
 
 
+def asks_for_clarification(pred: dict) -> bool:
+    act = str(pred.get("action", "")).lower()
+    notes = str(pred.get("ambiguity_notes", "")).lower()
+    if any(k in act for k in ("clarif", "ask", "disambiguat")):
+        return True
+    if any(k in notes for k in ("ambigu", "clarif", "multiple", "not unique", "unclear", "not specified")):
+        return True
+    conf = pred.get("confidence")
+    try:
+        return bool(isinstance(conf, (int, float)) and math.isfinite(float(conf)) and float(conf) < 0.5)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def success(pred: Optional[dict], prompt: dict) -> Tuple[bool, bool, bool, bool, bool]:
+    """Fixed resolution-correctness label (frozen before the full run).
+
+    For an unambiguous prompt the correct behaviour is to resolve the named
+    target, so success is a target match.  For an ambiguous prompt the correct
+    behaviour is to ask for clarification (or to report low confidence), so a
+    confident guess counts as a failure even when it happens to name a real
+    scene entity.  The three diagnostic booleans are logged but are not part
+    of the success label: the frozen expected action and destination are
+    symbolic checker tokens, not natural-language strings.
+    """
     if pred is None:
         return False, False, False, False, False
     t = target_ok(pred, prompt)
@@ -175,7 +208,11 @@ def success(pred: Optional[dict], prompt: dict) -> Tuple[bool, bool, bool, bool,
     d = destination_ok(pred, prompt)
     conf = pred.get("confidence", None)
     conf_ok = isinstance(conf, (int, float)) and math.isfinite(float(conf))
-    return bool(t and a and d), t, a, d, conf_ok
+    if bool(prompt.get("is_ambiguous")):
+        ok = asks_for_clarification(pred)
+    else:
+        ok = t
+    return bool(ok), t, a, d, conf_ok
 
 
 def platt_fit(scores: Sequence[float], labels: Sequence[bool]) -> Tuple[float, float]:
@@ -266,7 +303,7 @@ def run(args) -> int:
     prompts = {p["prompt_id"]: p for p in json.loads(PROMPTS.read_text())}
     items = split["items"]
     if smoke:
-        items = [x for x in items if x["split"] == "test"][:3]
+        items = [x for x in items if x["split"] == "tuning"][:3]
 
     fields = [
         "trial_id", "prompt_id", "split", "method",
@@ -284,7 +321,10 @@ def run(args) -> int:
         "split": split["splits"],
         "split_rule": split["rule"],
         "n_prompts": split["n_prompts"],
-        "success_definition": "target entity AND action AND destination match expected",
+        "success_definition": (
+            "resolution correctness: unambiguous prompts require a target match; "
+            "ambiguous prompts require a clarification request or confidence < 0.5"
+        ),
         "fusion": "convex combination, weight chosen on calibration split",
     }
 
