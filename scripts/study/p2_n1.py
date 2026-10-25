@@ -390,6 +390,7 @@ def run(args) -> int:
     frame_meta: List[dict] = []
     dev_d: List[float] = []
     dev_z: List[float] = []
+    dev_frames: List[dict] = []
     t_start = datetime.now(timezone.utc)
 
     try:
@@ -472,9 +473,25 @@ def run(args) -> int:
                     good = np.isfinite(gts) & (np.abs(gts - zs) < 0.006)
                     dev_d.extend(ds[good].tolist())
                     dev_z.extend(zs[good].tolist())
+                    # Downsampled maps let the dev fit optimise the global
+                    # baseline on pixels, not only on the sparse anchors.
+                    stride = 8
+                    gt_ds = gt[::stride, ::stride]
+                    da_ds = da[::stride, ::stride]
+                    mask_ds = np.isfinite(gt_ds) & (gt_ds > GT_MIN) & (gt_ds < GT_MAX)
+                    dev_frames.append(
+                        {
+                            "da": da_ds.astype(np.float32),
+                            "gt": gt_ds.astype(np.float32),
+                            "mask": mask_ds,
+                            "d_near": float(ds[int(np.argmin(zs))]),
+                            "z_near": float(zs[int(np.argmin(zs))]),
+                        }
+                    )
 
                 # Calibrate.
                 a_fixed = float(priors.get("a_fixed", np.nan))
+                b_fixed = float(priors.get("b_fixed", np.nan))
                 b0 = float(priors.get("b0", np.nan))
                 i_near = int(np.argmin(zs))
                 i_far = int(np.argmax(zs))
@@ -482,7 +499,7 @@ def run(args) -> int:
                 a2, b2 = fit_two_point(ds[i_near], zs[i_near], ds[i_far], zs[i_far])
                 aN, bN, n_inl, anchor_rmse = robust_n1(ds, zs)
                 calib = {
-                    "fixed": (a_fixed, 0.0),
+                    "fixed": (a_fixed, b_fixed),
                     "one_point": (a1, b1),
                     "two_point": (a2, b2),
                     "n1": (aN, bN),
@@ -580,6 +597,15 @@ def run(args) -> int:
                 (RAW / "P2-N1-DEV-anchors.json").write_text(
                     json.dumps({"d": dev_d, "z": dev_z}) + "\n"
                 )
+                if dev_frames:
+                    np.savez_compressed(
+                        RAW / "P2-N1-DEV-frames.npz",
+                        da=np.stack([f["da"] for f in dev_frames]),
+                        gt=np.stack([f["gt"] for f in dev_frames]),
+                        mask=np.stack([f["mask"] for f in dev_frames]),
+                        d_near=np.array([f["d_near"] for f in dev_frames], float),
+                        z_near=np.array([f["z_near"] for f in dev_frames], float),
+                    )
                 _write_dev_priors(rows, seeds)
             _write_summary(exp_id, rows, frame_meta, config, t_start)
     finally:
@@ -589,23 +615,54 @@ def run(args) -> int:
 
 
 def _write_dev_priors(rows: List[dict], seeds: Sequence[int]) -> None:
-    """Fit the frozen global scale and offset from development anchors.
+    """Fit the frozen fixed calibration and the one-point offset on dev data.
 
     The development run uses the same anchor geometry as evaluation, but the
     ground-truth depth is allowed here because these are development seeds.
+    The fixed baseline is a single global affine, fitted on downsampled
+    development pixels; the one-point offset ``b0`` is chosen to minimise the
+    one-point RMSE on the same development pixels.  Both are frozen before the
+    evaluation seeds are used.
     """
-    # Reconstruct anchor-level pairs from the per-frame calibration is not
-    # enough: we need the raw (d, Z) pairs.  The dev run stores them in a
-    # sidecar produced by ``run`` before this function is called.
     sidecar = RAW / "P2-N1-DEV-anchors.json"
-    if not sidecar.exists():
-        raise RuntimeError("dev anchor sidecar missing; cannot freeze priors")
+    frames_path = RAW / "P2-N1-DEV-frames.npz"
+    if not sidecar.exists() or not frames_path.exists():
+        raise RuntimeError("dev sidecars missing; cannot freeze priors")
     data = json.loads(sidecar.read_text())
     d = np.asarray(data["d"], float)
     z = np.asarray(data["z"], float)
-    a_fixed = fit_fixed(d, z)
-    A = np.vstack([d, np.ones_like(d)]).T
-    a_glob, b_glob = np.linalg.lstsq(A, z, rcond=None)[0]
+
+    frames = np.load(frames_path)
+    da = frames["da"].astype(np.float64)
+    gt = frames["gt"].astype(np.float64)
+    mask = frames["mask"].astype(bool)
+    d_near = frames["d_near"].astype(np.float64)
+    z_near = frames["z_near"].astype(np.float64)
+
+    # Global affine on all development pixels.
+    xs = da[mask]
+    ys = gt[mask]
+    A = np.vstack([xs, np.ones_like(xs)]).T
+    a_glob, b_glob = np.linalg.lstsq(A, ys, rcond=None)[0]
+
+    # One-point offset: grid search on development pixels.
+    best_b0, best_rmse = float(b_glob), float("inf")
+    for b0 in np.linspace(0.05, 0.30, 251):
+        rmses = []
+        for i in range(len(da)):
+            if abs(d_near[i]) < 1e-9:
+                continue
+            a = (z_near[i] - b0) / d_near[i]
+            pred = a * da[i] + b0
+            m = mask[i]
+            if m.sum() == 0:
+                continue
+            rmses.append(float(np.sqrt(np.mean((pred[m] - gt[i][m]) ** 2))))
+        if rmses:
+            r = float(np.mean(rmses))
+            if r < best_rmse:
+                best_rmse, best_b0 = r, float(b0)
+
     CAL.mkdir(parents=True, exist_ok=True)
     PRIORS.write_text(
         json.dumps(
@@ -613,9 +670,11 @@ def _write_dev_priors(rows: List[dict], seeds: Sequence[int]) -> None:
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "dev_seeds": list(seeds),
                 "n_anchor_pairs": int(len(d)),
-                "a_fixed": float(a_fixed),
-                "b0": float(b_glob),
-                "global_a": float(a_glob),
+                "n_dev_frames": int(len(da)),
+                "a_fixed": float(a_glob),
+                "b_fixed": float(b_glob),
+                "b0": float(best_b0),
+                "dev_one_point_rmse_mm": float(best_rmse * 1000.0),
                 "form": "Z = a*d + b",
                 "note": "Frozen before evaluation seeds 4001-4100 were used.",
             },
