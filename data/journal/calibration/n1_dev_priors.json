@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-10-25T01:06:32.308352+00:00",
+  "created_at": "2026-10-25T01:09:48.247428+00:00",
   "dev_seeds": [
     1,
     2,
@@ -22,12 +22,12 @@
     19,
     20
   ],
-  "n_anchor_pairs": 1794,
+  "n_anchor_pairs": 1788,
   "n_dev_frames": 20,
-  "a_fixed": -0.009979708552104782,
-  "b_fixed": 0.17411739620673122,
-  "b0": 0.16999999999999998,
-  "dev_one_point_rmse_mm": 32.98653416192076,
+  "a_fixed": -0.010266520953878052,
+  "b_fixed": 0.17411295638064722,
+  "b0": 0.168,
+  "dev_one_point_rmse_mm": 32.33573171233539,
   "form": "Z = a*d + b",
   "note": "Frozen before evaluation seeds 4001-4100 were used."
 }
