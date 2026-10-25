@@ -479,13 +479,15 @@ def run(args) -> int:
                     gt_ds = gt[::stride, ::stride]
                     da_ds = da[::stride, ::stride]
                     mask_ds = np.isfinite(gt_ds) & (gt_ds > GT_MIN) & (gt_ds < GT_MAX)
+                    ord_d = np.argsort(zs)
+                    kd = max(2, int(round(0.20 * len(ord_d))))
                     dev_frames.append(
                         {
                             "da": da_ds.astype(np.float32),
                             "gt": gt_ds.astype(np.float32),
                             "mask": mask_ds,
-                            "d_near": float(ds[int(np.argmin(zs))]),
-                            "z_near": float(zs[int(np.argmin(zs))]),
+                            "d_near": float(np.median(ds[ord_d[:kd]])),
+                            "z_near": float(np.median(zs[ord_d[:kd]])),
                         }
                     )
 
@@ -493,10 +495,20 @@ def run(args) -> int:
                 a_fixed = float(priors.get("a_fixed", np.nan))
                 b_fixed = float(priors.get("b_fixed", np.nan))
                 b0 = float(priors.get("b0", np.nan))
-                i_near = int(np.argmin(zs))
-                i_far = int(np.argmax(zs))
-                a1, b1 = fit_one_point(ds[i_near], zs[i_near], b0)
-                a2, b2 = fit_two_point(ds[i_near], zs[i_near], ds[i_far], zs[i_far])
+                # Robust near/far anchors: medians of the nearest and
+                # farthest 20% of the reference points.  Using a single
+                # extreme point would make the baselines depend on one
+                # occluded pixel rather than on the calibration idea.
+                order = np.argsort(zs)
+                k = max(2, int(round(0.20 * len(order))))
+                near_idx = order[:k]
+                far_idx = order[-k:]
+                d_near = float(np.median(ds[near_idx]))
+                z_near = float(np.median(zs[near_idx]))
+                d_far = float(np.median(ds[far_idx]))
+                z_far = float(np.median(zs[far_idx]))
+                a1, b1 = fit_one_point(d_near, z_near, b0)
+                a2, b2 = fit_two_point(d_near, z_near, d_far, z_far)
                 aN, bN, n_inl, anchor_rmse = robust_n1(ds, zs)
                 calib = {
                     "fixed": (a_fixed, b_fixed),
