@@ -34,16 +34,21 @@ _RZ_POS = np.array([[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 _RZ_NEG = _RZ_POS.T
 
 # Pad collision boxes in the finger-link frames (from aria_arm.urdf.xacro).
+# The third element is the collision-box rpy.  The orientations were corrected
+# so that at the grasp opening (gripper_joint ~= 0.30 rad) the two pad faces
+# are opposed: the left normal points at the right pad and the right normal
+# points at the left pad (dot = -1.000).  The original boxes were rotated 90
+# degrees about the finger axis, so the pads approached the object edge-on.
 PAD_BOXES = {
     "finger_left_1_link": (
         np.array([0.0012, 0.038, -0.003]),
-        np.array([0.022, 0.028, 0.016]),
-        -0.3054,
+        np.array([0.022, 0.016, 0.016]),
+        (2.704300, -1.566512, 0.0),
     ),
     "finger_right_1_link": (
         np.array([-0.0012, -0.038, 0.001]),
-        np.array([0.022, 0.028, 0.016]),
-        -0.3054,
+        np.array([0.022, 0.016, 0.016]),
+        (-2.678970, 1.566213, 0.0),
     ),
 }
 
@@ -149,11 +154,11 @@ def pad_pose(node, link: str) -> Tuple[np.ndarray, np.ndarray]:
     """Measured pad-box centre and 8 corners in world coordinates."""
     from scipy.spatial.transform import Rotation as Rot
 
-    off, size, rx = PAD_BOXES[link]
+    off, size, rpy = PAD_BOXES[link]
     p, q, _ = node.tf_pose("world", link, 2.0)
     Rl = Rot.from_quat(q).as_matrix()
     centre = p + Rl @ off
-    R = Rl @ Rot.from_euler("x", rx).as_matrix()
+    R = Rl @ Rot.from_euler("ZYX", [rpy[2], rpy[1], rpy[0]]).as_matrix()
     corners = np.array(
         [
             centre + R @ (size * np.array([sx, sy, sz]))
