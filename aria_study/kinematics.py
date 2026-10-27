@@ -34,21 +34,22 @@ _RZ_POS = np.array([[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 _RZ_NEG = _RZ_POS.T
 
 # Pad collision boxes in the finger-link frames (from aria_arm.urdf.xacro).
-# The third element is the collision-box rpy.  The orientations were corrected
-# so that at the grasp opening (gripper_joint ~= 0.30 rad) the two pad faces
-# are opposed: the left normal points at the right pad and the right normal
-# points at the left pad (dot = -1.000).  The original boxes were rotated 90
-# degrees about the finger axis, so the pads approached the object edge-on.
+# The third element is the collision-box rpy.  The orientations were derived at
+# the grasp pose so that each pad's 22 mm axis is vertical and its face normal
+# lies exactly on the finger-closing axis: the left normal points at the right
+# pad and the right normal points at the left pad (dot = -1.000).  Earlier
+# versions of these boxes were rolled about the closing axis, so closing them
+# acted like a wedge and ejected the workpiece sideways.
 PAD_BOXES = {
     "finger_left_1_link": (
         np.array([0.0012, 0.038, -0.003]),
-        np.array([0.022, 0.016, 0.016]),
-        (2.704300, -1.566512, 0.0),
+        np.array([0.030, 0.016, 0.016]),
+        (-1.566536, 0.309021, -2.005428),
     ),
     "finger_right_1_link": (
         np.array([-0.0012, -0.038, 0.001]),
-        np.array([0.022, 0.016, 0.016]),
-        (-2.678970, 1.566213, 0.0),
+        np.array([0.030, 0.016, 0.016]),
+        (-1.566715, -0.291439, 1.116399),
     ),
 }
 

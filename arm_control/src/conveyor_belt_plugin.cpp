@@ -175,6 +175,14 @@ void AriaConveyorPlugin::OnUpdate()
         });
     }
 
+    // The velocity override below exists only to carry parts along a *running*
+    // belt.  It zeroes each part's vertical velocity and angular velocity, so
+    // applying it while the belt is stopped pins the workpieces to the deck and
+    // makes them physically impossible to lift (a 50 mm pick would stall at the
+    // top of the detection window, z = 0.680 m).  Gate it on belt motion so a
+    // stopped belt leaves the parts as free rigid bodies for manipulation.
+    const bool belt_running = std::abs(belt_velocity_) > 1e-4;
+
     const double sim_time = world_->SimTime().Double();
     if (sim_time - last_diagnostic_time_ >= 1.0) {
       const double lead_y = active_parts.empty() ? 0.0 : active_parts[0].py;
@@ -186,7 +194,7 @@ void AriaConveyorPlugin::OnUpdate()
       last_diagnostic_time_ = sim_time;
     }
 
-    if (!active_parts.empty()) {
+    if (!active_parts.empty() && belt_running) {
       for (size_t i = 0; i < active_parts.size(); ++i) {
         auto & part = active_parts[i];
         // The lead part stops at stop_y_ against the stopper.

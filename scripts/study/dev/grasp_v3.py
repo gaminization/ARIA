@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Grasp v3: pre-close above the cube, descend with clearance, short close."""
+import sys
+from pathlib import Path
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts" / "study" / "dev"))
+
+import rclpy  # noqa: E402
+from aria_study.ros import StudyNode  # noqa: E402
+from aria_study import kinematics as K  # noqa: E402
+from grasp_probe import CUBE, SAFE, axis, ik_pad, send, servo  # noqa: E402
+
+
+def main():
+    g_open = float(sys.argv[1]) if len(sys.argv) > 1 else 0.50
+    g_grip = float(sys.argv[2]) if len(sys.argv) > 2 else 0.44
+    rclpy.init()
+    node = StudyNode("grasp_v3")
+    try:
+        node.wait_for_joint_states(K.ALL_JOINTS, timeout=30)
+        node.wait_for_models([CUBE], timeout=30)
+        node.spin_for(1.0)
+        node.send_conveyor_speed(0.0)
+        node.spin_for(0.5)
+        send(node, SAFE, 0.9, 3.0)
+        node.set_model_pose(CUBE, [0.20, 0.12, 0.6488], [0, 0, 0, 1])
+        node.spin_for(1.2)
+        cube0, _ = node.model_pose(CUBE)
+
+        high = cube0 + np.array([0, 0, 0.06])
+        servo(node, high, 0.9, iters=4, tol=0.0005)
+        yaw = float(np.arctan2(*axis(node)[[1, 0]]))
+        node.set_model_pose(CUBE, [cube0[0], cube0[1], 0.6488],
+                            [0, 0, float(np.sin(yaw / 2)), float(np.cos(yaw / 2))])
+        node.spin_for(1.0)
+        cube0, _ = node.model_pose(CUBE)
+        print(f"cube {np.round(1000*cube0,2)} yaw={np.degrees(yaw):.2f}")
+
+        # pre-close above the cube
+        mid, sep = servo(node, high, g_open, iters=6, tol=0.0005)
+        print(f"pre-close g={g_open} mid={np.round(1000*mid,2)} sep={1000*sep:.2f} "
+              f"gap={1000*(sep-16):.2f}")
+
+        # descend at g_open
+        for dz in (0.06, 0.04, 0.02, 0.008, 0.0):
+            mid, sep = servo(node, cube0 + np.array([0, 0, dz]), g_open, iters=3, tol=0.0005)
+            cp, _ = node.model_pose(CUBE)
+            print(f"  descend dz={1000*dz:4.0f} mid={np.round(1000*mid,2)} "
+                  f"cube={np.round(1000*cp,2)} dxy={1000*np.linalg.norm(cp[:2]-cube0[:2]):.2f} "
+                  f"F={np.round(node.contact_forces(),2)}")
+
+        q_prev = node.q(K.ARM_JOINTS)
+        for g in np.arange(g_open, g_grip - 1e-9, -0.01):
+            q_cmd, _ = ik_pad(cube0, float(g), seed=q_prev)
+            q_prev = q_cmd
+            node.send_trajectory([float(x) for x in q_cmd] + [float(g)], 1.5)
+            node.spin_for(1.8)
+            cp, _ = node.model_pose(CUBE)
+            print(f"  close g={g:.3f} cube={np.round(1000*cp,2)} "
+                  f"dxy={1000*np.linalg.norm(cp[:2]-cube0[:2]):.2f} "
+                  f"F={np.round(node.contact_forces(),2)}")
+            if max(node.contact_forces()) > 0.5:
+                break
+
+        print("lift")
+        for dz in np.arange(0.01, 0.061, 0.01):
+            q_cmd, _ = ik_pad(cube0 + np.array([0, 0, dz]), g_grip, seed=q_prev)
+            q_prev = q_cmd
+            node.send_trajectory([float(x) for x in q_cmd] + [float(g_grip)], 1.5)
+            node.spin_for(2.0)
+            cp, _ = node.model_pose(CUBE)
+            print(f"  dz={1000*dz:4.0f} cube_dz={1000*(cp[2]-cube0[2]):5.1f} "
+                  f"dxy={1000*np.linalg.norm(cp[:2]-cube0[:2]):5.1f} "
+                  f"F={np.round(node.contact_forces(),2)}")
+        cp, _ = node.model_pose(CUBE)
+        print(f"RESULT {'pass' if cp[2]-cube0[2] >= 0.05 else 'fail'} "
+              f"dz={1000*(cp[2]-cube0[2]):.1f} dxy={1000*np.linalg.norm(cp[:2]-cube0[:2]):.1f}")
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

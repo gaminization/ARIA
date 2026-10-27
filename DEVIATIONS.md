@@ -97,3 +97,33 @@ configured timeout is 90 s.
 Only the metadata rows of `PREREGISTRATION.md` §9 were filled after the first evaluation
 (hypotheses, thresholds, seeds, and trial counts were not edited). The pre-registration
 commit is `cf5d7b4`; the first evaluation started at `2026-10-24T19:14:41Z`.
+
+## D12. N2 not executed: platform cannot satisfy the T1 pick-and-lift predicate
+
+`P2-N2` requires the pre-registered T1 predicate ("object raised >= 50 mm and held >= 2.0 s,
+no attach", `PREREGISTRATION.md` §3). Two independent platform defects prevented it.
+
+1. **Conveyor velocity override pinned the workpieces.** `AriaConveyorPlugin::OnUpdate`
+   applied `SetLinearVel(..., min(0, v_z))` and `SetAngularVel(0, 0, 0)` to every workpiece
+   inside the `z = 0.620–0.680 m` detection window, regardless of belt state. Upward motion
+   was cancelled every tick and rotation was suppressed, so a 50 mm lift was physically
+   impossible (it would stall at the top of the window, +32 mm). Fixed by gating the
+   override on `|belt_velocity| > 1e-4`; a stopped belt now leaves parts as free bodies.
+   This is a platform bug fix, not a change to the study protocol.
+
+2. **The position-controlled jaws cannot regulate grip force.** After the conveyor fix, the
+   pads contact the 40 mm cube symmetrically (~9 N per pad) with faces that are vertical and
+   antiparallel at the grasp opening (measured normal dot `-1.0000`, tilt `0.00 deg`). But the
+   first contact step produces 9–10 N because the gripper is position-controlled and the
+   contact is stiff; that shove displaces the 45 g cube 1–7 mm and tilts it, and the cube then
+   escapes sideways during the lift. Best observed lift was 0.9 mm. Lowering the pad contact
+   `kp`, lowering the joint effort limit (0.18 N·m), and lowering the Gazebo position PID gain
+   did not reduce the contact force, so no compliant close was available without replacing the
+   gripper controller.
+
+No 50 mm lift was ever observed, so `P2-N2` is recorded as **not executed**, not simulated and
+not re-labelled with a weaker predicate. The pad collision boxes were also re-oriented so their
+faces are vertical and antiparallel at the grasp opening, and their contact friction was set to
+`mu = 3`; those repairs are kept because they are physically correct, but they do not change
+the N2 outcome. Any T1-dependent experiment (`P5-SUITE` T1, `P6-GRASP`, `P6-ABL`, learned-policy
+demonstrations) is likewise not executable on this platform.
