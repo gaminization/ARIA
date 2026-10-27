@@ -32,7 +32,8 @@ FIG = ROOT / "data" / "journal" / "figures"
 TEX = ROOT / "publications" / "ieee_tro_submission" / "numbers.tex"
 LEDGER = ROOT / "data" / "journal" / "ledger.csv"
 
-REQUIRED = ["P0-CONV", "P0-REACH", "P0-ESTOP", "P2-N4"]
+REQUIRED = ["P0-CONV", "P0-REACH", "P0-ESTOP", "P2-N4",
+            "P0-WD", "P2-N1", "P2-N3", "P0-DET"]
 
 
 def load_summary(exp: str) -> dict:
@@ -106,13 +107,18 @@ def main() -> int:
     reach = load_summary("P0-REACH")
     estop = load_summary("P0-ESTOP")
     n4 = load_summary("P2-N4")
+    wd = load_summary("P0-WD")
+    n1 = load_summary("P2-N1")
+    n3 = load_summary("P2-N3")
+    det = load_summary("P0-DET")
 
     conv_rows = rows("P0-CONV")
     estop_rows = rows("P0-ESTOP")
     n4_rows = rows("P2-N4")
 
     for exp, summary in (("P0-CONV", conv), ("P0-REACH", reach),
-                         ("P0-ESTOP", estop), ("P2-N4", n4)):
+                         ("P0-ESTOP", estop), ("P2-N4", n4),
+                         ("P0-WD", wd), ("P2-N1", n1), ("P2-N3", n3)):
         rc = row_commit(exp)
         if summary.get("commit") and summary["commit"] != rc:
             print(
@@ -126,7 +132,7 @@ def main() -> int:
 
     def add(name: str, value: str, *, exp: str, metric: str, unit: str,
             n: int | str = "", ci_low="", ci_high="", source: str = "",
-            note: str = "") -> None:
+            note: str = "", source_commit: str = "") -> None:
         macros.append((name, value))
         ledger.append({
             "macro": name,
@@ -138,7 +144,7 @@ def main() -> int:
             "ci_low": ci_low,
             "ci_high": ci_high,
             "source_file": source or f"data/journal/raw/{exp}_summary.json",
-            "source_commit": row_commit(exp),
+            "source_commit": source_commit or row_commit(exp),
             "note": note,
         })
 
@@ -323,6 +329,189 @@ def main() -> int:
     add("nFourReplansMean", f2(n4c["mean_replans"]), exp="P2-N4",
         metric="mean replans per target, N4", unit="count", n=n4c["n"])
 
+    # ---------------------------------------------------------------- watchdog
+    add("wdN", str(wd["n"]), exp="P0-WD", metric="trials", unit="count", n=wd["n"])
+    add("wdFastN", str(wd["fast_n"]), exp="P0-WD",
+        metric="fast calls (must not fire)", unit="count", n=wd["fast_n"])
+    add("wdSlowN", str(wd["slow_n"]), exp="P0-WD",
+        metric="slow calls (must fire)", unit="count", n=wd["slow_n"])
+    add("wdTimeoutS", f2(wd["timeout_s"]), exp="P0-WD",
+        metric="watchdog timeout", unit="s", n=wd["n"])
+    add("wdFalsePosPct", pct(wd["fast_false_positive_rate"]), exp="P0-WD",
+        metric="false-positive rate on fast calls", unit="percent", n=wd["fast_n"])
+    add("wdMissedPct", pct(wd["slow_missed_rate"]), exp="P0-WD",
+        metric="missed-detection rate on slow calls", unit="percent", n=wd["slow_n"])
+    add("wdMedianS", f3(wd["slow_detection_median_s"]), exp="P0-WD",
+        metric="median detection latency on slow calls", unit="s", n=wd["slow_n"])
+    add("wdP95S", f3(wd["slow_detection_p95_s"]), exp="P0-WD",
+        metric="p95 detection latency on slow calls", unit="s", n=wd["slow_n"])
+    add("wdExcessP95S", f3(wd["slow_detection_excess_p95_s"]), exp="P0-WD",
+        metric="p95 latency above the 2.0 s timeout", unit="s", n=wd["slow_n"])
+    add("wdPass", "yes" if wd["pass"] else "no", exp="P0-WD",
+        metric="pre-registered H0f decision", unit="boolean", n=wd["n"])
+    if wd.get("ollama_integration", {}).get("available"):
+        add("wdOllamaCallS", f3(wd["ollama_integration"]["call_duration_s"]),
+            exp="P0-WD", metric="real Ollama call duration", unit="s", n=1)
+
+    # -------------------------------------------------------------- depth (N1)
+    add("nOneN", str(n1["n_frames"]), exp="P2-N1",
+        metric="evaluation frames", unit="count", n=n1["n_frames"])
+    add("nOneRows", str(n1["n_rows"]), exp="P2-N1",
+        metric="method x frame rows", unit="count", n=n1["n_rows"])
+    add("nOneForm", n1["calibration_form"], exp="P2-N1",
+        metric="N1 calibration form", unit="text", n=n1["n_frames"])
+    for key, label in (("fixed", "Fixed"), ("one_point", "OnePoint"),
+                       ("two_point", "TwoPoint"), ("n1", "NOne")):
+        cell = n1[key]
+        add(f"nOne{label}MeanMm", f2(cell["mean_rmse_mm"]), exp="P2-N1",
+            metric=f"mean RMSE, {key}", unit="mm", n=cell["n"],
+            ci_low=f2(cell["mean_rmse_ci_low"]),
+            ci_high=f2(cell["mean_rmse_ci_high"]))
+        add(f"nOne{label}LoMm", f2(cell["mean_rmse_ci_low"]), exp="P2-N1",
+            metric=f"mean RMSE lower 95% CI, {key}", unit="mm", n=cell["n"])
+        add(f"nOne{label}HiMm", f2(cell["mean_rmse_ci_high"]), exp="P2-N1",
+            metric=f"mean RMSE upper 95% CI, {key}", unit="mm", n=cell["n"])
+        add(f"nOne{label}MedianMm", f2(cell["median_rmse_mm"]), exp="P2-N1",
+            metric=f"median RMSE, {key}", unit="mm", n=cell["n"])
+    add("nOneNOneMaxMm", f2(n1["n1"]["max_error_mm"]), exp="P2-N1",
+        metric="max per-frame RMSE, N1", unit="mm", n=n1["n_frames"])
+    add("nOneTwoPointMaxMm", f2(n1["two_point"]["max_error_mm"]), exp="P2-N1",
+        metric="max per-frame RMSE, two-point", unit="mm", n=n1["n_frames"])
+    for key, label, name in (("n1_minus_fixed", "Fixed", "nOneMinusFixed"),
+                             ("n1_minus_one_point", "OnePoint", "nOneMinusOnePoint"),
+                             ("n1_minus_two_point", "TwoPoint", "nOneMinusTwoPoint")):
+        cell = n1[key]
+        add(f"{name}Mm", f2(cell["mean_rmse_diff_mm"]), exp="P2-N1",
+            metric=f"paired mean RMSE difference, N1 - {label}", unit="mm",
+            n=cell["n_pairs"], ci_low=f2(cell["ci_low_mm"]),
+            ci_high=f2(cell["ci_high_mm"]))
+        add(f"{name}LoMm", f2(cell["ci_low_mm"]), exp="P2-N1",
+            metric=f"paired difference lower 95% CI, N1 - {label}", unit="mm",
+            n=cell["n_pairs"])
+        add(f"{name}HiMm", f2(cell["ci_high_mm"]), exp="P2-N1",
+            metric=f"paired difference upper 95% CI, N1 - {label}", unit="mm",
+            n=cell["n_pairs"])
+        add(f"{name}Wins", str(cell["n1_wins"]), exp="P2-N1",
+            metric=f"frames where N1 beats {label}", unit="count",
+            n=cell["n_pairs"])
+        add(f"{name}ExcludesZero", "yes" if cell["ci_excludes_zero"] else "no",
+            exp="P2-N1", metric=f"95% CI excludes zero, N1 - {label}",
+            unit="boolean", n=cell["n_pairs"])
+
+    # -------------------------------------------------------- ambiguity (N3)
+    add("nThreeN", str(n3["n_prompts"]), exp="P2-N3",
+        metric="prompts", unit="count", n=n3["n_prompts"])
+    add("nThreeRows", str(n3["n_rows"]), exp="P2-N3",
+        metric="prompt x model rows", unit="count", n=n3["n_rows"])
+    add("nThreeSuccessN", str(n3["all"]["n_success"]), exp="P2-N3",
+        metric="correct resolutions, all prompts", unit="count", n=n3["all"]["n"])
+    add("nThreeSuccessPct", pct(n3["all"]["success_rate"]), exp="P2-N3",
+        metric="resolution-correct rate, all prompts", unit="percent",
+        n=n3["all"]["n"])
+    add("nThreeParsePct", pct(n3["all"]["parse_rate"]), exp="P2-N3",
+        metric="parse rate, all prompts", unit="percent", n=n3["all"]["n"])
+    add("nThreeTestN", str(n3["test"]["n"]), exp="P2-N3",
+        metric="held-out test prompts", unit="count", n=n3["test"]["n"])
+    add("nThreeTestSuccessN", str(n3["test"]["n_success"]), exp="P2-N3",
+        metric="correct resolutions, test prompts", unit="count",
+        n=n3["test"]["n"])
+    add("nThreeTestSuccessPct", pct(n3["test"]["success_rate"]), exp="P2-N3",
+        metric="resolution-correct rate, test prompts", unit="percent",
+        n=n3["test"]["n"])
+    for key, label, name in (("scene_only", "Scene", "nThreeScene"),
+                             ("llm_only", "Llm", "nThreeLlm"),
+                             ("fused", "Fused", "nThreeFused")):
+        cell = n3["test"][key]
+        add(f"{name}Auroc", f3(cell["auroc"]), exp="P2-N3",
+            metric=f"test AUROC, {key}", unit="AUROC", n=n3["test"]["n"],
+            ci_low=f3(cell["auroc_ci_low"]), ci_high=f3(cell["auroc_ci_high"]))
+        add(f"{name}Lo", f3(cell["auroc_ci_low"]), exp="P2-N3",
+            metric=f"test AUROC lower 95% CI, {key}", unit="AUROC",
+            n=n3["test"]["n"])
+        add(f"{name}Hi", f3(cell["auroc_ci_high"]), exp="P2-N3",
+            metric=f"test AUROC upper 95% CI, {key}", unit="AUROC",
+            n=n3["test"]["n"])
+    for key, label, name in (("fused_minus_scene_only_test", "Scene", "nThreeFusedMinusScene"),
+                             ("fused_minus_llm_only_test", "Llm", "nThreeFusedMinusLlm")):
+        cell = n3[key]
+        add(f"{name}Auroc", f3(cell["delta_auroc"]), exp="P2-N3",
+            metric=f"test AUROC difference, fused - {label}", unit="AUROC",
+            n=n3["test"]["n"], ci_low=f3(cell["ci_low"]), ci_high=f3(cell["ci_high"]))
+        add(f"{name}Lo", f3(cell["ci_low"]), exp="P2-N3",
+            metric=f"AUROC difference lower 95% CI, fused - {label}",
+            unit="AUROC", n=n3["test"]["n"])
+        add(f"{name}Hi", f3(cell["ci_high"]), exp="P2-N3",
+            metric=f"AUROC difference upper 95% CI, fused - {label}",
+            unit="AUROC", n=n3["test"]["n"])
+        add(f"{name}ExcludesZero", "yes" if cell["ci_excludes_zero"] else "no",
+            exp="P2-N3", metric=f"95% CI excludes zero, fused - {label}",
+            unit="boolean", n=n3["test"]["n"])
+    add("nThreeFusionWeight", f2(n3["fusion_weight_llm"]), exp="P2-N3",
+        metric="fitted weight on the LLM score", unit="weight",
+        n=n3["calibration"]["n"])
+    add("nThreePlattA", f2(n3["platt"]["a"]), exp="P2-N3",
+        metric="Platt slope", unit="coefficient", n=n3["calibration"]["n"])
+    add("nThreePlattB", f2(n3["platt"]["b"]), exp="P2-N3",
+        metric="Platt intercept", unit="coefficient", n=n3["calibration"]["n"])
+
+    # -------------------------------------------------------- detector (P0-DET)
+    det_commit = det["commit"]
+    frames = det["dataset"]["frames"]
+    add("detTrainN", str(frames["train"]), exp="P0-DET",
+        metric="training frames", unit="count", n=frames["train"],
+        source_commit=det_commit)
+    add("detValN", str(frames["val"]), exp="P0-DET",
+        metric="validation frames", unit="count", n=frames["val"],
+        source_commit=det_commit)
+    add("detTestN", str(frames["test"]), exp="P0-DET",
+        metric="test frames", unit="count", n=frames["test"],
+        source_commit=det_commit)
+    add("detTotalN", str(sum(frames.values())), exp="P0-DET",
+        metric="total frames", unit="count", n=sum(frames.values()),
+        source_commit=det_commit)
+    add("detRequestedN", str(det["shortfall"]["requested_frames"]), exp="P0-DET",
+        metric="originally requested frames", unit="count",
+        n=det["shortfall"]["requested_frames"], source_commit=det_commit)
+    add("detImgsz", str(det["config"]["imgsz"]), exp="P0-DET",
+        metric="model input resolution", unit="px", n=frames["train"],
+        source_commit=det_commit)
+    add("detEpochs", str(det["config"].get("epochs", "")), exp="P0-DET",
+        metric="training epochs", unit="count", n=frames["train"],
+        source_commit=det_commit)
+    for split in ("val", "test"):
+        cell = det[split]
+        add(f"detMapFifty{split.capitalize()}", f3(cell["map50"]), exp="P0-DET",
+            metric=f"mAP50, {split} scenes", unit="mAP", n=frames[split],
+            source_commit=det_commit)
+        add(f"detMapFiftyToNinetyFive{split.capitalize()}", f3(cell["map50_95"]),
+            exp="P0-DET", metric=f"mAP50-95, {split} scenes", unit="mAP",
+            n=frames[split], source_commit=det_commit)
+        add(f"detPrecision{split.capitalize()}", f3(cell["precision"]), exp="P0-DET",
+            metric=f"precision, {split} scenes", unit="ratio", n=frames[split],
+            source_commit=det_commit)
+        add(f"detRecall{split.capitalize()}", f3(cell["recall"]), exp="P0-DET",
+            metric=f"recall, {split} scenes", unit="ratio", n=frames[split],
+            source_commit=det_commit)
+    op = det["operating_point"]
+    add("detOpPrecision", f3(op["precision"]), exp="P0-DET",
+        metric="precision at the operating point", unit="ratio", n=op["n_frames"],
+        source_commit=det_commit)
+    add("detOpRecall", f3(op["recall"]), exp="P0-DET",
+        metric="recall at the operating point", unit="ratio", n=op["n_frames"],
+        source_commit=det_commit)
+    add("detOpFOne", f3(op["f1"]), exp="P0-DET",
+        metric="F1 at the operating point", unit="ratio", n=op["n_frames"],
+        source_commit=det_commit)
+    add("detOpTP", str(op["tp"]), exp="P0-DET",
+        metric="true positives at the operating point", unit="count",
+        n=op["n_frames"], source_commit=det_commit)
+    add("detOpFP", str(op["fp"]), exp="P0-DET",
+        metric="false positives at the operating point", unit="count",
+        n=op["n_frames"], source_commit=det_commit)
+    add("detOpFN", str(op["fn"]), exp="P0-DET",
+        metric="false negatives at the operating point", unit="count",
+        n=op["n_frames"], source_commit=det_commit)
+
     # ------------------------------------------------------------------ figures
     FIG.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({"font.size": 9, "pdf.fonttype": 42})
@@ -399,6 +588,20 @@ def main() -> int:
     fig.savefig(FIG / "fig_n4_success.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
+    # Fig 6: detector mAP on held-out validation and test scenes.
+    fig, ax = plt.subplots(figsize=(3.4, 2.5))
+    labels = ["val\nmAP50", "val\nmAP50-95", "test\nmAP50", "test\nmAP50-95"]
+    vals = [100 * det["val"]["map50"], 100 * det["val"]["map50_95"],
+            100 * det["test"]["map50"], 100 * det["test"]["map50_95"]]
+    ax.bar(labels, vals, color=["#4c72b0", "#9ecae1", "#55a868", "#a1d99b"])
+    ax.set_ylim(0, 100)
+    ax.set_ylabel("detection mAP (%)")
+    for i, v in enumerate(vals):
+        ax.text(i, v + 1.5, f"{v:.1f}", ha="center", fontsize=7)
+    fig.tight_layout()
+    fig.savefig(FIG / "fig_det_map.pdf", metadata={"CreationDate": None})
+    plt.close(fig)
+
     # ------------------------------------------------------------- write macros
     lines = [
         "% Auto-generated by scripts/build_numbers.py. Do not edit.",
@@ -425,7 +628,7 @@ def main() -> int:
 
     print(f"wrote {TEX} ({len(macros)} macros)")
     print(f"wrote {LEDGER} ({len(ledger)} rows)")
-    print(f"wrote 5 figures to {FIG}")
+    print(f"wrote {len(list(FIG.glob('*.pdf')))} figures to {FIG}")
     return 0
 
 

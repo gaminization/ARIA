@@ -84,13 +84,21 @@ now uses the commit stamped on the rows and warns when the summary differs.
 
 ## D10. Phases and methods not executed
 
-As declared in `PREREGISTRATION.md` §1.1: learned-policy training (no CUDA), human
-inter-annotator agreement (no independent annotators), hardware (no robot), and the full
-detector training run (no committed checkpoint and no provenance-clean labelled dataset).
-N1 was not executed because the depth model package and checkpoint are absent. N2 was not
-executed because grasp attempts are blocked by the gripper defect. N3 was not executed within
-the available budget. P0-WD is N/A because no 2.0 s watchdog exists in the code; the only
-configured timeout is 90 s.
+After the repairs recorded below, the remaining non-executed items are:
+
+- **N2 / T1 pick-and-lift**: the position-controlled jaws cannot satisfy the pre-registered
+  50 mm lift predicate (D12). Every T1-dependent experiment is therefore not executable.
+- **Phase 3 learned policies** (LeRobot/ACT/SmolVLA): CUDA is now available, but the policies
+  require T1 demonstrations and T1 is not executable. No policy is trained or evaluated.
+- **Phase 4 human inter-annotator agreement**: no independent human annotators are available.
+  A second language model is not a human substitute, so no Cohen's kappa is reported.
+- **Phase 7 hardware**: no robot, ESP32, or serial device is present.
+- **Phase 0f 5,000-frame detector**: reduced by the pre-registration to 1,000 train frames
+  (1,240 total); the 5,000-frame request is not met (D13).
+
+N1, N3, and P0-WD were subsequently executed and are reported from their raw logs. N1's depth
+predictions come from the installed Depth-Anything V2 checkpoint; N3 uses the pre-registered
+60-prompt split; P0-WD exercises the 2.0 s watchdog that was added to the stack.
 
 ## D11. Freeze-record metadata
 
@@ -127,3 +135,19 @@ faces are vertical and antiparallel at the grasp opening, and their contact fric
 `mu = 3`; those repairs are kept because they are physically correct, but they do not change
 the N2 outcome. Any T1-dependent experiment (`P5-SUITE` T1, `P6-GRASP`, `P6-ABL`, learned-policy
 demonstrations) is likewise not executable on this platform.
+
+## D13. P0-DET executed on GPU with a newly generated dataset
+
+`PREREGISTRATION.md` §1.1 declared the detector run as "1,000 auto-labelled Gazebo frames,
+YOLOv8n at 320 px on CPU" because no CUDA device was available when the protocol was frozen.
+A CUDA device (RTX 5060 Laptop, 8 GB; PyTorch 2.10.0+cu128) became available before this run.
+The model (YOLOv8n), input resolution (320 px), class definition (one class, `workpiece`), split
+(scenes 1-20 train, 21-24 validation, 25-30 test), and metrics (mAP50, mAP50-95) are unchanged;
+only the compute device changed, from CPU to `cuda:0`. Training is deterministic (`seed=0`,
+`deterministic=True`) and the checkpoint hash is recorded.
+
+The old detector frames were not reused: the audit found their labels were sampled at random
+(`AUDIT.md` §5.7) and no checkpoint was committed. P0-DET instead generates 1,240 frames
+(1,000 train / 120 validation / 120 test) from Gazebo ground truth projected through the
+calibrated overhead camera, with scene seeds and per-image SHA-256 hashes logged. The original
+Phase 0f request for 5,000 frames is still not met; the shortfall is reported, not interpolated.
